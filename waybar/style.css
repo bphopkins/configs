@@ -1,0 +1,48 @@
+/* Define a small palette (GTK CSS) */
+@define-color bg     #000000;   /* bar background */
+@define-color fg     #ffffff;   /* default text */
+@define-color muted  #9e9e9e;   /* inactive workspace text */
+@define-color accent #228B22;   /* active/accent */
+@define-color urgent #d08770;   /* urgent */
+
+/* Whole bar */
+window#waybar {
+  background-color: @bg;
+  color: @fg;
+}
+
+/* Center clock */
+#clock {
+  color: @fg;       /* use @accent if you want it highlighted */
+  font-weight: 600;
+}
+
+/* Workspaces (left) */
+#workspaces button {
+  color: @muted;
+  background: transparent;
+  border: none;
+  padding: 0 10px;
+}
+
+#workspaces button.focused,
+#workspaces button.active {
+  color: @fg;
+  border-bottom: 3px solid @accent;   /* subtle highlight */
+}
+
+#workspaces button.urgent {
+  color: @fg;
+  background: @urgent;
+}
+
+#workspaces button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* Right-side modules */
+#backlight, #pulseaudio, #network, #bluetooth, #battery, #tray {
+  color: @fg;
+  margin: 0 6px;
+}
+#pulseaudio.muted { opacity: 0.6; }

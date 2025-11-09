@@ -1,0 +1,23 @@
+{
+  "layer": "top",
+  "position": "top",
+
+  "modules-left":   ["sway/workspaces"],
+  "modules-center": ["clock"],
+  "modules-right":  ["backlight", "pulseaudio", "network", "bluetooth", "battery", "tray"],
+
+  "clock": { "format": "{:%Y-%m-%d %T}" },                 // 24-hr, your exact format
+  "backlight": {
+    "device": "intel_backlight",
+    "format": "{percent:>3}%"
+  },
+  "pulseaudio": { "format": "{volume}% {icon}", "tooltip": false },
+  "network": {
+    "format-wifi": "{essid} {signalStrength}%",
+    "format-ethernet": "eth {ifname}",
+    "format-disconnected": "disconnected"
+  },
+  "bluetooth": { "format-connected": "bt {num_connected}", "format-off": "bt off" },
+  "battery": { "format": "{capacity}% {icon}" },
+  "tray": { "icon-size": 16, "spacing": 8 }
+}
