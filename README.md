@@ -94,7 +94,17 @@ pkill -SIGUSR2 waybar 2>/dev/null || true
 
 ---
 
-## 8) Notes & common tweaks
+## 8) Push to Remote
+
+```bash 
+# Bash
+cd ~/Desktop/configs
+git push -u origin "$(git branch --show-current)"
+```
+
+---
+
+## 9) Notes & common tweaks
 
 * **Per-target stowing** keeps your repo clean:
 

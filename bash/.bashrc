@@ -50,6 +50,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/bphopkins.github.io"
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/.config/nvim"
+  "$HOME/Desktop/configs"
 )
 
 gpullall() {
