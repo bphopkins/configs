@@ -49,7 +49,6 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/texmf"
   "$HOME/Desktop/bphopkins.github.io"
   "$HOME/Desktop/llemmma.github.io"
-  "$HOME/.config/nvim"
   "$HOME/Desktop/configs"
 )
 
