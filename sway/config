@@ -28,7 +28,7 @@ bindsym $mod+v exec code
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /home/bph/Pictures/gnome-dark-gray.png fill
+output * bg /home/bph/Desktop/configs/wallpapers/gnome-dark-gray.png fill
 #
 # Example configuration:
 #
