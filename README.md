@@ -86,7 +86,7 @@ If that one looks good, then the others probably do too, but you can do the same
 
 ### 3. Commit the seed state
 
-It's worth syncing to remote at this point since the directory is set up. See my `.bashrc` file to see how the command works:
+It's worth syncing to remote at this point since the directory is set up. Your workflow might involve `git add` and `git commit`, but I use a custom `bash` command. See my `.bashrc` file to see how the command works:
 
 ```bash
 gpushall     # automatically stage, commit, and push all to origin
@@ -159,23 +159,28 @@ pkill -SIGUSR2 waybar 2>/dev/null || true
 
 ### 8. Notes & common tweaks
 
-- **Per-target stowing** keeps your repo clean:
-  - `bash/` is stowed to `~` → creates `~/.bashrc`, `~/.bash_profile` symlinks.
-  - `sway/` is stowed to `~/.config/sway` → creates `config`, `config.save` symlinks there.
-  - `waybar/` is stowed to `~/.config/waybar` → creates `config`, `style.css` symlinks there.
+- **Updating:**
+  - Edits to files already linked need **no** action, but **new files/paths** do. Just restow the package to create the new symlinks, e.g.:
+  ```bash
+  cd ~/Desktop/configs
+  stow -nRv -t ~ bash
+  stow -Rv  -t ~ bash
+  ```
 
 - **If Stow reports a conflict** (e.g., a real file already exists), either back it up and remove it, or adopt it:
   ```bash
-  stow --adopt -vt ~               bash
-  stow --adopt -vt ~/.config/sway  sway
+  cd ~/Desktop/configs
+  stow --adopt -vt ~ bash
+  stow --adopt -vt ~/.config/sway sway
   stow --adopt -vt ~/.config/waybar waybar
-  git add -A && git commit -m "Adopt local files"
-  
+  git add -A && git commit -m "Adopt local files"  
   ```
+
 - **Undo** any package later:
   ```bash
-  stow -Dvt ~               bash
-  stow -Dvt ~/.config/sway  sway
+  cd ~/Desktop/configs
+  stow -Dvt ~ bash
+  stow -Dvt ~/.config/sway sway
   stow -Dvt ~/.config/waybar waybar
   ```
 

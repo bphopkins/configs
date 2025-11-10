@@ -1,0 +1,11 @@
+# Minimal, safe ~/.bashrc
+
+# If not running interactively, don't do anything
+case $- in
+	*i*) ;;
+	*) return;;
+esac
+
+# Basic sane PATH with system binaries and user bin
+export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$HOME/.local/bin"
+
