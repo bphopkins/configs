@@ -46,7 +46,6 @@ alias homepage='cd ~/Desktop/bphopkins.github.io && nvim'
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation"
-  "$HOME/Desktop/texmf"
   "$HOME/Desktop/bphopkins.github.io"
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/configs"

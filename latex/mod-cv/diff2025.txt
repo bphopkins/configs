@@ -1,0 +1,3513 @@
+Only in /home/bph/Desktop/texmf/tex/latex/mod-cv: mod-cv.cls
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyiii.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyiii.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyiii.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyiii.sty	2025-11-02 21:23:20.018336215 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvbodyiii.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvbodyiii}[2024-07-18 v2.4.1 modern curriculum vitae and letter body variant: 3]
++\ProvidesPackage{moderncvbodyiii}[2022-02-21 v2.3.1 modern curriculum vitae and letter body variant: 3]
+ 
+ % rules type options: "fullrules", "shortrules", "mixedrules" (default) or "norules"
+ \@initializeif{\if@fullrules}\@fullrulesfalse
+@@ -37,7 +37,7 @@
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+-% provides the commands for the skillmatrix as well as the command
++% provides the commands for the skillmatrix as well as the command 
+ % \recompute@cvskillmatrix@lengths
+ \RequirePackage[moderncvbodyiii]{moderncvskillmatrix}
+ 
+@@ -61,16 +61,16 @@
+ \renewcommand*{\sectionstyle}[1]{{%
+   \if@center\centering\else%
+   \if@right\raggedleft\fi\fi%
+-  \sectionfont\textcolor{sectioncolor}{#1}%
++  \sectionfont\textcolor{color1}{#1}%
+   \if@shortrules\else%
+     \par\fi}}
+ \renewcommand*{\subsectionstyle}[1]{{%
+   \if@center\centering\else%
+   \if@right\raggedleft\fi\fi%
+-  \subsectionfont\textcolor{subsectioncolor}{#1}%
++  \subsectionfont\textcolor{color1}{#1}%
+   \if@shortrules\else\if@mixedrules\else%
+     \par\fi\fi}}
+-\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{hintstylecolor}{#1}}}
++\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{color0}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -83,14 +83,11 @@
+ \@initializelength{\maincolumnwidth}
+ %   used by \cvdoubleitem
+ \@initializelength{\doubleitemcolumnwidth}
+-%   used by \cvtripleitem
+-\@initializelength{\tripleitemcolumnwidth}
+ %   used by \cvlistitem
+ \@initializelength{\listitemsymbolwidth}          \settowidth{\listitemsymbolwidth}{\listitemsymbol}
+ \@initializelength{\listitemcolumnwidth}
+ %   used by \cvlistdoubleitem
+ \@initializelength{\listdoubleitemcolumnwidth}
+-\@initializelength{\listitemsymbolspace}          \setlength{\listitemsymbolspace}{0pt}
+ 
+ % commands
+ \renewcommand*{\recomputecvbodylengths}{%
+@@ -99,8 +96,6 @@
+   \setlength{\listitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth}%
+   \setlength{\doubleitemcolumnwidth}{\maincolumnwidth-\separatorcolumnwidth}%
+   \setlength{\doubleitemcolumnwidth}{0.5\doubleitemcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{\maincolumnwidth-2\separatorcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{0.33\tripleitemcolumnwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth-\separatorcolumnwidth-\listitemsymbolwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{0.5\listdoubleitemcolumnwidth}%
+   \recompute@cvskillmatrix@lengths
+@@ -138,14 +133,14 @@
+ \newcommand*{\sectionrule}{}
+ \newcommand*{\subsectionrule}{}
+ \if@fullrules%
+-  \renewcommand*{\sectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{bodyrulecolor}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
+-  \renewcommand*{\subsectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{bodyrulecolor}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}
++  \renewcommand*{\sectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{color1}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
++  \renewcommand*{\subsectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{color1}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}
+ \if@shortrules%
+-  \renewcommand*{\sectionrule}{\leavevmode{\color{bodyrulecolor}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
+-  \renewcommand*{\subsectionrule}{\leavevmode{\color{bodyrulecolor}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}}
++  \renewcommand*{\sectionrule}{\leavevmode{\color{color1}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
++  \renewcommand*{\subsectionrule}{\leavevmode{\color{color1}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}}
+ \if@mixedrules%
+-  \renewcommand*{\sectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{bodyrulecolor}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
+-  \renewcommand*{\subsectionrule}{\leavevmode{\color{bodyrulecolor}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}}
++  \renewcommand*{\sectionrule}{\par\nobreak\vspace*{-.7\baselineskip}\leavevmode{\color{color1}\leaders\hbox{\rule{1pt}{0.4pt}}\hfill\kern0pt}}
++  \renewcommand*{\subsectionrule}{\leavevmode{\color{color1}\xleaders\hbox to 0.35em{\scriptsize.}\hfill}}\fi% different subsectionrules will not be perfectly aligned, but remaining space at the end of the fill will be distributed evenly between leaders, so it will be barely visible}}
+ \if@norules%
+   \renewcommand*{\sectionrule}{}
+   \renewcommand*{\subsectionrule}{}\fi
+@@ -160,24 +155,16 @@
+   \begin{minipage}[t]{\doubleitemcolumnwidth}\ifstrempty{#4}{}{\hintstyle{#4}: }#5\end{minipage}%
+   \par\addvspace{#1}}
+ 
+-\renewcommand*{\cvtripleitem}[7][.1em]{%
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#2}: #3\end{minipage}%
+-  \hfill% fill of \separatorcolumnwidth
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#4}: #5\end{minipage}%
+-  \hfill% fill of \separatorcolumnwidth
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\ifstrempty{#6}{}{\hintstyle{#6}: }#7\end{minipage}%
+-  \par\addvspace{#1}}
+-
+ \renewcommand*{\cvlistitem}[2][.25em]{%
+-  \listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}%
+   \par\addvspace{#1}}
+ 
+ \renewcommand*{\cvlistdoubleitem}[3][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
+   \hfill% fill of \separatorcolumnwidth
+   \ifstrempty{#3}%
+     {}%
+-    {\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#3\end{minipage}}}}
++    {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
+ 
+ \renewcommand*{\cventry}[7][.25em]{
+   \begin{tabular*}{\maincolumnwidth}{l@{\extracolsep{\fill}}r}%
+@@ -244,14 +231,13 @@
+   \recomputecvbodylengths%
+   \setlength{\parskip}{6\p@}}
+ 
+-\renewcommand*{\makeletterclosing}{%
+-  \@closing\ifthenelse{\isundefined{\@signature}}{\\[3em]}{\\[1em]}% shrink space when signature is set
+-  \ifthenelse{\isundefined{\@signature}}{}{{\@signature\\}}
++\renewcommand*{\makeletterclosing}{
++  \@closing\\[3em]%
+   {\bfseries\@firstname~\@lastname}%
+   \ifthenelse{\isundefined{\@enclosure}}{}{%
+     \\%
+     \vfil%
+-    {\color{letterclosingcolor}\itshape\enclname: \@enclosure}}%
++    {\color{color2}\itshape\enclname: \@enclosure}}%
+     \vfil}
+ 
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyii.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyii.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyii.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyii.sty	2025-11-02 21:23:20.017336192 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvbodyi.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,13 +10,13 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvbodyi}[2024-07-18 v2.4.1 modern curriculum vitae and letter body variant: 1]
++\ProvidesPackage{moderncvbodyi}[2022-02-21 v2.3.1 modern curriculum vitae and letter body variant: 1]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+-% provides the commands for the skillmatrix as well as the command
++% provides the commands for the skillmatrix as well as the command 
+ % \recompute@cvskillmatrix@lengths
+ \RequirePackage[moderncvbodyi]{moderncvskillmatrix}
+ 
+@@ -29,9 +29,9 @@
+ \renewcommand*{\hintfont}{}
+ 
+ % styles
+-\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{sectioncolor}{#1}}}
+-\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{subsectioncolor}{#1}}}
+-\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{hintstylecolor}{#1}}}
++\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{color0}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -44,14 +44,11 @@
+ \@initializelength{\maincolumnwidth}
+ %   used by \cvdoubleitem
+ \@initializelength{\doubleitemcolumnwidth}
+-%   used by \cvtripleitem
+-\@initializelength{\tripleitemcolumnwidth}
+ %   used by \cvlistitem
+ \@initializelength{\listitemsymbolwidth}          \settowidth{\listitemsymbolwidth}{\listitemsymbol}
+ \@initializelength{\listitemcolumnwidth}
+ %   used by \cvlistdoubleitem
+ \@initializelength{\listdoubleitemcolumnwidth}
+-\@initializelength{\listitemsymbolspace}          \setlength{\listitemsymbolspace}{0pt}
+ %   default moderncv \photo (change the definition such that by default the photo and its box align with the section bars
+ \RenewDocumentCommand{\photo}{O{\hintscolumnwidth-0.8pt-2\fboxsep}O{0.4pt}m}{\def\@photowidth{#1}\def\@photoframewidth{#2}\def\@photo{#3}}%
+ 
+@@ -62,8 +59,6 @@
+   \setlength{\listitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth}%
+   \setlength{\doubleitemcolumnwidth}{\maincolumnwidth-\hintscolumnwidth-\separatorcolumnwidth-\separatorcolumnwidth}%
+   \setlength{\doubleitemcolumnwidth}{0.5\doubleitemcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{\maincolumnwidth-2\hintscolumnwidth-3\separatorcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{0.33\tripleitemcolumnwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth-\separatorcolumnwidth-\listitemsymbolwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{0.5\listdoubleitemcolumnwidth}%
+   \recompute@cvskillmatrix@lengths
+@@ -78,7 +73,7 @@
+   \par\addvspace{2.5ex}%
+   \phantomsection{}% reset the anchor for hyperrefs
+   \addcontentsline{toc}{section}{#2}%
+-  \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{bodyrulecolor}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
++  \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{color1}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
+   \par\nobreak\addvspace{1ex}\@afterheading}% to avoid a pagebreak after the heading
+ 
+ \RenewDocumentCommand{\subsection}{sm}{%
+@@ -102,28 +97,15 @@
+     \hspace*{\separatorcolumnwidth}%
+     \begin{minipage}[t]{\doubleitemcolumnwidth}#5\end{minipage}}}
+ 
+-\renewcommand*{\cvtripleitem}[7][.1em]{%
+-  \cvitem[#1]{#2}{%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#3\end{minipage}%
+-    \hfill% fill of \separatorcolumnwidth
+-    \begin{minipage}[t]{\hintscolumnwidth}\raggedleft\hintstyle{#4}\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#5\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\hintscolumnwidth}\raggedleft\hintstyle{#6}\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#7\end{minipage}}}
+-
+-
+ \renewcommand*{\cvlistitem}[2][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}}}
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}}}
+ 
+ \renewcommand*{\cvlistdoubleitem}[3][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
+   \hfill% fill of \separatorcolumnwidth
+   \ifthenelse{\equal{#3}{}}%
+     {}%
+-    {\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#3\end{minipage}}}}
++    {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
+ 
+ \renewcommand*{\cventry}[7][.25em]{%
+   \cvitem[#1]{#2}{%
+@@ -180,14 +162,13 @@
+   \recomputecvlengths%
+   \setlength{\parskip}{6\p@}}
+ 
+-\renewcommand*{\makeletterclosing}{%
+-  \@closing\ifthenelse{\isundefined{\@signature}}{\\[3em]}{\\[1em]}% shrink space when signature is set
+-  \ifthenelse{\isundefined{\@signature}}{}{{\@signature\\}}
++\renewcommand*{\makeletterclosing}{
++  \@closing\\[3em]%
+   {\bfseries\@firstname~\@lastname}%
+   \ifthenelse{\isundefined{\@enclosure}}{}{%
+     \\%
+     \vfil%
+-    {\color{letterclosingcolor}\itshape\enclname: \@enclosure}}%
++    {\color{color2}\itshape\enclname: \@enclosure}}%
+     \vfil}
+ 
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyi.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyi.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyi.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyi.sty	2025-11-02 21:23:20.017336192 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvbodyi.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,13 +10,13 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvbodyi}[2024-07-18 v2.4.1 modern curriculum vitae and letter body variant: 1]
++\ProvidesPackage{moderncvbodyi}[2022-02-21 v2.3.1 modern curriculum vitae and letter body variant: 1]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+-% provides the commands for the skillmatrix as well as the command
++% provides the commands for the skillmatrix as well as the command 
+ % \recompute@cvskillmatrix@lengths
+ \RequirePackage[moderncvbodyi]{moderncvskillmatrix}
+ 
+@@ -24,14 +24,14 @@
+ %                overall body definition
+ %-------------------------------------------------------------------------------
+ % fonts
+-\renewcommand*{\sectionfont}{\Large\mdseries\upshape}
+-\renewcommand*{\subsectionfont}{\large\mdseries\upshape}
++\renewcommand*{\sectionfont}{\LARGE\mdseries\upshape}
++\renewcommand*{\subsectionfont}{\Large\mdseries\upshape}
+ \renewcommand*{\hintfont}{}
+ 
+ % styles
+-\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{sectioncolor}{#1}}}
+-\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{subsectioncolor}{#1}}}
+-\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{hintstylecolor}{#1}}}
++\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{color1}{\textbf{#1}}}}
++\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{color1}{\textbf{#1}}}}
++\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{color0}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -44,14 +44,11 @@
+ \@initializelength{\maincolumnwidth}
+ %   used by \cvdoubleitem
+ \@initializelength{\doubleitemcolumnwidth}
+-%   used by \cvtripleitem
+-\@initializelength{\tripleitemcolumnwidth}
+ %   used by \cvlistitem
+ \@initializelength{\listitemsymbolwidth}          \settowidth{\listitemsymbolwidth}{\listitemsymbol}
+ \@initializelength{\listitemcolumnwidth}
+ %   used by \cvlistdoubleitem
+ \@initializelength{\listdoubleitemcolumnwidth}
+-\@initializelength{\listitemsymbolspace}          \setlength{\listitemsymbolspace}{0pt}
+ %   default moderncv \photo (change the definition such that by default the photo and its box align with the section bars
+ \RenewDocumentCommand{\photo}{O{\hintscolumnwidth-0.8pt-2\fboxsep}O{0.4pt}m}{\def\@photowidth{#1}\def\@photoframewidth{#2}\def\@photo{#3}}%
+ 
+@@ -62,8 +59,6 @@
+   \setlength{\listitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth}%
+   \setlength{\doubleitemcolumnwidth}{\maincolumnwidth-\hintscolumnwidth-\separatorcolumnwidth-\separatorcolumnwidth}%
+   \setlength{\doubleitemcolumnwidth}{0.5\doubleitemcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{\maincolumnwidth-2\hintscolumnwidth-3\separatorcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{0.33\tripleitemcolumnwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth-\separatorcolumnwidth-\listitemsymbolwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{0.5\listdoubleitemcolumnwidth}%
+   \recompute@cvskillmatrix@lengths
+@@ -78,7 +73,7 @@
+   \par\addvspace{2.5ex}%
+   \phantomsection{}% reset the anchor for hyperrefs
+   \addcontentsline{toc}{section}{#2}%
+-  \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{bodyrulecolor}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
++  \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{color1}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
+   \par\nobreak\addvspace{1ex}\@afterheading}% to avoid a pagebreak after the heading
+ 
+ \RenewDocumentCommand{\subsection}{sm}{%
+@@ -102,28 +97,15 @@
+     \hspace*{\separatorcolumnwidth}%
+     \begin{minipage}[t]{\doubleitemcolumnwidth}#5\end{minipage}}}
+ 
+-\renewcommand*{\cvtripleitem}[7][.1em]{%
+-  \cvitem[#1]{#2}{%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#3\end{minipage}%
+-    \hfill% fill of \separatorcolumnwidth
+-    \begin{minipage}[t]{\hintscolumnwidth}\raggedleft\hintstyle{#4}\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#5\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\hintscolumnwidth}\raggedleft\hintstyle{#6}\end{minipage}%
+-    \hspace*{\separatorcolumnwidth}%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}#7\end{minipage}}}
+-
+-
+ \renewcommand*{\cvlistitem}[2][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}}}
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}}}
+ 
+ \renewcommand*{\cvlistdoubleitem}[3][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
+   \hfill% fill of \separatorcolumnwidth
+   \ifthenelse{\equal{#3}{}}%
+     {}%
+-    {\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#3\end{minipage}}}}
++    {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
+ 
+ \renewcommand*{\cventry}[7][.25em]{%
+   \cvitem[#1]{#2}{%
+@@ -180,14 +162,13 @@
+   \recomputecvlengths%
+   \setlength{\parskip}{6\p@}}
+ 
+-\renewcommand*{\makeletterclosing}{%
+-  \@closing\ifthenelse{\isundefined{\@signature}}{\\[3em]}{\\[1em]}% shrink space when signature is set
+-  \ifthenelse{\isundefined{\@signature}}{}{{\@signature\\}}
++\renewcommand*{\makeletterclosing}{
++  \@closing\\[3em]%
+   {\bfseries\@firstname~\@lastname}%
+   \ifthenelse{\isundefined{\@enclosure}}{}{%
+     \\%
+     \vfil%
+-    {\color{letterclosingcolor}\itshape\enclname: \@enclosure}}%
++    {\color{color2}\itshape\enclname: \@enclosure}}%
+     \vfil}
+ 
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyiv.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyiv.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyiv.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyiv.sty	2025-11-02 21:23:20.018336215 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvbodyiv.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,13 +10,13 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvbodyiv}[2024-07-18 v2.4.1 modern curriculum vitae and letter body variant: 4]
++\ProvidesPackage{moderncvbodyiv}[2022-02-21 v2.3.1 modern curriculum vitae and letter body variant: 4]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+-% provides the commands for the skillmatrix as well as the command
++% provides the commands for the skillmatrix as well as the command 
+ % \recompute@cvskillmatrix@lengths
+ \RequirePackage[moderncvbodyiv]{moderncvskillmatrix}
+ 
+@@ -29,9 +29,9 @@
+ \renewcommand*{\hintfont}{\bfseries}
+ 
+ % styles
+-\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{sectioncolor}{#1}}}
+-\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{subsectioncolor}{#1}}}
+-\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{hintstylecolor}{#1}}}
++\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{color0}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -49,10 +49,6 @@
+ \@initializelength{\listitemcolumnwidth}
+ %   used by \cvlistdoubleitem
+ \@initializelength{\listdoubleitemcolumnwidth}
+-%   used by \cvtripleitem
+-\@initializelength{\tripleitemcolumnwidth}
+-\@initializelength{\listitemsymbolspace}          \setlength{\listitemsymbolspace}{0pt}
+-
+ 
+ % commands
+ \renewcommand*{\recomputecvbodylengths}{%
+@@ -61,8 +57,6 @@
+   \setlength{\listitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth}%
+   \setlength{\doubleitemcolumnwidth}{\maincolumnwidth-\separatorcolumnwidth}%
+   \setlength{\doubleitemcolumnwidth}{0.5\doubleitemcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{\maincolumnwidth-2\separatorcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{0.33\tripleitemcolumnwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth-\separatorcolumnwidth-\listitemsymbolwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{0.5\listdoubleitemcolumnwidth}%
+   \recompute@cvskillmatrix@lengths
+@@ -93,23 +87,15 @@
+   \begin{minipage}[t]{\doubleitemcolumnwidth}\ifthenelse{\equal{#4}{}}{}{\hintstyle{#4}: }#5\end{minipage}%
+   \par\addvspace{#1}}
+ 
+-\renewcommand*{\cvtripleitem}[7][.1em]{%
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#2}: #3\end{minipage}%
+-  \hfill% fill of \separatorcolumnwidth
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#4}: #5\end{minipage}%
+-  \hfill% fill of \separatorcolumnwidth
+-  \begin{minipage}[t]{\tripleitemcolumnwidth}\ifthenelse{\equal{#6}{}}{}{\hintstyle{#6}: }#7\end{minipage}%
+-  \par\addvspace{#1}}
+-
+ \renewcommand*{\cvlistitem}[2][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}}}
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}}}
+ 
+ \renewcommand*{\cvlistdoubleitem}[3][.25em]{%
+-  \cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
+   \hfill% fill of \separatorcolumnwidth
+   \ifthenelse{\equal{#3}{}}%
+     {}%
+-    {\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#3\end{minipage}}}}
++    {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
+ 
+ \@initializebox{\cventryyearbox}
+ \@initializelength{\cventrytitleboxwidth}
+@@ -184,14 +170,13 @@
+   \recomputecvbodylengths%
+   \setlength{\parskip}{6\p@}}
+ 
+-\renewcommand*{\makeletterclosing}{%
+-  \@closing\ifthenelse{\isundefined{\@signature}}{\\[3em]}{\\[1em]}% shrink space when signature is set
+-  \ifthenelse{\isundefined{\@signature}}{}{{\@signature\\}}
++\renewcommand*{\makeletterclosing}{
++  \@closing\\[3em]%
+   {\bfseries\@firstname~\@lastname}%
+   \ifthenelse{\isundefined{\@enclosure}}{}{%
+     \\%
+     \vfil%
+-    {\color{letterclosingcolor}\itshape\enclname: \@enclosure}}%
++    {\color{color2}\itshape\enclname: \@enclosure}}%
+     \vfil}
+ 
+ 
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvbodyvi.sty
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyv.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyv.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvbodyv.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvbodyv.sty	2025-11-02 21:23:20.018336215 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvbodyv.sty'.
+-%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,13 +10,13 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvbodyv}[2024-07-18 v2.4.1 modern curriculum vitae and letter body variant: 5]
++\ProvidesPackage{moderncvbodyv}[2022-02-21 v2.3.1 modern curriculum vitae and letter body variant: 5]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+-% provides the commands for the skillmatrix as well as the command
++% provides the commands for the skillmatrix as well as the command 
+ % \recompute@cvskillmatrix@lengths
+ \RequirePackage[moderncvbodyv]{moderncvskillmatrix}
+ 
+@@ -34,9 +34,9 @@
+ \renewcommand*{\hintfont}{\bfseries}
+ 
+ % styles
+-\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{sectioncolor}{#1}}}
+-\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{subsectioncolor}{#1}}}
+-\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{hintstylecolor}{#1}}}
++\renewcommand*{\sectionstyle}[1]{{\sectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\subsectionstyle}[1]{{\subsectionfont\textcolor{color1}{#1}}}
++\renewcommand*{\hintstyle}[1]{{\hintfont\textcolor{color0}{#1}}}
+ 
+ % lengths
+ %   used by \cvitem (and all children command)
+@@ -46,8 +46,6 @@
+ \@initializelength{\maincolumnwidth}
+ %   used by \cvdoubleitem
+ \@initializelength{\doubleitemcolumnwidth}
+-%   used by \cvtripleitem
+-\@initializelength{\tripleitemcolumnwidth}
+ %   used by \cvlistitem
+ \@initializelength{\listitemsymbolwidth}           \settowidth{\listitemsymbolwidth}{\listitemsymbol}
+ \@initializelength{\listitemcolumnwidth}
+@@ -55,7 +53,6 @@
+ %   used by \cvlistdoubleitem
+ \@initializelength{\listdoubleitemcolumnwidth}
+ %\@initializelength{\listdoubleitemmaincolumnwidth}
+-\@initializelength{\listitemsymbolspace}          \setlength{\listitemsymbolspace}{0pt}
+ 
+ % commands
+ \@initializecommand{\recomputecvbodylengths}{%
+@@ -64,8 +61,6 @@
+   \setlength{\listitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth}%
+   \setlength{\doubleitemcolumnwidth}{\maincolumnwidth-\separatorcolumnwidth}%
+   \setlength{\doubleitemcolumnwidth}{0.5\doubleitemcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{\maincolumnwidth-2\separatorcolumnwidth}%
+-  \setlength{\tripleitemcolumnwidth}{0.33\tripleitemcolumnwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{\maincolumnwidth-\listitemsymbolwidth-\separatorcolumnwidth-\listitemsymbolwidth}%
+   \setlength{\listdoubleitemcolumnwidth}{0.5\listdoubleitemcolumnwidth}%
+   \recompute@cvskillmatrix@lengths
+@@ -77,8 +72,7 @@
+   \addvspace{2.5ex}%
+   \phantomsection{}% reset the anchor for hyperrefs
+   \addcontentsline{toc}{section}{#2}%
+-  % minipage for correct spacing with multiline sections #69
+-  \noindent\rlap{\@cvitem{\begin{minipage}[t][1ex]{\hintscolumnwidth}\raggedleft\sectionstyle{#2}\end{minipage}}{}}%
++  \noindent\rlap{\@cvitem{\raggedleft\sectionstyle{#2}}{}}%
+   \nobreak\@afterheading\@aftersectiontrue\ignorespaces}
+ 
+ %\@initializeif{\if@aftersubsection}\@aftersubsectionfalse%
+@@ -89,8 +83,7 @@
+     \par\ignorespaces\fi%
+   \phantomsection{}% reset the anchor for hyperrefs
+   \addcontentsline{toc}{subsection}{#2}%
+-  % minipage for correct spacing with multiline subsections #69
+-  \noindent\rlap{\@cvitem{\begin{minipage}[t][1ex]{\hintscolumnwidth}\if@aftersection\else\@moderncvstrut{4pt}{24pt}\fi\raggedleft\subsectionstyle{#2}\end{minipage}}{}}%
++  \noindent\rlap{\@cvitem{\if@aftersection\else\@moderncvstrut{4pt}{24pt}\fi\raggedleft\subsectionstyle{#2}}{}}%
+   \nobreak\@afterheading\@aftersectiontrue\ignorespaces}
+ 
+ \renewcommand*{\cvitem}[3][.5ex]{%
+@@ -106,7 +99,7 @@
+ 
+ % underlying command to implement \cvitem, \subsection and \section
+ \newcommand*{\@cvitem}[3][.5ex]{%
+-  \arrayrulecolor{bodyrulecolor}%
++  \arrayrulecolor{color1}%
+   \setlength\arrayrulewidth{\separatorrulewidth}%
+   \if@aftersection\else%
+     \vspace*{-\separatorrulewidth}\fi% HACK; I don't understand where the space is coming from, nor what it's exact value is :(
+@@ -124,23 +117,15 @@
+     \hfill% fill of \separatorcolumnwidth
+     \begin{minipage}[t]{\doubleitemcolumnwidth}\ifthenelse{\equal{#4}{}}{}{\hintstyle{#4}: }#5\end{minipage}}}
+ 
+-\renewcommand*{\cvtripleitem}[7][.1ex]{%
+-  \@cvitem[#1]{}{%
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#2}: #3\end{minipage}%
+-    \hfill% fill of \separatorcolumnwidth
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}\hintstyle{#4}: #5\end{minipage}%
+-    \hfill% fill of \separatorcolumnwidth
+-    \begin{minipage}[t]{\tripleitemcolumnwidth}\ifthenelse{\equal{#6}{}}{}{\hintstyle{#6}: }#7\end{minipage}}}
+-
+ \renewcommand*{\cvlistitem}[2][.5ex]{%
+-  \@cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}}}
++  \@cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}}}
+ 
+ \renewcommand*{\cvlistdoubleitem}[3][.5ex]{%
+-  \@cvitem[#1]{}{\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#2\end{minipage}%
++  \@cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
+   \hfill% fill of \separatorcolumnwidth
+   \ifthenelse{\equal{#3}{}}%
+     {}%
+-    {\listitemsymbol\hspace{\listitemsymbolspace}\begin{minipage}[t]{\listdoubleitemcolumnwidth-\listitemsymbolspace}#3\end{minipage}}}}
++    {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
+ 
+ \@initializebox{\cventryyearbox}
+ \@initializelength{\cventrytitleboxwidth}
+@@ -180,7 +165,7 @@
+   {%
+     \bibliographyhead{\refname}%
+ %    \small%
+-    \arrayrulecolor{bodyrulecolor}%
++    \arrayrulecolor{color1}%
+     \setlength\arrayrulewidth{\separatorrulewidth}%
+     \noindent%
+     \begin{tabular}[t]{@{}p{\hintscolumnwidth}@{\hspace{\separatorcolumnwidth}}|@{\hspace{\separatorcolumnwidth}}p{\maincolumnwidth}@{}}%
+@@ -221,14 +206,13 @@
+   \recomputecvbodylengths%
+   \setlength{\parskip}{6\p@}}
+ 
+-\renewcommand*{\makeletterclosing}{%
+-  \@closing\ifthenelse{\isundefined{\@signature}}{\\[3em]}{\\[1em]}% shrink space when signature is set
+-  \ifthenelse{\isundefined{\@signature}}{}{{\@signature\\}}
++\renewcommand*{\makeletterclosing}{
++  \@closing\\[3em]%
+   {\bfseries \@firstname~\@lastname}%
+   \ifthenelse{\isundefined{\@enclosure}}{}{%
+     \\%
+     \vfill%
+-    {\color{letterclosingcolor}\itshape\enclname: \@enclosure}}}
++    {\color{color2}\itshape\enclname: \@enclosure}}}
+ 
+ 
+ \endinput
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncv.cls
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcollection.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcollection.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcollection.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcollection.sty	2025-11-02 21:23:20.018336215 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcollection.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcollection}[2024-07-18 v2.4.1 moderncv collections]
++\ProvidesPackage{moderncvcollection}[2022-02-21 v2.3.1 moderncv collections]
+ 
+ 
+ %-------------------------------------------------------------------------------
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorblack.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorblack.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorblack.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorblack.sty	2025-11-02 21:23:20.019336238 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorblack.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorblack}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: black]
++\ProvidesPackage{moderncvcolorblack}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: black]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{black}% black
+-\colorlet{color2}{black}% black
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0,0,0}% black
++\definecolor{color2}{rgb}{0,0,0}% black
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorblue.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorblue.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorblue.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorblue.sty	2025-11-02 21:23:20.019336238 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorblue.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,17 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorblue}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: blue]
++\ProvidesPackage{moderncvcolorblue}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: blue]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{lightblue}% light blue
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++%\definecolor{color1}{rgb}{0.0, 0.2, 0.6}% blue1
++%\definecolor{color1}{rgb}{0.06, 0.2, 0.65}% blue2
++\definecolor{color1}{rgb}{0.0, 0.25, 0.42}% blue3
++\definecolor{color2}{rgb}{0.23, 0.27, 0.29}% gray
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorburgundy.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorburgundy.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorburgundy.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorburgundy.sty	2025-11-02 21:23:20.019336238 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorburgundy.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorburgundy}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: burgundy]
++\ProvidesPackage{moderncvcolorburgundy}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: burgundy]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{burgundy}% burgundy
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0.596078,0,0}% burgundy: 139/255 (0.545098) or 152/255 (0.596078)
++\definecolor{color2}{rgb}{0.45,0.45,0.45}% dark grey
+ 
+ 
+ \endinput
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvcolorcerulean.sty
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorgreen.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorgreen.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorgreen.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorgreen.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorgreen.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorgreen}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: green]
++\ProvidesPackage{moderncvcolorgreen}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: green]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{green}% green
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0, 0.392, 0}% green (links)
++\definecolor{color2}{rgb}{0.23, 0.27, 0.29}% gray
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorgrey.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorgrey.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorgrey.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorgrey.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorgrey.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorgrey}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: grey]
++\ProvidesPackage{moderncvcolorgrey}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: grey]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{darkgrey}% dark grey
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0.55,0.55,0.55}% dark grey
++\definecolor{color2}{rgb}{0.55,0.55,0.55}% dark grey
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolororange.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolororange.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolororange.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolororange.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolororange.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolororange}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: orange]
++\ProvidesPackage{moderncvcolororange}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: orange]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{orange}% orange
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0.95,0.55,0.15}% orange
++\definecolor{color2}{rgb}{0.45,0.45,0.45}% dark grey
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorpurple.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorpurple.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorpurple.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorpurple.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorpurple.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorpurple}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: purple]
++\ProvidesPackage{moderncvcolorpurple}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: purple]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{purple}% purple
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0.50,0.33,0.80}% purple
++\definecolor{color2}{rgb}{0.45,0.45,0.45}% dark grey
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorred.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorred.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcolorred.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcolorred.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcolorred.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,15 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcolorred}[2024-07-18 v2.4.1 modern curriculum vitae and letter color scheme: red]
++\ProvidesPackage{moderncvcolorred}[2022-02-21 v2.3.1 modern curriculum vitae and letter color scheme: red]
+ 
+ 
+ %-------------------------------------------------------------------------------
+ %                color scheme definition
+ %-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\colorlet{color0}{black}% black
+-\colorlet{color1}{red}% red
+-\colorlet{color2}{darkgrey}% dark grey
++\definecolor{color0}{rgb}{0,0,0}% black
++\definecolor{color1}{rgb}{0.95,0.20,0.20}% red
++\definecolor{color2}{rgb}{0.45,0.45,0.45}% dark grey
+ 
+ 
+ \endinput
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvcolors.tex
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcompatibility.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcompatibility.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvcompatibility.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvcompatibility.sty	2025-11-02 21:23:20.020336260 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvcompatibility.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvcompatibility}[2024-07-18 v2.4.1 modern curriculum vitae and letter compatibility patches]
++\ProvidesPackage{moderncvcompatibility}[2022-02-21 v2.3.1 modern curriculum vitae and letter compatibility patches]
+ 
+ 
+ %-------------------------------------------------------------------------------
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvdebugtools.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvdebugtools.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvdebugtools.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvdebugtools.sty	2025-11-02 21:23:20.021336283 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvdebugtools.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvdebugtools}[2024-07-18 v2.4.1 modern curriculum vitae and letter debug tools]
++\ProvidesPackage{moderncvdebugtools}[2022-02-21 v2.3.1 modern curriculum vitae and letter debug tools]
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -32,7 +32,7 @@
+   \begin{tikzpicture}[remember picture,overlay]
+     \begin{pgfonlayer}{background}
+       \coordinate (a\thedebugrule);
+-      \draw[red,thin,#1]
++      \draw[red,thin,#1] 
+         ([xshift=#2]a\thedebugrule|-current page.north) -- ([xshift=#2]a\thedebugrule|-current page.south);
+     \end{pgfonlayer}
+   \end{tikzpicture}}
+@@ -42,7 +42,7 @@
+   \begin{tikzpicture}[remember picture,overlay]
+     \begin{pgfonlayer}{background}
+     \coordinate (b\thedebugrule);
+-      \draw[red,thin,#1]
++      \draw[red,thin,#1] 
+        ([yshift=#2]b\thedebugrule-|current page.west) -- ([yshift=#2]b\thedebugrule-|current page.east);
+     \end{pgfonlayer}
+   \end{tikzpicture}}
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvfooti.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvfooti.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvfooti.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvfooti.sty	2025-11-02 21:23:20.021336283 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvfooti.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvfooti}[2024-07-18 v2.4.1 modern curriculum vitae and letter footer variant: 1]
++\ProvidesPackage{moderncvfooti}[2022-02-21 v2.3.1 modern curriculum vitae and letter footer variant: 1]
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -79,7 +79,7 @@
+     \fancyfoot[c]{%
+       \parbox[b]{\footwidth}{%
+         \centering%
+-        \color{addresscolor}\addressfont%
++        \color{color2}\addressfont%
+         \vspace{\baselineskip}% forces a white line to ensure space between main text and footer (as footer height can't be known in advance)
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\addtofoot[]{\addresssymbol\@addressstreet}%
+           \ifthenelse{\equal{\@addresscity}{}}{}{\addtofoot[~--~]{\@addresscity}}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+@@ -89,8 +89,7 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \addtofoot{\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}}%
+         \ifthenelse{\isundefined{\@email}}{}{\addtofoot{\emailsymbol\emaillink{\@email}}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\addtofoot{\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\addtofoot{\homepagesymbol\httpslink{\@homepage}}}%
+         \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+           \addtofoot{\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\addtofoot{\@extrainfo}}%
+@@ -110,7 +109,7 @@
+     \fancyfoot[c]{%
+       \parbox[b]{\footwidth}{%
+         \centering%
+-        \addressfont\color{addresscolor}%
++        \addressfont\color{color2}%
+         \vspace{\baselineskip}% forces a white line to ensure space between main text and footer (as footer height can't be known in advance)
+         \vspace{-\baselineskip}% to cancel out the extra vertical space taken by the name (below) and ensure perfect alignment of letter and cv footers
+         \strut{\bfseries\upshape\@firstname~\@lastname}\\% the \strut is required to ensure the line is exactly \baselineskip tall
+@@ -122,8 +121,7 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \addtofoot{\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}}%
+         \ifthenelse{\isundefined{\@email}}{}{\addtofoot{\emailsymbol\emaillink{\@email}}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\addtofoot{\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\addtofoot{\homepagesymbol\httpslink{\@homepage}}}%
+         \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+           \addtofoot{\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\addtofoot{\@extrainfo}}%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadiii.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadiii.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadiii.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadiii.sty	2025-11-02 21:23:20.022336306 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadiii.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadiii}[2024-07-18 v2.4.1 modern curriculum vitae and letter header variant: 3]
++\ProvidesPackage{moderncvheadiii}[2022-02-21 v2.3.1 modern curriculum vitae and letter header variant: 3]
+ 
+ % details options: "details" (default) or "nodetails"
+ \@initializeif{\if@details}\@detailsfalse
+@@ -36,12 +36,10 @@
+ \renewcommand*{\quotefont}{\large\slshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{namecolor}{#1}}}
+-\renewcommand*{\firstnamestyle}[1]{{\namefont\textcolor{firstnamecolor}{#1}}}
+-\renewcommand*{\lastnamestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color1}{#1}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2!85}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ % commands
+ \@initializecommand{\makeheaddetailssymbol}{%
+@@ -83,12 +81,12 @@
+   \parbox{\makeheaddetailswidth}{%
+     \centering%
+     % name and title
+-    \firstnamestyle{\@firstname}~\lastnamestyle{\@lastname}%
++    \namestyle{\@firstname~\@lastname}%
+     \ifthenelse{\equal{\@title}{}}{}{\titlestyle{~|~\@title}}% \isundefined doesn't work on \@title, as LaTeX itself defines \@title (before it possibly gets redefined by \title) 
+     % optional detailed information
+     \if@details{%
+       \\%
+-      \addressfont\color{addresscolor}%
++      \addressfont\color{color2}%
+       \ifthenelse{\isundefined{\@addressstreet}}{}{\addtomakeheaddetails{\addresssymbol\@addressstreet}%
+         \ifthenelse{\equal{\@addresscity}{}}{}{\addtomakeheaddetails[~--~]{\@addresscity}}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+         \ifthenelse{\equal{\@addresscountry}{}}{}{\addtomakeheaddetails[~--~]{\@addresscountry}}%
+@@ -97,12 +95,11 @@
+       \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+         \addtomakeheaddetails{\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}}%
+       \ifthenelse{\isundefined{\@email}}{}{\addtomakeheaddetails{\emailsymbol\emaillink{\@email}}}%
+-      \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol%
+-        \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}}%
++      \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol\httpslink{\@homepage}}}%
+       \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+         \addtomakeheaddetails{\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+       \ifthenelse{\isundefined{\@extrainfo}}{}{\addtomakeheaddetails{\@extrainfo}}%
+-      \flushmakeheaddetails}\fi}}% need to force a \par after this to avoid weird spacing bug at the first section if no blank line is left after \makehead
++      \flushmakeheaddetails}\fi}\\[2.5em]}% need to force a \par after this to avoid weird spacing bug at the first section if no blank line is left after \makehead
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -120,15 +117,8 @@
+   \makehead%
+   % optional quote
+   \ifthenelse{\isundefined{\@quote}}%
+-    {\vspace{2.5em}}%
+-    {%
+-      \\[2.5em]%
+-      {%
+-      \centering%
+-      \begin{minipage}{\quotewidth}%
+-        \centering%
+-        \quotestyle{\@quote}%
+-      \end{minipage}\\[2.5em]}}%
++    {}%
++    {{\centering\begin{minipage}{\quotewidth}\centering\quotestyle{\@quote}\end{minipage}\\[2.5em]}}%
+   \par}% to avoid weird spacing bug at the first section if no blank line is left after \maketitle}
+ 
+ 
+@@ -142,25 +132,9 @@
+ \renewcommand*{\makeletterhead}{%
+   % recompute lengths (in case we are switching from letter to resume, or vice versa)
+   \recomputeletterlengths%
+-  % sender contact info
+-  \hfill%
+-  \begin{minipage}{.5\textwidth}%
+-    % optional detailed information
+-    \if@details%
+-      \raggedleft%
+-      \addressfont\textcolor{color2}{%
+-        {\bfseries\upshape\@firstname~\@lastname}\@firstdetailselementfalse%
+-        % optional detailed information
+-        \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+-          \ifthenelse{\equal{\@addresscity}{}}{}{\makenewline\@addresscity}% if \addresstreet is defined, \addresscity and addresscountry will always be defined but could be empty
+-          \ifthenelse{\equal{\@addresscountry}{}}{}{\makenewline\@addresscountry}}%
+-        \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+-          \makenewline\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}%
+-        \ifthenelse{\isundefined{\@email}}{}{\makenewline\emailsymbol\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
+-        \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}}\fi%
+-    \end{minipage}\\[2em]
++  % sender block
++  \makehead%
++  \par%
+    % recipient block
+   \begin{minipage}[t]{.5\textwidth}
+     \raggedright%
+@@ -171,9 +145,7 @@
+   % date
+   \hfill% US style
+ %  \\[1em]% UK style
+-  \@date\\[3em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[3em]}}
++  \@date\\[2em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+   % opening
+   \raggedright%
+   \@opening\\[1.5em]%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadii.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadii.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadii.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadii.sty	2025-11-02 21:23:20.021336283 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadii.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadii}[2024-07-18 v2.4.1 modern curriculum vitae and letter header variant: 2]
++\ProvidesPackage{moderncvheadii}[2022-02-21 v2.3.1 modern curriculum vitae and letter header variant: 2]
+ 
+ % details options: "details" or "nodetails" (default)
+ \@initializeif{\if@details}\@detailsfalse
+@@ -47,10 +47,10 @@
+ \renewcommand*{\quotefont}{\large\slshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color0}{#1}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ % commands
+ \@initializecommand{\makeheaddetailssymbol}{%
+@@ -110,7 +110,7 @@
+        \setlength\fboxrule{\@photoframewidth}%
+        \ifdim\@photoframewidth=0pt%
+          \setlength{\fboxsep}{0pt}\fi%
+-       {\color{pictureframecolor}\framebox{\includegraphics[width=\@photowidth]{\@photo}}}}}%
++       {\color{color1}\framebox{\includegraphics[width=\@photowidth]{\@photo}}}}}%
+   % name (pre-rendering)
+   \@initializelength{\makecvheadpicturewidth}%
+   \settowidth{\makecvheadpicturewidth}{\usebox{\makecvheadpicturebox}}%
+@@ -121,9 +121,9 @@
+       \if@right\raggedleft\fi%
+       \namefont%
+       \if@alternate% alternate design: first- and lastname in lowercase with no space in between (distinction is made by color difference)
+-        {\color{firstnamecolor}\MakeLowercase\@firstname}{\color{lastnamecolor}\MakeLowercase\@lastname}%
++        {\color{color2!50}\MakeLowercase\@firstname}{\color{color2}\MakeLowercase\@lastname}%
+       \else% default design: first- and lastname as given with a space in between
+-        {\color{firstnamecolor}\@firstname} {\color{lastnamecolor}\@lastname}\fi}}%
++        {\color{color2!50}\@firstname} {\color{color2}\@lastname}\fi}}%
+   % rendering
+   \if@left%
+     \usebox{\makecvheadnamebox}%
+@@ -131,11 +131,11 @@
+   \if@right%
+     \usebox{\makecvheadpicturebox}%
+     \usebox{\makecvheadnamebox}\fi\\[-.35em]%
+-  {\color{headrulecolor}\rule{\textwidth}{.25ex}}%
++  {\color{color2!50}\rule{\textwidth}{.25ex}}%
+   % optional detailed information
+   \if@details{%
+     \\\null%
+-    \addressfont\color{addresscolor}%
++    \addressfont\color{color2}%
+     \ifthenelse{\isundefined{\@addressstreet}}{}{\addtomakeheaddetails{\addresssymbol\@addressstreet}%
+       \ifthenelse{\equal{\@addresscity}{}}{}{\addtomakeheaddetails[~--~]{\@addresscity}}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+       \ifthenelse{\equal{\@addresscountry}{}}{}{\addtomakeheaddetails[~--~]{\@addresscountry}}%
+@@ -144,8 +144,7 @@
+     \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+       \addtomakeheaddetails{\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}}%
+     \ifthenelse{\isundefined{\@email}}{}{\addtomakeheaddetails{\emailsymbol\emaillink{\@email}}}%
+-    \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol%
+-      \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}}%
++    \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol\httpslink{\@homepage}}}%
+     \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+       \addtomakeheaddetails{\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+     \ifthenelse{\isundefined{\@extrainfo}}{}{\addtomakeheaddetails{\@extrainfo}}%
+@@ -158,18 +157,15 @@
+       \titlestyle{\MakeLowercase\@title}%
+     \else%
+       \titlestyle{\@title}\fi%
+-    }
++    }\\[2.5em]%
+   % optional quote
+   \ifthenelse{\isundefined{\@quote}}%
+-    {\vspace{2.5em}}%
+-    {%
+-      \\[2.5em]%
+-      {%
+-      \centering%
++    {}%
++    {{\null\hfill%
+       \begin{minipage}{\quotewidth}%
+         \centering%
+         \quotestyle{\@quote}%
+-      \end{minipage}\\[2.5em]}}%
++      \end{minipage}\hfill\null\\[2.5em]}}%
+   \par}% to avoid weird spacing bug at the first section if no blank line is left after \maketitle
+ 
+ 
+@@ -193,9 +189,7 @@
+   % date
+   \hfill% US style
+ %  \\[1em]% UK style
+-  \@date\\[3em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[3em]}}
++  \@date\\[2em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+   % opening
+   \raggedright%
+   \@opening\\[1.5em]%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadi.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadi.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadi.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadi.sty	2025-11-02 21:23:20.021336283 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadi.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadi}[2024-07-18 v2.4.1 modern curriculum vitae and letter header variant: 1]
++\ProvidesPackage{moderncvheadi}[2022-02-21 v2.3.1 modern curriculum vitae and letter header variant: 1]
+ 
+ % details options: "details" (default) or "nodetails"
+ \@initializeif{\if@details}\@detailsfalse
+@@ -23,11 +23,6 @@
+ \@initializeif{\if@right}\@rightfalse
+ \DeclareOption{right}   {\@leftfalse\@righttrue}
+ 
+-% top options: align header elements by their top instead of their bottom
+-%   default: bottom
+-\@initializeif{\if@top}\@topfalse
+-\DeclareOption{top}{\@toptrue}
+-
+ \DeclareOption*{}% avoid choking on unknown options
+ \ExecuteOptions{details,left}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+@@ -48,12 +43,10 @@
+ \renewcommand*{\quotefont}{\large\slshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{namecolor}{#1}}}
+-\renewcommand*{\firstnamestyle}[1]{{\namefont\textcolor{firstnamecolor}{#1}}}
+-\renewcommand*{\lastnamestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color0}{\textbf{#1}}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -79,7 +72,7 @@
+     \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+       \protected@edef\socialsdetails{\socialsdetails\protect\makenewline\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+     \savebox{\makecvheaddetailsbox}{%
+-      \addressfont\color{addresscolor}%
++      \addressfont\color{color2}%
+       \if@left\begin{tabular}[b]{@{}r@{}}\fi%
+       \if@right\begin{tabular}[b]{@{}l@{}}\fi%
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+@@ -88,8 +81,7 @@
+         \ifthenelse{\isundefined{\@born}}{}{\makenewline\bornsymbol\@born}%
+         \phonesdetails% needs to be pre-rendered as loops and tabulars seem to conflict
+         \ifthenelse{\isundefined{\@email}}{}{\makenewline\emailsymbol\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol\httpslink{\@homepage}}%
+         \socialsdetails% needs to be pre-rendered as loops and tabulars seem to conflict
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}%
+       \end{tabular}
+@@ -102,7 +94,7 @@
+       {%
+         \if@left%
+           \hspace*{\separatorcolumnwidth}\fi%
+-        \color{pictureframecolor}%
++        \color{color1}%
+         \setlength{\fboxrule}{\@photoframewidth}%
+         \ifdim\@photoframewidth=0pt%
+           \setlength{\fboxsep}{0pt}\fi%
+@@ -120,14 +112,9 @@
+     \begin{minipage}[b]{\makecvheadnamewidth}%
+       \if@left\raggedright\fi%
+       \if@right\raggedleft\fi%
+-      \firstnamestyle{\@firstname}~\lastnamestyle{\@lastname}%
+-      \ifthenelse{\equal{\@title}{}}{}{\\[1.25em]\titlestyle{\@title}}%
++      \namestyle{\@firstname\ \@lastname}%
++      \ifthenelse{\equal{\@title}{}}{}{\\[.5em]\titlestyle{\@title}}%
+     \end{minipage}}%
+-  % raise boxes if top option is set
+-  \if@top%
+-    \savebox{\makecvheadnamebox}{\raisebox{-\height+\baselineskip}{\usebox{\makecvheadnamebox}}}%
+-    \savebox{\makecvheaddetailsbox}{\raisebox{-\height+\baselineskip}{\usebox{\makecvheaddetailsbox}}}%
+-    \savebox{\makecvheadpicturebox}{\raisebox{-\height+\baselineskip}{\usebox{\makecvheadpicturebox}}}\fi%
+   % rendering
+   \if@left%
+     \usebox{\makecvheadnamebox}%
+@@ -139,17 +126,11 @@
+     \rlap{\usebox{\makecvheaddetailsbox}}% \llap is used to suppress the width of the box, allowing overlap if the value of makecvheadnamewidth is forced
+     \hfill%
+     \usebox{\makecvheadnamebox}\fi%
++  \\[2.5em]%
+   % optional quote
+   \ifthenelse{\isundefined{\@quote}}%
+-    {\vspace{2.5em}}%
+-    {%
+-      \\[2.5em]%
+-      {%
+-        \centering%
+-        \begin{minipage}{\quotewidth}%
+-          \centering%
+-          \quotestyle{\@quote}%
+-        \end{minipage}\\[2.5em]}}%
++    {}%
++    {{\centering\begin{minipage}{\quotewidth}\centering\quotestyle{\@quote}\end{minipage}\\[2.5em]}}%
+   \par}% to avoid weird spacing bug at the first section if no blank line is left after \makecvhead
+ 
+ 
+@@ -169,7 +150,7 @@
+     % optional detailed information
+     \if@details%
+       \raggedleft%
+-      \addressfont\textcolor{addresscolor}{%
++      \addressfont\textcolor{color2}{%
+         {\bfseries\upshape\@firstname~\@lastname}\@firstdetailselementfalse%
+         % optional detailed information
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+@@ -178,10 +159,9 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \makenewline\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}%
+         \ifthenelse{\isundefined{\@email}}{}{\makenewline\emailsymbol\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol\httpslink{\@homepage}}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}}\fi%
+-    \end{minipage}\\[2em]
++    \end{minipage}\\[1em]
+   % recipient block
+   \begin{minipage}[t]{.5\textwidth}
+     \raggedright%
+@@ -193,8 +173,6 @@
+   \hfill% US style
+ %  \\[1em]% UK style
+   \@date\\[2em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[2em]}}
+   % opening
+   \raggedright%
+   \@opening\\[1.5em]%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadiv.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadiv.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadiv.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadiv.sty	2025-11-02 21:23:20.022336306 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadiv.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadiv}[2024-07-18 v2.4.1 modern curriculum vitae and letter header variant: 4]
++\ProvidesPackage{moderncvheadiv}[2022-02-21 v2.3.1 modern curriculum vitae and letter header variant: 4]
+ 
+ % details options: "details" (default) or "nodetails"
+ \@initializeif{\if@details}\@detailsfalse
+@@ -38,12 +38,10 @@
+ \renewcommand*{\quotefont}{\large\itshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{namecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
+-\renewcommand*{\firstnamestyle}[1]{{\namefont\textcolor{firstnamecolor}{#1}}}
+-\renewcommand*{\lastnamestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color0}{#1}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -82,7 +80,7 @@
+     \ifthenelse{\isundefined{\@photo}}%
+     {}%
+     {%
+-      \color{pictureframecolor}%
++      \color{color1}%
+       \setlength\fboxrule{\@photoframewidth}%
+       \ifdim\@photoframewidth=0pt%
+         \setlength{\fboxsep}{0pt}\fi%
+@@ -93,7 +91,7 @@
+     {\setlength{\makecvheadnamewidth}{\textwidth-\makecvheadpicturewidth}}%
+     {}%
+   \begin{minipage}[b]{\makecvheadnamewidth}%
+-    \firstnamestyle{\@firstname}~\lastnamestyle{\@lastname}%
++    \namestyle{\@firstname\ \@lastname}%
+     \ifthenelse{\equal{\@title}{}}{}{\\[1.25em]\titlestyle{\@title}}%
+   \end{minipage}%
+   % optional photo
+@@ -105,7 +103,7 @@
+   % optional details
+   \if@details%
+     \makecvheadinfo{%
+-      \addressfont\color{addresscolor}%
++      \addressfont\color{color2}%
+       \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+         \ifthenelse{\equal{\@addresscity}{}}{}{\makenewline\@addresscity}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+         \ifthenelse{\equal{\@addresscountry}{}}{}{\makenewline\@addresscountry}}%
+@@ -113,8 +111,7 @@
+       \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+         \makenewline\hbox to 1.0em{\csname\collectionloopkey phonesymbol\endcsname}~\collectionloopitem}%
+       \ifthenelse{\isundefined{\@email}}{}{\makenewline\hbox to 1.0em{\emailsymbol}~\emaillink{\@email}}%
+-      \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\hbox to 1.0em{\homepagesymbol}~%
+-        \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++      \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\hbox to 1.0em{\homepagesymbol}~\httpslink{\@homepage}}%
+       \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+         \makenewline\hbox to 1.0em{\csname\collectionloopkey socialsymbol\endcsname}~\collectionloopitem}%
+       \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}}\fi}
+@@ -146,15 +143,13 @@
+     \@recipientaddress}\\[1em]%
+   % date
+   \@date\\[2em]%
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[2em]}}
+   % opening
+   \@opening\\[1.5em]%
+   % sender contact info
+   \if@details%
+     \hspace{0pt}%
+     \marginpar{%
+-      \addressfont\textcolor{addresscolor}{%
++      \addressfont\textcolor{color2}{%
+         {\bfseries\@firstname~\@lastname}\@firstdetailselementfalse%
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+           \ifthenelse{\equal{\@addresscity}{}}{}{\makenewline\@addresscity}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+@@ -162,8 +157,7 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \makenewline\hbox to 1.0em{\csname\collectionloopkey phonesymbol\endcsname}~\collectionloopitem}%
+         \ifthenelse{\isundefined{\@email}}{}{\makenewline\hbox to 1.0em{\emailsymbol}~\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\hbox to 1.0em{\homepagesymbol}~%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\hbox to 1.0em{\homepagesymbol}~\httpslink{\@homepage}}%
+         \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+           \makenewline\hbox to 1.0em{\csname\collectionloopkey socialsymbol\endcsname}~\collectionloopitem}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}}}%
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvheadvii.sty
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadvi.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadvi.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadvi.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadvi.sty	2025-11-02 21:23:20.022336306 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadvi.sty'.
+-%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadvi}[2024-07-18 v2.4.1 modern curriculum vitae and letter header: 6]
++\ProvidesPackage{moderncvheadvi}[2022-02-21 v2.3.1 modern curriculum vitae and letter header: 6]
+ 
+ % details options: "details" (default) or "nodetails"
+ \@initializeif{\if@details}\@detailsfalse
+@@ -24,7 +24,7 @@
+ \DeclareOption{right}   {\@leftfalse\@righttrue}
+ 
+ \DeclareOption*{}% avoid choking on unknown options
+-\ExecuteOptions{details,left}
++\ExecuteOptions{details, left}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+ 
+ 
+@@ -43,22 +43,20 @@
+ \renewcommand*{\quotefont}{\large\slshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{namecolor}{#1}}}
+-\renewcommand*{\firstnamestyle}[1]{{\namefont\textcolor{firstnamecolor}{#1}}}
+-\renewcommand*{\lastnamestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color1}{#1}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2!85}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ % commands
+ \@initializecommand{\makehead}{%
+   \setlength{\makeheaddetailswidth}{\textwidth}%
+   % name and title
+   \if@left\hfill\fi%
+-  \firstnamestyle{\@firstname}~\lastnamestyle{\@lastname}%
++  \namestyle{\@firstname~\@lastname}%
+   \ifthenelse{\equal{\@title}{}}{}{\titlestyle{~|~\@title}}\\[-.35em]% \isundefined doesn't work on \@title, as LaTeX itself defines \@title (before it possibly gets redefined by \title)
+   % rule
+-  {\color{bodyrulecolor}\rule{\textwidth}{.25ex}}}
++  {\color{color1}\rule{\textwidth}{.25ex}}}
+ 
+ %-------------------------------------------------------------------------------
+ %                resume head definition
+@@ -109,7 +107,7 @@
+   % optional detailed information
+   \if@details{%
+     \\\null%
+-    \addressfont\color{addresscolor}%
++    \addressfont\color{color2}%
+     \ifthenelse{\isundefined{\@addressstreet}}{}{\addtomakeheaddetails{\addresssymbol\@addressstreet}%
+       \ifthenelse{\equal{\@addresscity}{}}{}{\addtomakeheaddetails[~--~]{\@addresscity}}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+       \ifthenelse{\equal{\@addresscountry}{}}{}{\addtomakeheaddetails[~--~]{\@addresscountry}}%
+@@ -118,8 +116,7 @@
+     \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+       \addtomakeheaddetails{\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}}%
+     \ifthenelse{\isundefined{\@email}}{}{\addtomakeheaddetails{\emailsymbol\emaillink{\@email}}}%
+-    \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol%
+-      \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}}%
++    \ifthenelse{\isundefined{\@homepage}}{}{\addtomakeheaddetails{\homepagesymbol\httpslink{\@homepage}}}%
+     \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+       \addtomakeheaddetails{\csname\collectionloopkey socialsymbol\endcsname\collectionloopitem}}%
+     \ifthenelse{\isundefined{\@extrainfo}}{}{\addtomakeheaddetails{\@extrainfo}}%
+@@ -157,9 +154,7 @@
+   % date
+   \hfill% US style
+ %  \\[1em]% UK style
+-  \@date\\[3em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[3em]}}
++  \@date\\[2em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+   % opening
+   \raggedright%
+   \@opening\\[1.5em]%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadv.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadv.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvheadv.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvheadv.sty	2025-11-02 21:23:20.022336306 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvheadv.sty'.
+-%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvheadv}[2024-07-18 v2.4.1 modern curriculum vitae and letter header variant: 5]
++\ProvidesPackage{moderncvheadv}[2022-02-21 v2.3.1 modern curriculum vitae and letter header variant: 5]
+ 
+ % details options: "details" (default) or "nodetails"
+ \@initializeif{\if@details}\@detailsfalse
+@@ -37,12 +37,10 @@
+ \renewcommand*{\quotefont}{\large\slshape}
+ 
+ % styles
+-\renewcommand*{\namestyle}[1]{{\namefont\textcolor{namecolor}{#1}}}
+-\renewcommand*{\firstnamestyle}[1]{{\namefont\textcolor{firstnamecolor}{#1}}}
+-\renewcommand*{\lastnamestyle}[1]{{\namefont\textcolor{lastnamecolor}{#1}}}
+-\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{titlecolor}{#1}}}
+-\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{addresscolor}{#1}}}
+-\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{quotecolor}{#1}}}
++\renewcommand*{\namestyle}[1]{{\namefont\textcolor{color0}{#1}}}
++\renewcommand*{\titlestyle}[1]{{\titlefont\textcolor{color2}{#1}}}
++\renewcommand*{\addressstyle}[1]{{\addressfont\textcolor{color2}{#1}}}
++\renewcommand*{\quotestyle}[1]{{\quotefont\textcolor{color1}{#1}}}
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -63,7 +61,7 @@
+     \ifthenelse{\isundefined{\@photo}}%
+     {}%
+     {%
+-      \color{pictureframecolor}%
++      \color{color1}%
+       \setlength{\fboxrule}{\@photoframewidth}%
+       \ifdim\@photoframewidth=0pt%
+         \setlength{\fboxsep}{0pt}\fi%
+@@ -77,7 +75,7 @@
+       % optional details
+       \if@details%
+         \ifthenelse{\isundefined{\@photo}}{}{\\[0.5em]}%
+-        \addressfont\color{addresscolor}%
++        \addressfont\color{color2}%
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+           \ifthenelse{\equal{\@addresscity}{}}{}{\makenewline\@addresscity}% if \addresstreet is defined, \addresscity and \addresscountry will always be defined but could be empty
+           \ifthenelse{\equal{\@addresscountry}{}}{}{\makenewline\@addresscountry}}%
+@@ -85,8 +83,7 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \makenewline\csname\collectionloopkey phonesymbol\endcsname~\collectionloopitem}%
+         \ifthenelse{\isundefined{\@email}}{}{\makenewline\emailsymbol~\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol~%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol~\httpslink{\@homepage}}%
+         \collectionloop{socials}{% the key holds the social type (=symbol command prefix), the item holds the link
+           \makenewline\csname\collectionloopkey socialsymbol\endcsname~\collectionloopitem}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}\fi}%
+@@ -94,32 +91,23 @@
+       % name and optional title
+       \newlength{\makecvheadpictureboxskip}%
+       \setlength{\makecvheadpictureboxskip}{\totalheightof{\usebox{\makecvheadpicturebox}}}%
+-      \firstnamestyle{\@firstname}~\lastnamestyle{\@lastname}%
++      \namestyle{\@firstname\ \@lastname}%
+ 	  \ifthenelse{\equal{\@title}{}}{
+ 	    \ifthenelse{\isundefined{\@quote}}%
+-        {}%
+-        {%
+-          \\[1.25em]%
+-          \begin{minipage}{\quotewidth}%
+-            \quotestyle{\@quote}%
+-          \end{minipage}}%
+-	    }{%
+-	      \\[1.25em]%
+-        \titlestyle{\@title}
++          {}%
++          {\\[1.25em]\begin{minipage}{\quotewidth}\quotestyle{\@quote}\end{minipage}\\[2.5em]}
++	    }{
++	    \\[1.25em]\titlestyle{\@title}\\[2.5em]%
+         % optional quote
+         \ifthenelse{\isundefined{\@quote}}%
+-          {\vspace{2.5em}}%
+-          {%
+-            \\[2.5em]%
+-            \begin{minipage}{\quotewidth}%
+-              \quotestyle{\@quote}
+-            \end{minipage}}}}%
++          {}%
++          {\begin{minipage}{\quotewidth}\quotestyle{\@quote}\end{minipage}\\[2.5em]}}}%
+   \par}% to avoid weird spacing bug at the first section if no blank line is left after \makecvhead
+ 
+ % underlying command to implement \makecvtitle, identical to \@cvitem from moderncvbodyv
+ \let\standarddoublebackslash\\%
+ \newcommand*{\@makecvtitle}[3][.5ex]{%
+-  \arrayrulecolor{headrulecolor}%
++  \arrayrulecolor{color1}%
+   \setlength\arrayrulewidth{1.2\p@}%
+   \if@aftersection\else%
+     \vspace*{-\arrayrulewidth}\fi% HACK; I don't understand where the space is coming from, nor what it's exact value is :(
+@@ -149,7 +137,7 @@
+     % optional detailed information
+     \if@details%
+       \raggedleft%
+-      \addressfont\textcolor{addresscolor}{%
++      \addressfont\textcolor{color2}{%
+         {\bfseries\upshape\@firstname~\@lastname}\@firstdetailselementfalse%
+         % optional detailed information
+         \ifthenelse{\isundefined{\@addressstreet}}{}{\makenewline\addresssymbol\@addressstreet%
+@@ -158,10 +146,9 @@
+         \collectionloop{phones}{% the key holds the phone type (=symbol command prefix), the item holds the number
+           \makenewline\csname\collectionloopkey phonesymbol\endcsname\collectionloopitem}%
+         \ifthenelse{\isundefined{\@email}}{}{\makenewline\emailsymbol\emaillink{\@email}}%
+-        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol%
+-          \ifthenelse{\equal{\@homepageprotocol}{http}}{\httplink{\@homepage}}{\httpslink{\@homepage}}}%
++        \ifthenelse{\isundefined{\@homepage}}{}{\makenewline\homepagesymbol\httpslink{\@homepage}}%
+         \ifthenelse{\isundefined{\@extrainfo}}{}{\makenewline\@extrainfo}}\fi%
+-    \end{minipage}\\[2em]
++    \end{minipage}\\[1em]
+   % recipient block
+   \begin{minipage}[t]{.5\textwidth}
+     \raggedright%
+@@ -172,9 +159,7 @@
+   % date
+   \hfill% US style
+ %  \\[1em]% UK style
+-  \@date\\[3em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+-  % optional subject
+-  \ifthenelse{\isundefined{\@subject}}{}{{\bfseries\@subject\\[2em]}}
++  \@date\\[2em]% US informal style: "January 1, 1900"; UK formal style: "01/01/1900"
+   % opening
+   \raggedright%
+   \@opening\\[1.5em]%
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsacademic.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsacademic.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsacademic.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsacademic.sty	2025-11-02 21:23:20.023336329 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconsacademic.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncviconsacademic}[2024-07-18 v2.4.1 modern curriculum vitae icons: academicons]
++\ProvidesPackage{moderncviconsacademic}[2022-02-21 v2.3.1 modern curriculum vitae icons: academicons]
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -18,19 +18,7 @@
+ %-------------------------------------------------------------------------------
+ % Package for academic icons
+ \RequirePackage{academicons}
+-\RequirePackage{xcolor}
+ 
+-%-------------------------------------------------------------------------------
+-%                set colors
+-%-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\providecolor{orcid}{named}{default-socialicon-color}
+-\providecolor{researchgate}{named}{default-socialicon-color}
+-\providecolor{researcherid}{named}{default-socialicon-color}
+-\providecolor{googlescholar}{named}{default-socialicon-color}
+-\providecolor{arxiv}{named}{default-socialicon-color}
+-\providecolor{inspire}{named}{default-socialicon-color}
+ 
+ %-------------------------------------------------------------------------------
+ %                all symbols described in moderncv.cls
+@@ -51,16 +39,14 @@
+ %\newcommand*{\stackoverflowsocialsymbol}{}
+ %\newcommand*{\bitbucketsocialsymbol}    {}
+ %\newcommand*{\skypesocialsymbol}        {}
+-\renewcommand*{\orcidsocialsymbol}        {{\color{orcid}\small\aiOrcid}~}
+-\renewcommand*{\researchgatesocialsymbol} {{\color{researchgate}\small\aiResearchGateSquare}~} % alternative: \aiResearchGate
+-\renewcommand*{\researcheridsocialsymbol} {{\color{researcherid}\small\aiResearcherIDSquare}~}       % alternative: \aiResearcherID
+-\renewcommand*{\googlescholarsocialsymbol}{{\color{googlescholar}\raisebox{-1pt}{\large\aiGoogleScholar}}~}
++\renewcommand*{\orcidsocialsymbol}        {{\small\aiOrcid}~}
++\renewcommand*{\researchgatesocialsymbol} {{\small\aiResearchGateSquare}~} % alternative: \aiResearchGate
++\renewcommand*{\researcheridsocialsymbol} {{\small\aiResearcherIDSquare}~}       % alternative: \aiResearcherID
++\renewcommand*{\googlescholarsocialsymbol}{{\small\aiGoogleScholar}~}
+ %\newcommand*{\telegramsocialsymbol}     {}
+ %\newcommand*{\whatsappsocialsymbol}     {}
+ %\newcommand*{\matrixsocialsymbol}       {}
+ %\newcommand*{\signalsocialsymbol}       {}
+-\renewcommand*{\arxivsocialsymbol}{{\color{arxiv}{\small\aiarXiv}}~}
+-\renewcommand*{\inspiresocialsymbol}{{\color{inspire}{\small\aiInspire}}~}
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsawesome.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsawesome.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsawesome.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsawesome.sty	2025-11-02 21:23:20.023336329 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconsawesome.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,51 +10,13 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncviconsawesome}[2024-07-18 v2.4.1 modern curriculum vitae icons: awesome]
++\ProvidesPackage{moderncviconsawesome}[2022-02-21 v2.3.1 modern curriculum vitae icons: awesome]
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+ %-------------------------------------------------------------------------------
+ % Font Awesome font
+ \RequirePackage{fontawesome5}
+-\RequirePackage{xcolor}
+-
+-%-------------------------------------------------------------------------------
+-%                set colors
+-%-------------------------------------------------------------------------------
+-\input{moderncvcolors.tex}
+-
+-\providecolor{address}{named}{default-socialicon-color}
+-\providecolor{mobilephone}{named}{default-socialicon-color}
+-\providecolor{fixedphone}{named}{default-socialicon-color}
+-\providecolor{faxphone}{named}{default-socialicon-color}
+-\providecolor{email}{named}{default-socialicon-color}
+-\providecolor{homepage}{named}{default-socialicon-color}
+-\providecolor{googlescholar}{named}{default-socialicon-color}
+-\providecolor{linkedin}{named}{default-socialicon-color}
+-\providecolor{xing}{named}{default-socialicon-color}
+-\providecolor{twitter}{named}{default-socialicon-color}
+-\providecolor{mastodon}{named}{default-socialicon-color}
+-\providecolor{github}{named}{default-socialicon-color}
+-\providecolor{gitlab}{named}{default-socialicon-color}
+-\providecolor{stackoverflow}{named}{default-socialicon-color}
+-\providecolor{bitbucket}{named}{default-socialicon-color}
+-\providecolor{skype}{named}{default-socialicon-color}
+-\providecolor{orcid}{named}{default-socialicon-color}
+-\providecolor{researchgate}{named}{default-socialicon-color}
+-\providecolor{telegram}{named}{default-socialicon-color}
+-\providecolor{whatsapp}{named}{default-socialicon-color}
+-\providecolor{discord}{named}{default-socialicon-color}
+-\providecolor{twitch}{named}{default-socialicon-color}
+-\providecolor{youtube}{named}{default-socialicon-color}
+-\providecolor{tiktok}{named}{default-socialicon-color}
+-\providecolor{instagram}{named}{default-socialicon-color}
+-\providecolor{soundcloud}{named}{default-socialicon-color}
+-\providecolor{steam}{named}{default-socialicon-color}
+-\providecolor{xbox}{named}{default-socialicon-color}
+-\providecolor{playstation}{named}{default-socialicon-color}
+-\providecolor{battlenet}{named}{default-socialicon-color}
+-\providecolor{born}{named}{default-socialicon-color}
+ 
+ %-------------------------------------------------------------------------------
+ %                all symbols described in moderncv.cls
+@@ -66,41 +28,28 @@
+ 
+ 
+ %\renewcommand*{\addresssymbol}            {}
+-\renewcommand*{\mobilephonesymbol}        {{\color{mobilephone}\small\faMobile*}~}            % alternative: \faMobile (solid style)
+-\renewcommand*{\fixedphonesymbol}         {{\color{fixedphone}\small\faPhone*}~}             % alternative: \faPhone (reversed)
+-\renewcommand*{\faxphonesymbol}           {{\color{faxphone}\small\faFax}~}                % alternative: \faPrint
+-\renewcommand*{\emailsymbol}              {{\color{email}\small\faEnvelope[regular]}~}  % alternative: \faInbox, \faEnvelope (solid style)
+-\renewcommand*{\homepagesymbol}           {{\color{homepage}\small\faGlobeAmericas}~}      % alternative: \faHome, \faGlobe, \faGlobeEurope, \faGlobeAfrica, \faGlobeAsia
+-\renewcommand*{\linkedinsocialsymbol}     {{\color{linkedin}\small\faLinkedinIn}~}         % alternative: \faLinkedin
+-\renewcommand*{\xingsocialsymbol}         {{\color{xing}\small\faXing}~}               % alternative: \faXingSquare
+-\renewcommand*{\twittersocialsymbol}      {{\color{twitter}\small\faTwitter}~}            % alternative: \faTwitterSquare
+-\renewcommand*{\mastodonsocialsymbol}     {{\color{mastodon}\small\faMastodon}~}
+-\renewcommand*{\githubsocialsymbol}       {{\color{github}\small\faGithub}~}             % alternative: \faGithubSquare, \faGithub*
+-\renewcommand*{\gitlabsocialsymbol}       {{\color{gitlab}\small\faGitlab}~}
+-\renewcommand*{\stackoverflowsocialsymbol}{{\color{stackoverflow}\small\faStackOverflow}~}
+-\renewcommand*{\bitbucketsocialsymbol}    {{\color{bitbucket}\small\faBitbucket}~}
+-\renewcommand*{\skypesocialsymbol}        {{\color{skype}\small\faSkype}~}
+-\renewcommand*{\orcidsocialsymbol}        {{\color{orcid}\small\faOrcid}~}
+-\renewcommand*{\researchgatesocialsymbol} {{\color{researchgate}\small\faResearchgate}~}
++\renewcommand*{\mobilephonesymbol}        {{\small\faMobile*}~}            % alternative: \faMobile (solid style)
++\renewcommand*{\fixedphonesymbol}         {{\small\faPhone*}~}             % alternative: \faPhone (reversed)
++\renewcommand*{\faxphonesymbol}           {{\small\faFax}~}                % alternative: \faPrint
++\renewcommand*{\emailsymbol}              {{\small\faEnvelope[regular]}~}  % alternative: \faInbox, \faEnvelope (solid style)
++\renewcommand*{\homepagesymbol}           {{\small\faGlobeAmericas}~}      % alternative: \faHome, \faGlobe, \faGlobeEurope, \faGlobeAfrica, \faGlobeAsia
++\renewcommand*{\linkedinsocialsymbol}     {{\small\faLinkedinIn}~}         % alternative: \faLinkedin
++\renewcommand*{\xingsocialsymbol}         {{\small\faXing}~}               % alternative: \faXingSquare
++\renewcommand*{\twittersocialsymbol}      {{\small\faTwitter}~}            % alternative: \faTwitterSquare
++\renewcommand*{\githubsocialsymbol}       {{\small\faGithub}~}             % alternative: \faGithubSquare, \faGithub*
++\renewcommand*{\gitlabsocialsymbol}       {{\small\faGitlab}~}
++\renewcommand*{\stackoverflowsocialsymbol}{{\small\faStackOverflow}~}
++\renewcommand*{\bitbucketsocialsymbol}    {{\small\faBitbucket}~}
++\renewcommand*{\skypesocialsymbol}        {{\small\faSkype}~}
++\renewcommand*{\orcidsocialsymbol}        {{\small\faOrcid}~}
++\renewcommand*{\researchgatesocialsymbol} {{\small\faResearchgate}~}
+ %\renewcommand*{\researcheridsocialsymbol} {}
+ %\renewcommand*{\googlescholarsocialsymbol}{}
+-\renewcommand*{\telegramsocialsymbol}     {{\color{telegram}\small\faTelegram}~}
+-\renewcommand*{\whatsappsocialsymbol}     {{\color{whatsapp}\small\faWhatsapp}~}
+-\renewcommand*{\discordsocialsymbol}      {{\color{discord}\small\faDiscord}~}
+-\renewcommand*{\twitchsocialsymbol}       {{\color{twitch}\small\faTwitch}~}
+-\renewcommand*{\youtubesocialsymbol}      {{\color{youtube}\small\faYoutube}~}
+-\renewcommand*{\tiktoksocialsymbol}       {{\color{tiktok}\small\faTiktok}~}
+-\renewcommand*{\instagramsocialsymbol}    {{\color{instagram}\small\faInstagram}~}
+-\renewcommand*{\soundcloudsocialsymbol}   {{\color{soundcloud}\small\faSoundcloud}~}
+-\renewcommand*{\steamsocialsymbol}        {{\color{steam}\small\faSteam}~}
+-\renewcommand*{\xboxsocialsymbol}         {{\color{xbox}\small\faXbox}~}
+-\renewcommand*{\playstationsocialsymbol}  {{\color{playstation}\small\faPlaystation}~}
+-\renewcommand*{\battlenetsocialsymbol}    {{\color{battlenet}\small\faBattleNet}~}
++\renewcommand*{\telegramsocialsymbol}     {{\small\faTelegram}~}
++\renewcommand*{\whatsappsocialsymbol}     {{\small\faWhatsapp}~}
+ %\renewcommand*{\signalsocialsymbol}       {}
+ %\renewcommand*{\matrixsocialsymbol}       {}
+-% \renewcommand*{\arxivsocialsymbol}        {{\color{arxiv}{\small\faarXiv}}~}
+-% \renewcommand*{\inspiresocialsymbol}      {{\color{inspire}{\small\faInspire}}~}
+-\renewcommand*{\bornsymbol}               {{\color{born}\small\faAsterisk}~}           % alternative: \faBabyCarriage
++\renewcommand*{\bornsymbol}               {{\small\faAsterisk}~}           % alternative: \faBabyCarriage
+ 
+ \endinput
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsletters.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsletters.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsletters.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsletters.sty	2025-11-02 21:23:20.023336329 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconsletters.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncviconsletters}[2024-07-18 v2.4.1 modern curriculum vitae icons: letter]
++\ProvidesPackage{moderncviconsletters}[2022-02-21 v2.3.1 modern curriculum vitae icons: letter]
+ 
+ %-------------------------------------------------------------------------------
+ %                symbols definition
+@@ -31,7 +31,6 @@
+ \renewcommand*{\linkedinsocialsymbol}     {\textbf{in}~}
+ \renewcommand*{\xingsocialsymbol}         {\textbf{xi}~}
+ \renewcommand*{\twittersocialsymbol}      {\textbf{tw}~}
+-\renewcommand*{\mastodonsocialsymbol}     {\textbf{ms}~}
+ \renewcommand*{\githubsocialsymbol}       {\textbf{gh}~}
+ \renewcommand*{\gitlabsocialsymbol}       {\textbf{gl}~}
+ \renewcommand*{\stackoverflowsocialsymbol}{\textbf{so}~}
+@@ -46,18 +45,6 @@
+ \renewcommand*{\matrixsocialsymbol}       {\textbf{ma}~}
+ \renewcommand*{\googlescholarsocialsymbol}{\textbf{gs}~}
+ \renewcommand*{\bornsymbol}               {\textbf{B}~}
+-\renewcommand*{\codebergsocialsymbol}     {\textbf{cb}~}
+-\renewcommand*{\twitchsocialsymbol}       {\textbf{ttv}~}
+-\renewcommand*{\youtubesocialsymbol}      {\textbf{yt}~}
+-\renewcommand*{\tiktoksocialsymbol}       {\textbf{tok}~}
+-\renewcommand*{\instagramsocialsymbol}    {\textbf{insta}~}
+-\renewcommand*{\soundcloudsocialsymbol}   {\textbf{sc}~}
+-\renewcommand*{\steamsocialsymbol}        {\textbf{st}~}
+-\renewcommand*{\xboxsocialsymbol}         {\textbf{xb}~}
+-\renewcommand*{\playstationsocialsymbol}  {\textbf{psn}~}
+-\renewcommand*{\battlenetsocialsymbol}    {\textbf{bn}~}
+-\renewcommand*{\arxivsocialsymbol}        {\textbf{arx}~}
+-\renewcommand*{\inspiresocialsymbol}      {\textbf{ins}~}
+ 
+ \renewcommand*{\listitemsymbol}      {\labelitemi~}
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsmarvosym.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsmarvosym.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconsmarvosym.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconsmarvosym.sty	2025-11-02 21:23:20.023336329 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconsmarvosym.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncviconsmarvosym}[2024-07-18 v2.4.1 modern curriculum vitae icons: marvosym]
++\ProvidesPackage{moderncviconsmarvosym}[2022-02-21 v2.3.1 modern curriculum vitae icons: marvosym]
+ 
+ %-------------------------------------------------------------------------------
+ %                all symbols described in moderncv.cls
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconssymbols.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconssymbols.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconssymbols.sty	2024-07-10 13:44:11.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconssymbols.sty	2025-11-02 21:23:20.023336329 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconssymbols.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -17,7 +17,7 @@
+   \RequirePackage{moderncviconsawesome}
+   \RequirePackage{moderncviconsacademic}
+ \else
+-  \typeout{^^Jmoderncv: academicons requires XeTeX/LuaTeX to work. Using alternatives.^^J}
++  \ClassWarningNoLine{moderncv}{"academicons requires xetex/luatex to work. Using alternatives."}
+   \ifpdftex
+     \RequirePackage{moderncviconsawesome}
+   \else
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconstikz.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconstikz.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncviconstikz.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncviconstikz.sty	2025-11-02 21:23:20.024336351 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncviconstikz.sty'.
+-%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2013-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncviconstikz}[2024-07-18 v2.4.1 modern curriculum vitae and letter icons: tickz]
++\ProvidesPackage{moderncviconstikz}[2022-02-21 v2.3.1 modern curriculum vitae and letter icons: tickz]
+ 
+ 
+ %-------------------------------------------------------------------------------
+@@ -218,7 +218,7 @@
+       \protect\begin{tikzpicture}[x=0.11em, y=0.11em, xscale=0.015, yscale=-0.015, inner sep=0pt, outer sep=0pt]
+       \protect\begin{scope}[shift={(507,387)}]
+       \protect\path[fill=color2,line width=0.057pt]
+-      (105.2000,24.9000) .. controls (102.1000,16.0000) and (89.5000,16.0000) ..
++      (105.2000,24.9000) .. controls (102.1000,16.0000) and (89.5000,16.0000) .. 
+       (86.3000,24.9000) -- (29.8000,199.7000) -- (161.7000,199.7000) .. controls
+       (161.7000,199.7000) and (105.2000,24.9000) .. (105.2000,24.9000) -- cycle
+       (0.9000,287.7000) .. controls (-1.7000,295.7000) and (1.2000,304.6000) ..
+@@ -327,7 +327,7 @@
+     \protect\raisebox{-0.12em}{
+     \protect\begin{tikzpicture}[y=1.8pt, x=1.8pt, yscale=-0.15, xscale=0.15, inner sep=0pt, outer sep=0pt]
+     \protect\begin{scope}[shift={(507,387)}]
+-    \protect\path[fill=color2]
++    \protect\path[fill=color2] 
+       (0.9360,0.7320) .. controls (0.9360,10.9053) and (0.9360,21.0787) ..
+       (0.9360,31.2520) .. controls (1.6673,31.2520) and (2.3987,31.2520) ..
+       (3.1300,31.2520) .. controls (3.3452,32.0075) and (2.8778,32.0803) ..
+@@ -374,7 +374,7 @@
+     \protect\raisebox{-0.12em}{
+     \protect\begin{tikzpicture}[y=0.1pt, x=0.1pt, yscale=-0.13, xscale=0.13, inner sep=0pt, outer sep=0pt]
+     \protect\begin{scope}[shift={(507,387)}]
+-    \protect\path[fill=color2]
++    \protect\path[fill=color2] 
+       (430.1000,180.9000) -- (437.8000,211.9000) .. controls (407.6000,219.3000)
+       and (378.7000,231.3000) .. (352.1000,247.3000) -- (335.7000,220.0000) ..
+       controls (365.0000,202.3000) and (396.9000,189.1000) .. (430.1000,180.9000) --
+@@ -439,25 +439,6 @@
+   ~}
+ }{}\par
+ 
+-\ifdefempty{\codebergsocialsymbol} {
+-  \renewcommand*{\codebergsocialsymbol} {
+-    \protect\raisebox{-0.12em}{
+-    \protect\begin{tikzpicture}[y=0.8pt, x=0.8pt, yscale=-1.0, xscale=1.0, inner sep=0pt, outer sep=0pt]
+-    \protect\begin{scope}[shift={(507, 387)}]
+-      \protect\path[scale=0.265, opacity=0.500, line cap=butt, line join=miter, line width=0.779pt, miter limit=2.00]
+-      (11249.8942,-1872.9296)arc(269.285:169.240:0.201313 and 0.150) --
+-      (11258.5852,-1839.4433)arc(66.699:32.084:23.067) --
+-      (11250.0698,-1872.8557)arc(329.460:269.346:0.201313 and 0.150) -- cycle;
+-
+-      \protect\path[scale=0.265, fill=color2, line width=0.426pt]
+-      (11249.3743,-1883.6959)arc(269.785:180.000:23.067)arc(180.001:147.920:23.067)
+-      -- (11249.1480,-1873.2412)arc(209.929:330.071:0.360097 and 0.269) --
+-      (11269.0053,-1848.3766)arc(32.082:-0.002:23.067)arc(360.000:270.000:23.067)arc(270.108:269.892:23.067)
+-      -- cycle;
+-    \protect\end{scope}
+-    \protect\end{tikzpicture}}
+-  ~}
+-}{}\par
+ 
+ \endinput
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvskillmatrix.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvskillmatrix.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvskillmatrix.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvskillmatrix.sty	2025-11-02 21:23:20.024336351 -0800
+@@ -2,30 +2,30 @@
+ %% Copyright 2021 David Seus (cryptointerest@posteo.de).
+ %
+ % This package provides a skill matrix template for the moderncv package.
+-% Some recruiting firms require applicants to rate their skills, computer
+-% skills, management tools, or similar in a table involving a graphical
+-% illustration of their skill level. This package implements this idea
+-% and provides the following commands to use within the moderncv
++% Some recruiting firms require applicants to rate their skills, computer 
++% skills, management tools, or similar in a table involving a graphical 
++% illustration of their skill level. This package implements this idea 
++% and provides the following commands to use within the moderncv 
+ % package:
+-%
+-%
++% 
++% 
+ % PUBLIC COMMANDS
+ %     \cvskill{<1-5>}
+ %         Illustrate skill level with little colored boxes.
+-%         By default five skill levels are predefined.
+-%
+-%         Input:
++%         By default five skill levels are predefined.   
++% 
++%         Input: 
+ %             input_1:    integer between 0 and 5
+-%
+-%         Example usages:
++% 
++%         Example usages: 
+ %             \cvskill{3}
+-%
+-%
++% 
++% 
+ %     \cvskilllegend[*][<post_padding>][<first_level>][<second_level>][<third_level>][<fourth_level>][<fifth_level>]{<name>}
+ %         Print legend table explaining the meaning of \cvskill{1}...\cvskill{5}.
+-%
++% 
+ %         Input:
+-%             asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style.
++%             asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style. 
+ %                                 For the fancy style, the asterix has no meaning.
+ %             input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %             input_2 (optional): string describing meaning of \cvskill{1}, default: <basic knowledge>
+@@ -34,25 +34,25 @@
+ %             input_5 (optional): string describing meaning of \cvskill{4}, default: <deepened expert knowledge>
+ %             input_6 (optional): string describing meaning of \cvskill{5}, default: <expert/guru>
+ %             input_7:            string giving a name to the legend, default: <>
+-%
++% 
+ %         Example usages:
+ %             \cvskilllegend{}    print default legend
+ %             \cvskilllegend[0.5em]{Legend}   print default legend, but adjust post padding and display the word ``Legend''.
+ %             \cvskilllegend*[0.2em][Grundkenntnisse][Grundkenntnisse und eigene Erfahrung in Projekten][Umfangreiche Erfahrung in Projekten][Vertiefte Expertenkenntnisse][Experte/Guru]{Legende}     Fully adjust legend to German example and including dashed lines
+-%
++% 
+ %         Note:
+ %             -The width of the columns can be adjusted by the \setcvskilllegendcolumns, see \setcvskilllegendcolumns
+-%             -The design of the table is such that the <second_level> entry stands in the first column but
++%             -The design of the table is such that the <second_level> entry stands in the first column but 
+ %             occupies rows two and three. This has been done to accomodate english and german defaults.
+ %             An alternative is provided by \cvskillplainlegend
+-%
+-%
++% 
++% 
+ %     \cvskillplainlegend[*][<post_padding>][<first_level>][<second_level>][<third_level>][<fourth_level>][<fifth_level>]{<name>}
+ %         Print alternative legend table explaining the meaning of \cvskill{1}...\cvskill{5}.
+ %         In this legend, the first three skill levels are in one column
+-%
++% 
+ %         Input:
+-%             asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style.
++%             asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style. 
+ %                                 For the fancy style, the asterix has no meaning.
+ %             input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %             input_2 (optional): string describing meaning of \cvskill{1}, default: <basic knowledge>
+@@ -61,40 +61,40 @@
+ %             input_5 (optional): string describing meaning of \cvskill{4}, default: <deepened expert knowledge>
+ %             input_6 (optional): string describing meaning of \cvskill{5}, default: <expert/guru>
+ %             input_7:            string giving a name to the legend, default: <>
+-%
++% 
+ %         Example usages:
+ %             \cvskillplainlegend{}    print default legend
+ %             \cvskillplainlegend[0.5em]{Legend}   print default legend, but adjust post padding and display the word ``Legend''.
+ %             \cvskillplainlegend*[0.2em][Grundkenntnisse][Grundkenntnisse und eigene Erfahrung in Projekten][Umfangreiche Erfahrung in Projekten][Vertiefte Expertenkenntnisse][Experte/Guru]{Legende}     Fully adjust legend to German example and including dashed lines
+-%
++% 
+ %         Note:
+ %             -The width of the columns can be adjusted by the \setcvskilllegendcolumns, see \setcvskilllegendcolumns
+-%
+-%
++% 
++% 
+ %     \cvskillhead[<post_padding>][<Level>][<Skill>][<Years>][<Comment>]%
+ %         add skill matrix line acting as header explaining the meaning of columns.
+-%
++% 
+ %         Input:
+ %             input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %             input_2 (optional): string naming the level column (2nd column), default: <Level>
+ %             input_3 (optional): string naming the skill column (3nd column), default: <Skill>
+ %             input_4 (optional): string naming the experience-in-years column (4th column), default: <Years>
+ %             input_5 (optional): string naming the comment column (5th column), default: <Comment>
+-%
++% 
+ %         Example usages:
+ %             \cvskillhead    print default head.
+ %             \cvskillhead[0.5em]   print default head, but adjust post padding.
+ %             \cvskillhead[0.25em][Level][F\"ahigkeit][Jahre][Bemerkung]     Fully adjust head to German example
+-%
+-%         Note:
++% 
++%         Note:   
+ %             - The width of the columns can be adjusted by the \setcvskillcolumns command, see \setcvskillcolumns.
+-%
+-%
++% 
++% 
+ %     \cvskillentry[*][<post_padding>]{<skill_cathegory>}{<0-5>}{<skill_name>}{<years_of_experience>}{<comment>}%
+ %         add cvskill matrix row.
+-%
++% 
+ %         Input:
+-%             asterix (optional): include horizontal (dashed) line above the entered line. This behaviour depends on the body style.
++%             asterix (optional): include horizontal (dashed) line above the entered line. This behaviour depends on the body style. 
+ %                                 For the fancy style, the asterix has no meaning.
+ %             input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %             input_2: string, naming skill cathegory, default: <>
+@@ -102,98 +102,98 @@
+ %             input_4: string, naming the skill, default: <>
+ %             input_5: positive real number, stating the number of years of experience with this skill , default: <>
+ %             input_6: string, explaining details w.r.t. that particual skill default: <>
+-%
++% 
+ %         Example usages:
+ %             \cvskillentry*{Language:}{3}{Python}{2}{I have done a million projects with Python}
+ %             \cvskillentry{}{2}{Lilypond}{14}{So much sheet music! Man I'm the best!}
+ %             \cvskillentry{}{3}{\LaTeX}{14}{Clearly I rock at \LaTeX}
+ %             \cvskillentry*[1.5em]{OS:}{3}{Linux}{2}{I only use Archlinux}
+-%
+-%         Note:
++% 
++%         Note:   
+ %             - The width of the columns can be adjusted by the \setcvskillcolumns command, see \setcvskillcolumns.
+-%
+-%
++% 
++% 
+ %     \setcvskillcolumns[<width>][<factor>][<exp_width>]
+ %         adjust column width of skill table
+-%
+-%         The \cvskillentry command comes with default FIXED width definitions of the kill matrix for the columns
+-%         based on the author's own skill matrix. This is necessary to ensure that the entries are nicely aligned
++% 
++%         The \cvskillentry command comes with default FIXED width definitions of the kill matrix for the columns 
++%         based on the author's own skill matrix. This is necessary to ensure that the entries are nicely aligned 
+ %         and actually yield a decent looking table. The defaults depend on the style used and are chosen reasonably.
+-%         However, depending on the user input and the style that is used some of the columns might need adjustments.
+-%         The \setcvskillcolumns command provides means to influence the width of the first, the third and the fourth
++%         However, depending on the user input and the style that is used some of the columns might need adjustments. 
++%         The \setcvskillcolumns command provides means to influence the width of the first, the third and the fourth 
+ %         skill matrix column. The second column containg the output of \cvskill remains fixed width. The last column,
+ %         the comment column gets recalculated according to the setting of the other columns.
+-%
++% 
+ %         Input
+ %             Input_1 (optional):     width smaller than \textwidth,  default <\skillmatrix@hintscolumnwidth>
+-%             Input_2 (optional):     float between 0 and 1 adjusting how much percent of the table width without
++%             Input_2 (optional):     float between 0 and 1 adjusting how much percent of the table width without 
+ %                                     the first column is used columns two, three and four. Through this parameter
+ %                                     the width of the 3rd column (skill name) can be adjusted,   default <\skillmatrix@columnwidth>
+-%             Input_3 (optional):     width smaller than \textwidth, setting the width of the 4th column
++%             Input_3 (optional):     width smaller than \textwidth, setting the width of the 4th column 
+ %                                     (Years of experience), default <\cvskill@experiencewidth>
+-%
++% 
+ %         Example usage
+ %             \setcvskillcolumns[5em][][]%    adjust first column. Same as \setcvskillcolumns[5em]
+ %             \setcvskillcolumns[][0.45][]%   adjust third (skill) column. Same as \setcvskillcolumns[][0.45]
+ %             \setcvskillcolumns[][][\widthof{``Year''}]%     adjust fourth (years) column.
+-%             \setcvskillcolumns[\widthof{``Language''}][0.48][]%     adjust 1st and 3rd columns. Same as \setcvskillcolumns[\widthof{``Language''}][0.45]
++%             \setcvskillcolumns[\widthof{``Language''}][0.48][]%     adjust 1st and 3rd columns. Same as \setcvskillcolumns[\widthof{``Language''}][0.45]    
+ %             \setcvskillcolumns[\widthof{``Management Tools''}][0.6][3em]%   ajust all at once.
+-%
++% 
+ %         Note
+ %             - For the styles 'classic' and 'casual' the first column is set to hintscolumnwidth such that
+-%                 it aligns with the rest of the entries. A readjustment of the first column should therefor
+-%                 be avoided. It is recomended to only use \setcvskillcolumns in the form of
++%                 it aligns with the rest of the entries. A readjustment of the first column should therefor 
++%                 be avoided. It is recomended to only use \setcvskillcolumns in the form of 
+ %                 \setcvskillcolumns[][<factor>][<width>], thereby leaving the defaults in place for the first column.
+-%
+-%
++% 
++% 
+ %     \setcvskilllegendcolumns[<width>][<factor>]
+ %         adjust column width of legend
+-%
+-%         The \cvskilllegend command comes with default FIXED width definitions for the columns of the legend matrix
+-%         such that the default english and german examples look good.
+-%         However, depending on the user input (translation) and the style that is used some adjustment might be needed.
+-%         The \setcvskilllegendcolumns command provides means to influence all columns except the ones containing
++% 
++%         The \cvskilllegend command comes with default FIXED width definitions for the columns of the legend matrix 
++%         such that the default english and german examples look good. 
++%         However, depending on the user input (translation) and the style that is used some adjustment might be needed. 
++%         The \setcvskilllegendcolumns command provides means to influence all columns except the ones containing 
+ %         \cvskill commands. The second column containg the output of \cvskill remains fixed width. The last column,
+ %         the comment column gets recalculated according to the setting of the other columns.
+-%
++% 
+ %         Input
+-%             Input_1 (optional):     length smaller than \textwidth influencing the width of the first column
+-%                                     where depending on the style the legend_string gets printed. In case the
+-%                                     string is left empty adjusting this width allows moving the legend horizontally.
++%             Input_1 (optional):     length smaller than \textwidth influencing the width of the first column 
++%                                     where depending on the style the legend_string gets printed. In case the 
++%                                     string is left empty adjusting this width allows moving the legend horizontally.  
+ %                                     Default <\skilllegend@hintscolumnwidth>
+-%             Input_2 (optional):     float between 0 and 1 influencing the width of the left legend descritor column,
+-%                                     aka \cvskilllegend@leftdescriptorwidth. The desriptor column on the right,
++%             Input_2 (optional):     float between 0 and 1 influencing the width of the left legend descritor column, 
++%                                     aka \cvskilllegend@leftdescriptorwidth. The desriptor column on the right, 
+ %                                     \cvskilllegend@rightdescriptorwidth is influenced by the factor 1-<factor>.
+ %                                     Default <\skilllegend@leftdesriptorfactor>
+-%
++% 
+ %         Example usage
+ %             \setcvskilllegendcolumns[][0.45]%%    adjust left desriptor column.
+ %             \setcvskilllegendcolumns[\widthof{``Legend''}][0.45]%   adjust both left descriptor column and string column
+-%
++% 
+ %         Note
+-%             - Due to implementation of \cvskilllegend for style 'fancy' (moderncvbodyv)
++%             - Due to implementation of \cvskilllegend for style 'fancy' (moderncvbodyv) 
+ %                 the first optional variable has no effect in this case.
+ %             - For the styles 'classic' and 'casual' the first column is set to hintscolumnwidth such that
+-%                 it aligns with the rest of the entries. A readjustment of the first column should therefor
+-%                 be avoided. It is recomended to only use \cvskilllegend in the form of
++%                 it aligns with the rest of the entries. A readjustment of the first column should therefor 
++%                 be avoided. It is recomended to only use \cvskilllegend in the form of 
+ %                 \cvskilllegend[][<factor>], thereby leaving the defaults in place for the first column.
+ %             - For style 'banking' the first column is set to align with the rest of the \cvskillentry entries
+-%                 Therefor adjusting the first column can be used to widen the table while moving it around. If no
++%                 Therefor adjusting the first column can be used to widen the table while moving it around. If no 
+ %                 legend string is used, setting \cvskilllegend[0em] maximises the real enstate for the legend.
+-%
+-%
++% 
++% 
+ % PRIVATE COMMANDS
+-%
++% 
+ %    \recompute@cvskillmatrix@lengths
+-%         compute all lengths necessary for the skill matrix depending on
++%         compute all lengths necessary for the skill matrix depending on 
+ %         the moderncv style (moderncvbody)
+-%
++%         
+ %         Input:  none
+-%
++%         
+ %         Example usage (only internally in moderncvbody<i-v>.sty)
+-%             \recompute@cvskillmatrix@lengths
+-%
+-%
++%             \recompute@cvskillmatrix@lengths 
++% 
++% 
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+ % available at http://www.latex-project.org/lppl/.
+@@ -203,10 +203,10 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvskillmatrix}[2024-07-18 v2.4.1 modern curriculum vitae and letter skill matrix]
++\ProvidesPackage{moderncvskillmatrix}[2022-02-21 v2.3.1 modern curriculum vitae and letter skill matrix]
+ 
+-% The definitions need to be adjusted depending on which moderncvbody<i-v>.sty style is usde.
+-% body type options: "moderncvbodyi" (default), "moderncvbodyii", "moderncvbodyiii", "moderncvbodyiv" or "moderncvbodyv"
++% The definitions need to be adjusted depending on which moderncvbody<i-v>.sty style is usde. 
++% body type options: "moderncvbodyi" (default), "moderncvbodyii", "moderncvbodyiii", "moderncvbodyiv" or "moderncvbodyv" 
+ \@initializeif{\if@moderncvbodyi}\@moderncvbodyifalse
+ \DeclareOption{moderncvbodyi}{\@moderncvbodyitrue\@moderncvbodyiifalse\@moderncvbodyiiifalse\@moderncvbodyivfalse\@moderncvbodyvfalse}
+ \@initializeif{\if@moderncvbodyii}\@moderncvbodyiifalse % this option is added in case moderncvbodyii gets implemented standalone
+@@ -218,10 +218,6 @@
+ \@initializeif{\if@moderncvbodyv}\@moderncvbodyvfalse
+ \DeclareOption{moderncvbodyv}{\@moderncvbodyifalse\@moderncvbodyiifalse\@moderncvbodyiiifalse\@moderncvbodyivfalse\@moderncvbodyvtrue}
+ 
+-% If option `circle` is specified, use circles instead of small rectangles for rating skills
+-\@initializeif{\if@cvskillcircle}\@cvskillcirclefalse
+-\DeclareOption{circle}{\@cvskillcircletrue}
+-
+ \DeclareOption*{}% avoid choking on unknown options
+ \ExecuteOptions{moderncvbodyi}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+@@ -243,29 +239,23 @@
+ % %-------------------------------------------------------------------------------
+ % The code for the Skilllevel illustration with the little boxes.
+ % This is idea stolen from the limecv package, see https://github.com/opieters/limecv.git
+-\@initializelength{\cvSkill@ShapeSize}
+-\if@cvskillcircle%
+-    \setlength{\cvSkill@ShapeSize}{.7ex}%
+-    \def\cvSkill@Shape#1{\tikz\filldraw[#1] (0, 0) circle (\cvSkill@ShapeSize);}
+-\else
+-    \setlength{\cvSkill@ShapeSize}{1.2ex}
+-    \def\cvSkill@Shape#1{\tikz\filldraw[#1] (0, 0) rectangle (\cvSkill@ShapeSize, \cvSkill@ShapeSize);}
+-\fi
++\@initializelength{\cvSkill@RectangleSize}
++\setlength{\cvSkill@RectangleSize}{1.2ex}
+ \newcount\my@repeat@count
+ \DeclareDocumentCommand{\cvskill}{m}{%
+ %   Illustrate skill level with little colored boxes.
+-%   By default five skill levels are predefined.
+-%
+-%   Input:
++%   By default five skill levels are predefined.   
++% 
++%   Input: 
+ %       integer between 0 and 5
+-%   Example usage:
++%   Example usage: 
+ %       \cvskill{3}
+     \begingroup
+         \my@repeat@count=\z@
+-        \@whilenum\my@repeat@count<#1\do{\cvSkill@Shape{skillmatrixfullcolor}\advance%
++        \@whilenum\my@repeat@count<#1\do{\tikz\filldraw[color1] (0, 0) rectangle (\cvSkill@RectangleSize, \cvSkill@RectangleSize);\advance%
+         \my@repeat@count\@ne\,}%
+         \my@repeat@count=\numexpr5-\z@\relax
+-        \@whilenum\my@repeat@count>#1\do{\cvSkill@Shape{skillmatrixemptycolor}\advance%
++        \@whilenum\my@repeat@count>#1\do{\tikz\filldraw[color2!30] (0, 0) rectangle (\cvSkill@RectangleSize, \cvSkill@RectangleSize);\advance%
+         \my@repeat@count\m@ne\,}%
+     \endgroup
+ }% end \cvskill
+@@ -289,10 +279,10 @@
+ \@initializelength{\skilllegend@padding}
+ \@initializelength{\skilllegend@bodylength}
+ 
+-% \separatorrulewidth is defined in moderncvbodyv.sty and we need to
++% \separatorrulewidth is defined in moderncvbodyv.sty and we need to 
+ % define it to not throw an error in the other cases
+ \if@moderncvbodyv%
+-%
++% 
+ \else%
+     \@initializelength{\separatorrulewidth}
+     \setlength{\separatorrulewidth}{1ex}
+@@ -302,13 +292,13 @@
+ %% DEFINITION \recompute@cvskillmatrix@lengths
+ % declare the command \recompute@cvskillmatrix@lengths empty
+ \DeclareDocumentCommand{\recompute@cvskillmatrix@lengths}{}{}%
+-%   compute all lengths necessary for the skill matrix depending on
++%   compute all lengths necessary for the skill matrix depending on 
+ %   the moderncv style (moderncvbody)
+-%
++%   
+ %   Input:  none
+-%
++%   
+ %   Example usage (only internally in moderncvbody<i-v>.sty)
+-%       \recompute@cvskillmatrix@lengths
++%       \recompute@cvskillmatrix@lengths 
+ 
+ % Definition of \recompute@cvskillmatrix@lengths for moderncvbodyi
+ \if@moderncvbodyi%
+@@ -342,7 +332,7 @@
+         \setlength{\cvskill@descriptorwidth}{\skillmatrix@columnwidth-\cvskill@width-\cvskill@experiencewidth}%
+         \setlength{\skillmatrix@commentwidth}{\skillmatrix@bodylength-\skillmatrix@columnwidth-3\skillmatrix@padding}%
+         % lengths and definitions needed for the legends
+-        % note that \skillmatrix@padding also affects the appearance of legends
++        % note that \skillmatrix@padding also affects the appearance of legends      
+         \setlength{\skilllegend@padding}{0.25ex}%
+         \setlength{\skilllegend@hintscolumnwidth}{\skillmatrix@hintscolumnwidth}%
+         \setlength{\skilllegend@bodylength}{\skillmatrix@bodylength}%
+@@ -362,7 +352,7 @@
+         \setlength{\cvskill@descriptorwidth}{\skillmatrix@columnwidth-\cvskill@width-\cvskill@experiencewidth}
+         \setlength{\skillmatrix@commentwidth}{\skillmatrix@bodylength-\skillmatrix@columnwidth-3\skillmatrix@padding}%
+         % lengths and definitions needed for the legends
+-        % note that \skillmatrix@padding also affects the appearance of legends
++        % note that \skillmatrix@padding also affects the appearance of legends    
+         \setlength{\skilllegend@padding}{0.25ex}
+         \setlength{\skilllegend@hintscolumnwidth}{0ex}%\skillmatrix@hintscolumnwidth
+         \setlength{\skilllegend@bodylength}{\maincolumnwidth}
+@@ -381,7 +371,7 @@
+         \setlength{\cvskill@descriptorwidth}{\skillmatrix@columnwidth-\cvskill@width-\cvskill@experiencewidth}%
+         \setlength{\skillmatrix@commentwidth}{\skillmatrix@bodylength-\skillmatrix@columnwidth-3\skillmatrix@padding}%
+         % lengths and definitions needed for the legends
+-        % note that \skillmatrix@padding also affects the appearance of legends
++        % note that \skillmatrix@padding also affects the appearance of legends   
+         \setlength{\skilllegend@padding}{0.25ex}%
+         \setlength{\skilllegend@hintscolumnwidth}{\skillmatrix@hintscolumnwidth}%
+         \setlength{\skilllegend@bodylength}{\maincolumnwidth}%
+@@ -395,43 +385,43 @@
+ % \setcvskillcolumns[<width>][<factor>][<exp_width>]
+ \DeclareDocumentCommand{\setcvskillcolumns}{+O{\skillmatrix@hintscolumnwidth} +O{\skillmatrix@columnwidth} +O{\cvskill@experiencewidth}}{%
+ %   adjust column width of skill table
+-%
+-%   The \cvskillentry command comes with default FIXED width definitions of the kill matrix for the columns
+-%   based on the author's own skill matrix. This is necessary to ensure that the entries are nicely aligned
++% 
++%   The \cvskillentry command comes with default FIXED width definitions of the kill matrix for the columns 
++%   based on the author's own skill matrix. This is necessary to ensure that the entries are nicely aligned 
+ %   and actually yield a decent looking table. The defaults depend on the style used and are chosen reasonably.
+-%   However, depending on the user input and the style that is used some of the columns might need adjustments.
+-%   The \setcvskillcolumns command provides means to influence the width of the first, the third and the fourth
++%   However, depending on the user input and the style that is used some of the columns might need adjustments. 
++%   The \setcvskillcolumns command provides means to influence the width of the first, the third and the fourth 
+ %   skill matrix column. The second column containg the output of \cvskill remains fixed width. The last column,
+ %   the comment column gets recalculated according to the setting of the other columns.
+-%
++% 
+ %   Input
+ %       Input_1 (optional):     width smaller than \textwidth,  default <\skillmatrix@hintscolumnwidth>
+-%       Input_2 (optional):     float between 0 and 1 adjusting how much percent of the table width without
++%       Input_2 (optional):     float between 0 and 1 adjusting how much percent of the table width without 
+ %                               the first column is used columns two, three and four. Through this parameter
+ %                               the width of the 3rd column (skill name) can be adjusted,   default <\skillmatrix@columnwidth>
+-%       Input_3 (optional):     width smaller than \textwidth, setting the width of the 4th column
++%       Input_3 (optional):     width smaller than \textwidth, setting the width of the 4th column 
+ %                               (Years of experience), default <\cvskill@experiencewidth>
+-%
++% 
+ %   Example usage
+ %       \setcvskillcolumns[5em][][]%    adjust first column. Same as \setcvskillcolumns[5em]
+ %       \setcvskillcolumns[][0.45][]%   adjust third (skill) column. Same as \setcvskillcolumns[][0.45]
+ %       \setcvskillcolumns[][][\widthof{``Year''}]%     adjust fourth (years) column.
+-%       \setcvskillcolumns[\widthof{``Language''}][0.48][]%     adjust 1st and 3rd columns. Same as \setcvskillcolumns[\widthof{``Language''}][0.45]
++%       \setcvskillcolumns[\widthof{``Language''}][0.48][]%     adjust 1st and 3rd columns. Same as \setcvskillcolumns[\widthof{``Language''}][0.45]    
+ %       \setcvskillcolumns[\widthof{``Management Tools''}][0.6][3em]%   ajust all at once.
+-%
++% 
+ %   Note
+ %       - For the styles 'classic' and 'casual' the first column is set to hintscolumnwidth such that
+-%         it aligns with the rest of the entries. A readjustment of the first column should therefor
+-%         be avoided. It is recomended to only use \setcvskillcolumns in the form of
++%         it aligns with the rest of the entries. A readjustment of the first column should therefor 
++%         be avoided. It is recomended to only use \setcvskillcolumns in the form of 
+ %         \setcvskillcolumns[][<factor>][<width>], thereby leaving the defaults in place for the first column.
+-%
++% 
+     \def\arg@new@hintscolumnwidth{#1}% <-- all these terminal % signs are necessary for the fancy style to not show weird spaces!!!
+-    \def\arg@new@bodyLengthFactor{#2}%
+-    \def\arg@new@experienceWidth{#3}%
+-    % Check for empty arguments. Defaults are given. Thus a call of \setcvskillcolumns
++    \def\arg@new@bodyLengthFactor{#2}% 
++    \def\arg@new@experienceWidth{#3}% 
++    % Check for empty arguments. Defaults are given. Thus a call of \setcvskillcolumns 
+     % without any arguments leads to nonempty arguments \arg@new@hintscolumnwidth and
+-    % \def\arg@new@bodyLengthFactor{#2}. However, we need to take care of calls like
+-    % \setcvskillcolumns[], \setcvskillcolumns[][], \setcvskillcolumns[][][] or even
++    % \def\arg@new@bodyLengthFactor{#2}. However, we need to take care of calls like 
++    % \setcvskillcolumns[], \setcvskillcolumns[][], \setcvskillcolumns[][][] or even 
+     % \setcvskillcolumns[<somelength>][], \setcvskillcolumns[][<somefactor>]  \setcvskillcolumns[][][<length>]
+     \ifdefempty{\arg@new@hintscolumnwidth}{%
+         % Case \setcvskillcolumns[], \setcvskillcolumns[][] or \setcvskillcolumns[][<somefactor>]
+@@ -455,13 +445,13 @@
+                 % \cvskill@descriptorwidth accordingly
+                 \setlength{\cvskill@experiencewidth}{\arg@new@experienceWidth}%
+                 \setlength{\cvskill@descriptorwidth}{\skillmatrix@columnwidth-\cvskill@width-\cvskill@experiencewidth}%
+-            }%
++            }%            
+             \setlength{\cvskill@descriptorwidth}{\skillmatrix@columnwidth-\cvskill@width-\cvskill@experiencewidth}%
+             \setlength{\skillmatrix@commentwidth}{\skillmatrix@bodylength-\skillmatrix@columnwidth-3\skillmatrix@padding}%
+         }%
+         % Case \setcvskillcolumns[] nothing needs to be done here recalculate lengths affected by the change
+-    }{%
+-        % Case \setcvskillcolumns, \setcvskillcolumns[<width>], \setcvskillcolumns[<width>][]
++    }{% 
++        % Case \setcvskillcolumns, \setcvskillcolumns[<width>], \setcvskillcolumns[<width>][] 
+         % or \setcvskillcolumns[<width>][<somefactor>]
+         \setlength{\skillmatrix@hintscolumnwidth}{\arg@new@hintscolumnwidth}%
+         \setlength{\skillmatrix@bodylength}{\maincolumnwidth-\skillmatrix@hintscolumnwidth-\separatorcolumnwidth}%
+@@ -493,41 +483,41 @@
+         \setlength{\skillmatrix@commentwidth}{\skillmatrix@bodylength-\skillmatrix@columnwidth-3\skillmatrix@padding}%
+     }%
+ }%
+-%
++% 
+ % \setcvskilllegendcolumns[<width>][<factor>]
+ \DeclareDocumentCommand{\setcvskilllegendcolumns}{+O{\skilllegend@hintscolumnwidth} +O{\skilllegend@leftdesriptorfactor}}{%
+ %   adjust column width of legend
+-%
+-%   The \cvskilllegend command comes with default FIXED width definitions for the columns of the legend matrix
+-%   such that the default english and german examples look good.
+-%   However, depending on the user input (translation) and the style that is used some adjustment might be needed.
+-%   The \setcvskilllegendcolumns command provides means to influence all columns except the ones containing
++% 
++%   The \cvskilllegend command comes with default FIXED width definitions for the columns of the legend matrix 
++%   such that the default english and german examples look good. 
++%   However, depending on the user input (translation) and the style that is used some adjustment might be needed. 
++%   The \setcvskilllegendcolumns command provides means to influence all columns except the ones containing 
+ %   \cvskill commands. The second column containg the output of \cvskill remains fixed width. The last column,
+ %   the comment column gets recalculated according to the setting of the other columns.
+-%
++% 
+ %   Input
+-%       Input_1 (optional):     length smaller than \textwidth influencing the width of the first column
+-%                               where depending on the style the legend_string gets printed. In case the
+-%                               string is left empty adjusting this width allows moving the legend horizontally.
++%       Input_1 (optional):     length smaller than \textwidth influencing the width of the first column 
++%                               where depending on the style the legend_string gets printed. In case the 
++%                               string is left empty adjusting this width allows moving the legend horizontally.  
+ %                               Default <\skilllegend@hintscolumnwidth>
+-%       Input_2 (optional):     float between 0 and 1 influencing the width of the left legend descritor column,
+-%                               aka \cvskilllegend@leftdescriptorwidth. The desriptor column on the right,
++%       Input_2 (optional):     float between 0 and 1 influencing the width of the left legend descritor column, 
++%                               aka \cvskilllegend@leftdescriptorwidth. The desriptor column on the right, 
+ %                               \cvskilllegend@rightdescriptorwidth is influenced by the factor 1-<factor>.
+ %                               Default <\skilllegend@leftdesriptorfactor>
+-%
++% 
+ %   Example usage
+ %       \setcvskilllegendcolumns[][0.45]%%    adjust left desriptor column.
+ %       \setcvskilllegendcolumns[\widthof{``Legend''}][0.45]%   adjust both left descriptor column and string column
+-%
++% 
+ %   Note
+-%       - Due to implementation of \cvskilllegend for style 'fancy' (moderncvbodyv)
++%       - Due to implementation of \cvskilllegend for style 'fancy' (moderncvbodyv) 
+ %         the first optional variable has no effect in this case.
+ %       - For the styles 'classic' and 'casual' the first column is set to hintscolumnwidth such that
+-%         it aligns with the rest of the entries. A readjustment of the first column should therefor
+-%         be avoided. It is recomended to only use \cvskilllegend in the form of
++%         it aligns with the rest of the entries. A readjustment of the first column should therefor 
++%         be avoided. It is recomended to only use \cvskilllegend in the form of 
+ %         \cvskilllegend[][<factor>], thereby leaving the defaults in place for the first column.
+ %       - For style 'banking' the first column is set to align with the rest of the \cvskillentry entries
+-%         Therefor adjusting the first column can be used to widen the table while moving it around. If no
++%         Therefor adjusting the first column can be used to widen the table while moving it around. If no 
+ %         legend string is used, setting \cvskilllegend[0em] maximises the real enstate for the legend.
+ %
+     \def\arg@new@legend@hintscolumnwidth{#1}%
+@@ -542,8 +532,8 @@
+             \RenewDocumentCommand{\skilllegend@leftdesriptorfactor}{}{\arg@new@legend@leftDescriptorFactor}%
+         }%
+ %         % Case \setcvskilllegendcolumns[] nothing needs to be done here i.e. leave default values unaltered
+-    }{%
+-        % Case \setcvskilllegendcolumns, \setcvskilllegendcolumns[<width>], \setcvskilllegendcolumns[<width>][]
++    }{% 
++        % Case \setcvskilllegendcolumns, \setcvskilllegendcolumns[<width>], \setcvskilllegendcolumns[<width>][] 
+         % or \setcvskilllegendcolumns[<width>][<somefactor>]
+         \setlength{\skilllegend@hintscolumnwidth}{\arg@new@legend@hintscolumnwidth}%
+         \if@moderncvbodyi%
+@@ -564,18 +554,18 @@
+         }%
+     }%
+ }%
+-%
++% 
+ % %-------------------------------------------------------------------------------
+-% %                \cvskilllegend
++% %                \cvskilllegend 
+ % %-------------------------------------------------------------------------------
+ % default legend style
+ % \cvskilllegend[*][<post_padding>][<first_level>][<second_level>][<third_level>][<fourth_level>][<fifth_level>]{<name>}
+ \NewDocumentCommand\skillLegend@FontSize{}{\scriptsize}
+ \DeclareDocumentCommand\cvskilllegend{s +O{} +O{} +O{} +O{} +O{} +O{} +m}{}%
+ %   Print legend table explaining the meaning of \cvskill{1}...\cvskill{5}.
+-%
++% 
+ %   Input:
+-%       asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style.
++%       asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style. 
+ %                           For the fancy style, the asterix has no meaning.
+ %       input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %       input_2 (optional): string describing meaning of \cvskill{1}, default: <basic knowledge>
+@@ -584,15 +574,15 @@
+ %       input_5 (optional): string describing meaning of \cvskill{4}, default: <deepened expert knowledge>
+ %       input_6 (optional): string describing meaning of \cvskill{5}, default: <expert/guru>
+ %       input_7:            string giving a name to the legend, default: <>
+-%
++% 
+ %   Example usages:
+ %       \cvskilllegend{}    print default legend
+ %       \cvskilllegend[0.5em]{Legend}   print default legend, but adjust post padding and display the word ``Legend''.
+ %       \cvskilllegend*[0.2em][Grundkenntnisse][Grundkenntnisse und eigene Erfahrung in Projekten][Umfangreiche Erfahrung in Projekten][Vertiefte Expertenkenntnisse][Experte/Guru]{Legende}     Fully adjust legend to German example and including dashed lines
+-%
++% 
+ %   Note:
+ %       -The width of the columns can be adjusted by the \setcvskilllegendcolumns, see \setcvskilllegendcolumns
+-%       -The design of the table is such that the <second_level> entry stands in the first column but
++%       -The design of the table is such that the <second_level> entry stands in the first column but 
+ %       occupies rows two and three. This has been done to accomodate english and german defaults.
+ %       An alternative is provided by \cvskillplainlegend
+ 
+@@ -606,7 +596,7 @@
+ \RenewDocumentCommand\cvskilllegend{s +O{.25em} +O{\skillLegend@defaultLevelOne} +O{\skillLegend@defaultLevelTwo} +O{\skillLegend@defaultLevelThree} +O{\skillLegend@defaultLevelFour} +O{\skillLegend@defaultLevelFive} +m}{%
+     \IfBooleanTF#1{% if a star is given, add dashed line
+         \begingroup%
+-            \arrayrulecolor{bodyrulecolor}%
++            \arrayrulecolor{color1}%
+             % calculate descriptor widths
+             \setlength{\cvskilllegend@leftdescriptorwidth}{\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-3\skilllegend@padding}%
+             \setlength{\cvskilllegend@rightdescriptorwidth}{\skilllegend@bodylength-\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-3\skilllegend@padding}%
+@@ -620,7 +610,7 @@
+                 \raggedleft\hintstyle{#8}  & \cvskill{1}& & {\skillLegend@FontSize #3} & \cvskill{3}& &{\skillLegend@FontSize #5 } \\%
+                             %
+                         & \cvskill{2} & & \multirow{2}{\cvskilllegend@leftdescriptorwidth}{{\skillLegend@FontSize #4}} & \cvskill{4}& & {\skillLegend@FontSize #6 } \\%
+-                    %
++                    %         
+                         &  & &  & \cvskill{5}& & {\skillLegend@FontSize #7 }%
+             \end{tabular}%
+         \endgroup
+@@ -639,7 +629,7 @@
+                 \raggedleft\hintstyle{#8}  & \cvskill{1}\, & \,{\skillLegend@FontSize #3} & \cvskill{3}\, &\,{\skillLegend@FontSize #5 } \\%
+                             %
+                         & \cvskill{2}\, & \,\multirow{2}{\cvskilllegend@leftdescriptorwidth}{{\skillLegend@FontSize #4}} & \cvskill{4}\,  &\,{\skillLegend@FontSize #6 } \\%
+-                    %
++                    %         
+                         &  &   & \cvskill{5}\, &\,{\skillLegend@FontSize #7 }%
+             \end{tabular}%
+         \endgroup%
+@@ -656,11 +646,11 @@
+         }%
+         \IfBooleanTF#1{% if a star is given, add dashed line
+             \begingroup%
+-                % recalculate desrciptor widths on the fly. Allows for different padding
++                % recalculate desrciptor widths on the fly. Allows for different padding 
+                 % in the stared and nonstared case
+                 \setlength{\cvskilllegend@leftdescriptorwidth}{\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-4\skilllegend@padding}%
+                 \setlength{\cvskilllegend@rightdescriptorwidth}{\skilllegend@bodylength-\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-4\skilllegend@padding}%
+-                \arrayrulecolor{bodyrulecolor}
++                \arrayrulecolor{color1}
+                 \begin{tabular}{@{}p{\skilllegend@hintscolumnwidth}
+                                 @{\hspace{\separatorcolumnwidth}}p{\cvskill@width}@{\hspace{\skilllegend@padding}};{.6pt/1pt}%
+                                 p{2\skilllegend@padding}%
+@@ -670,13 +660,13 @@
+                     \raggedleft\hintstyle{}  & \cvskill{1} & & {\skillLegend@FontSize #3} & \cvskill{3} & & {\skillLegend@FontSize #5 } \\
+                                 %
+                             & \cvskill{2} & & \multirow{2}{\cvskilllegend@leftdescriptorwidth}{{\skillLegend@FontSize #4}} & \cvskill{4} &  &{\skillLegend@FontSize #6 } \\
+-                        %
+-                            & & &   & \cvskill{5}& & {\skillLegend@FontSize #7 }
++                        %         
++                            & & &   & \cvskill{5}& & {\skillLegend@FontSize #7 } 
+                 \end{tabular}%
+             \endgroup%
+             \par\addvspace{#2}}{
+             \begingroup%
+-                % oddly enough, we should only need to subtract 2 paddings in the descritorwidths.
++                % oddly enough, we should only need to subtract 2 paddings in the descritorwidths. 
+                 % but while testing I got overflow of text into the margin
+                 \setlength{\cvskilllegend@leftdescriptorwidth}{\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-4\skilllegend@padding}%
+                 \setlength{\cvskilllegend@rightdescriptorwidth}{\skilllegend@bodylength-\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-5\skilllegend@padding}%
+@@ -688,8 +678,8 @@
+                     \raggedleft\hintstyle{}  & \cvskill{1} & {\skillLegend@FontSize #3} & \cvskill{3} & {\skillLegend@FontSize #5 } \\
+                                 %
+                             & \cvskill{2} & \multirow{2}{\cvskilllegend@leftdescriptorwidth}{{\skillLegend@FontSize #4}} & \cvskill{4} &{\skillLegend@FontSize #6 } \\
+-                        %
+-                            & &   & \cvskill{5} & {\skillLegend@FontSize #7 }
++                        %         
++                            & &   & \cvskill{5} & {\skillLegend@FontSize #7 } 
+                 \end{tabular}%
+             \endgroup%
+             \par\addvspace{#2}
+@@ -707,7 +697,7 @@
+         }{%
+             \cvitem[-0.5em]{#8}{}%
+         }%
+-        \arrayrulecolor{bodyrulecolor}%
++        \arrayrulecolor{color1}%
+         \setlength\arrayrulewidth{\separatorrulewidth}%
+         \RenewDocumentCommand{\@starIndependentTabular}{}{%
+             \begingroup%
+@@ -723,32 +713,32 @@
+                 \@moderncvstrut{4pt}{16pt}  & \cvskill{1}& {\skillLegend@FontSize #3} & \cvskill{3}& {\skillLegend@FontSize #5 }\\%
+                             %
+                         & \cvskill{2}& \multirow{2}{\cvskilllegend@leftdescriptorwidth}{{\skillLegend@FontSize #4}} & \cvskill{4}& {\skillLegend@FontSize #6 }\\%
+-                    %
++                    %         
+                         & & & \cvskill{5} & {\skillLegend@FontSize #7 }\\[#2]% the spacing needs to be inside the cell for the vertical rule to extend correctly
+             \end{tabular}%
+             \endgroup%
+-            \par\@aftersectionfalse\ignorespaces%
++            \par\@aftersectionfalse\ignorespaces%    
+         }%
+-        % because of this weird style and the position of the parameter [#2], the dashed lines of the other version look bad. So no lines.
++        % because of this weird style and the position of the parameter [#2], the dashed lines of the other version look bad. So no lines. 
+         \IfBooleanTF#1{%
+                 \@starIndependentTabular%
+-            }{%
++            }{% 
+                 \@starIndependentTabular%
+         }%
+     }%
+ \fi
+ 
+ % %-------------------------------------------------------------------------------
+-% %                \cvskillplainlegend
++% %                \cvskillplainlegend 
+ % %-------------------------------------------------------------------------------
+ % alternative legend style
+ % \cvskillplainlegend[*][<post_padding>][<first_level>][<second_level>][<third_level>][<fourth_level>][<fifth_level>]{<name>}
+ \DeclareDocumentCommand\cvskillplainlegend{s +O{} +O{} +O{} +O{} +O{} +O{} +m}{}%
+ %   Print alternative legend table explaining the meaning of \cvskill{1}...\cvskill{5}.
+ %   In this legend, the first three skill levels are in one column
+-%
++% 
+ %   Input:
+-%       asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style.
++%       asterix (optional): include vertical (dashed) lines. This behaviour depends on the body style. 
+ %                           For the fancy style, the asterix has no meaning.
+ %       input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %       input_2 (optional): string describing meaning of \cvskill{1}, default: <basic knowledge>
+@@ -757,12 +747,12 @@
+ %       input_5 (optional): string describing meaning of \cvskill{4}, default: <deepened expert knowledge>
+ %       input_6 (optional): string describing meaning of \cvskill{5}, default: <expert/guru>
+ %       input_7:            string giving a name to the legend, default: <>
+-%
++% 
+ %   Example usages:
+ %       \cvskillplainlegend{}    print default legend
+ %       \cvskillplainlegend[0.5em]{Legend}   print default legend, but adjust post padding and display the word ``Legend''.
+ %       \cvskillplainlegend*[0.2em][Grundkenntnisse][Grundkenntnisse und eigene Erfahrung in Projekten][Umfangreiche Erfahrung in Projekten][Vertiefte Expertenkenntnisse][Experte/Guru]{Legende}     Fully adjust legend to German example and including dashed lines
+-%
++% 
+ %   Note:
+ %       -The width of the columns can be adjusted by the \setcvskilllegendcolumns, see \setcvskilllegendcolumns
+ 
+@@ -776,7 +766,7 @@
+ \RenewDocumentCommand\cvskillplainlegend{s +O{.25em} +O{\skillPlainLegend@defaultLevelOne} +O{\skillPlainLegend@defaultLevelTwo} +O{\skillPlainLegend@defaultLevelThree} +O{\skillPlainLegend@defaultLevelFour} +O{\skillPlainLegend@defaultLevelFive} +m}{%
+     \IfBooleanTF#1{% if a star is given, add dashed line
+         \begingroup%
+-            \arrayrulecolor{bodyrulecolor}%
++            \arrayrulecolor{color1}%
+             % calculate descriptor widths
+             \setlength{\cvskilllegend@leftdescriptorwidth}{\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-3\skilllegend@padding}%
+             \setlength{\cvskilllegend@rightdescriptorwidth}{\skilllegend@bodylength-\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-3\skilllegend@padding}%
+@@ -790,7 +780,7 @@
+                 \raggedleft\hintstyle{#8}  & \cvskill{1}& & {\skillLegend@FontSize #3} & \cvskill{4}& &{\skillLegend@FontSize #6} \\%
+                             %
+                         & \cvskill{2} & & {\skillLegend@FontSize #4} & \cvskill{5}& & {\skillLegend@FontSize #7} \\%
+-                    %
++                    %         
+                         & \cvskill{3} & & {\skillLegend@FontSize #5} & & & %
+             \end{tabular}%
+         \endgroup%
+@@ -809,7 +799,7 @@
+                 \raggedleft\hintstyle{#8}  & \cvskill{1} & {\skillLegend@FontSize #3} & \cvskill{4} &{\skillLegend@FontSize #6} \\%
+                             %
+                         & \cvskill{2} & {\skillLegend@FontSize #4} & \cvskill{5}  &{\skillLegend@FontSize #7} \\%
+-                    %
++                    %         
+                         & \cvskill{3} & {\skillLegend@FontSize #5 }  &  & %
+             \end{tabular}%
+         \endgroup%
+@@ -826,7 +816,7 @@
+         }%
+         \IfBooleanTF#1{% if a star is given, add dashed line
+             \begingroup%
+-                \arrayrulecolor{bodyrulecolor}
++                \arrayrulecolor{color1}
+                 \setlength{\cvskilllegend@leftdescriptorwidth}{\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-6\skilllegend@padding}%
+                 \setlength{\cvskilllegend@rightdescriptorwidth}{\skilllegend@bodylength-\skilllegend@leftdesriptorfactor\skilllegend@bodylength-\cvskill@width-\skillmatrix@padding-6\skilllegend@padding}%
+                 \begin{tabular}{@{}p{\skilllegend@hintscolumnwidth}
+@@ -838,8 +828,8 @@
+                     \raggedleft\hintstyle{} & \cvskill{1} & & {\skillLegend@FontSize#3} & \cvskill{4} & & {\skillLegend@FontSize#6}\\%
+                                 %
+                             & \cvskill{2} & &{\skillLegend@FontSize#4} & \cvskill{5} &  &{\skillLegend@FontSize#7}\\%
+-                        %
+-                            & \cvskill{3} & &{\skillLegend@FontSize#5} & & &%
++                        %         
++                            & \cvskill{3} & &{\skillLegend@FontSize#5} & & &% 
+                 \end{tabular}%
+             \endgroup%
+             \par\addvspace{#2}}{
+@@ -855,7 +845,7 @@
+                     \raggedleft\hintstyle{}  & \cvskill{1} & {\skillLegend@FontSize #3} & \cvskill{4} & {\skillLegend@FontSize #6} \\
+                                 %
+                             & \cvskill{2} & {\skillLegend@FontSize #4} & \cvskill{5} & {\skillLegend@FontSize #7} \\
+-                        %
++                        %         
+                             & \cvskill{3} & {\skillLegend@FontSize #5}  & & %
+                 \end{tabular}%
+             \endgroup
+@@ -873,7 +863,7 @@
+         }{%
+             \cvitem[-0.5em]{#8}{}%
+         }%
+-        \arrayrulecolor{bodyrulecolor}%
++        \arrayrulecolor{color1}%
+         \setlength\arrayrulewidth{\separatorrulewidth}%
+         \RenewDocumentCommand{\@starIndependentTabular}{}{%
+             \begingroup%
+@@ -889,16 +879,16 @@
+                 \@moderncvstrut{4pt}{16pt}  & \cvskill{1} & {\skillLegend@FontSize #3} & \cvskill{4} & {\skillLegend@FontSize #6}\\%
+                             %
+                         & \cvskill{2} & {\skillLegend@FontSize #4} & \cvskill{5} & {\skillLegend@FontSize #7}\\%
+-                    %
++                    %         
+                         & \cvskill{3} & {\skillLegend@FontSize #5}  & & \\[#2]% the spacing needs to be inside the cell for the vertical rule to extend correctly
+             \end{tabular}%
+             \endgroup%
+-            \par\@aftersectionfalse\ignorespaces%
++            \par\@aftersectionfalse\ignorespaces%    
+         }%
+-        % because of this weird style and the position of the parameter [#2], the dashed lines of the other version look bad. So no lines.
++        % because of this weird style and the position of the parameter [#2], the dashed lines of the other version look bad. So no lines. 
+         \IfBooleanTF#1{%
+                 \@starIndependentTabular%
+-            }{%
++            }{% 
+                 \@starIndependentTabular%
+         }%
+     }%
+@@ -910,20 +900,20 @@
+ \NewDocumentCommand\cvSkillMatrix@HeadFont{}{\normalfont}
+ \DeclareDocumentCommand\cvskillhead{+O{} +O{} +O{} +O{} +O{}}{}%
+ %   add skill matrix line acting as header explaining the meaning of columns.
+-%
++% 
+ %   Input:
+ %       input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %       input_2 (optional): string naming the level column (2nd column), default: <Level>
+ %       input_3 (optional): string naming the skill column (3nd column), default: <Skill>
+ %       input_4 (optional): string naming the experience-in-years column (4th column), default: <Years>
+ %       input_5 (optional): string naming the comment column (5th column), default: <Comment>
+-%
++% 
+ %   Example usages:
+ %       \cvskillhead    print default head.
+ %       \cvskillhead[0.5em]   print default head, but adjust post padding.
+ %       \cvskillhead[0.25em][Level][F\"ahigkeit][Jahre][Bemerkung]     Fully adjust head to German example
+-%
+-%   Note:
++% 
++%   Note:   
+ %       - The width of the columns can be adjusted by the \setcvskillcolumns command, see \setcvskillcolumns.
+ 
+ \NewDocumentCommand\skillMatrix@HeaderDefaultOne{}{Level}
+@@ -934,13 +924,13 @@
+ \RenewDocumentCommand\cvskillhead{O{.25em} +O{\skillMatrix@HeaderDefaultOne} +O{\skillMatrix@HeaderDefaultTwo} +O{\skillMatrix@HeaderDefaultThree} +O{\skillMatrix@HeaderDefaultFour}}{%
+     \begingroup
+         \renewcommand{\arraystretch}{1.25}
+-        \arrayrulecolor{bodyrulecolor}
++        \arrayrulecolor{color1}
+         \begin{tabular}{@{}p{\skillmatrix@hintscolumnwidth}@{\hspace{\separatorcolumnwidth}}%
+                 p{\cvskill@width}@{\hspace{\skillmatrix@padding}}%
+                 p{\cvskill@descriptorwidth}@{\hspace{\skillmatrix@padding}}%
+                 p{\cvskill@experiencewidth}@{\hspace{\skillmatrix@padding}}
+                 p{\skillmatrix@commentwidth}@{}}%
+-            & \centering{\cvSkillMatrix@HeadFont #2} & \centering{\cvSkillMatrix@HeadFont #3} & \centering{\cvSkillMatrix@HeadFont #4} & {\cvSkillMatrix@HeadFont #5}
++            & \centering{\cvSkillMatrix@HeadFont #2} & \centering{\cvSkillMatrix@HeadFont #3} & \centering{\cvSkillMatrix@HeadFont #4} & {\cvSkillMatrix@HeadFont #5}  
+         \end{tabular}%
+     \endgroup
+     \par\addvspace{#1}
+@@ -948,7 +938,7 @@
+ % Definition of \cvskillhead valid moderncvbodyv
+ \if@moderncvbodyv%
+     \RenewDocumentCommand\cvskillhead{O{.25em} +O{\skillMatrix@HeaderDefaultOne} +O{\skillMatrix@HeaderDefaultTwo} +O{\skillMatrix@HeaderDefaultThree} +O{\skillMatrix@HeaderDefaultFour}}{%
+-        \arrayrulecolor{bodyrulecolor}%
++        \arrayrulecolor{color1}%
+         \setlength\arrayrulewidth{\separatorrulewidth}%
+         \vspace*{-\separatorrulewidth}% HACK; I don't understand where the space is coming from, nor what it's exact value is :(
+         \begingroup%
+@@ -964,19 +954,19 @@
+             & & \centering{\cvSkillMatrix@HeadFont#2} & \centering{\cvSkillMatrix@HeadFont#3} & \centering{\cvSkillMatrix@HeadFont#4} & {\cvSkillMatrix@HeadFont#5} \\[#1]% the spacing needs to be inside the cell for the vertical rule to extend correctly
+         \end{tabular}%
+         \endgroup%
+-        \par\@aftersectionfalse\ignorespaces%
++        \par\@aftersectionfalse\ignorespaces%    
+     }%
+ \fi
+ 
+ % %-------------------------------------------------------------------------------
+-% %                \cvskillentry
++% %                \cvskillentry 
+ % %-------------------------------------------------------------------------------
+ % \cvskillentry[*][<post_padding>]{<skill_cathegory>}{<0-5>}{<skill_name>}{<years_of_experience>}{<comment>}%
+ \DeclareDocumentCommand\cvskillentry{s +O{} +m +m +m +m +m}{}%
+ %     add cvskill matrix row.
+-%
++% 
+ %     Input:
+-%         asterix (optional): include horizontal (dashed) line above the entered line. This behaviour depends on the body style.
++%         asterix (optional): include horizontal (dashed) line above the entered line. This behaviour depends on the body style. 
+ %                             For the fancy style, the asterix has no meaning.
+ %         input_1 (optional): padding length appended to the legend, default: <0.25em>
+ %         input_2: string, naming skill cathegory, default: <>
+@@ -984,14 +974,14 @@
+ %         input_4: string, naming the skill, default: <>
+ %         input_5: positive real number, stating the number of years of experience with this skill , default: <>
+ %         input_6: string, explaining details w.r.t. that particual skill default: <>
+-%
++% 
+ %     Example usages:
+ %         \cvskillentry*{Language:}{3}{Python}{2}{I have done a million projects with Python}
+ %         \cvskillentry{}{2}{Lilypond}{14}{So much sheet music! Man I'm the best!}
+ %         \cvskillentry{}{3}{\LaTeX}{14}{Clearly I rock at \LaTeX}
+ %         \cvskillentry*[1.5em]{OS:}{3}{Linux}{2}{I only use Archlinux}
+-%
+-%     Note:
++% 
++%     Note:   
+ %         - The width of the columns can be adjusted by the \setcvskillcolumns command, see \setcvskillcolumns.
+ 
+ % Definition of \cvskillentry valid for moderncvbodyi, moderncvbodyii, moderncvbodyiii, moderncvbodyiv
+@@ -1000,7 +990,7 @@
+     \IfBooleanTF{#1}{% If a star is seen a dotted line is drawn above the entry
+         \begingroup
+             \renewcommand{\arraystretch}{1.25}
+-            \arrayrulecolor{bodyrulecolor}
++            \arrayrulecolor{color1}
+             \begin{tabular}{@{}p{\skillmatrix@hintscolumnwidth}@{\hspace{\separatorcolumnwidth}}%
+                     p{\cvskill@width}@{\hspace{\skillmatrix@padding}}%
+                     p{\cvskill@descriptorwidth}@{\hspace{\skillmatrix@padding}}%
+@@ -1028,7 +1018,7 @@
+ \if@moderncvbodyv%
+     \DeclareDocumentCommand\@starIndependentMatrixEntry{}{}%
+     \RenewDocumentCommand\cvskillentry{s O{.25em} +m +m +m +m +m}{%
+-        \arrayrulecolor{bodyrulecolor}%
++        \arrayrulecolor{color1}%
+         \setlength\arrayrulewidth{\separatorrulewidth}%
+         \vspace*{-\separatorrulewidth}% HACK; I don't understand where the space is coming from, nor what it's exact value is :(
+         %test for the star * in the command
+@@ -1048,13 +1038,13 @@
+         }%
+         \IfBooleanTF{#1}{% the star does not do anything here
+             \@starIndependentMatrixEntry%
+-        }{%
++        }{% 
+             \@starIndependentMatrixEntry%
+         }%
+         \par\@aftersectionfalse\ignorespaces%
+     }%
+ \fi
+-%
++% 
+ \endinput
+ 
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylebanking.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylebanking.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylebanking.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylebanking.sty	2025-11-02 21:23:20.025336374 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstylebanking.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstylebanking}[2024-07-18 v2.4.1 modern curriculum vitae and letter style scheme: banking]
++\ProvidesPackage{moderncvstylebanking}[2022-02-21 v2.3.1 modern curriculum vitae and letter style scheme: banking]
+ 
+ % body rules type options: "fullrules", "shortrules", "mixedrules" (default) or "norules"
+ \@initializecommand{\moderncvstylebodyoptions}{}
+@@ -24,12 +24,6 @@
+ \DeclareOption{center}       {\edef\moderncvstylebodyoptions{\moderncvstylebodyoptions,center}}
+ \DeclareOption{right}        {\edef\moderncvstylebodyoptions{\moderncvstylebodyoptions,right}}
+ 
+-% head options
+-\@initializecommand{\moderncvstyleheadoptions}{}
+-\@initializeif{\if@datainhead}\@datainheadtrue
+-\DeclareOption{details}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,details}}
+-\DeclareOption{nodetails}{\@datainheadfalse\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,nodetails}}
+-
+ % toggle use of symbol fonts.
+ \@initializeif{\if@symbols}\@symbolsfalse
+ \DeclareOption{symbols}      {\@symbolstrue}
+@@ -61,45 +55,19 @@
+ 
+ % symbols
+ \if@symbols
+-    \moderncvicons{symbols}     % use symbols
++    \moderncvicons{symbols}     % use symbols 
+ \else
+     \moderncvicons{letters}     % do not use symbols, use letters
+ \fi
+ 
+-%-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color1}
+-\colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{lastnamecolor!50}
+-\colorlet{firstnamecolor}{lastnamecolor!60}
+-\colorlet{titlecolor}{color2!85}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
++
+ 
+ %-------------------------------------------------------------------------------
+ %                header, body & footer
+ %-------------------------------------------------------------------------------
+-\moderncvhead[\moderncvstyleheadoptions]{3}
++\moderncvhead{3}
+ \moderncvbody[\moderncvstylebodyoptions]{3}
+ 
+-\if@datainhead
+-% if data is shown in head, do not include the footer
+-\else
+-  \moderncvfoot{1}
+-\fi
+ 
+ \endinput
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylecasual.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylecasual.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylecasual.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylecasual.sty	2025-11-02 21:23:20.025336374 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstylecasual.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,18 +10,12 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstylecasual}[2024-07-18 v2.4.1 modern curriculum vitae and letter style scheme: casual]
++\ProvidesPackage{moderncvstylecasual}[2022-02-21 v2.3.1 modern curriculum vitae and letter style scheme: casual]
+ 
+ % head section alignment options: "left" (default) or "right"
+ \@initializecommand{\moderncvstyleheadoptions}{}
+ \DeclareOption{left} {\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,left}}
+ \DeclareOption{right}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,right}}
+-% head options alternate, details and no details
+-\DeclareOption{alternate}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,alternate}}
+-\@initializeif{\if@datainhead}\@datainheadfalse
+-\DeclareOption{details}{\@datainheadtrue\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,details}}
+-\DeclareOption{nodetails}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,nodetails}}
+-
+ 
+ % toggle use of symbol fonts.
+ \@initializeif{\if@symbols}\@symbolsfalse
+@@ -29,7 +23,7 @@
+ \DeclareOption{nosymbols}    {\@symbolsfalse}
+ 
+ \DeclareOption*{}% avoid choking on unknown options
+-\ExecuteOptions{right,symbols,nodetails}
++\ExecuteOptions{right,symbols}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+ 
+ %-------------------------------------------------------------------------------
+@@ -48,46 +42,18 @@
+ 
+ % symbols
+ \if@symbols
+-    \moderncvicons{symbols}     % use symbols
++    \moderncvicons{symbols}     % use symbols 
+ \else
+     \moderncvicons{letters}     % do not use symbols, use letters
+ \fi
+ 
+-%-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color2}
+-\colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{lastnamecolor!50}
+-\colorlet{firstnamecolor}{lastnamecolor!50}
+-\colorlet{titlecolor}{color2}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
+ 
+ %-------------------------------------------------------------------------------
+ %                header, body & footer
+ %-------------------------------------------------------------------------------
+ \moderncvhead[\moderncvstyleheadoptions]{2}
+ \moderncvbody{1}
+-% include foot only if nodetails option is active since otherwise we have two times the information 
+-% on the page
+-\if@datainhead
+-% if data is shown in head, do not include the footer
+-\else
+-  \moderncvfoot{1}
+-\fi
++\moderncvfoot{1}
+ 
+ 
+ \endinput
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleclassic.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleclassic.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleclassic.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleclassic.sty	2025-11-02 21:23:20.025336374 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstyleclassic.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,17 +10,12 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstyleclassic}[2024-07-18 v2.4.1 modern curriculum vitae and letter style scheme: classic]
++\ProvidesPackage{moderncvstyleclassic}[2022-02-21 v2.3.1 modern curriculum vitae and letter style scheme: classic]
+ 
+ % head section alignment options: "left" (default) or "right"
+ \@initializecommand{\moderncvstyleheadoptions}{}
+ \DeclareOption{left} {\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,left}}
+ \DeclareOption{right}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,right}}
+-\DeclareOption{top}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,top}}
+-
+-\@initializeif{\if@datainhead}\@datainheadtrue
+-\DeclareOption{details}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,details}}
+-\DeclareOption{nodetails}{\@datainheadfalse\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,nodetails}}
+ 
+ % toggle use of symbol fonts.
+ \@initializeif{\if@symbols}\@symbolsfalse
+@@ -28,7 +23,7 @@
+ \DeclareOption{nosymbols}    {\@symbolsfalse}
+ 
+ \DeclareOption*{}% avoid choking on unknown options
+-\ExecuteOptions{left,symbols,details}
++\ExecuteOptions{left,symbols}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+ 
+ %-------------------------------------------------------------------------------
+@@ -47,46 +42,17 @@
+ 
+ % symbols
+ \if@symbols
+-    \moderncvicons{symbols}     % use symbols
++    \moderncvicons{symbols}     % use symbols 
+ \else
+     \moderncvicons{letters}     % do not use symbols, use letters
+ \fi
+ 
+-%-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color2}
+-\colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{lastnamecolor!50}
+-\colorlet{firstnamecolor}{lastnamecolor!50}
+-\colorlet{titlecolor}{color2}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
+ 
+ %-------------------------------------------------------------------------------
+ %                header, body & footer
+ %-------------------------------------------------------------------------------
+ \moderncvhead[\moderncvstyleheadoptions]{1}
+ \moderncvbody{1}
+-% include foot only if nodetails option is active since otherwise we have two times the information 
+-% on the page
+-\if@datainhead
+-% if data is shown in head, do not include the footer
+-\else
+-  \moderncvfoot{1}
+-\fi
+ 
+ 
+ \endinput
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvstylecontemporary.sty
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleempty.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleempty.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleempty.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleempty.sty	2025-11-02 21:23:20.025336374 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstyleempty.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,7 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstyleempty}[2024-07-18 v2.4.1 modern curriculum vitae scheme: empty]
++\ProvidesPackage{moderncvstyleempty}[2022-02-21 v2.3.1 modern curriculum vitae scheme: empty]
+ 
+ %-------------------------------------------------------------------------------
+ %                required packages
+@@ -33,34 +33,11 @@
+ %-------------------------------------------------------------------------------
+ 
+ %-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color2}
+-% \colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{lastnamecolor!50}
+-\colorlet{firstnamecolor}{lastnamecolor!50}
+-\colorlet{titlecolor}{color2}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
+-
+-%-------------------------------------------------------------------------------
+ %                fonts & icons
+ %-------------------------------------------------------------------------------
+ % symbols
+ \if@symbols
+-    \moderncvicons{symbols}     % use symbols
++    \moderncvicons{symbols}     % use symbols 
+ \else
+     \moderncvicons{letters}     % do not use symbols, use letters
+ \fi
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylefancy.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylefancy.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstylefancy.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstylefancy.sty	2025-11-02 21:23:20.025336374 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstylefancy.sty'.
+-%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2015-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,13 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstylefancy}[2024-07-18 v2.4.1 modern curriculum vitae and letter style scheme: fancy]
+-
+-% headoptions
+-\@initializecommand{\moderncvstyleheadoptions}{}
+-\@initializeif{\if@datainhead}\@datainheadtrue
+-\DeclareOption{details}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,details}}
+-\DeclareOption{nodetails}{\@datainheadfalse\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,nodetails}}
++\ProvidesPackage{moderncvstylefancy}[2022-02-21 v2.3.1 modern curriculum vitae and letter style scheme: fancy]
+ 
+ % toggle use of symbol fonts.
+ \@initializeif{\if@symbols}\@symbolsfalse
+@@ -24,34 +18,10 @@
+ \DeclareOption{nosymbols}    {\@symbolsfalse}
+ 
+ \DeclareOption*{}% avoid choking on unknown options
+-\ExecuteOptions{symbols,details}
++\ExecuteOptions{symbols}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+ 
+ %-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color1}
+-\colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{color1}
+-\colorlet{firstnamecolor}{lastnamecolor!50}
+-\colorlet{titlecolor}{color2}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
+-
+-
+-%-------------------------------------------------------------------------------
+ %                fonts & icons
+ %-------------------------------------------------------------------------------
+ % EB Garamond font
+@@ -68,7 +38,7 @@
+ 
+ % symbols
+ \if@symbols
+-    \moderncvicons{symbols}     % use symbols
++    \moderncvicons{symbols}     % use symbols 
+ \else
+     \moderncvicons{letters}     % do not use symbols, use letters
+ \fi
+@@ -77,16 +47,9 @@
+ %-------------------------------------------------------------------------------
+ %                header, body & footer
+ %-------------------------------------------------------------------------------
+-\moderncvhead[\moderncvstyleheadoptions]{5}
++\moderncvhead{5}
+ \moderncvbody{5}
+ 
+-% include foot only if nodetails option is active since otherwise we have two times the information 
+-% on the page
+-\if@datainhead
+-% if data is shown in head, do not include the footer
+-\else
+-  \moderncvfoot{1}
+-\fi
+ 
+ \endinput
+ 
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleoldstyle.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleoldstyle.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/moderncvstyleoldstyle.sty	2024-07-18 13:38:39.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/moderncvstyleoldstyle.sty	2025-11-02 21:23:20.026336397 -0800
+@@ -1,5 +1,5 @@
+ %% start of file `moderncvstyleoldstyle.sty'.
+-%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Copyright 2006-2015 Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % This work may be distributed and/or modified under the
+ % conditions of the LaTeX Project Public License version 1.3c,
+@@ -10,14 +10,7 @@
+ %                identification
+ %-------------------------------------------------------------------------------
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesPackage{moderncvstyleoldstyle}[2024-07-18 v2.4.1 modern curriculum vitae and letter style scheme: oldstyle]
+-
+-% headoptions
+-\@initializecommand{\moderncvstyleheadoptions}{}
+-\@initializeif{\if@datainhead}\@datainheadtrue
+-\DeclareOption{details}{\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,details}}
+-\DeclareOption{nodetails}{\@datainheadfalse\edef\moderncvstyleheadoptions{\moderncvstyleheadoptions,nodetails}}
+-
++\ProvidesPackage{moderncvstyleoldstyle}[2022-02-21 v2.3.1 modern curriculum vitae and letter style scheme: oldstyle]
+ 
+ % toggle use of symbol fonts.
+ \@initializeif{\if@symbols}\@symbolsfalse
+@@ -25,7 +18,7 @@
+ \DeclareOption{nosymbols}    {\@symbolsfalse}
+ 
+ \DeclareOption*{}% avoid choking on unknown options
+-\ExecuteOptions{symbols,details}
++\ExecuteOptions{symbols}
+ \ProcessOptions*\relax% \ProcessOptions* processes the options in the order provided (i.e., with the later ones possibly overriding the former ones), while \ProcessOptions processes them in the order of the package
+ 
+ %-------------------------------------------------------------------------------
+@@ -58,41 +51,11 @@
+ 
+ 
+ %-------------------------------------------------------------------------------
+-%               Colors
+-%-------------------------------------------------------------------------------
+-% head and footer
+-\colorlet{lastnamecolor}{color2}
+-\colorlet{namecolor}{lastnamecolor}
+-\colorlet{headrulecolor}{lastnamecolor!50}
+-\colorlet{firstnamecolor}{lastnamecolor!50}
+-\colorlet{titlecolor}{color2}
+-\colorlet{addresscolor}{color2}
+-\colorlet{quotecolor}{color1}
+-\colorlet{pictureframecolor}{color1}
+-% body
+-\colorlet{bodyrulecolor}{color1}
+-\colorlet{sectioncolor}{color1}
+-\colorlet{subsectioncolor}{color1}
+-\colorlet{hintstylecolor}{color0}
+-% letter
+-\colorlet{letterclosingcolor}{color2}
+-% skillmatrix
+-\colorlet{skillmatrixfullcolor}{color1}
+-\colorlet{skillmatrixemptycolor}{color2!30}
+-
+-
+-%-------------------------------------------------------------------------------
+ %                header, body & footer
+ %-------------------------------------------------------------------------------
+-\moderncvhead[\moderncvstyleheadoptions]{4}
++\moderncvhead{4}
+ \moderncvbody{4}
+-% include foot only if nodetails option is active since otherwise we have two times the information 
+-% on the page
+-\if@datainhead
+-% if data is shown in head, do not include the footer
+-\else
+-  \moderncvfoot{1}
+-\fi
++
+ 
+ \endinput
+ 
+Only in /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv: moderncvverticaltimeline.sty
+diff -ru /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/tweaklist.sty /home/bph/Desktop/texmf/tex/latex/mod-cv/tweaklist.sty
+--- /usr/local/texlive/2025/texmf-dist/tex/latex/moderncv/tweaklist.sty	2024-07-10 13:44:11.000000000 -0700
++++ /home/bph/Desktop/texmf/tex/latex/mod-cv/tweaklist.sty	2025-11-02 21:23:20.026336397 -0800
+@@ -1,6 +1,6 @@
+ %% start of file `tweaklist.sty'.
+ %% Original by Jakob Schiotz, downloaded from http://dcwww.camd.dtu.dk/~schiotz/comp/LatexTips/tweaklist.sty; not found on ctan.
+-%% Modified by Xavier Danaux (xdanaux@gmail.com), 2020-2024 moderncv maintainers (github.com/moderncv).
++%% Modified by Xavier Danaux (xdanaux@gmail.com), 2020-2022 moderncv maintainers (github.com/moderncv).
+ %
+ % The tweaklist.sty package redefines the itemize, enumerate and description packages, so that all parameters can be adjusted.
+ % This was done by copying the original definitions, and adding "hook commands" that are executed when entering the environment.

@@ -1,0 +1,126 @@
+
+\RequirePackage[hyperfootnotes=false]{hyperref}
+
+\RequirePackage{footmisc}
+
+\RequirePackage{enumitem}
+
+
+% Conflicting definitions from french-logic.sty
+\RequirePackage{amsthm}
+
+%%% THEOREM ENVIRONMENTS AND RELATED DEFINITIONS %%%
+
+
+% amstheorem
+
+\renewcommand\qedsymbol{$\blacksquare$}
+\newcommand{\sketchqed}{\hfill $\square$}
+\newcommand{\remarkqed}{\hfill \mbox{$\triangleleft$}}
+
+
+% amsmath
+
+% From Prospectus
+% \theoremstyle{definition}
+%     \newtheorem{defn}{Definition}[section]
+%     \newtheorem{theorem}{Theorem}[section]
+%     \newtheorem*{theorems}{Some Theorems}
+%     \newtheorem{rmrk}{Remark}[section]
+%     \newtheorem*{anal}{Analysis}
+%     \newtheorem*{note}{Note}
+%     \newtheorem{proposal}{Proposal}
+%     \newtheorem{example}{Example}[section]
+
+% For Dissertation
+\newtheoremstyle{noindentplain}     % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                       % Body font (italic)
+    {0pt}                            % Indent amount
+    {\scshape}                      % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+\newtheoremstyle{noindentdefinition} % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                    % Body font (normal)
+    {0pt}                            % Indent amount
+    {\scshape}                      % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+\newtheoremstyle{noindentremark}     % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                    % Body font (normal)
+    {0pt}                            % Indent amount
+    {\itshape}                       % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+\theoremstyle{noindentplain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{noindentdefinition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+
+
+\theoremstyle{noindentremark}
+\newtheorem{remark}[theorem]{Remark}
+\AtEndEnvironment{remark}{\remarkqed}
+\newtheorem{note}[theorem]{Note}
+\AtEndEnvironment{note}{\remarkqed}
+\newtheorem{observation}[theorem]{Observation}
+\AtEndEnvironment{observation}{\remarkqed}
+\newtheorem{convention}[theorem]{Convention}
+\AtEndEnvironment{convention}{\remarkqed}
+
+
+  
+\newtheoremstyle{sketchstyle}%
+  {6pt}
+  {6pt}             % Space above and below
+  {\normalfont}               % Body font (normal text)
+  {0pt}               % Indentation (none)
+  {\itshape}       % Heading font (italic)
+  {.}              % Punctuation after heading
+  {.5em}              % Space after heading
+  {}               % Custom head spec (empty)
+\theoremstyle{sketchstyle}
+  \newtheorem*{proofsketch}{Sketch of Proof}
+    \AtEndEnvironment{proofsketch}{\sketchqed}
+  \newtheorem*{digression}{{{Digression}}}
+    \AtEndEnvironment{digression}{{\textit{End of digression.}}}
+  \newtheorem*{elucidation}{{{Elucidation}}}
+
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+  \pushQED{\qed}%
+  \normalfont
+  \topsep6\p@\@plus6\p@\relax
+  \trivlist
+  \item[\hskip\labelsep
+        \itshape
+    #1\@addpunct{.}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+\makeatother
+
+
+
+
+\newenvironment{block}
+  {\begin{list}{}{\setlength{\leftmargin}{2em} % Set left margin
+                  \setlength{\rightmargin}{0em}} % Set right margin to 0
+   \item[]}
+  {\end{list}}
