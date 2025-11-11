@@ -3,6 +3,20 @@
 
 A lean Neovim setup optimized for writing (LaTeX/Markdown), web editing (HTML/CSS/JS), and general coding. Uses lazy-loading to stay fast.
 
+### When adding or removing files (not merely editing)
+
+Either
+```bash
+cd ~/Desktop/configs
+stow -Rv -t ~/.config/nvim nvim
+```
+or
+```bash 
+stow -Rv -t ~/.config/nvim ~/Desktop/configs/nvim
+```
+---
+---
+
 ## Key features (high level)
 
 * **Plugin manager:** `lazy.nvim` with per-topic specs and conservative defaults.
