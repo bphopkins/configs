@@ -44,6 +44,7 @@ alias dissertate='cd ~/Desktop/dissertation && nvim'
 alias homepage='cd ~/Desktop/bphopkins.github.io && nvim'
 alias home='cd ~ && lsa'
 alias desktop='cd ~/Desktop && lsa'
+alias configs='cd ~/Desktop/configs && lsa'
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
