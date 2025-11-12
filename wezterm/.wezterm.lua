@@ -5,8 +5,8 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 -- This is where you actually apply your config choices.
-config.initial_cols = 80
-config.initial_rows = 80
+config.initial_cols = 100
+config.initial_rows = 40
 config.enable_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = true
 config.font_size = 12

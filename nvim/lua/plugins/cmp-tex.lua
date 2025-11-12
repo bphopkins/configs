@@ -22,6 +22,22 @@ return {
           })
         end,
       })
+
+      -- ⬇️ Disable the cmp→autopairs brace insertion in TeX buffers
+      local ok_cmp, cmp = pcall(require, "cmp")
+      local ok_ap, cmp_autopairs = pcall(require, "nvim-autopairs.completion.cmp")
+      if ok_cmp and ok_ap then
+        cmp.event:on(
+          "confirm_done",
+          cmp_autopairs.on_confirm_done({
+            filetypes = {
+              tex = false,
+              plaintex = false,
+              latex = false,
+            },
+          })
+        )
+      end
     end,
   },
   -- Nice extras (optional):

@@ -20,10 +20,11 @@ return {
 
     -- Completion (leave braces + use filetype intelligence)
     vim.g.vimtex_complete_enabled = 1
-    vim.g.vimtex_complete_close_braces = 1
+    vim.g.vimtex_complete_close_braces = 0
     vim.g.vimtex_complete_recursive_bib = 1
     -- Let '=' reindent be a bit smarter in TeX files (helps with environments)
     vim.g.vimtex_indent_enabled = 1
+    vim.g.vimtex_imaps_enabled = 0
 
     -- Quickfix noise (keep off unless you want auto-open)
     vim.g.vimtex_quickfix_mode = 0
@@ -38,8 +39,5 @@ return {
     --   -- plain names are fine; add dicts later if you need arg-specific rules
     --   "proofsetl",
     -- }
-    vim.g.vimtex_syntax_custom_envs = {
-      -- "hilbertlist", "proofsketch",
-    }
   end,
 }
