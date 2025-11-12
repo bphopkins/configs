@@ -2,12 +2,12 @@
 
 This directory contains my LaTeX macros, which, by the method outlined at the root of this repository, are symlinked to `~/texmf/tex/latex`, the standard location to put such things after a fresh install of [TeX Live](https://www.tug.org/texlive/). This method keeps things much cleaner than the method I used to use, which is outlined below.
 
-Below the double line are the old [instructions](#instructions-old) for getting global LaTeX macro files set up locally on Unix-like machines in arbitrary locations on your system.  It's kind of an annoying setup, but it can be worth it for some people, for example who would like to store their macros on a flashdrive (like I used to do). These days AI can probably give you instructions, and answers to more questions, but when I was first figuring this out I could not find **simple** instructions that worked **every time** anywhere.
+Below the double line are the old [instructions](#instructions-old) for getting global LaTeX macro files set up locally on Linux machines in arbitrary locations on your system.  It's kind of an annoying setup, but it can be worth it for some people, for example who would like to store their macros on a flashdrive (like I used to do). These days AI can probably give you instructions, and answers to more questions, but when I was first figuring this out I could not find **simple** instructions that worked **every time** anywhere.
 
 
 #### Why would you want to make use of these instructions?
 
-It's a special kind of problem for people who write in LaTeX, **locally**, and have very long preambles. As of 2024, Overleaf does not support global custom macro files. This is the primary reason why I do not use Overleaf. At this point, even if they offer this as a feature, I think I'm pretty well dialed in.
+It's a special kind of problem for people who write in LaTeX, **locally**, and have very long preambles. As of 2024, Overleaf does not support global custom macro files. This is the primary reason why I do not use Overleaf. At this point, even if they were to start offering this as a feature, I think I'm pretty well dialed in.
 
 But here's a scenario to help understand why this kind of thing might matter. For example, I am a logician, and working in LaTeX can be a bit cumbersome when the default names of the symbols I use often have little in common with the meaning they have in my writing, and can often be long and "out of the way" syntactically. Over time one redefines the symbols with a bit of flavor: for example, in my case, `\Vdash` gets redefined as `\trues`. Eventually there is a long list of these in the preamble of every document, which has to be copied over into each new document -- so one just offloads it all into a file, for example `logic.sty`, which you copy into each of your new projects. But eventually you have as many different `logic.sty` files as you have projects, each of which has some special commands defined in it and only it.
 
@@ -28,7 +28,7 @@ Below I provide the instructions on Linux machines; the procedure is similar on 
 
 1. Preliminary: Make sure you have [TeX Live](https://www.tug.org/texlive/) installed. As a rule, I avoid the distributions in the `apt` and `rpm` repositories, only because the `curl` version [here](https://www.tug.org/texlive/quickinstall.html) gets you `tlmgr` (the TeX Live package manager).
 
-2. Create a folder called `texmf` where you would like your custom macro files to be stored. At one point mine was in the home directory of my USB stick, but now it's just on my desktop; your home directory is another common location. **The location of this folder cannot be changed without having to go through these steps again.** 
+2. Create a folder called `texmf` where you would like your custom macro files to be stored. At one point mine was in the home directory of my USB stick, but now it's just on my desktop; your home directory is the default location. **The location of this folder cannot be changed without having to go through these steps again.** 
     - Inside `texmf`, create a folder called `tex`.
     - Inside `tex`, create a folder called `latex`.
     - Inside `latex`, create a folder for each of your macros, which has the same exact name as the primary file that will go in each folder, i.e., the exact name of the macro you intend to invoke in your preambles.
@@ -43,6 +43,11 @@ Below I provide the instructions on Linux machines; the procedure is similar on 
                     tufte-compact.cls
                     tufte-common.def
             ```
+    - In your preamble, you would then be setting yourself up to include things like:
+      ```bash
+      \documentclass{tufte-compact}
+      \usepackage{logic}
+      ```
 
 3. Find where your `texmf.cnf` file is. For example, you might search for "TEXMFHOME" in your filesystem:
     ```
@@ -53,11 +58,11 @@ Below I provide the instructions on Linux machines; the procedure is similar on 
     
     On Windows and Mac, you'll have to search system-wide for your `texmf.cnf` file.
 
-4. In your preferred editor, search for the line that contains `TEXMFHOME` (circa line 84 on Linux) and change the default location `~/texmf` to your desired location (you might need to be root):
-    - Ubuntu (Pop):  `/media/bph/bph-work/texmf`
-	- Fedora:  `/run/media/bph/bph-work/texmf`
-    
-    **Save the changes.**
+4. In your preferred editor, search for the line that contains `TEXMFHOME` (circa line 84) and change the default location `~/texmf` to your desired location (you might need to be root):
+   - Ubuntu (Pop):  `/media/bph/bph-work/texmf`
+   - Fedora:  `/run/media/bph/bph-work/texmf`
+   
+  **Save the changes.**
 
 5. Update the hash:
 	- Ubuntu:  

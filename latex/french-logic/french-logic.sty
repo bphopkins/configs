@@ -17,7 +17,7 @@
 \RequirePackage{setspace}
 %\RequirePackage{enotez}
 \RequirePackage{graphicx}
-    \graphicspath{{./images/}}
+\graphicspath{{./images/}}
 \RequirePackage{multicol}
 \RequirePackage{xcolor, soul}
 \RequirePackage{tabularx}
@@ -64,65 +64,65 @@
 
 % EB Proof --  with style
 \RequirePackage{ebproof}
-    \newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
-    \newcommand*{\hyphantom}{\hypo{{$\hphantom{--}$}}}
-    \newcommand{\hyp}[1]{\hypo{#1}}
-    \newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
-    \renewcommand{\inf}[3]{\infer#1[#2]{#3}}
-    \newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
-    \newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
-    \newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
-    \newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
-    \newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
-    \newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
-    \newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
-    \newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
-    \newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
-    % ripped from W2021 seminar final preamble, much is superfluous
-    \newcommand*{\incomp}{\dagger}
-    \newcommand*{\close}[1]{$\scriptscriptstyle{#1}$}
-    \newcommand*{\hk}{{\supset}}
-    \newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
-    \newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
-    \newcommand{\aff}{\mathlarger{\mathlarger{+}}}
-    \newcommand{\den}{\mathlarger{\mathlarger{-}}}
-    \newcommand{\af}{{\mathlarger{+}}}
-    \newcommand{\de}{{\mathlarger{-}}}
-    \newcommand{\afland}{\af\!\land}
-    \newcommand{\deland}{\de\!\land}
-    \newcommand{\aflor}{\af\!\lor}
-    \newcommand{\delor}{\de\!\lor}
-    \newcommand{\afto}{\af\rightarrow}
-    \newcommand{\deto}{\de\rightarrow}
-    \newcommand{\afneg}{\af\neg}
-    \newcommand{\deneg}{\de\neg}
-    \newcommand{\ecu}{\Rightarrow}
-    \newcommand{\ito}{\rightarrow_i}
-    \newcommand{\cto}{\rightarrow_c}
-    \newcommand{\ilor}{\lor_i}
-    \newcommand{\clor}{\lor_c}
+\newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
+\newcommand*{\hyphantom}{\hypo{{$\hphantom{--}$}}}
+\newcommand{\hyp}[1]{\hypo{#1}}
+\newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
+\renewcommand{\inf}[3]{\infer#1[#2]{#3}}
+\newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
+\newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
+\newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
+\newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
+\newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
+\newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
+\newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
+\newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
+\newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
+% ripped from W2021 seminar final preamble, much is superfluous
+\newcommand*{\incomp}{\dagger}
+\newcommand*{\close}[1]{$\scriptscriptstyle{#1}$}
+\newcommand*{\hk}{{\supset}}
+\newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
+\newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
+\newcommand{\aff}{\mathlarger{\mathlarger{+}}}
+\newcommand{\den}{\mathlarger{\mathlarger{-}}}
+\newcommand{\af}{{\mathlarger{+}}}
+\newcommand{\de}{{\mathlarger{-}}}
+\newcommand{\afland}{\af\!\land}
+\newcommand{\deland}{\de\!\land}
+\newcommand{\aflor}{\af\!\lor}
+\newcommand{\delor}{\de\!\lor}
+\newcommand{\afto}{\af\rightarrow}
+\newcommand{\deto}{\de\rightarrow}
+\newcommand{\afneg}{\af\neg}
+\newcommand{\deneg}{\de\neg}
+\newcommand{\ecu}{\Rightarrow}
+\newcommand{\ito}{\rightarrow_i}
+\newcommand{\cto}{\rightarrow_c}
+\newcommand{\ilor}{\lor_i}
+\newcommand{\clor}{\lor_c}
 
 
 % Settings for possible worlds models, taken from http://www.actual.world/resources/tex/doc/TikZ.pdf
 \RequirePackage{tikz} 
-    \usetikzlibrary{arrows,calc,patterns,positioning,shapes}
-    \tikzset{
-        modal/.style={>=stealth’,shorten >=1pt,shorten <=1pt,auto,node distance=1.5cm,semithick},
-        world/.style={circle,draw,minimum size=1cm,fill=gray!15},
-        point/.style={circle,draw,fill=black,inner sep=0.5mm},
-        reflexive/.style={->,in=120,out=60,loop,looseness=#1},
-        reflexive/.default={5},
-        reflexive point/.style={->,in=135,out=45,loop,looseness=#1},
-        reflexive point/.default={25},
-        reflexive above/.style={->,loop,in=120,out=60,looseness=#1},
-        reflexive above/.default={7},
-        reflexive below/.style={->,loop,in=240,out=300,looseness=#1},
-        reflexive below/.default={7},
-        reflexive left/.style={->,loop,in=150,out=210,looseness=#1},
-        reflexive left/.default={7},
-        reflexive right/.style={->,loop,in=30,out=330,looseness=#1},
-        reflexive right/.default={7}
-    }
+\usetikzlibrary{arrows,calc,patterns,positioning,shapes}
+\tikzset{
+  modal/.style={>=stealth’,shorten >=1pt,shorten <=1pt,auto,node distance=1.5cm,semithick},
+  world/.style={circle,draw,minimum size=1cm,fill=gray!15},
+  point/.style={circle,draw,fill=black,inner sep=0.5mm},
+  reflexive/.style={->,in=120,out=60,loop,looseness=#1},
+  reflexive/.default={5},
+  reflexive point/.style={->,in=135,out=45,loop,looseness=#1},
+  reflexive point/.default={25},
+  reflexive above/.style={->,loop,in=120,out=60,looseness=#1},
+  reflexive above/.default={7},
+  reflexive below/.style={->,loop,in=240,out=300,looseness=#1},
+  reflexive below/.default={7},
+  reflexive left/.style={->,loop,in=150,out=210,looseness=#1},
+  reflexive left/.default={7},
+  reflexive right/.style={->,loop,in=30,out=330,looseness=#1},
+  reflexive right/.default={7}
+}
 \RequirePackage{tikzsymbols}
 
 
@@ -360,7 +360,7 @@
 
 % STIT
 \usepackage[tracking=smallcaps]{microtype}
-	\newcommand{\versal}[1]{{\textls*[-30]{#1}}}
+\newcommand{\versal}[1]{{\textls*[-30]{#1}}}
 
 \newcommand{\tree}{\versal{\textit{Tree}}}
 \newcommand{\agent}{\versal{\textit{Agent}}}
@@ -630,7 +630,7 @@
 %\newcommand{\ax}{\textit{Ax}}
 %\renewcommand{\th}{\textit{Th}}
 \newcommand{\natent}{%
-    \mathrel{\text{\clipbox{0pt 0pt {.8\width} 0pt}{$\Vdash$}}\mkern.9mu}\vDash
+  \mathrel{\text{\clipbox{0pt 0pt {.8\width} 0pt}{$\Vdash$}}\mkern.9mu}\vDash
 }
 \newcommand{\nnatent}{{\natent\!\!\!\!\!\!\!\!\!\; \raisebox{1.25pt}{\rotatebox[origin=c]{-50}{|}}}}
 
@@ -651,7 +651,7 @@
 
 
 
-  %%%%  ADD TO MASTER
+%%%%  ADD TO MASTER
 
 \newcommand{\wedgeset}{\!\wedge\!}
 \newcommand{\filter}{\uparrow\!\!}
