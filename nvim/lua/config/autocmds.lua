@@ -8,7 +8,7 @@
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
 -- vim.o.autowriteall = true
-vim.api.nvim_create_autocmd({ "InsertLeavePre", "TextChanged", "TextChangedP" }, {
+vim.api.nvim_create_autocmd({ "InsertLeavePre", "TextChanged" }, {
   pattern = { "*.html", "*.tex", "*.sty", "*.cls", "*.css" },
   callback = function()
     vim.cmd("silent! write")
@@ -32,28 +32,3 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.wrap = false
   end,
 })
-
--- Auto-regenerate VSCode snippets from your macro file on save
--- do
---   local macro_file = "/home/bph/Desktop/configs/latex/french-logic/french-logic.sty" -- ← change this
---   local script = "/home/bph/Desktop/configs/nvim/snippets/generate_tex_snippets.py" -- ← change this
---
---   vim.api.nvim_create_autocmd("BufWritePost", {
---     pattern = macro_file,
---     callback = function(args)
---       vim.fn.jobstart({
---         "python3",
---         script,
---         args.file,
---         "--out",
---         vim.fn.expand("~/Desktop/configs/nvim/snippets/tex.json"),
---         "--prefix",
---         "both",
---       }, {
---         on_exit = function()
---           vim.notify("tex.json snippets regenerated")
---         end,
---       })
---     end,
---   })
--- end

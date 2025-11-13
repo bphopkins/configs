@@ -4,7 +4,7 @@ return {
   ft = { "tex", "plaintex", "latex" },
 
   init = function()
-    -- Viewer / compiler
+    -- Viewer / compiler (your existing config is good)
     vim.g.vimtex_view_method = "general"
     vim.g.vimtex_view_general_viewer = "okular"
     vim.g.vimtex_view_general_options = "--unique file:@pdf\\#src:@line@tex"
@@ -15,29 +15,40 @@ return {
     -- Project root & include scanning
     vim.g.vimtex_root_markers = { "dissertation.tex", ".latexmkrc", ".git" }
     vim.g.vimtex_include_search_enabled = 1
-    vim.g.vimtex_include_search_paths = { ".", "..", "../..", "article" }
+
+    -- ADD THIS to help VimTeX find your custom packages
+    vim.g.vimtex_texmf_home = vim.fn.expand("~/texmf")
+
+    -- Expand search paths to include parent directories
     vim.g.vimtex_includegraphics_search_paths = { ".", "figures", "imgs", "img", "graphics" }
 
-    -- Completion (leave braces + use filetype intelligence)
+    -- Completion settings
     vim.g.vimtex_complete_enabled = 1
-    vim.g.vimtex_complete_close_braces = 0
+    vim.g.vimtex_complete_close_braces = 1 -- 0 was fine too
     vim.g.vimtex_complete_recursive_bib = 1
-    -- Let '=' reindent be a bit smarter in TeX files (helps with environments)
+    vim.g.vimtex_complete_input_paths = {
+      vim.fn.expand("~/texmf/tex/latex"),
+    }
+
+    -- ADD THIS for better custom command detection
+    vim.g.vimtex_complete_scan_files_depth = 3 -- Scan deeper for commands
+
     vim.g.vimtex_indent_enabled = 1
     vim.g.vimtex_imaps_enabled = 0
-
-    -- Quickfix noise (keep off unless you want auto-open)
     vim.g.vimtex_quickfix_mode = 0
-
-    -- Syntax & conceal (you prefer raw source, keep conceal off)
     vim.g.vimtex_syntax_conceal_disable = 1
 
-    -- Teach VimTeX about a few custom commands/environments for syntax highlighting.
-    -- (Optional but nice: makes them “look” first-class; does not harm completion.)
-    -- Add yours here as you wish:
-    -- vim.g.vimtex_syntax_custom_cmds = {
-    --   -- plain names are fine; add dicts later if you need arg-specific rules
-    --   "proofsetl",
-    -- }
+    -- Critical for extensive custom commands
+    vim.g.tex_flavor = "latex"
+
+    -- Tell VimTeX about your custom package location
+    vim.g.vimtex_include_search_paths = {
+      ".",
+      "..",
+      "../..",
+      "article",
+      vim.fn.expand("~/texmf/tex/latex"),
+      vim.fn.expand("~/texmf/tex/latex/local"),
+    }
   end,
 }
