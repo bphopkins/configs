@@ -15,10 +15,10 @@ return {
       --
       -- Make those snippet-sets visible when editing TeX / LaTeX.
       ls.filetype_extend("tex", { "latex-workshop", "french-logic" })
-
-      -- Typical LaTeX setup: latex/plaintex share the tex snippets.
       ls.filetype_extend("latex", { "tex" })
       ls.filetype_extend("plaintex", { "tex" })
+      ls.filetype_extend("bib", { "latex-workshop", "french-logic" })
+      ls.filetype_extend("bibtex", { "latex-workshop", "french-logic" })
 
       return opts
     end,

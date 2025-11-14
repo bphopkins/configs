@@ -29,10 +29,10 @@ return {
       opts.snippets.preset = "luasnip"
 
       -- enable the compat source named "vimtex"
-      opts.sources.compat = opts.sources.compat or {}
-      if not vim.tbl_contains(opts.sources.compat, "vimtex") then
-        table.insert(opts.sources.compat, "vimtex")
-      end
+      -- opts.sources.compat = opts.sources.compat or {}
+      -- if not vim.tbl_contains(opts.sources.compat, "vimtex") then
+      --   table.insert(opts.sources.compat, "vimtex")
+      -- end
 
       -- prefer vimtex (plus defaults) in TeX-ish filetypes
       opts.sources.per_filetype = opts.sources.per_filetype or {}
@@ -48,6 +48,8 @@ return {
       opts.sources.per_filetype.tex = tex_sources
       opts.sources.per_filetype.latex = tex_sources
       opts.sources.per_filetype.plaintex = tex_sources
+      opts.sources.per_filetype.bib = tex_sources
+      opts.sources.per_filetype.bibtex = tex_sources
 
       return opts
     end,

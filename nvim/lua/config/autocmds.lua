@@ -9,7 +9,7 @@
 
 -- vim.o.autowriteall = true
 vim.api.nvim_create_autocmd({ "InsertLeavePre", "TextChanged" }, {
-  pattern = { "*.html", "*.tex", "*.sty", "*.cls", "*.css" },
+  pattern = { "*.html", "*.tex", "*.sty", "*.bib*", "*.cls", "*.css", "*.lua" },
   callback = function()
     vim.cmd("silent! write")
   end,
