@@ -41,6 +41,7 @@ unset rc
 alias sysupgrade='sudo dnf upgrade --refresh -y && sudo flatpak update --appstream -y && flatpak update --appstream -y'
 alias tl-upgrade='sudo /usr/local/texlive/2025/bin/x86_64-linux/tlmgr update --self --all'
 alias lsa='ls -a --group-directories-first'
+alias configure='cd ~/Desktop/configs && nvim'
 alias dissertate='cd ~/Desktop/dissertation && nvim'
 alias homepage='cd ~/Desktop/bphopkins.github.io && nvim'
 alias home='cd ~ && lsa'

@@ -7,7 +7,7 @@ return {
   "folke/persistence.nvim",
   lazy = false, -- ensure the module exists when VimEnter fires on an empty start
   opts = {
-    dir = vim.fn.stdpath("state") .. "/sessions", -- per-machine storage
+    dir = vim.fn.stdpath("state") .. "/sessions/", -- per-machine storage
     need = 1, -- save only if ≥1 real file buffer is open
     branch = false, -- single session per dir (no per-branch split)
   },
@@ -49,6 +49,7 @@ return {
     local roots = {
       "~/Desktop/dissertation",
       "~/Desktop/bphopkins.github.io",
+      "~/Desktop/configs",
     }
 
     -- Normalize to absolute, resolved paths and keep only existing dirs.
