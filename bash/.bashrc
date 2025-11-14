@@ -27,6 +27,9 @@ export PATH MANPATH INFOPATH
 
 # ----- end PATH tweaks -----
 
+# Load the Nix profile so its PATH and env exports are available everywhere
+[ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ] && . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+
 # User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
   for rc in ~/.bashrc.d/*; do
@@ -34,8 +37,6 @@ if [ -d ~/.bashrc.d ]; then
   done
 fi
 unset rc
-
-[ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ] && . "$HOME/.nix-profile/etc/profile.d/nix.sh"
 
 alias sysupgrade='sudo dnf upgrade --refresh -y && sudo flatpak update --appstream -y && flatpak update --appstream -y'
 alias tl-upgrade='sudo /usr/local/texlive/2025/bin/x86_64-linux/tlmgr update --self --all'
