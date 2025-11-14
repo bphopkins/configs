@@ -38,11 +38,13 @@ return {
       opts.sources.per_filetype = opts.sources.per_filetype or {}
       local tex_sources = {
         inherit_defaults = false,
-        "vimtex",
         "snippets",
-        "path",
+        -- "path", -- testing off
+        -- "vimtex", -- trying to offload onto LuaSnip
+        -- "buffer", -- clutters with word recommendations
         -- "lsp", -- if I ever decide to use texlab
       }
+
       opts.sources.per_filetype.tex = tex_sources
       opts.sources.per_filetype.latex = tex_sources
       opts.sources.per_filetype.plaintex = tex_sources

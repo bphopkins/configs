@@ -23,7 +23,7 @@ return {
     vim.g.vimtex_includegraphics_search_paths = { ".", "figures", "imgs", "img", "graphics" }
 
     -- Completion settings
-    vim.g.vimtex_complete_enabled = 1
+    vim.g.vimtex_complete_enabled = 0 -- 0 for offloading onto LuaSnip
     vim.g.vimtex_complete_close_braces = 1 -- 0 was fine too
     vim.g.vimtex_complete_recursive_bib = 1
     vim.g.vimtex_complete_input_paths = {
