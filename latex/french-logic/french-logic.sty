@@ -1,134 +1,245 @@
+
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{french-logic}[Enhanced logic macros]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Non-Dependencies put here for a shorter preamble %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% PACKAGES %%%
-
-% Generally Useful Packages
 \RequirePackage[T1]{fontenc}
 \RequirePackage[utf8]{inputenc}
 \RequirePackage{lmodern}
 \RequirePackage[english]{babel}
-\RequirePackage[backend=biber]{biblatex}
-\RequirePackage{csquotes}
-%\RequirePackage{circledsteps}
 \RequirePackage{ragged2e}
 \RequirePackage{setspace}
-%\RequirePackage{enotez}
-\RequirePackage{graphicx}
-\graphicspath{{./images/}}
 \RequirePackage{multicol}
-\RequirePackage{xcolor, soul}
+\RequirePackage{xcolor}
+\RequirePackage{soul}
 \RequirePackage{tabularx}
-
-
-% Define the conflicts option
-\RequirePackage{kvoptions}
-\SetupKeyvalOptions{
-  family=frenchlogic,
-  prefix=french@logic@
-}
-\DeclareBoolOption[false]{conflicts}
-\ProcessKeyvalOptions*
-
-% Conditionally load conflicts.def
-\iffrench@logic@conflicts
-  % Do nothing if conflicts=true
-\else
-  \input{conflicts.def}
-\fi
-
-
-
-
-% Special Environment Packages
-% \RequirePackage{enumitem}
 \RequirePackage{mdframed}
-
-
-% Math Packages
-\RequirePackage{amsmath}
-\RequirePackage{amssymb}
-\RequirePackage{amsthm}
-\RequirePackage{mathtools}
-\RequirePackage{stmaryrd}
-\RequirePackage{mathrsfs}
 \RequirePackage{calc}
-\RequirePackage{trimclip,adjustbox}
+\RequirePackage{trimclip}
+\RequirePackage{adjustbox}
 \RequirePackage{bm}
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GLOBAL DEPENDENCIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\RequirePackage{graphicx}
+\graphicspath{{./images/}}
+\RequirePackage{enumitem}
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{mathtools}
+\RequirePackage{stmaryrd}
+\RequirePackage{mathrsfs}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newif\iffrenchlogicdeon 
+\DeclareOption{deon}{\frenchlogicdeontrue} 
+\DeclareOption*{\PackageWarning{french-logic}{Unknown option `\CurrentOption'}}
+\ProcessOptions\relax
+
+%%% Local Dependencies -- skipped for DEON submissions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\iffrenchlogicdeon\else
+  \RequirePackage[backend=biber]{biblatex}
+  \RequirePackage{csquotes}
+  \RequirePackage[hyperfootnotes=false]{hyperref}
+  \RequirePackage{footmisc}
+  \RequirePackage{amsthm}
+\fi
+
+% Theorem environments disabled in DEON mode
+\iffrenchlogicdeon\else
+
+  %%% DISSERTATION THEOREM ENVIRONMENTS AND RELATED DEFINITIONS 
+  \renewcommand\qedsymbol{$\blacksquare$}
+  \newcommand{\sketchqed}{\hfill $\square$}
+  \newcommand{\remarkqed}{\hfill \mbox{$\triangleleft$}}
+
+  % For Dissertation
+  \newtheoremstyle{noindentplain}     % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                       % Body font (italic)
+    {0pt}                            % Indent amount
+    {\scshape}                      % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+  \newtheoremstyle{noindentdefinition} % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                    % Body font (normal)
+    {0pt}                            % Indent amount
+    {\scshape}                      % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+  \newtheoremstyle{noindentremark}     % Name
+    {6pt}                        % Space above
+    {6pt}                        % Space below
+    {\normalfont}                    % Body font (normal)
+    {0pt}                            % Indent amount
+    {\itshape}                       % Theorem head font
+    {.}                              % Punctuation after theorem head
+    {.5em}                          % Space after theorem head
+    {}                              % Theorem head spec
+
+  \theoremstyle{noindentplain}
+    \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{lemma}[theorem]{Lemma}
+    \newtheorem{proposition}[theorem]{Proposition}
+    \newtheorem{corollary}[theorem]{Corollary}
+
+  \theoremstyle{noindentdefinition}
+    \newtheorem{definition}[theorem]{Definition}
+    \newtheorem{example}[theorem]{Example}
+
+  \theoremstyle{noindentremark}
+    \newtheorem{remark}[theorem]{Remark}
+    \AtEndEnvironment{remark}{\remarkqed}
+    \newtheorem{note}[theorem]{Note}
+    \AtEndEnvironment{note}{\remarkqed}
+    \newtheorem{observation}[theorem]{Observation}
+    \AtEndEnvironment{observation}{\remarkqed}
+    \newtheorem{convention}[theorem]{Convention}
+    \AtEndEnvironment{convention}{\remarkqed}
+
+  \newtheoremstyle{sketchstyle}%
+    {6pt}
+    {6pt}             % Space above and below
+    {\normalfont}               % Body font (normal text)
+    {0pt}               % Indentation (none)
+    {\itshape}       % Heading font (italic)
+    {.}              % Punctuation after heading
+    {.5em}              % Space after heading
+    {}               % Custom head spec (empty)
+  
+  \theoremstyle{sketchstyle}
+    \newtheorem*{proofsketch}{Sketch of Proof}
+    \AtEndEnvironment{proofsketch}{\sketchqed}
+    \newtheorem*{digression}{{{Digression}}}
+    \AtEndEnvironment{digression}{{\textit{End of digression.}}}
+    \newtheorem*{elucidation}{{{Elucidation}}}
+
+  \makeatletter
+    \renewenvironment{proof}[1][\proofname]{\par
+      \pushQED{\qed}%
+      \normalfont
+      \topsep6\p@\@plus6\p@\relax
+      \trivlist
+      \item[\hskip\labelsep
+        \itshape
+        #1\@addpunct{.}]\ignorespaces
+      }{%
+        \popQED\endtrivlist\@endpefalse
+      }
+  \makeatother
+
+  \newenvironment{block}{\begin{list}{}{\setlength{\leftmargin}{2em} % Set left margin
+    \setlength{\rightmargin}{0em}} % Set right margin to 0
+    \item[]}
+    {\end{list}
+  }
+
+\fi
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DIAGRAMMATIC DRAWINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % EB Proof --  with style
 \RequirePackage{ebproof}
-\newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
-\newcommand*{\hyphantom}{\hypo{{$\hphantom{--}$}}}
-\newcommand{\hyp}[1]{\hypo{#1}}
-\newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
-\renewcommand{\inf}[3]{\infer#1[#2]{#3}}
-\newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
-\newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
-\newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
-\newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
-\newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
-\newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
-\newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
-\newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
-\newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
-% ripped from W2021 seminar final preamble, much is superfluous
-\newcommand*{\incomp}{\dagger}
-\newcommand*{\close}[1]{$\scriptscriptstyle{#1}$}
-\newcommand*{\hk}{{\supset}}
-\newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
-\newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
-\newcommand{\aff}{\mathlarger{\mathlarger{+}}}
-\newcommand{\den}{\mathlarger{\mathlarger{-}}}
-\newcommand{\af}{{\mathlarger{+}}}
-\newcommand{\de}{{\mathlarger{-}}}
-\newcommand{\afland}{\af\!\land}
-\newcommand{\deland}{\de\!\land}
-\newcommand{\aflor}{\af\!\lor}
-\newcommand{\delor}{\de\!\lor}
-\newcommand{\afto}{\af\rightarrow}
-\newcommand{\deto}{\de\rightarrow}
-\newcommand{\afneg}{\af\neg}
-\newcommand{\deneg}{\de\neg}
-\newcommand{\ecu}{\Rightarrow}
-\newcommand{\ito}{\rightarrow_i}
-\newcommand{\cto}{\rightarrow_c}
-\newcommand{\ilor}{\lor_i}
-\newcommand{\clor}{\lor_c}
+  \newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
+    \newcommand*{\hyphantom}{\hypo{{$\hphantom{--}$}}}
+    \newcommand{\hyp}[1]{\hypo{#1}}
+    \newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
+    \renewcommand{\inf}[3]{\infer#1[#2]{#3}}
+    \newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
+    \newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
+    \newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
+    \newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
+    \newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
+    \newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
+    \newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
+    \newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
+    \newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
+    % ripped from W2021 seminar final preamble, much is superfluous
+    \newcommand*{\incomp}{\dagger}
+    \newcommand*{\close}[1]{$\scriptscriptstyle{#1}$}
+    \newcommand*{\hk}{{\supset}}
+    \newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
+    \newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
+    \newcommand{\aff}{\mathlarger{\mathlarger{+}}}
+    \newcommand{\den}{\mathlarger{\mathlarger{-}}}
+    \newcommand{\af}{{\mathlarger{+}}}
+    \newcommand{\de}{{\mathlarger{-}}}
+    \newcommand{\afland}{\af\!\land}
+    \newcommand{\deland}{\de\!\land}
+    \newcommand{\aflor}{\af\!\lor}
+    \newcommand{\delor}{\de\!\lor}
+    \newcommand{\afto}{\af\rightarrow}
+    \newcommand{\deto}{\de\rightarrow}
+    \newcommand{\afneg}{\af\neg}
+    \newcommand{\deneg}{\de\neg}
+    \newcommand{\ecu}{\Rightarrow}
+    \newcommand{\ito}{\rightarrow_i}
+    \newcommand{\cto}{\rightarrow_c}
+    \newcommand{\ilor}{\lor_i}
+    \newcommand{\clor}{\lor_c}
 
-
-% Settings for possible worlds models, taken from http://www.actual.world/resources/tex/doc/TikZ.pdf
+% Possible worlds diagrams: http://www.actual.world/resources/tex/doc/TikZ.pdf
 \RequirePackage{tikz} 
-\usetikzlibrary{arrows,calc,patterns,positioning,shapes}
-\tikzset{
-  modal/.style={>=stealth’,shorten >=1pt,shorten <=1pt,auto,node distance=1.5cm,semithick},
-  world/.style={circle,draw,minimum size=1cm,fill=gray!15},
-  point/.style={circle,draw,fill=black,inner sep=0.5mm},
-  reflexive/.style={->,in=120,out=60,loop,looseness=#1},
-  reflexive/.default={5},
-  reflexive point/.style={->,in=135,out=45,loop,looseness=#1},
-  reflexive point/.default={25},
-  reflexive above/.style={->,loop,in=120,out=60,looseness=#1},
-  reflexive above/.default={7},
-  reflexive below/.style={->,loop,in=240,out=300,looseness=#1},
-  reflexive below/.default={7},
-  reflexive left/.style={->,loop,in=150,out=210,looseness=#1},
-  reflexive left/.default={7},
-  reflexive right/.style={->,loop,in=30,out=330,looseness=#1},
-  reflexive right/.default={7}
-}
 \RequirePackage{tikzsymbols}
+  \usetikzlibrary{arrows,calc,patterns,positioning,shapes}
+    \tikzset{
+      modal/.style={>=stealth’,shorten >=1pt,shorten <=1pt,auto,node distance=1.5cm,semithick},
+      world/.style={circle,draw,minimum size=1cm,fill=gray!15},
+      point/.style={circle,draw,fill=black,inner sep=0.5mm},
+      reflexive/.style={->,in=120,out=60,loop,looseness=#1},
+      reflexive/.default={5},
+      reflexive point/.style={->,in=135,out=45,loop,looseness=#1},
+      reflexive point/.default={25},
+      reflexive above/.style={->,loop,in=120,out=60,looseness=#1},
+      reflexive above/.default={7},
+      reflexive below/.style={->,loop,in=240,out=300,looseness=#1},
+      reflexive below/.default={7},
+      reflexive left/.style={->,loop,in=150,out=210,looseness=#1},
+      reflexive left/.default={7},
+      reflexive right/.style={->,loop,in=30,out=330,looseness=#1},
+      reflexive right/.default={7}
+    }
 
 
 
-%%% COMMANDS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% List Environments
+\newenvironment{hilbertlist}{\begin{itemize}[topsep=8pt,noitemsep,labelsep=1.5em,leftmargin=2cm]}{\end{itemize}}
+\newenvironment{romanlist}{\begin{enumerate}[label=(\roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{Romanlist}{\begin{enumerate}[label=(\Roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{arablist}{\begin{enumerate}[label={\arabic*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{arablistpar}{\begin{enumerate}[label=(\arabic*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{alphlistpar}{\begin{enumerate}[label=(\alph*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{Alphlist}{\begin{enumerate}[label={\Alph*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
+\newenvironment{itemlist}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{itemize}}
+\newenvironment{itemlistflush}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1cm]}{\end{itemize}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% COMMANDS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Misc Preliminary
 \DeclareSymbolFont{stmry}{U}{stmry}{m}{n}
@@ -601,16 +712,6 @@
 \newcommand{\infer}{\; // \;}
 
 
-% List Environments
-\newenvironment{hilbertlist}{\begin{itemize}[topsep=8pt,noitemsep,labelsep=1.5em,leftmargin=2cm]}{\end{itemize}}
-\newenvironment{romanlist}{\begin{enumerate}[label=(\roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{Romanlist}{\begin{enumerate}[label=(\Roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{arablist}{\begin{enumerate}[label={\arabic*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{arablistpar}{\begin{enumerate}[label=(\arabic*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{alphlistpar}{\begin{enumerate}[label=(\alph*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{Alphlist}{\begin{enumerate}[label={\Alph*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
-\newenvironment{itemlist}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{itemize}}
-\newenvironment{itemlistflush}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1cm]}{\end{itemize}}
 
 
 
@@ -630,20 +731,20 @@
 %\newcommand{\ax}{\textit{Ax}}
 %\renewcommand{\th}{\textit{Th}}
 \newcommand{\natent}{%
-  \mathrel{\text{\clipbox{0pt 0pt {.8\width} 0pt}{$\Vdash$}}\mkern.9mu}\vDash
+\mathrel{\text{\clipbox{0pt 0pt {.8\width} 0pt}{$\Vdash$}}\mkern.9mu}\vDash
 }
 \newcommand{\nnatent}{{\natent\!\!\!\!\!\!\!\!\!\; \raisebox{1.25pt}{\rotatebox[origin=c]{-50}{|}}}}
 
 
 % Misc Nonlogical
-\newcommand{\p}[1]{p.~{#1}}
-\newcommand{\pp}[1]{pp.~{#1}}
+% \newcommand{\p}[1]{p.~{#1}}
+% \newcommand{\pp}[1]{pp.~{#1}}
 
 
 % Question/Answer Environments (unfinished, deprecated)
-\newenvironment{question}{}{}
-\newenvironment{answer}{\begin{mdframed}[backgroundcolor=yellow!2,linewidth=1.5pt,roundcorner=8pt,innerleftmargin=12pt,innerrightmargin=12pt,innertopmargin=12pt,innerbottommargin=-2pt,skipabove=15pt,skipbelow=25pt]\begin{spacing}{1.05}\RaggedRight\renewcommand{\thempfootnote}{\fnsymbol{mpfootnote}}}{\end{spacing}\end{mdframed}}
-\newcommand{\abreak}{\\[-10pt]}
+% \newenvironment{question}{}{}
+% \newenvironment{answer}{\begin{mdframed}[backgroundcolor=yellow!2,linewidth=1.5pt,roundcorner=8pt,innerleftmargin=12pt,innerrightmargin=12pt,innertopmargin=12pt,innerbottommargin=-2pt,skipabove=15pt,skipbelow=25pt]\begin{spacing}{1.05}\RaggedRight\renewcommand{\thempfootnote}{\fnsymbol{mpfootnote}}}{\end{spacing}\end{mdframed}}
+% \newcommand{\abreak}{\\[-10pt]}
 
 
 
