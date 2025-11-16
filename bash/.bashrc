@@ -43,7 +43,7 @@ alias tl-upgrade='sudo /usr/local/texlive/2025/bin/x86_64-linux/tlmgr update --s
 alias lsa='ls -a --group-directories-first'
 alias configure='cd ~/Desktop/configs && nvim'
 alias dissertate='cd ~/Desktop/dissertation && nvim'
-alias homepage='cd ~/Desktop/bphopkins.github.io && nvim'
+alias homepage='cd ~/Desktop/bphopkins.net && nvim'
 alias home='cd ~ && lsa'
 alias desktop='cd ~/Desktop && lsa'
 alias configs='cd ~/Desktop/configs && lsa'
@@ -51,7 +51,7 @@ alias configs='cd ~/Desktop/configs && lsa'
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation"
-  "$HOME/Desktop/bphopkins.github.io"
+  "$HOME/Desktop/bphopkins.net"
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/configs"
 )
