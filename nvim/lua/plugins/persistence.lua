@@ -48,7 +48,7 @@ return {
     -- ---- Roots that should autoload on empty start ----
     local roots = {
       "~/Desktop/dissertation",
-      "~/Desktop/bphopkins.github.io",
+      "~/Desktop/bphopkins.net",
       "~/Desktop/configs",
     }
 
