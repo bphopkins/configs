@@ -51,9 +51,10 @@ alias configs='cd ~/Desktop/configs && lsa'
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation"
+  "$HOME/Desktop/teaching"
   "$HOME/Desktop/bphopkins.net"
-  "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/configs"
+  "$HOME/Desktop/llemmma.github.io"
 )
 
 gpullall() {
