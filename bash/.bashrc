@@ -44,9 +44,11 @@ alias lsa='ls -a --group-directories-first'
 alias configure='cd ~/Desktop/configs && nvim'
 alias dissertate='cd ~/Desktop/dissertation && nvim'
 alias homepage='cd ~/Desktop/bphopkins.net && nvim'
+alias teach='cd ~/Desktop/teaching && nvim'
 alias home='cd ~ && lsa'
 alias desktop='cd ~/Desktop && lsa'
 alias configs='cd ~/Desktop/configs && lsa'
+alias teaching='cd ~/Desktop/teaching && lsa'
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
