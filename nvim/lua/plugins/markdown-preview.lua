@@ -10,7 +10,7 @@ return {
     vim.g.mkdp_auto_start = 0
 
     -- Close the preview window when leaving the markdown buffer
-    vim.g.mkdp_auto_close = 1
+    vim.g.mkdp_auto_close = 0
 
     -- Live-ish refresh (0 = update on TextChanged; 1 = only on save)
     vim.g.mkdp_refresh_slow = 0
@@ -23,7 +23,7 @@ return {
   end,
   keys = {
     {
-      "<leader>mp",
+      "<localleader>mp",
       "<cmd>MarkdownPreviewToggle<CR>",
       ft = "markdown",
       desc = "Toggle Markdown Preview",
