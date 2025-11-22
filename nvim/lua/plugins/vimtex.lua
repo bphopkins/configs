@@ -41,7 +41,7 @@ return {
     -- blink.cmp + cmp-vimtex in completions.lua.
     --------------------------------------------------------------------
     vim.g.vimtex_complete_enabled = 1 -- VimTeX builds completion data (used by cmp-vimtex)
-    -- NOTE: LuaSnip is still the snippet engine; this toggle affects only
+    -- Note: LuaSnip is still the snippet engine; this toggle affects only
     -- VimTeX's semantic completions (labels, cites, macros), not snippet expansion.
 
     vim.g.vimtex_complete_close_braces = 1 -- auto-close some braces in completions (e.g. \cite{...})
