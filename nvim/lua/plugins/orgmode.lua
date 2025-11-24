@@ -73,32 +73,6 @@ return {
           target = "~/Desktop/org/notes.org",
         },
 
-        m = {
-          description = "Meeting",
-          -- %u inactive timestamp; you can change to %U if you prefer active
-          template = table.concat({
-            "* MEETING with %? :meeting:",
-            "  %u",
-            "** Context",
-            "  - ",
-            "** Notes",
-            "  - ",
-          }, "\n"),
-          target = "~/Desktop/org/meetings.org",
-        },
-
-        j = {
-          description = "Journal",
-          -- %<…> = strftime format (date on heading, time in body)
-          template = table.concat({
-            "* %<%Y-%m-%d %A>",
-            "  %U",
-            "",
-            "  %?",
-          }, "\n"),
-          target = "~/Desktop/org/journal.org",
-        },
-
         l = {
           description = "Link to current location",
           template = "* TODO %?\n  %u\n  %a",

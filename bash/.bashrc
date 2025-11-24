@@ -18,6 +18,10 @@ fi
 # npm global binaries
 PATH="$HOME/.local/npm-global/bin:$PATH"
 
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
 # TeX Live
 PATH="/usr/local/texlive/2025/bin/x86_64-linux:$PATH"
 MANPATH="/usr/local/texlive/2025/texmf-dist/doc/man:$MANPATH"
