@@ -43,7 +43,7 @@ return {
       -- Week starts Monday
       calendar_week_start_day = 1,
       -- Start with a bit of structure visible, not fully folded
-      org_startup_folded = "content",
+      org_startup_folded = "showeverything",
       -- Visual indentation + hiding stars, so it feels more outline-y
       org_startup_indented = true,
       org_indent_mode_turns_on_hiding_stars = true,
@@ -75,7 +75,7 @@ return {
         l = {
           description = "Link to current location",
           template = "* TODO %?\n  %u\n  %a",
-          target = "~/Desktop/org/inbox.org",
+          target = "~/Desktop/org/refile.org",
         },
       },
     })

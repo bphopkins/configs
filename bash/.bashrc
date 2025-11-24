@@ -60,7 +60,6 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/teaching"
   "$HOME/Desktop/bphopkins.net"
   "$HOME/Desktop/configs"
-  "$HOME/Desktop/org"
   "$HOME/Desktop/llemmma.github.io"
 )
 
