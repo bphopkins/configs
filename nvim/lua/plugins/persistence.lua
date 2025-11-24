@@ -51,6 +51,7 @@ return {
       "~/Desktop/bphopkins.net",
       "~/Desktop/configs",
       "~/Desktop/teaching",
+      "~/Desktop/org",
     }
 
     -- Normalize to absolute, resolved paths and keep only existing dirs.
