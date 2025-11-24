@@ -1,4 +1,3 @@
-
 -- lua/plugins/orgmode.lua (or wherever you keep plugin specs)
 return {
   "nvim-orgmode/orgmode",
@@ -23,9 +22,9 @@ return {
       ------------------------------------------------------------------
       -- A simple but useful GTD-ish sequence
       org_todo_keywords = {
-        "TODO(t)",   -- generic todo
-        "NEXT(n)",   -- next action
-        "WAIT(w)",   -- waiting on someone/something
+        "TODO(t)", -- generic todo
+        "NEXT(n)", -- next action
+        "WAIT(w)", -- waiting on someone/something
         "|",
         "DONE(d)",
         "CANCELLED(c)",
@@ -78,7 +77,6 @@ return {
           template = "* TODO %?\n  %u\n  %a",
           target = "~/Desktop/org/inbox.org",
         },
-
       },
     })
   end,
