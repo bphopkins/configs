@@ -1,6 +1,8 @@
-# .bash_profile
+# ~/.bash_profile
 
-# Get the aliases and functions
+# Load interactive configuration
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
 fi
+
+# Unsorted

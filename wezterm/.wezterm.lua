@@ -5,6 +5,7 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 -- This is where you actually apply your config choices.
+config.default_cwd = wezterm.home_dir .. "/Desktop"
 config.initial_cols = 100
 config.initial_rows = 40
 config.enable_tab_bar = true
