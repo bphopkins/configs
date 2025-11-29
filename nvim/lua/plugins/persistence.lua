@@ -49,6 +49,7 @@ return {
     local roots = {
       "~/Desktop/dissertation",
       "~/Desktop/bphopkins.net",
+      "~/Desktop/nousowl.net",
       "~/Desktop/configs",
       "~/Desktop/teaching",
       "~/Desktop/org",
