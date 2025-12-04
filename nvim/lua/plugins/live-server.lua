@@ -1,6 +1,6 @@
 -- lua/plugins/live-server.lua
 -- Minimal live-server config with root-aware start/stop.
--- Uses the plugin's own LiveServerStart/LiveServerStop commands. :contentReference[oaicite:0]{index=0}
+-- Uses the plugin's own LiveServerStart/LiveServerStop commands.
 
 return {
   "barrett-ruth/live-server.nvim",
