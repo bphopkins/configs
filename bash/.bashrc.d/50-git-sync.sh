@@ -1,5 +1,6 @@
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
+  "$HOME/Desktop/org"
   "$HOME/Desktop/dissertation"
   "$HOME/Desktop/teaching"
   "$HOME/Desktop/bphopkins.net"
