@@ -65,7 +65,7 @@ return {
     -- Disable VimTeX's insert-mode mappings ("imaps"). This keeps it from
     -- adding its own $...$, \left...\right, etc. and lets your autopairs /
     -- snippet setup handle delimiters instead.
-    vim.g.vimtex_imaps_enabled = 0
+    vim.g.vimtex_imaps_enabled = 1
 
     -- Don't automatically open quickfix windows; let you decide when to inspect errors.
     vim.g.vimtex_quickfix_mode = 0
