@@ -21,6 +21,7 @@
 \RequirePackage{trimclip}
 \RequirePackage{adjustbox}
 \RequirePackage{bm}
+\RequirePackage{centernot}
 
 
 
@@ -109,29 +110,12 @@
     \AtEndEnvironment{remark}{\remarkqed}
     \newtheorem{note}[theorem]{Note}
     \AtEndEnvironment{note}{\remarkqed}
-    \newtheorem{observation}[theorem]{Observation}
-    \AtEndEnvironment{observation}{\remarkqed}
     \newtheorem{convention}[theorem]{Convention}
     \AtEndEnvironment{convention}{\remarkqed}
-
-  \newtheoremstyle{sketchstyle}%
-    {6pt}
-    {6pt}             % Space above and below
-    {\normalfont}               % Body font (normal text)
-    {0pt}               % Indentation (none)
-    {\itshape}       % Heading font (italic)
-    {.}              % Punctuation after heading
-    {.5em}              % Space after heading
-    {}               % Custom head spec (empty)
-  
-  \theoremstyle{sketchstyle}
-    \newtheorem*{proofsketch}{Sketch of Proof}
-    \AtEndEnvironment{proofsketch}{\sketchqed}
-    \newtheorem*{digression}{{{Digression}}}
-    \AtEndEnvironment{digression}{{\textit{End of digression.}}}
-    \newtheorem*{elucidation}{{{Elucidation}}}
-
-  \makeatletter
+    \newtheorem{observation}[theorem]{Observation}
+    \AtEndEnvironment{observation}{\remarkqed}
+    \newtheorem{digression}[theorem]{Digression}
+    \AtEndEnvironment{digression}{\remarkqed}
     \renewenvironment{proof}[1][\proofname]{\par
       \pushQED{\qed}%
       \normalfont
@@ -143,6 +127,17 @@
       }{%
         \popQED\endtrivlist\@endpefalse
       }
+    \newenvironment{proofsketch}[1][Proof sketch]{\par
+    \pushQED{\sketchqed}%
+    \normalfont
+    \topsep6\p@\@plus6\p@\relax
+    \trivlist
+    \item[\hskip\labelsep
+      \itshape
+      #1\@addpunct{.}]\ignorespaces
+    }{%
+      \popQED\endtrivlist\@endpefalse
+    }
   \makeatother
 
   \newenvironment{block}{\begin{list}{}{\setlength{\leftmargin}{2em} % Set left margin
@@ -265,7 +260,7 @@
 \newcommand{\oset}[1]{\langle #1 \rangle}
 \newcommand{\inclin}{\sqsubseteq}
 \newcommand{\power}[1]{\wp(#1)}
-%\renewcommand{\null}{\emptyset}
+\renewcommand{\emptyset}{\varnothing}
 \newcommand{\intersect}{\cap}
 \newcommand{\union}{\cup}
 \newcommand{\suchthat}{\colon}
@@ -273,7 +268,7 @@
 
 
 % Misc Syntactical
-\newcommand{\Fm}{\textnormal{Fm}}
+\newcommand{\Fm}{\textsf{Fm}}
 \newcommand{\lang}{\ensuremath{\mathscr{L}}}
 \newcommand{\langp}{\ensuremath{\mathscr{L}^{\textnormal{\tiny P}}}}
 \newcommand{\langm}{\ensuremath{\mathscr{L}^{\textnormal{\tiny M}}}}
@@ -299,8 +294,11 @@
 \newcommand{\mnmodels}{\M\nmodels}
 \newcommand{\mtruesat}[1]{\M,{#1}\trues}
 \newcommand{\mntruesat}[1]{\M,{#1}\ntrues}
+\newcommand{\eclass}[1]{|#1|}
 \newcommand{\ctruthset}[1]{\dvbar #1\dvbar}
+\newcommand{\eclassl}[1]{|#1|_{\mbox{$\mkern-2mu$\scriptsize$\logic$}}}
 \newcommand{\ctruthsetm}[1]{\dvbar #1\dvbar^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
+\newcommand{\ctruthsetml}[1]{\dvbar #1\dvbar^{\mbox{$\mkern-2mu$\scriptsize$\M^{\logic}$}}}
 \newcommand{\ctruthsetmsub}[2]{\dvbar #1\dvbar_{\mbox{$\mkern-2mu$\scriptsize$#2$}}^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
 \newcommand{\ctruthsetmm}[1]{\dvbar #1\dvbar_{\mbox{$\mkern-2mu$\scriptsize$m$}}^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
 \newcommand{\defby}{\,\mathrel{\raisebox{.25pt}{\mbox{:$\mkern-1.5mu$:}}\mbox{$\mkern-1.5mu$=}}\,}
@@ -314,6 +312,7 @@
 
 \newcommand{\truthset}[1]{\llbracket #1\rrbracket}
 \newcommand{\truthsetm}[1]{\llbracket #1\rrbracket^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
+\newcommand{\truthsetml}[1]{\llbracket #1\rrbracket^{\mbox{$\mkern-2mu$\scriptsize$\M^{\logic}$}}}
 \newcommand{\truthsetmsub}[2]{\llbracket #1\rrbracket_{\mbox{$\mkern-2mu$\scriptsize$#2$}}^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
 \newcommand{\truthsetmm}[1]{\llbracket #1\rrbracket_{\mbox{$\mkern-2mu$\scriptsize$m$}}^{\mbox{$\mkern-2mu$\scriptsize$\M$}}}
 
@@ -337,6 +336,10 @@
 \newcommand{\tseq}{\Yright\;}
 \newcommand{\modelsrel}[1]{\models_{\!\mathscr{#1}}}
 \newcommand{\provesrel}[1]{\proves_{\!\mathscr{#1}}}
+\DeclareFontFamily{U}{txsyc}{}
+\DeclareFontShape{U}{txsyc}{m}{n}{<->txsyc}{}
+\DeclareSymbolFont{txsycfont}{U}{txsyc}{m}{n}
+\DeclareMathSymbol{\strictif}{\mathrel}{txsycfont}{74}
 
 
 % Misc Modal Symbols, Operators and Relations
@@ -530,14 +533,95 @@
 \newcommand{\naxc}{{\textbf{N}$_c$}}
 
 % Conditional Axioms and Conditions on Frames
+%%% CM_R family (R↑: weakening value)
 \newcommand{\CMr}{\textbf{CM}$_{\textnormal{\tiny R}}$}
-\newcommand{\CMl}{\textbf{CM}$_{\textnormal{\tiny L}}$}
-\newcommand{\CCr}{\textbf{CC}$_{\textnormal{\tiny R}}$}
-\newcommand{\CCl}{\textbf{CC}$_{\textnormal{\tiny L}}$}
 \newcommand{\CMrs}{\textbf{CM}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\CMls}{\textbf{CM}$_{\textnormal{\tiny L}}^*$}
+\newcommand{\CMrss}{\textbf{CM}$_{\textnormal{\tiny R}}^{**}$}
+\newcommand{\CMrsss}{\textbf{CM}$_{\textnormal{\tiny R}}^{***}$}
+\newcommand{\CMrd}{\textbf{CM}$_{\textnormal{\tiny R}}^{d}$}
+\newcommand{\CMra}{\textbf{CM}$_{\textnormal{\tiny R}}^{a}$}
+\newcommand{\CMrS}{\textbf{CM}$_{\textnormal{\tiny R}}^{s}$}
+\newcommand{\CMrconj}{\textbf{CM}$_{\textnormal{\tiny R}}^{\land}$}
+\newcommand{\CMrdisj}{\textbf{CM}$_{\textnormal{\tiny R}}^{\lor}$}
+\newcommand{\CMrconjd}{\textbf{CM}$_{\textnormal{\tiny R}}^{\land^d}$}
+%%% CC_R family (R↓: strengthening value)
+\newcommand{\CCr}{\textbf{CC}$_{\textnormal{\tiny R}}$}
 \newcommand{\CCrs}{\textbf{CC}$_{\textnormal{\tiny R}}^*$}
+\newcommand{\CCrss}{\textbf{CC}$_{\textnormal{\tiny R}}^{**}$}
+\newcommand{\CCrsss}{\textbf{CC}$_{\textnormal{\tiny R}}^{***}$}
+\newcommand{\CCrd}{\textbf{CC}$_{\textnormal{\tiny R}}^{d}$}
+\newcommand{\CCra}{\textbf{CC}$_{\textnormal{\tiny R}}^{a}$}
+\newcommand{\CCrS}{\textbf{CC}$_{\textnormal{\tiny R}}^{s}$}
+\newcommand{\CCrconj}{\textbf{CC}$_{\textnormal{\tiny R}}^{\land}$}
+\newcommand{\CCrdisj}{\textbf{CC}$_{\textnormal{\tiny R}}^{\lor}$}
+\newcommand{\CCrdisjd}{\textbf{CC}$_{\textnormal{\tiny R}}^{\lor^d}$}
+%%% CM_L family (L↓: strengthening argument)
+\newcommand{\CMl}{\textbf{CM}$_{\textnormal{\tiny L}}$}
+\newcommand{\CMls}{\textbf{CM}$_{\textnormal{\tiny L}}^*$}
+\newcommand{\CMlss}{\textbf{CM}$_{\textnormal{\tiny L}}^{**}$}
+\newcommand{\CMlsss}{\textbf{CM}$_{\textnormal{\tiny L}}^{***}$}
+\newcommand{\CMld}{\textbf{CM}$_{\textnormal{\tiny L}}^{d}$}
+\newcommand{\CMla}{\textbf{CM}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\CMlS}{\textbf{CM}$_{\textnormal{\tiny L}}^{s}$}
+\newcommand{\CMlconj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\land}$}
+\newcommand{\CMldisj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\lor}$}
+\newcommand{\CMlconjd}{\textbf{CM}$_{\textnormal{\tiny L}}^{\land^d}$}
+%%% CC_L family (L↑: weakening argument)
+\newcommand{\CCl}{\textbf{CC}$_{\textnormal{\tiny L}}$}
 \newcommand{\CCls}{\textbf{CC}$_{\textnormal{\tiny L}}^*$}
+\newcommand{\CClss}{\textbf{CC}$_{\textnormal{\tiny L}}^{**}$}
+\newcommand{\CClsss}{\textbf{CC}$_{\textnormal{\tiny L}}^{***}$}
+\newcommand{\CCld}{\textbf{CC}$_{\textnormal{\tiny L}}^{d}$}
+\newcommand{\CCla}{\textbf{CC}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\CClS}{\textbf{CC}$_{\textnormal{\tiny L}}^{s}$}
+\newcommand{\CClconj}{\textbf{CC}$_{\textnormal{\tiny L}}^{\land}$}
+\newcommand{\CCldisj}{\textbf{CC}$_{\textnormal{\tiny L}}^{\lor}$}
+\newcommand{\CCldisjd}{\textbf{CC}$_{\textnormal{\tiny L}}^{\lor^d}$}
+%%% cm_R family (lowercase)
+\newcommand{\cmr}{{cm}$_{\textnormal{\tiny R}}$}
+\newcommand{\cmrs}{{cm}$_{\textnormal{\tiny R}}^*$}
+\newcommand{\cmrss}{{cm}$_{\textnormal{\tiny R}}^{**}$}
+\newcommand{\cmrsss}{{cm}$_{\textnormal{\tiny R}}^{***}$}
+\newcommand{\cmrd}{{cm}$_{\textnormal{\tiny R}}^{d}$}
+\newcommand{\cmra}{{cm}$_{\textnormal{\tiny R}}^{a}$}
+\newcommand{\cmrS}{{cm}$_{\textnormal{\tiny R}}^{s}$}
+\newcommand{\cmrconj}{{cm}$_{\textnormal{\tiny R}}^{\land}$}
+\newcommand{\cmrdisj}{{cm}$_{\textnormal{\tiny R}}^{\lor}$}
+\newcommand{\cmrconjd}{{cm}$_{\textnormal{\tiny R}}^{\land^d}$}
+%%% cc_R family (lowercase)
+\newcommand{\ccr}{{cc}$_{\textnormal{\tiny R}}$}
+\newcommand{\ccrs}{{cc}$_{\textnormal{\tiny R}}^*$}
+\newcommand{\ccrss}{{cc}$_{\textnormal{\tiny R}}^{**}$}
+\newcommand{\ccrsss}{{cc}$_{\textnormal{\tiny R}}^{***}$}
+\newcommand{\ccrd}{{cc}$_{\textnormal{\tiny R}}^{d}$}
+\newcommand{\ccra}{{cc}$_{\textnormal{\tiny R}}^{a}$}
+\newcommand{\ccrS}{{cc}$_{\textnormal{\tiny R}}^{s}$}
+\newcommand{\ccrconj}{{cc}$_{\textnormal{\tiny R}}^{\land}$}
+\newcommand{\ccrdisj}{{cc}$_{\textnormal{\tiny R}}^{\lor}$}
+\newcommand{\ccrdisjd}{{cc}$_{\textnormal{\tiny R}}^{\lor^d}$}
+%%% cm_L family (lowercase)
+\newcommand{\cml}{{cm}$_{\textnormal{\tiny L}}$}
+\newcommand{\cmls}{{cm}$_{\textnormal{\tiny L}}^*$}
+\newcommand{\cmlss}{{cm}$_{\textnormal{\tiny L}}^{**}$}
+\newcommand{\cmlsss}{{cm}$_{\textnormal{\tiny L}}^{***}$}
+\newcommand{\cmld}{{cm}$_{\textnormal{\tiny L}}^{d}$}
+\newcommand{\cmla}{{cm}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\cmlS}{{cm}$_{\textnormal{\tiny L}}^{s}$}
+\newcommand{\cmlconj}{{cm}$_{\textnormal{\tiny L}}^{\land}$}
+\newcommand{\cmldisj}{{cm}$_{\textnormal{\tiny L}}^{\lor}$}
+\newcommand{\cmlconjd}{{cm}$_{\textnormal{\tiny L}}^{\land^d}$}
+%%% cc_L family (lowercase)
+\newcommand{\ccl}{{cc}$_{\textnormal{\tiny L}}$}
+\newcommand{\ccls}{{cc}$_{\textnormal{\tiny L}}^*$}
+\newcommand{\cclss}{{cc}$_{\textnormal{\tiny L}}^{**}$}
+\newcommand{\cclsss}{{cc}$_{\textnormal{\tiny L}}^{***}$}
+\newcommand{\ccld}{{cc}$_{\textnormal{\tiny L}}^{d}$}
+\newcommand{\ccla}{{cc}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\cclS}{{cc}$_{\textnormal{\tiny L}}^{s}$}
+\newcommand{\cclconj}{{cc}$_{\textnormal{\tiny L}}^{\land}$}
+\newcommand{\ccldisj}{{cc}$_{\textnormal{\tiny L}}^{\lor}$}
+\newcommand{\ccldisjd}{{cc}$_{\textnormal{\tiny L}}^{\lor^d}$}
+%%% Other
 \newcommand{\CNr}{\textbf{CN}$_{\textnormal{\tiny R}}$}
 \newcommand{\CNl}{\textbf{CN}$_{\textnormal{\tiny L}}$}
 \newcommand{\CNlr}{\textbf{CN}$_{\textnormal{\tiny LR}}$}
@@ -546,16 +630,6 @@
 \newcommand{\CP}{\textbf{CP}}
 \newcommand{\CPs}{\textbf{CP}$^*$}
 \newcommand{\CTh}{\textbf{CT}$^{\textnormal{\tiny H}}$}
-\newcommand{\cmr}{{cm}$_{\textnormal{\tiny R}}$}
-\newcommand{\cml}{{cm}$_{\textnormal{\tiny L}}$}
-\newcommand{\ccr}{{cc}$_{\textnormal{\tiny R}}$}
-\newcommand{\ccl}{{cc}$_{\textnormal{\tiny L}}$}
-\newcommand{\cclss}{{cc}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\cmrs}{{cm}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\cmls}{{cm}$_{\textnormal{\tiny L}}^*$}
-\newcommand{\cmlss}{{cm}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\ccrs}{{cc}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\ccls}{{cc}$_{\textnormal{\tiny L}}^*$}
 \newcommand{\cnr}{{cn}$_{\textnormal{\tiny R}}$}
 \newcommand{\cnl}{{cn}$_{\textnormal{\tiny L}}$}
 \newcommand{\cnlr}{{cn}$_{\textnormal{\tiny LR}}$}
@@ -712,8 +786,10 @@
 \newcommand{\infer}{\; // \;}
 
 
-
-
+% Neighborhood Semantics Metalanguage
+\newcommand{\mland}{\;\mathrel{\underline{\land}}\;}
+\newcommand{\mlor}{\;\mathrel{\underline{\lor}}\;}
+\newcommand{\mlto}{\enspace\mathrel{\underline{\longrightarrow}}\enspace}
 
 % Misc Other Technical (unsorted)
 \newcommand{\minus}{{\sim}}
@@ -765,7 +841,6 @@
 
 
 
-\newcommand{\cmlsss}{{cm}$_{\textnormal{\tiny L}}^{***}$}
 \newcommand{\cthss}{{ct}$^{\textnormal{\tiny H}**}$}
 
 
