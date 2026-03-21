@@ -1,3 +1,5 @@
+% !TEX root = /home/bph/Desktop/dissertation/dissertation.tex
+
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{french-logic}[Enhanced logic macros]
@@ -52,6 +54,7 @@
   \RequirePackage[backend=biber]{biblatex}
   \RequirePackage{csquotes}
   \RequirePackage[hyperfootnotes=false]{hyperref}
+  \RequirePackage{cleveref}
   \RequirePackage{footmisc}
   \RequirePackage{amsthm}
 \fi
@@ -562,6 +565,8 @@
 \newcommand{\CMlsss}{\textbf{CM}$_{\textnormal{\tiny L}}^{***}$}
 \newcommand{\CMld}{\textbf{CM}$_{\textnormal{\tiny L}}^{d}$}
 \newcommand{\CMla}{\textbf{CM}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\CMlas}{\textbf{CM}$_{\textnormal{\tiny L}}^{a*}$}
+\newcommand{\CMlass}{\textbf{CM}$_{\textnormal{\tiny L}}^{a**}$}
 \newcommand{\CMlS}{\textbf{CM}$_{\textnormal{\tiny L}}^{s}$}
 \newcommand{\CMlconj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\land}$}
 \newcommand{\CMldisj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\lor}$}
@@ -606,6 +611,8 @@
 \newcommand{\cmlsss}{{cm}$_{\textnormal{\tiny L}}^{***}$}
 \newcommand{\cmld}{{cm}$_{\textnormal{\tiny L}}^{d}$}
 \newcommand{\cmla}{{cm}$_{\textnormal{\tiny L}}^{a}$}
+\newcommand{\cmlas}{{cm}$_{\textnormal{\tiny L}}^{a*}$}
+\newcommand{\cmlass}{{cm}$_{\textnormal{\tiny L}}^{a**}$}
 \newcommand{\cmlS}{{cm}$_{\textnormal{\tiny L}}^{s}$}
 \newcommand{\cmlconj}{{cm}$_{\textnormal{\tiny L}}^{\land}$}
 \newcommand{\cmldisj}{{cm}$_{\textnormal{\tiny L}}^{\lor}$}
@@ -834,7 +841,7 @@
 \newcommand{\filter}{\uparrow\!\!}
 \newcommand{\Cl}[2]{\textnormal{\textup{Cl}}_{#1}(#2)}
 \newcommand{\mcseti}[2]{|#2|_{#1}}
-\newcommand{\tightwedge}{\mathbin{\mkern-4mu\wedge\mkern-4mu}}
+\newcommand{\tightwedge}{\mathbin{\mkern-1mu\wedge\mkern-1mu}}
 \newcommand{\atoms}{\textsf{At}}
 %\newcommand{\IOfn}[1]{$\textup{\textsf{IO}}^\textsf{\tiny H}_{#1}$}
 \newcommand{\IOfn}[1]{$\textup{\textsf{IO}}^{\tiny\textsf{H}}_{#1}$}

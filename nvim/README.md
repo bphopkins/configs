@@ -21,6 +21,7 @@ stow -Rv -t ~/.config/nvim nvim
 * **lervag/vimtex:** Runs the LaTeX toolchain (latexmk + Okular), keeps source/PDF sync working, and scans projects for macros, figures, and bibliographies.
 * **barrett-ruth/live-server.nvim:** Gives me a live server of my homepage while I edit.
 * **iamcco/markdown-preview.nvim:** Provides a Markdown preview.
-* **nvim-orgmode/orgmode:** So far just tinkering with this.
+* **nvim-treesitter/nvim-treesitter:** Disables Treesitter highlighting for LaTeX so that VimTeX's syntax engine is the sole highlighter.
+* **markdown_tasks:** Custom plugin for toggling markdown checkboxes and marking tasks done/started from within Neovim.
 * **folke/persistence.nvim:** Remembers and restores sessions (buffers, terminals, tabs) for the main projects I work on, making it easy to pick up where I left off after a reboot.
 * **folke/snacks.nvim:** Tweaks LazyVim’s picker so file browsing shows dotfiles by default, mirroring how I look at projects in the shell.

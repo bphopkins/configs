@@ -10,7 +10,7 @@ I include specific instructions for my personal configuration files for ease in 
 As soon as I boot my computer -- whichever I'm on -- I run the following custom `bash` commands in order:
 ```bash
 gpullall           # Pulls from all my everyday repositories  
-source .bashrc     # Only if necessary, but it's mostly harmless
+source ~/.bashrc   # Only if necessary, but it's mostly harmless
 stow-all           # Only if files were added or deleted, but it's harmless
 ```
 And when I finish for the day I run:
@@ -22,8 +22,6 @@ I might as well have renamed my pull command `gmorning` and my push command `gni
 
 ## (1) From Your Primary Machine
 
-Note: These instructions do not completely cover all the directories and files in the repository. They were written at a certain stage in this process and I don't care to fill in all the blanks.
-
 ### 1. Install Stow & prepare the repo
 
 I would personally begin by creating the `configs` repo on GitHub with a readme file, and then cloning it onto my desktop. My `.bashrc` file includes defined commands to push and pull all at once, to which I refer below. Different workflows might suggest initializing the repo at this step, as well as doing other Git things at other steps.
@@ -32,7 +30,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p "$HOME/Desktop/configs/{alacritty,bash,nvim,sway,waybar,wezterm}"
+mkdir -p ~/Desktop/configs/{alacritty,bash,latex,nvim,sway,waybar,wezterm}
 ```
 
 
@@ -92,6 +90,15 @@ fi
 # WEZTERM (legacy in ~): direct move of ~/.wezterm.lua to ~/Desktop/configs/wezterm/.wezterm.lua
 [ -f "$HOME/.wezterm.lua" ] && mv -iv -- "$HOME/.wezterm.lua" "$CFG/wezterm/.wezterm.lua" || echo "MISSING: ~/.wezterm.lua"
 
+# LATEX: move custom macro tree from ~/texmf/tex/latex to ~/Desktop/configs/latex
+if [ -d "$HOME/texmf/tex/latex" ]; then
+  rsync -a --exclude='.git' -- "$HOME/texmf/tex/latex/" "$CFG/latex/"
+  mv "$HOME/texmf/tex/latex" "$HOME/texmf/tex/latex.backup.$ts"
+  mkdir -p "$HOME/texmf/tex/latex"
+else
+  echo "MISSING: ~/texmf/tex/latex (nothing to import)"
+fi
+
 ```
 It may be worth it at this point to verify that, e.g., your new `nvim` directory respects the structure of the original:
 ```bash
@@ -116,18 +123,23 @@ gpushall     # automatically stage, commit, and push all to origin
 This simulates the action, reporting back if `stow` sees anything funny about creating the symlinks, and telling us exactly which symlinks will be created.
 
 ```bash
-# Easier to run in ~/Desktop/configs
 cd ~/Desktop/configs
 
-# Bash and WezTerm links go to $HOME
+# Ensure target directories exist
+mkdir -p ~/.config/{alacritty,nvim,sway,waybar} ~/texmf/tex/latex
+
+# Links to $HOME
 stow -nvt ~ bash
 stow -nvt ~ wezterm
 
-# Sway & Waybar link into their specific config dirs
+# Links to ~/.config/<app>
 stow -nvt ~/.config/alacritty alacritty
 stow -nvt ~/.config/nvim nvim
 stow -nvt ~/.config/sway sway
 stow -nvt ~/.config/waybar waybar
+
+# Links to ~/texmf/tex/latex
+stow -nvt ~/texmf/tex/latex latex
 ```
 
 If the output shows the right link paths, proceed. 
@@ -138,24 +150,32 @@ If the output shows the right link paths, proceed.
 
 Still in `~/Desktop/configs`
 ```bash
-stow -vt ~/.config/alacritty alacritty
+# Links to $HOME
 stow -vt ~ bash
 stow -vt ~ wezterm
+
+# Links to ~/.config/<app>
+stow -vt ~/.config/alacritty alacritty
 stow -vt ~/.config/nvim nvim
 stow -vt ~/.config/sway sway
 stow -vt ~/.config/waybar waybar
+
+# Links to ~/texmf/tex/latex
+stow -vt ~/texmf/tex/latex latex
 ```
 
 
 
 ### 6. Verify
 
-I provide only a few examples of how to verify:
-
 ```bash
 ls -l ~/.bashrc ~/.bash_profile
-ls -l ~/.config/sway/config ~/.config/sway/config.save 2>/dev/null || true
-ls -l ~/.config/waybar/config ~/.config/waybar/style.css 2>/dev/null || true
+ls -l ~/.wezterm.lua
+ls -l ~/.config/alacritty/alacritty.toml
+ls -l ~/.config/nvim/init.lua
+ls -l ~/.config/sway/config
+ls -l ~/.config/waybar/config ~/.config/waybar/style.css
+ls -l ~/texmf/tex/latex/french-logic/french-logic.sty
 ```
 
 You should see arrows (`->`) pointing into `~/Desktop/configs/...`.
@@ -190,17 +210,25 @@ But honestly, why not just reboot?
   ```bash
   cd ~/Desktop/configs
   stow --adopt -vt ~ bash
+  stow --adopt -vt ~ wezterm
+  stow --adopt -vt ~/.config/alacritty alacritty
+  stow --adopt -vt ~/.config/nvim nvim
   stow --adopt -vt ~/.config/sway sway
   stow --adopt -vt ~/.config/waybar waybar
-  git add -A && git commit -m "Adopt local files"  
+  stow --adopt -vt ~/texmf/tex/latex latex
+  git add -A && git commit -m "Adopt local files"
   ```
 
 - **Undo** any package later:
   ```bash
   cd ~/Desktop/configs
   stow -Dvt ~ bash
+  stow -Dvt ~ wezterm
+  stow -Dvt ~/.config/alacritty alacritty
+  stow -Dvt ~/.config/nvim nvim
   stow -Dvt ~/.config/sway sway
   stow -Dvt ~/.config/waybar waybar
+  stow -Dvt ~/texmf/tex/latex latex
   ```
 
 
