@@ -7,6 +7,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/nousowl.net"
   "$HOME/Desktop/configs"
   "$HOME/Desktop/llemmma.github.io"
+  "$HOME/Desktop/teach-logic"
 )
 
 gpullall() {
