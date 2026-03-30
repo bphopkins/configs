@@ -8,6 +8,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/configs"
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/teach-logic"
+  "$HOME/Desktop/dissertation-template"
 )
 
 gpullall() {
