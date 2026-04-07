@@ -11,6 +11,140 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation-template"
 )
 
+gpull() {
+  local name="$1" repo branch
+  if [[ -z "$name" ]]; then
+    echo "Usage: gpull <repo-name>"
+    return 1
+  fi
+
+  repo="$HOME/Desktop/$name"
+
+  if [[ ! -d "$repo" ]]; then
+    echo "[FAIL] $name: directory not found: $repo"
+    return 1
+  fi
+  if ! git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "[FAIL] $name: not a git repository"
+    return 1
+  fi
+
+  branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || printf %s HEAD)"
+  if [[ "$branch" == "HEAD" ]]; then
+    echo "[FAIL] $name: detached HEAD"
+    return 1
+  fi
+
+  if ! git -C "$repo" fetch --prune --tags >/dev/null 2>&1; then
+    echo "[FAIL] $name: fetch failed"
+    return 1
+  fi
+  if ! git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    if git -C "$repo" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+      git -C "$repo" branch -u "origin/$branch" "$branch" >/dev/null 2>&1 ||
+        { echo "[FAIL] $name: could not set upstream"; return 1; }
+    else
+      echo "[FAIL] $name: no upstream and origin/$branch not found"
+      return 1
+    fi
+  fi
+
+  echo "[PULL] $name on $branch"
+  if git -C "$repo" pull --ff-only --recurse-submodules=on-demand; then
+    if [[ -f "$repo/.gitmodules" ]]; then
+      git -C "$repo" submodule update --init --recursive --jobs=4 >/dev/null 2>&1 ||
+        echo "[WARN] $name: submodule update reported issues"
+    fi
+  else
+    echo "[FAIL] $name: pull failed (non fast-forward or other issue)"
+    return 1
+  fi
+}
+
+gpush() {
+  local name="$1" repo branch msg staged_count ahead
+  if [[ -z "$name" ]]; then
+    echo "Usage: gpush <repo-name>"
+    return 1
+  fi
+
+  repo="$HOME/Desktop/$name"
+  msg="${2:-$(hostname): $(date '+%Y-%m-%d %H:%M:%S')}"
+
+  if [[ ! -d "$repo" ]]; then
+    echo "[FAIL] $name: directory not found: $repo"
+    return 1
+  fi
+  if ! git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "[FAIL] $name: not a git repository"
+    return 1
+  fi
+
+  branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || printf %s HEAD)"
+  if [[ "$branch" == "HEAD" ]]; then
+    echo "[FAIL] $name: detached HEAD"
+    return 1
+  fi
+
+  if ! git -C "$repo" add -A; then
+    echo "[FAIL] $name: git add -A failed"
+    return 1
+  fi
+
+  if ! git -C "$repo" diff --cached --quiet; then
+    staged_count="$(git -C "$repo" diff --cached --name-only | wc -l | tr -d '[:space:]')"
+    if git -C "$repo" commit -m "$msg" >/dev/null 2>&1; then
+      echo "[COMMIT] $name: committed $staged_count path(s)"
+    else
+      echo "[FAIL] $name: commit failed"
+      return 1
+    fi
+  else
+    echo "[COMMIT] $name: nothing to commit"
+  fi
+
+  if ! git -C "$repo" fetch --prune --tags >/dev/null 2>&1; then
+    echo "[FAIL] $name: fetch failed"
+    return 1
+  fi
+
+  if ! git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    if git -C "$repo" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+      git -C "$repo" branch -u "origin/$branch" "$branch" >/dev/null 2>&1 ||
+        { echo "[FAIL] $name: could not set upstream"; return 1; }
+    fi
+  fi
+
+  if git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    if ! git -C "$repo" pull --rebase=merges --recurse-submodules=on-demand; then
+      echo "[FAIL] $name: pull --rebase failed (manual intervention required)"
+      return 1
+    fi
+  fi
+
+  if ! git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    echo "[PUSH] $name: initial push to origin/$branch"
+    if git -C "$repo" push -u origin "$branch" --follow-tags --recurse-submodules=on-demand; then
+      return 0
+    else
+      echo "[FAIL] $name: push failed"
+      return 1
+    fi
+  fi
+
+  ahead="$(git -C "$repo" rev-list --count @{u}..HEAD 2>/dev/null || echo 0)"
+  if [[ "${ahead:-0}" -eq 0 ]]; then
+    echo "[PUSH] $name: up to date (nothing to push)"
+    return 0
+  fi
+
+  echo "[PUSH] $name on $branch (ahead by $ahead)"
+  if ! git -C "$repo" push --follow-tags --recurse-submodules=on-demand; then
+    echo "[FAIL] $name: push failed"
+    return 1
+  fi
+}
+
 gpullall() {
   local repo name branch ok=0 skipped=0 failed=0
   echo "Pulling all repositories..."

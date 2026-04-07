@@ -27,6 +27,10 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 
 When adding a new stow package, update both the target map and the ordering array in `60-stow.sh`. Editing existing symlinked files requires no restow; adding new files to a package does.
 
+## Daily Sync Workflow
+
+Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) → `stow-all` (if files added/deleted). End of session: `gpushall`.
+
 ## Git Sync Workflow
 
 Defined in `bash/.bashrc.d/50-git-sync.sh`:
@@ -68,6 +72,12 @@ blink.cmp (UI) → blink.compat (adapter) → cmp-vimtex (source) → VimTeX (sc
 ### Snippets
 `lua/snippets/french-logic.lua` (auto-generated from `french-logic.sty` by `sty-lua-snippets.py`) and `latex-workshop.lua` (BibTeX templates). Loaded via filetype extensions in `lua/plugins/snippets.lua`.
 
+Regenerate after editing `french-logic.sty`:
+```bash
+cd ~/Desktop/configs
+python3 nvim/lua/snippets/sty-lua-snippets.py -i latex/french-logic/french-logic.sty -o nvim/lua/snippets/french-logic.lua
+```
+
 ### Markdown tasks
 Custom task system in `lua/config/markdown_tasks.lua` with keybindings in `lua/plugins/markdown_tasks.lua`:
 - `<localleader>mt` — toggle `[ ]`/`[x]`
@@ -80,7 +90,7 @@ Custom task system in `lua/config/markdown_tasks.lua` with keybindings in `lua/p
 `lua/plugins/persistence.lua` auto-loads sessions for specific roots: `~/Desktop/{dissertation,bphopkins.net,nousowl.net,configs,teaching,org}`. Bypass with `NVIM_NOSESSION=1`.
 
 ### Formatter
-stylua (config in `nvim/stylua.toml`: 2-space indent, 100 columns).
+stylua (config in `nvim/stylua.toml`: 2-space indent, 100 columns). Run from repo root: `stylua nvim/`
 
 ## LaTeX Packages
 

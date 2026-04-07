@@ -22,6 +22,7 @@
 \RequirePackage{calc}
 \RequirePackage{trimclip}
 \RequirePackage{adjustbox}
+\RequirePackage{booktabs}
 \RequirePackage{bm}
 \RequirePackage{centernot}
 
@@ -645,6 +646,11 @@
 \newcommand{\cths}{{ct}$^{\textnormal{\tiny H}*}$}
 \newcommand{\cduax}{{{\textbf{C-Dual}}}}
 
+%%% Order conditions on frames
+\newcommand{\Rup}{\ensuremath{\textnormal{R}{\uparrow}}}
+\newcommand{\Rdown}{\ensuremath{\textnormal{R}{\downarrow}}}
+\newcommand{\Ldown}{\ensuremath{\textnormal{L}{\downarrow}}}
+\newcommand{\Lup}{\ensuremath{\textnormal{L}{\uparrow}}}
 
 % Modal Derivation Rules
 \newcommand{\rerule}{{\textnormal{RE}}}
@@ -797,7 +803,10 @@
 % Neighborhood Semantics Metalanguage
 \newcommand{\mland}{\;\mathrel{\underline{\land}}\;}
 \newcommand{\mlor}{\;\mathrel{\underline{\lor}}\;}
+\newcommand{\mlnot}{\mathord{\underline{\lnot}}}
 \newcommand{\mlto}{\enspace\mathrel{\underline{\longrightarrow}}\enspace}
+\newcommand{\mlforall}{\mathord{\underline{\forall}}}
+\newcommand{\mlexists}{\mathord{\underline{\exists}}}
 
 % Misc Other Technical (unsorted)
 \newcommand{\minus}{{\sim}}
