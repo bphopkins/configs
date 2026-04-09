@@ -25,6 +25,8 @@
 \RequirePackage{booktabs}
 \RequirePackage{bm}
 \RequirePackage{centernot}
+\RequirePackage{xspace}
+\xspaceaddexceptions{/}
 
 
 
@@ -58,6 +60,7 @@
   \RequirePackage{cleveref}
   \RequirePackage{footmisc}
   \RequirePackage{amsthm}
+  \RequirePackage{aliascnt}
 \fi
 
 % Theorem environments disabled in DEON mode
@@ -101,24 +104,74 @@
 
   \theoremstyle{noindentplain}
     \newtheorem{theorem}{Theorem}[section]
-    \newtheorem{lemma}[theorem]{Lemma}
-    \newtheorem{proposition}[theorem]{Proposition}
-    \newtheorem{corollary}[theorem]{Corollary}
+    \crefname{theorem}{theorem}{theorems}
+    \Crefname{theorem}{Theorem}{Theorems}
+
+    \newaliascnt{lemma}{theorem}
+    \newtheorem{lemma}[lemma]{Lemma}
+    \aliascntresetthe{lemma}
+    \crefname{lemma}{lemma}{lemmas}
+    \Crefname{lemma}{Lemma}{Lemmas}
+
+    \newaliascnt{proposition}{theorem}
+    \newtheorem{proposition}[proposition]{Proposition}
+    \aliascntresetthe{proposition}
+    \crefname{proposition}{proposition}{propositions}
+    \Crefname{proposition}{Proposition}{Propositions}
+
+    \newaliascnt{corollary}{theorem}
+    \newtheorem{corollary}[corollary]{Corollary}
+    \aliascntresetthe{corollary}
+    \crefname{corollary}{corollary}{corollaries}
+    \Crefname{corollary}{Corollary}{Corollaries}
 
   \theoremstyle{noindentdefinition}
-    \newtheorem{definition}[theorem]{Definition}
-    \newtheorem{example}[theorem]{Example}
+    \newaliascnt{definition}{theorem}
+    \newtheorem{definition}[definition]{Definition}
+    \aliascntresetthe{definition}
+    \crefname{definition}{definition}{definitions}
+    \Crefname{definition}{Definition}{Definitions}
+
+    \newaliascnt{example}{theorem}
+    \newtheorem{example}[example]{Example}
+    \aliascntresetthe{example}
+    \crefname{example}{example}{examples}
+    \Crefname{example}{Example}{Examples}
 
   \theoremstyle{noindentremark}
-    \newtheorem{remark}[theorem]{Remark}
+    \newaliascnt{remark}{theorem}
+    \newtheorem{remark}[remark]{Remark}
+    \aliascntresetthe{remark}
+    \crefname{remark}{remark}{remarks}
+    \Crefname{remark}{Remark}{Remarks}
     \AtEndEnvironment{remark}{\remarkqed}
-    \newtheorem{note}[theorem]{Note}
+
+    \newaliascnt{note}{theorem}
+    \newtheorem{note}[note]{Note}
+    \aliascntresetthe{note}
+    \crefname{note}{note}{notes}
+    \Crefname{note}{Note}{Notes}
     \AtEndEnvironment{note}{\remarkqed}
-    \newtheorem{convention}[theorem]{Convention}
+
+    \newaliascnt{convention}{theorem}
+    \newtheorem{convention}[convention]{Convention}
+    \aliascntresetthe{convention}
+    \crefname{convention}{convention}{conventions}
+    \Crefname{convention}{Convention}{Conventions}
     \AtEndEnvironment{convention}{\remarkqed}
-    \newtheorem{observation}[theorem]{Observation}
+
+    \newaliascnt{observation}{theorem}
+    \newtheorem{observation}[observation]{Observation}
+    \aliascntresetthe{observation}
+    \crefname{observation}{observation}{observations}
+    \Crefname{observation}{Observation}{Observations}
     \AtEndEnvironment{observation}{\remarkqed}
-    \newtheorem{digression}[theorem]{Digression}
+
+    \newaliascnt{digression}{theorem}
+    \newtheorem{digression}[digression]{Digression}
+    \aliascntresetthe{digression}
+    \crefname{digression}{digression}{digressions}
+    \Crefname{digression}{Digression}{Digressions}
     \AtEndEnvironment{digression}{\remarkqed}
     \renewenvironment{proof}[1][\proofname]{\par
       \pushQED{\qed}%
@@ -138,7 +191,7 @@
     \trivlist
     \item[\hskip\labelsep
       \itshape
-      #1\@addpunct{.}]\ignorespaces
+      #1\@addpunct{.}]\ignorespaces\leavevmode
     }{%
       \popQED\endtrivlist\@endpefalse
     }
@@ -262,6 +315,7 @@
 % Set Theoretic Notions and Relations
 \newcommand{\set}[1]{\{#1\}}
 \newcommand{\oset}[1]{\langle #1 \rangle}
+\newcommand{\tuple}[1]{\langle #1 \rangle}
 \newcommand{\inclin}{\sqsubseteq}
 \newcommand{\power}[1]{\wp(#1)}
 \renewcommand{\emptyset}{\varnothing}
@@ -273,11 +327,11 @@
 
 % Misc Syntactical
 \newcommand{\Fm}{\textsf{Fm}}
-\newcommand{\lang}{\ensuremath{\mathscr{L}}}
-\newcommand{\langp}{\ensuremath{\mathscr{L}^{\textnormal{\tiny P}}}}
-\newcommand{\langm}{\ensuremath{\mathscr{L}^{\textnormal{\tiny M}}}}
-\newcommand{\langd}{\ensuremath{\mathscr{L}^{\textnormal{\tiny D}}}}
-\newcommand{\langmd}{\lang^\textnormal{\tiny MD}}
+\newcommand{\lang}{\ensuremath{\mathscr{L}}\xspace}
+\newcommand{\langp}{\ensuremath{\mathscr{L}^{\textnormal{\tiny P}}}\xspace}
+\newcommand{\langm}{\ensuremath{\mathscr{L}^{\textnormal{\tiny M}}}\xspace}
+\newcommand{\langd}{\ensuremath{\mathscr{L}^{\textnormal{\tiny D}}}\xspace}
+\newcommand{\langmd}{\ensuremath{\mathscr{L}^\textnormal{\tiny MD}}\xspace}
 \newcommand{\logic}{\mathcal{L}}
 \newcommand{\logicp}{\logic_{\!\textnormal{\tiny p}}}
 \newcommand{\Lc}{\mathscr{L}^{\textnormal{\tiny C}}}
@@ -496,271 +550,274 @@
 
 
 % Modal Axioms
-\newcommand{\kax}{{\textbf{K}}}
-\newcommand{\dax}{{\textbf{D}}}
-\newcommand{\dsax}{{\textbf{D}$^*$}}
-\newcommand{\tax}{{\textbf{T}}}
+\newcommand{\kax}{\ensuremath{\textbf{K}}\xspace}
+\newcommand{\dax}{\ensuremath{\textbf{D}}\xspace}
+\newcommand{\dsax}{\ensuremath{\textbf{D}^*}\xspace}
+\newcommand{\tax}{\ensuremath{\textbf{T}}\xspace}
 % \newcommand{\bax}{\textbf{B}}
 % \newcommand{\fourax}{\textbf{4}}
 % \newcommand{\fiveax}{\textbf{5}}
-\newcommand{\uax}{{\textbf{U}}}
-\newcommand{\wax}{{\textbf{W}}}
-\newcommand{\maxi}{{\textbf{M}}}
-\newcommand{\cax}{{\textbf{C}}}
-\newcommand{\nax}{{\textbf{N}}}
-\newcommand{\cmaxi}{{\textbf{CM}}}
-\newcommand{\ccax}{{\textbf{CC}}}
-\newcommand{\cnax}{{\textbf{CN}}}
-\newcommand{\duax}{{{\textbf{Dual}}}}
-\newcommand{\pax}{{\textbf{P}}}
-\newcommand{\psax}{{\textbf{P}$^*$}}
-\newcommand{\poax}{{\textbf{P}$_{\!\ought}$}}
-\newcommand{\posax}{{\textbf{P}$_{\!\ought}^*$}}
-\newcommand{\woax}{\textbf{W}\!$_\ought$}
-\newcommand{\wocax}{\textbf{W}\!$_{\ought\textnormal{c}}$}
+\newcommand{\uax}{\ensuremath{\textbf{U}}\xspace}
+\newcommand{\wax}{\ensuremath{\textbf{W}}\xspace}
+\newcommand{\maxi}{\ensuremath{\textbf{M}}\xspace}
+\newcommand{\cax}{\ensuremath{\textbf{C}}\xspace}
+\newcommand{\nax}{\ensuremath{\textbf{N}}\xspace}
+\newcommand{\cmaxi}{\ensuremath{\textbf{CM}}\xspace}
+\newcommand{\ccax}{\ensuremath{\textbf{CC}}\xspace}
+\newcommand{\cnax}{\ensuremath{\textbf{CN}}\xspace}
+\newcommand{\duax}{\ensuremath{\textbf{Dual}}\xspace}
+\newcommand{\pax}{\ensuremath{\textbf{P}}\xspace}
+\newcommand{\psax}{\ensuremath{\textbf{P}^*}\xspace}
+\newcommand{\poax}{\ensuremath{\textbf{P}_{\!\ought}}\xspace}
+\newcommand{\posax}{\ensuremath{\textbf{P}_{\!\ought}^*}\xspace}
+\newcommand{\woax}{\ensuremath{\textbf{W}\!_\ought}\xspace}
+\newcommand{\wocax}{\ensuremath{\textbf{W}\!_{\ought\textnormal{c}}}\xspace}
 % Parenthesized
-\newcommand{\kaxpar}{\parent{\textbf{K}}}
-\newcommand{\daxpar}{\parent{\textbf{D}}}
-\newcommand{\taxpar}{\parent{\textbf{T}}}
-\newcommand{\uaxpar}{\parent{\textbf{U}}}
-\newcommand{\maxipar}{\parent{\textbf{M}}}
-\newcommand{\caxpar}{\parent{\textbf{C}}}
-\newcommand{\naxpar}{\parent{\textbf{N}}}
-\newcommand{\duaxpar}{{\parent{\textbf{Dual}}}}
+\newcommand{\kaxpar}{(\ensuremath{\textbf{K}})\xspace}
+\newcommand{\daxpar}{(\ensuremath{\textbf{D}})\xspace}
+\newcommand{\taxpar}{(\ensuremath{\textbf{T}})\xspace}
+\newcommand{\uaxpar}{(\ensuremath{\textbf{U}})\xspace}
+\newcommand{\maxipar}{(\ensuremath{\textbf{M}})\xspace}
+\newcommand{\caxpar}{(\ensuremath{\textbf{C}})\xspace}
+\newcommand{\naxpar}{(\ensuremath{\textbf{N}})\xspace}
+\newcommand{\duaxpar}{(\ensuremath{\textbf{Dual}})\xspace}
 % Converses
-\newcommand{\kaxc}{{\textbf{K}$_c$}}
-\newcommand{\daxc}{{\textbf{D}$_c$}}
-\newcommand{\taxc}{{\textbf{T}$_c$}}
-\newcommand{\uaxc}{{\textbf{U}$_c$}}
-\newcommand{\waxc}{{\textbf{W}\!$_c$}}
-\newcommand{\maxic}{{\textbf{M}$_c$}}
-\newcommand{\caxc}{{\textbf{C}$_c$}}
-\newcommand{\naxc}{{\textbf{N}$_c$}}
+\newcommand{\kaxc}{\ensuremath{\textbf{K}_c}\xspace}
+\newcommand{\daxc}{\ensuremath{\textbf{D}_c}\xspace}
+\newcommand{\taxc}{\ensuremath{\textbf{T}_c}\xspace}
+\newcommand{\uaxc}{\ensuremath{\textbf{U}_c}\xspace}
+\newcommand{\waxc}{\ensuremath{\textbf{W}\!_c}\xspace}
+\newcommand{\maxic}{\ensuremath{\textbf{M}_c}\xspace}
+\newcommand{\caxc}{\ensuremath{\textbf{C}_c}\xspace}
+\newcommand{\naxc}{\ensuremath{\textbf{N}_c}\xspace}
 
 % Conditional Axioms and Conditions on Frames
 %%% CM_R family (R↑: weakening value)
-\newcommand{\CMr}{\textbf{CM}$_{\textnormal{\tiny R}}$}
-\newcommand{\CMrs}{\textbf{CM}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\CMrss}{\textbf{CM}$_{\textnormal{\tiny R}}^{**}$}
-\newcommand{\CMrsss}{\textbf{CM}$_{\textnormal{\tiny R}}^{***}$}
-\newcommand{\CMrd}{\textbf{CM}$_{\textnormal{\tiny R}}^{d}$}
-\newcommand{\CMra}{\textbf{CM}$_{\textnormal{\tiny R}}^{a}$}
-\newcommand{\CMrS}{\textbf{CM}$_{\textnormal{\tiny R}}^{s}$}
-\newcommand{\CMrconj}{\textbf{CM}$_{\textnormal{\tiny R}}^{\land}$}
-\newcommand{\CMrdisj}{\textbf{CM}$_{\textnormal{\tiny R}}^{\lor}$}
-\newcommand{\CMrconjd}{\textbf{CM}$_{\textnormal{\tiny R}}^{\land^d}$}
+\newcommand{\CMr}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}}\xspace}
+\newcommand{\CMrs}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^*}\xspace}
+\newcommand{\CMrss}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{**}}\xspace}
+\newcommand{\CMrsss}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{***}}\xspace}
+\newcommand{\CMrd}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{d}}\xspace}
+\newcommand{\CMra}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{a}}\xspace}
+\newcommand{\CMrS}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{s}}\xspace}
+\newcommand{\CMrconj}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{\land}}\xspace}
+\newcommand{\CMrdisj}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{\lor}}\xspace}
+\newcommand{\CMrconjd}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{\land^d}}\xspace}
+\newcommand{\CMrup}{\ensuremath{\textbf{CM}_{\textnormal{\tiny R}}^{\strictif}}\xspace}
 %%% CC_R family (R↓: strengthening value)
-\newcommand{\CCr}{\textbf{CC}$_{\textnormal{\tiny R}}$}
-\newcommand{\CCrs}{\textbf{CC}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\CCrss}{\textbf{CC}$_{\textnormal{\tiny R}}^{**}$}
-\newcommand{\CCrsss}{\textbf{CC}$_{\textnormal{\tiny R}}^{***}$}
-\newcommand{\CCrd}{\textbf{CC}$_{\textnormal{\tiny R}}^{d}$}
-\newcommand{\CCra}{\textbf{CC}$_{\textnormal{\tiny R}}^{a}$}
-\newcommand{\CCrS}{\textbf{CC}$_{\textnormal{\tiny R}}^{s}$}
-\newcommand{\CCrconj}{\textbf{CC}$_{\textnormal{\tiny R}}^{\land}$}
-\newcommand{\CCrdisj}{\textbf{CC}$_{\textnormal{\tiny R}}^{\lor}$}
-\newcommand{\CCrdisjd}{\textbf{CC}$_{\textnormal{\tiny R}}^{\lor^d}$}
+\newcommand{\CCr}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}}\xspace}
+\newcommand{\CCrs}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^*}\xspace}
+\newcommand{\CCrss}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{**}}\xspace}
+\newcommand{\CCrsss}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{***}}\xspace}
+\newcommand{\CCrd}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{d}}\xspace}
+\newcommand{\CCra}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{a}}\xspace}
+\newcommand{\CCrS}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{s}}\xspace}
+\newcommand{\CCrconj}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{\land}}\xspace}
+\newcommand{\CCrdisj}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{\lor}}\xspace}
+\newcommand{\CCrdisjd}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{\lor^d}}\xspace}
+\newcommand{\CCrdown}{\ensuremath{\textbf{CC}_{\textnormal{\tiny R}}^{\strictif}}\xspace}
 %%% CM_L family (L↓: strengthening argument)
-\newcommand{\CMl}{\textbf{CM}$_{\textnormal{\tiny L}}$}
-\newcommand{\CMls}{\textbf{CM}$_{\textnormal{\tiny L}}^*$}
-\newcommand{\CMlss}{\textbf{CM}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\CMlsss}{\textbf{CM}$_{\textnormal{\tiny L}}^{***}$}
-\newcommand{\CMld}{\textbf{CM}$_{\textnormal{\tiny L}}^{d}$}
-\newcommand{\CMla}{\textbf{CM}$_{\textnormal{\tiny L}}^{a}$}
-\newcommand{\CMlas}{\textbf{CM}$_{\textnormal{\tiny L}}^{a*}$}
-\newcommand{\CMlass}{\textbf{CM}$_{\textnormal{\tiny L}}^{a**}$}
-\newcommand{\CMlS}{\textbf{CM}$_{\textnormal{\tiny L}}^{s}$}
-\newcommand{\CMlconj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\land}$}
-\newcommand{\CMldisj}{\textbf{CM}$_{\textnormal{\tiny L}}^{\lor}$}
-\newcommand{\CMlconjd}{\textbf{CM}$_{\textnormal{\tiny L}}^{\land^d}$}
+\newcommand{\CMl}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}}\xspace}
+\newcommand{\CMls}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^*}\xspace}
+\newcommand{\CMlss}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{**}}\xspace}
+\newcommand{\CMlsss}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{***}}\xspace}
+\newcommand{\CMld}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{d}}\xspace}
+\newcommand{\CMla}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{a}}\xspace}
+\newcommand{\CMlas}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{a*}}\xspace}
+\newcommand{\CMlass}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{a**}}\xspace}
+\newcommand{\CMlS}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{s}}\xspace}
+\newcommand{\CMlconj}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{\land}}\xspace}
+\newcommand{\CMldisj}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{\lor}}\xspace}
+\newcommand{\CMlconjd}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{\land^d}}\xspace}
+\newcommand{\CMldown}{\ensuremath{\textbf{CM}_{\textnormal{\tiny L}}^{\strictif}}\xspace}
 %%% CC_L family (L↑: weakening argument)
-\newcommand{\CCl}{\textbf{CC}$_{\textnormal{\tiny L}}$}
-\newcommand{\CCls}{\textbf{CC}$_{\textnormal{\tiny L}}^*$}
-\newcommand{\CClss}{\textbf{CC}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\CClsss}{\textbf{CC}$_{\textnormal{\tiny L}}^{***}$}
-\newcommand{\CCld}{\textbf{CC}$_{\textnormal{\tiny L}}^{d}$}
-\newcommand{\CCla}{\textbf{CC}$_{\textnormal{\tiny L}}^{a}$}
-\newcommand{\CClS}{\textbf{CC}$_{\textnormal{\tiny L}}^{s}$}
-\newcommand{\CClconj}{\textbf{CC}$_{\textnormal{\tiny L}}^{\land}$}
-\newcommand{\CCldisj}{\textbf{CC}$_{\textnormal{\tiny L}}^{\lor}$}
-\newcommand{\CCldisjd}{\textbf{CC}$_{\textnormal{\tiny L}}^{\lor^d}$}
+\newcommand{\CCl}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}}\xspace}
+\newcommand{\CCls}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^*}\xspace}
+\newcommand{\CClss}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{**}}\xspace}
+\newcommand{\CClsss}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{***}}\xspace}
+\newcommand{\CCld}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{d}}\xspace}
+\newcommand{\CCla}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{a}}\xspace}
+\newcommand{\CClS}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{s}}\xspace}
+\newcommand{\CClconj}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{\land}}\xspace}
+\newcommand{\CCldisj}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{\lor}}\xspace}
+\newcommand{\CCldisjd}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{\lor^d}}\xspace}
+\newcommand{\CClup}{\ensuremath{\textbf{CC}_{\textnormal{\tiny L}}^{\strictif}}\xspace}
 %%% cm_R family (lowercase)
-\newcommand{\cmr}{{cm}$_{\textnormal{\tiny R}}$}
-\newcommand{\cmrs}{{cm}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\cmrss}{{cm}$_{\textnormal{\tiny R}}^{**}$}
-\newcommand{\cmrsss}{{cm}$_{\textnormal{\tiny R}}^{***}$}
-\newcommand{\cmrd}{{cm}$_{\textnormal{\tiny R}}^{d}$}
-\newcommand{\cmra}{{cm}$_{\textnormal{\tiny R}}^{a}$}
-\newcommand{\cmrS}{{cm}$_{\textnormal{\tiny R}}^{s}$}
-\newcommand{\cmrconj}{{cm}$_{\textnormal{\tiny R}}^{\land}$}
-\newcommand{\cmrdisj}{{cm}$_{\textnormal{\tiny R}}^{\lor}$}
-\newcommand{\cmrconjd}{{cm}$_{\textnormal{\tiny R}}^{\land^d}$}
+\newcommand{\cmr}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}})\xspace}
+\newcommand{\cmrs}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^*})\xspace}
+\newcommand{\cmrss}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{**}})\xspace}
+\newcommand{\cmrsss}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{***}})\xspace}
+\newcommand{\cmrd}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{d}})\xspace}
+\newcommand{\cmra}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{a}})\xspace}
+\newcommand{\cmrS}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{s}})\xspace}
+\newcommand{\cmrconj}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{\land}})\xspace}
+\newcommand{\cmrdisj}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{\lor}})\xspace}
+\newcommand{\cmrconjd}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny R}}^{\land^d}})\xspace}
 %%% cc_R family (lowercase)
-\newcommand{\ccr}{{cc}$_{\textnormal{\tiny R}}$}
-\newcommand{\ccrs}{{cc}$_{\textnormal{\tiny R}}^*$}
-\newcommand{\ccrss}{{cc}$_{\textnormal{\tiny R}}^{**}$}
-\newcommand{\ccrsss}{{cc}$_{\textnormal{\tiny R}}^{***}$}
-\newcommand{\ccrd}{{cc}$_{\textnormal{\tiny R}}^{d}$}
-\newcommand{\ccra}{{cc}$_{\textnormal{\tiny R}}^{a}$}
-\newcommand{\ccrS}{{cc}$_{\textnormal{\tiny R}}^{s}$}
-\newcommand{\ccrconj}{{cc}$_{\textnormal{\tiny R}}^{\land}$}
-\newcommand{\ccrdisj}{{cc}$_{\textnormal{\tiny R}}^{\lor}$}
-\newcommand{\ccrdisjd}{{cc}$_{\textnormal{\tiny R}}^{\lor^d}$}
+\newcommand{\ccr}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}})\xspace}
+\newcommand{\ccrs}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^*})\xspace}
+\newcommand{\ccrss}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{**}})\xspace}
+\newcommand{\ccrsss}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{***}})\xspace}
+\newcommand{\ccrd}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{d}})\xspace}
+\newcommand{\ccra}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{a}})\xspace}
+\newcommand{\ccrS}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{s}})\xspace}
+\newcommand{\ccrconj}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{\land}})\xspace}
+\newcommand{\ccrdisj}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{\lor}})\xspace}
+\newcommand{\ccrdisjd}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny R}}^{\lor^d}})\xspace}
 %%% cm_L family (lowercase)
-\newcommand{\cml}{{cm}$_{\textnormal{\tiny L}}$}
-\newcommand{\cmls}{{cm}$_{\textnormal{\tiny L}}^*$}
-\newcommand{\cmlss}{{cm}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\cmlsss}{{cm}$_{\textnormal{\tiny L}}^{***}$}
-\newcommand{\cmld}{{cm}$_{\textnormal{\tiny L}}^{d}$}
-\newcommand{\cmla}{{cm}$_{\textnormal{\tiny L}}^{a}$}
-\newcommand{\cmlas}{{cm}$_{\textnormal{\tiny L}}^{a*}$}
-\newcommand{\cmlass}{{cm}$_{\textnormal{\tiny L}}^{a**}$}
-\newcommand{\cmlS}{{cm}$_{\textnormal{\tiny L}}^{s}$}
-\newcommand{\cmlconj}{{cm}$_{\textnormal{\tiny L}}^{\land}$}
-\newcommand{\cmldisj}{{cm}$_{\textnormal{\tiny L}}^{\lor}$}
-\newcommand{\cmlconjd}{{cm}$_{\textnormal{\tiny L}}^{\land^d}$}
+\newcommand{\cml}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}})\xspace}
+\newcommand{\cmls}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^*})\xspace}
+\newcommand{\cmlss}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{**}})\xspace}
+\newcommand{\cmlsss}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{***}})\xspace}
+\newcommand{\cmld}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{d}})\xspace}
+\newcommand{\cmla}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{a}})\xspace}
+\newcommand{\cmlas}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{a*}})\xspace}
+\newcommand{\cmlass}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{a**}})\xspace}
+\newcommand{\cmlS}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{s}})\xspace}
+\newcommand{\cmlconj}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{\land}})\xspace}
+\newcommand{\cmldisj}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{\lor}})\xspace}
+\newcommand{\cmlconjd}{(\ensuremath{\textnormal{cm}_{\textnormal{\tiny L}}^{\land^d}})\xspace}
 %%% cc_L family (lowercase)
-\newcommand{\ccl}{{cc}$_{\textnormal{\tiny L}}$}
-\newcommand{\ccls}{{cc}$_{\textnormal{\tiny L}}^*$}
-\newcommand{\cclss}{{cc}$_{\textnormal{\tiny L}}^{**}$}
-\newcommand{\cclsss}{{cc}$_{\textnormal{\tiny L}}^{***}$}
-\newcommand{\ccld}{{cc}$_{\textnormal{\tiny L}}^{d}$}
-\newcommand{\ccla}{{cc}$_{\textnormal{\tiny L}}^{a}$}
-\newcommand{\cclS}{{cc}$_{\textnormal{\tiny L}}^{s}$}
-\newcommand{\cclconj}{{cc}$_{\textnormal{\tiny L}}^{\land}$}
-\newcommand{\ccldisj}{{cc}$_{\textnormal{\tiny L}}^{\lor}$}
-\newcommand{\ccldisjd}{{cc}$_{\textnormal{\tiny L}}^{\lor^d}$}
+\newcommand{\ccl}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}})\xspace}
+\newcommand{\ccls}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^*})\xspace}
+\newcommand{\cclss}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{**}})\xspace}
+\newcommand{\cclsss}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{***}})\xspace}
+\newcommand{\ccld}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{d}})\xspace}
+\newcommand{\ccla}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{a}})\xspace}
+\newcommand{\cclS}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{s}})\xspace}
+\newcommand{\cclconj}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{\land}})\xspace}
+\newcommand{\ccldisj}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{\lor}})\xspace}
+\newcommand{\ccldisjd}{(\ensuremath{\textnormal{cc}_{\textnormal{\tiny L}}^{\lor^d}})\xspace}
 %%% Other
-\newcommand{\CNr}{\textbf{CN}$_{\textnormal{\tiny R}}$}
-\newcommand{\CNl}{\textbf{CN}$_{\textnormal{\tiny L}}$}
-\newcommand{\CNlr}{\textbf{CN}$_{\textnormal{\tiny LR}}$}
-\newcommand{\CNra}{\textbf{CN}$_{\textnormal{\tiny R}}^{\textnormal{\tiny A}}$}
-\newcommand{\cdax}{\textbf{CD}}
-\newcommand{\CP}{\textbf{CP}}
-\newcommand{\CPs}{\textbf{CP}$^*$}
-\newcommand{\CTh}{\textbf{CT}$^{\textnormal{\tiny H}}$}
-\newcommand{\cnr}{{cn}$_{\textnormal{\tiny R}}$}
-\newcommand{\cnl}{{cn}$_{\textnormal{\tiny L}}$}
-\newcommand{\cnlr}{{cn}$_{\textnormal{\tiny LR}}$}
-\newcommand{\cth}{{ct}$^{\textnormal{\tiny H}}$}
-\newcommand{\cths}{{ct}$^{\textnormal{\tiny H}*}$}
-\newcommand{\cduax}{{{\textbf{C-Dual}}}}
+\newcommand{\CNr}{\ensuremath{\textbf{CN}_{\textnormal{\tiny R}}}\xspace}
+\newcommand{\CNl}{\ensuremath{\textbf{CN}_{\textnormal{\tiny L}}}\xspace}
+\newcommand{\CNlr}{\ensuremath{\textbf{CN}_{\textnormal{\tiny LR}}}\xspace}
+\newcommand{\CNra}{\ensuremath{\textbf{CN}_{\textnormal{\tiny R}}^{\textnormal{\tiny A}}}\xspace}
+\newcommand{\cdax}{\textbf{CD}\xspace}
+\newcommand{\CP}{\textbf{CP}\xspace}
+\newcommand{\CPs}{\ensuremath{\textbf{CP}^*}\xspace}
+\newcommand{\CTh}{\ensuremath{\textbf{CT}^{\textnormal{\tiny H}}}\xspace}
+\newcommand{\cnr}{(\ensuremath{\textnormal{cn}_{\textnormal{\tiny R}}})\xspace}
+\newcommand{\cnl}{(\ensuremath{\textnormal{cn}_{\textnormal{\tiny L}}})\xspace}
+\newcommand{\cnlr}{(\ensuremath{\textnormal{cn}_{\textnormal{\tiny LR}}})\xspace}
+\newcommand{\cth}{(\ensuremath{\textnormal{ct}^{\textnormal{\tiny H}}})\xspace}
+\newcommand{\cths}{(\ensuremath{\textnormal{ct}^{\textnormal{\tiny H}*}})\xspace}
+\newcommand{\cduax}{{{\textbf{C-Dual}}}\xspace}
 
 %%% Order conditions on frames
-\newcommand{\Rup}{\ensuremath{\textnormal{R}{\uparrow}}}
-\newcommand{\Rdown}{\ensuremath{\textnormal{R}{\downarrow}}}
-\newcommand{\Ldown}{\ensuremath{\textnormal{L}{\downarrow}}}
-\newcommand{\Lup}{\ensuremath{\textnormal{L}{\uparrow}}}
+\newcommand{\Rup}{(\ensuremath{\textnormal{R}{\uparrow}})\xspace}
+\newcommand{\Rdown}{(\ensuremath{\textnormal{R}{\downarrow}})\xspace}
+\newcommand{\Ldown}{(\ensuremath{\textnormal{L}{\downarrow}})\xspace}
+\newcommand{\Lup}{(\ensuremath{\textnormal{L}{\uparrow}})\xspace}
 
 % Modal Derivation Rules
-\newcommand{\rerule}{{\textnormal{RE}}}
-\newcommand{\relrule}{{\textnormal{RE}$_{\textnormal{\tiny L}}$}}
-\newcommand{\rerrule}{{\textnormal{RE}$_{\textnormal{\tiny R}}$}}
-\newcommand{\porule}{{\textnormal{P}$_\ought$}}
-\newcommand{\posrule}{{\textnormal{P}$_\ought^*$}}
-\newcommand{\drule}{{{\textnormal{Dual}}}}
-\newcommand{\nrule}{{{\textnormal{Nec}}}}
-\newcommand{\mprule}{{{\textnormal{MP}}}}
-\newcommand{\plrule}{{{\textnormal{PL}}}}
-\newcommand{\krule}{{{\textnormal{RK}}}}
-\newcommand{\reprule}{{{\textnormal{Repl}}}}
-\newcommand{\tautrule}{{{\textnormal{Taut}}}}
-\newcommand{\subrule}{{{\textnormal{Sub}}}}
-\newcommand{\rmposs}{{{\textnormal{RM}$_\poss$}}}
-\newcommand{\reposs}{{{\textnormal{RE}}$_\poss$}}
-\newcommand{\rposs}{{{\textnormal{R}}$_\poss$}}
+\newcommand{\rerule}{\ensuremath{\textnormal{RE}}\xspace}
+\newcommand{\relrule}{\ensuremath{\textnormal{RE}_{\textnormal{\tiny L}}}\xspace}
+\newcommand{\rerrule}{\ensuremath{\textnormal{RE}_{\textnormal{\tiny R}}}\xspace}
+\newcommand{\porule}{\ensuremath{\textnormal{P}_\ought}\xspace}
+\newcommand{\posrule}{\ensuremath{\textnormal{P}_\ought^*}\xspace}
+\newcommand{\drule}{\ensuremath{\textnormal{Dual}}\xspace}
+\newcommand{\nrule}{\ensuremath{\textnormal{Nec}}\xspace}
+\newcommand{\mprule}{\ensuremath{\textnormal{MP}}\xspace}
+\newcommand{\plrule}{\ensuremath{\textnormal{PL}}\xspace}
+\newcommand{\krule}{\ensuremath{\textnormal{RK}}\xspace}
+\newcommand{\reprule}{\ensuremath{\textnormal{Repl}}\xspace}
+\newcommand{\tautrule}{\ensuremath{\textnormal{Taut}}\xspace}
+\newcommand{\subrule}{\ensuremath{\textnormal{Sub}}\xspace}
+\newcommand{\rmposs}{\ensuremath{\textnormal{RM}_\poss}\xspace}
+\newcommand{\reposs}{\ensuremath{\textnormal{RE}_\poss}\xspace}
+\newcommand{\rposs}{\ensuremath{\textnormal{R}_\poss}\xspace}
 % Parenthesized
-\newcommand{\rerulepar}{\parent{\textnormal{RE}}}
-\newcommand{\relrulepar}{\parent{\textnormal{RE}$_{\textnormal{\tiny L}}$}}
-\newcommand{\rerrulepar}{\parent{\textnormal{RE}$_{\textnormal{\tiny R}}$}}
-\newcommand{\porulepar}{\parent{\textnormal{P}$_\ought$}}
-\newcommand{\posrulepar}{\parent{\textnormal{P}$_\ought^*$}}
-\newcommand{\drulepar}{{\parent{\textnormal{Dual}}}}
-\newcommand{\nrulepar}{{\parent{\textnormal{Nec}}}}
-\newcommand{\mprulepar}{{\parent{\textnormal{MP}}}}
-\newcommand{\plrulepar}{{\parent{\textnormal{PL}}}}
-\newcommand{\krulepar}{\parent{{\textnormal{RK}}}}
-\newcommand{\reprulepar}{{\parent{\textnormal{Repl}}}}
-\newcommand{\tautrulepar}{{\parent{\textnormal{Taut}}}}
-\newcommand{\subrulepar}{{\parent{\textnormal{Sub}}}}
-\newcommand{\rmposspar}{{\parent{\textnormal{RM}$_\poss$}}}
-\newcommand{\reposspar}{\parent{{\textnormal{RE}}$_\poss$}}
-\newcommand{\rposspar}{{\parent{\textnormal{R}}$_\poss$}}
+\newcommand{\rerulepar}{(\ensuremath{\textnormal{RE}})\xspace}
+\newcommand{\relrulepar}{(\ensuremath{\textnormal{RE}_{\textnormal{\tiny L}}})\xspace}
+\newcommand{\rerrulepar}{(\ensuremath{\textnormal{RE}_{\textnormal{\tiny R}}})\xspace}
+\newcommand{\porulepar}{(\ensuremath{\textnormal{P}_\ought})\xspace}
+\newcommand{\posrulepar}{(\ensuremath{\textnormal{P}_\ought^*})\xspace}
+\newcommand{\drulepar}{(\ensuremath{\textnormal{Dual}})\xspace}
+\newcommand{\nrulepar}{(\ensuremath{\textnormal{Nec}})\xspace}
+\newcommand{\mprulepar}{(\ensuremath{\textnormal{MP}})\xspace}
+\newcommand{\plrulepar}{(\ensuremath{\textnormal{PL}})\xspace}
+\newcommand{\krulepar}{(\ensuremath{\textnormal{RK}})\xspace}
+\newcommand{\reprulepar}{(\ensuremath{\textnormal{Repl}})\xspace}
+\newcommand{\tautrulepar}{(\ensuremath{\textnormal{Taut}})\xspace}
+\newcommand{\subrulepar}{(\ensuremath{\textnormal{Sub}})\xspace}
+\newcommand{\rmposspar}{(\ensuremath{\textnormal{RM}_\poss})\xspace}
+\newcommand{\reposspar}{(\ensuremath{\textnormal{RE}_\poss})\xspace}
+\newcommand{\rposspar}{(\ensuremath{\textnormal{R}_\poss})\xspace}
 
 
 
 % Modal Systems and Schema
-\newcommand{\K}{\textup{\textbf{K}}}
-\newcommand{\D}{\textup{\textbf{D}}}
-\newcommand{\T}{\textup{\textbf{T}}}
-\newcommand{\B}{\textup{\textbf{B}}}
-\newcommand{\four}{\textup{\textbf{4}}}
-\newcommand{\five}{\textup{\textbf{5}}}
-\newcommand{\KT}{\textup{\textbf{KT}}}
-\newcommand{\KD}{\textup{\textbf{KD}}}
-\newcommand{\KB}{\textup{\textbf{KB}}}
-\newcommand{\Kfour}{\textup{\textbf{K4}}}
-\newcommand{\Kfive}{\textup{\textbf{K5}}}
-\newcommand{\Kfourfive}{\textup{\textbf{K45}}}
-\newcommand{\KDfourfive}{\textup{\textbf{KD45}}}
-\newcommand{\Sfour}{\textup{\textbf{S4}}}
-\newcommand{\Sfive}{\textup{\textbf{S5}}}
-\newcommand{\KDU}{\textup{\textbf{KDU}}}
-\newcommand{\KU}{\textup{\textbf{KU}}}
-\newcommand{\KW}{\textup{\textbf{KW}}}
-\newcommand{\KDW}{\textup{\textbf{KDW}}}
-\newcommand{\KUW}{\textup{\textbf{KUW}}}
-\newcommand{\KDUW}{\textup{\textbf{KDUW}}}
-\newcommand{\E}{\textup{\textbf{E}}}
-\newcommand{\EM}{\textup{\textbf{EM}}}
-\newcommand{\EMD}{\textup{\textbf{EMD}}}
-\newcommand{\EMP}{\textup{\textbf{EMP}}}
-\newcommand{\EN}{\textup{\textbf{EN}}}
-\newcommand{\EC}{\textup{\textbf{EC}}}
-\newcommand{\EMN}{\textup{\textbf{EMN}}}
-\newcommand{\ECN}{\textup{\textbf{ECN}}}
-\newcommand{\EMC}{\textup{\textbf{EMC}}}
-\newcommand{\CE}{\textup{\textbf{CE}}}
-\newcommand{\CEM}{\textup{\textbf{CEM}}}
-\newcommand{\CEMD}{\textup{\textbf{CEMD}}}
-\newcommand{\CEMP}{\textup{\textbf{CEMP}}}
-\newcommand{\CEN}{\textup{\textbf{CEN}}}
-\newcommand{\CEC}{\textup{\textbf{CEC}}}
-\newcommand{\CEMN}{\textup{\textbf{CEMN}}}
-\newcommand{\CECN}{\textup{\textbf{CECN}}}
-\newcommand{\CEMC}{\textup{\textbf{CEMC}}}
-\newcommand{\CEMPs}{\textup{\textbf{CEMP}}$^*$}
-\newcommand{\CK}{\textup{\textbf{CK}}}
-\newcommand{\CKD}{\textup{\textbf{CKD}}}
-\newcommand{\CKPs}{\textup{\textbf{CKP}}$^*$}
-\newcommand{\VW}{\textup{\textbf{VW}}}
-\newcommand{\Slog}{\textup{\textbf{S}}}
+\newcommand{\K}{\ensuremath{\textup{\textbf{K}}}\xspace}
+\newcommand{\D}{\ensuremath{\textup{\textbf{D}}}\xspace}
+\newcommand{\T}{\ensuremath{\textup{\textbf{T}}}\xspace}
+\newcommand{\B}{\ensuremath{\textup{\textbf{B}}}\xspace}
+\newcommand{\four}{\ensuremath{\textup{\textbf{4}}}\xspace}
+\newcommand{\five}{\ensuremath{\textup{\textbf{5}}}\xspace}
+\newcommand{\KT}{\ensuremath{\textup{\textbf{KT}}}\xspace}
+\newcommand{\KD}{\ensuremath{\textup{\textbf{KD}}}\xspace}
+\newcommand{\KB}{\ensuremath{\textup{\textbf{KB}}}\xspace}
+\newcommand{\Kfour}{\ensuremath{\textup{\textbf{K4}}}\xspace}
+\newcommand{\Kfive}{\ensuremath{\textup{\textbf{K5}}}\xspace}
+\newcommand{\Kfourfive}{\ensuremath{\textup{\textbf{K45}}}\xspace}
+\newcommand{\KDfourfive}{\ensuremath{\textup{\textbf{KD45}}}\xspace}
+\newcommand{\Sfour}{\ensuremath{\textup{\textbf{S4}}}\xspace}
+\newcommand{\Sfive}{\ensuremath{\textup{\textbf{S5}}}\xspace}
+\newcommand{\KDU}{\ensuremath{\textup{\textbf{KDU}}}\xspace}
+\newcommand{\KU}{\ensuremath{\textup{\textbf{KU}}}\xspace}
+\newcommand{\KW}{\ensuremath{\textup{\textbf{KW}}}\xspace}
+\newcommand{\KDW}{\ensuremath{\textup{\textbf{KDW}}}\xspace}
+\newcommand{\KUW}{\ensuremath{\textup{\textbf{KUW}}}\xspace}
+\newcommand{\KDUW}{\ensuremath{\textup{\textbf{KDUW}}}\xspace}
+\newcommand{\E}{\ensuremath{\textup{\textbf{E}}}\xspace}
+\newcommand{\EM}{\ensuremath{\textup{\textbf{EM}}}\xspace}
+\newcommand{\EMD}{\ensuremath{\textup{\textbf{EMD}}}\xspace}
+\newcommand{\EMP}{\ensuremath{\textup{\textbf{EMP}}}\xspace}
+\newcommand{\EN}{\ensuremath{\textup{\textbf{EN}}}\xspace}
+\newcommand{\EC}{\ensuremath{\textup{\textbf{EC}}}\xspace}
+\newcommand{\EMN}{\ensuremath{\textup{\textbf{EMN}}}\xspace}
+\newcommand{\ECN}{\ensuremath{\textup{\textbf{ECN}}}\xspace}
+\newcommand{\EMC}{\ensuremath{\textup{\textbf{EMC}}}\xspace}
+\newcommand{\CE}{\ensuremath{\textup{\textbf{CE}}}\xspace}
+\newcommand{\CEM}{\ensuremath{\textup{\textbf{CEM}}}\xspace}
+\newcommand{\CEMD}{\ensuremath{\textup{\textbf{CEMD}}}\xspace}
+\newcommand{\CEMP}{\ensuremath{\textup{\textbf{CEMP}}}\xspace}
+\newcommand{\CEN}{\ensuremath{\textup{\textbf{CEN}}}\xspace}
+\newcommand{\CEC}{\ensuremath{\textup{\textbf{CEC}}}\xspace}
+\newcommand{\CEMN}{\ensuremath{\textup{\textbf{CEMN}}}\xspace}
+\newcommand{\CECN}{\ensuremath{\textup{\textbf{CECN}}}\xspace}
+\newcommand{\CEMC}{\ensuremath{\textup{\textbf{CEMC}}}\xspace}
+\newcommand{\CEMPs}{\ensuremath{\textup{\textbf{CEMP}}^*}\xspace}
+\newcommand{\CK}{\ensuremath{\textup{\textbf{CK}}}\xspace}
+\newcommand{\CKD}{\ensuremath{\textup{\textbf{CKD}}}\xspace}
+\newcommand{\CKPs}{\ensuremath{\textup{\textbf{CKP}}^*}\xspace}
+\newcommand{\VW}{\ensuremath{\textup{\textbf{VW}}}\xspace}
+\newcommand{\Slog}{\ensuremath{\textup{\textbf{S}}}\xspace}
 
 % Deontic Systems (and stuff)
-\newcommand{\SDL}{\textnormal{SDL}}
-\newcommand{\SDLplus}{\textnormal{SDL}$^+$}
-\newcommand{\SDLt}{\textnormal{SDL\!\textsuperscript{T}}}
-\newcommand{\subought}{$_\ought$}
-\newcommand{\KDought}{\textup{\textbf{KD}}\subought}
-\newcommand{\KDUought}{\textup{\textbf{KDU}}\subought}
-\newcommand{\KUought}{\textup{\textbf{KU}}\subought}
-\newcommand{\KWought}{\textup{\textbf{KW}}\subought}
-\newcommand{\KDWought}{\textup{\textbf{KDW}}\subought}
-\newcommand{\KUWought}{\textup{\textbf{KUW}}\subought}
-\newcommand{\KDUWought}{\textup{\textbf{KDUW}}\subought}
-\newcommand{\COc}{\textnormal{CO$_\textnormal{{\kern-.1em}\scriptsize C}$}}
-\newcommand{\COvf}[1]{\textnormal{CO$_{\textnormal{{\kern-.1em}\scriptsize vF}_{{\kern-.1em}\textnormal{\tiny #1}}}$}}
+\newcommand{\SDL}{\ensuremath{\textnormal{SDL}}\xspace}
+\newcommand{\SDLplus}{\ensuremath{\textnormal{SDL}^+}\xspace}
+\newcommand{\SDLt}{\ensuremath{\textnormal{SDL\!\textsuperscript{T}}}\xspace}
+\newcommand{\KDought}{\ensuremath{\textup{\textbf{KD}}_\ought}\xspace}
+\newcommand{\KDUought}{\ensuremath{\textup{\textbf{KDU}}_\ought}\xspace}
+\newcommand{\KUought}{\ensuremath{\textup{\textbf{KU}}_\ought}\xspace}
+\newcommand{\KWought}{\ensuremath{\textup{\textbf{KW}}_\ought}\xspace}
+\newcommand{\KDWought}{\ensuremath{\textup{\textbf{KDW}}_\ought}\xspace}
+\newcommand{\KUWought}{\ensuremath{\textup{\textbf{KUW}}_\ought}\xspace}
+\newcommand{\KDUWought}{\ensuremath{\textup{\textbf{KDUW}}_\ought}\xspace}
+\newcommand{\COc}{\ensuremath{\textnormal{CO}_{\textnormal{{\kern-.1em}\scriptsize C}}}\xspace}
+\newcommand{\COvf}[1]{\ensuremath{\textnormal{CO}_{\textnormal{{\kern-.1em}\scriptsize vF}_{{\kern-.1em}\textnormal{\tiny #1}}}}\xspace}
 
 
 
 
 % Misc I/O Stuff
-\newcommand*{\IO}{\textup{\text{I/O}}}
-\newcommand{\IOs}{$\textup{\textbf{IO}}^*$}
-\newcommand{\IOsn}[1]{$\textup{\textbf{IO}}^*_{#1}$}
-\newcommand{\IOn}[1]{\ensuremath{\textup{\textbf{IO}}_{#1}}}
-\newcommand{\IOh}{\ensuremath{\textup{\textbf{IO}}^\text{\tiny H}}}
-\newcommand{\IOhn}[1]{\ensuremath{\textup{\textbf{IO}}^\text{\tiny H}_{#1}}}
+\newcommand*{\IO}{\ensuremath{\textup{\text{I/O}}}\xspace}
+\newcommand{\IOs}{\ensuremath{\textup{\textbf{IO}}^*}\xspace}
+\newcommand{\IOsn}[1]{\ensuremath{\textup{\textbf{IO}}^*_{#1}}\xspace}
+\newcommand{\IOn}[1]{\ensuremath{\textup{\textbf{IO}}_{#1}}\xspace}
+\newcommand{\IOh}{\ensuremath{\textup{\textbf{IO}}^\text{\tiny H}}\xspace}
+\newcommand{\IOhn}[1]{\ensuremath{\textup{\textbf{IO}}^\text{\tiny H}_{#1}}\xspace}
 % \newcommand{\IOn}[1]{$\textup{\textbf{IO}}_{#1}$}
 % \newcommand{\IOh}{$\textup{\textbf{IO}}^\text{\tiny H}$}
 % \newcommand{\IOhn}[1]{$\textup{\textbf{IO}}^\text{\tiny H}_{#1}$}
@@ -769,22 +826,22 @@
 \newcommand{\oputi}[2]{\textnormal{out}_{#1}(#2)}
 \newcommand{\deriv}[1]{\textnormal{deriv}(#1)}
 \newcommand{\derivi}[2]{\textnormal{deriv}_{#1}(#2)}
-\newcommand{\FDio}{FD$_\text{\tiny IO}$}
-\newcommand{\DDio}{DD$_\text{\tiny IO}$}
-\newcommand{\TOP}{$\top$}
-\newcommand{\SI}{$\textnormal{SI}$}
-\newcommand{\WO}{$\textnormal{WO}$}
-\newcommand{\AND}{$\textnormal{AND}$}
-\newcommand{\OR}{$\textnormal{OR}$}
-\newcommand{\CT}{$\textnormal{CT}$}
+\newcommand{\FDio}{\ensuremath{\textnormal{FD}_\text{\tiny IO}}\xspace}
+\newcommand{\DDio}{\ensuremath{\textnormal{DD}_\text{\tiny IO}}\xspace}
+\newcommand{\TOP}{\ensuremath{\top}\xspace}
+\newcommand{\SI}{\ensuremath{\textnormal{SI}}\xspace}
+\newcommand{\WO}{\ensuremath{\textnormal{WO}}\xspace}
+\newcommand{\AND}{\ensuremath{\textnormal{AND}}\xspace}
+\newcommand{\OR}{\ensuremath{\textnormal{OR}}\xspace}
+\newcommand{\CT}{\ensuremath{\textnormal{CT}}\xspace}
 
 %OLD
-\newcommand{\Ts}{$\top^*$}
-\newcommand{\SIs}{$\textnormal{SI}^*$}
-\newcommand{\WOs}{$\textnormal{WO}^*$}
-\newcommand{\ANDs}{$\textnormal{AND}^*$}
-\newcommand{\ORs}{$\textnormal{OR}^*$}
-\newcommand{\CTs}{$\textnormal{CT}^*$}
+\newcommand{\Ts}{\ensuremath{\top^*}\xspace}
+\newcommand{\SIs}{\ensuremath{\textnormal{SI}^*}\xspace}
+\newcommand{\WOs}{\ensuremath{\textnormal{WO}^*}\xspace}
+\newcommand{\ANDs}{\ensuremath{\textnormal{AND}^*}\xspace}
+\newcommand{\ORs}{\ensuremath{\textnormal{OR}^*}\xspace}
+\newcommand{\CTs}{\ensuremath{\textnormal{CT}^*}\xspace}
 
 
 % Proof Stuff
@@ -854,11 +911,11 @@
 \newcommand{\tightwedge}{\mathbin{\mkern-1mu\wedge\mkern-1mu}}
 \newcommand{\atoms}{\textsf{At}}
 %\newcommand{\IOfn}[1]{$\textup{\textsf{IO}}^\textsf{\tiny H}_{#1}$}
-\newcommand{\IOfn}[1]{$\textup{\textsf{IO}}^{\tiny\textsf{H}}_{#1}$}
+\newcommand{\IOfn}[1]{\ensuremath{\textup{\textsf{IO}}^{\tiny\textsf{H}}_{#1}}\xspace}
 
 
 
-\newcommand{\cthss}{{ct}$^{\textnormal{\tiny H}**}$}
+\newcommand{\cthss}{(\ensuremath{\textnormal{ct}^{\textnormal{\tiny H}**}})\xspace}
 
 
 

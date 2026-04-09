@@ -88,6 +88,9 @@ output * bg /home/bph/Desktop/configs/wallpapers/gnome-dark-gray.png fill
     # mouse button for dragging.
     floating_modifier $mod normal
 
+    # Toggle Waybar
+    bindsym $mod+w exec killall -SIGUSR1 waybar
+
     # Reload the configuration file
     bindsym $mod+Shift+c reload
 
@@ -197,6 +200,10 @@ output * bg /home/bph/Desktop/configs/wallpapers/gnome-dark-gray.png fill
     # Show the next scratchpad window or hide the focused scratchpad window.
     # If there are multiple scratchpad windows, this command cycles through them.
     bindsym $mod+minus scratchpad show
+
+# Toggle trackpad
+bindsym $mod+m input type:touchpad events toggle enabled disabled
+
 #
 # Resizing containers:
 #
@@ -260,17 +267,19 @@ bar {
 
 ### Focus/Titlebars/Outlines
 # Remove titlebars and use a thicker outline
-default_border pixel 5              # tiling windows: 3-px border, no titlebar
-default_floating_border pixel 5     # floating windows too
+default_border pixel 3              # tiling windows: border, no titlebar
+default_floating_border pixel 3     # floating windows too
 
 # Start new workspaces in split layout (no tab bar)
 workspace_layout default
 
 # Palette
 set $forest #228B22
+# Alternative: magenta (#FF00FF) — more noticeable but less subtle
+set $accent #0088FF
 
 # Format: border  background  text  indicator  child_border
-client.focused          $forest  #000000 #ffffff $forest $forest
+client.focused          $accent  #000000 #ffffff $accent $accent
 client.focused_inactive #5f676a  #000000 #ffffff #5f676a #5f676a
 client.unfocused        #434c5e  #000000 #ffffff #434c5e #434c5e
 
