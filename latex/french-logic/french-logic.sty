@@ -25,8 +25,6 @@
 \RequirePackage{booktabs}
 \RequirePackage{bm}
 \RequirePackage{centernot}
-\RequirePackage{xspace}
-\xspaceaddexceptions{/}
 
 
 
@@ -41,6 +39,8 @@
 \RequirePackage{mathtools}
 \RequirePackage{stmaryrd}
 \RequirePackage{mathrsfs}
+\RequirePackage{xspace}
+\xspaceaddexceptions{/}
 
 
 
@@ -278,7 +278,7 @@
 %%% ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % List Environments
-\newenvironment{hilbertlist}{\begin{itemize}[topsep=8pt,noitemsep,labelsep=1.5em,leftmargin=2cm]}{\end{itemize}}
+\newenvironment{hilbertlist}{\begin{itemize}[topsep=8pt,noitemsep,labelsep=1.5em,leftmargin=2cm,rightmargin=1.25cm]}{\end{itemize}}
 \newenvironment{romanlist}{\begin{enumerate}[label=(\roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
 \newenvironment{Romanlist}{\begin{enumerate}[label=(\Roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
 \newenvironment{arablist}{\begin{enumerate}[label={\arabic*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
@@ -287,6 +287,8 @@
 \newenvironment{Alphlist}{\begin{enumerate}[label={\Alph*.},topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
 \newenvironment{itemlist}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{itemize}}
 \newenvironment{itemlistflush}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1cm]}{\end{itemize}}
+\newenvironment{axiomproof}{\begin{enumerate}[label=(\arabic*),topsep=8pt,noitemsep,leftmargin=1.25cm,rightmargin=1.25cm]}{\end{enumerate}}
+\newcommand{\by}[1]{\hfill\textnormal{#1}}
 
 
 
