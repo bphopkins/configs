@@ -7,6 +7,7 @@ alias home='cd ~ && lsa'
 alias desktop='cd ~/Desktop && lsa'
 alias configs='cd ~/Desktop/configs && lsa'
 alias teaching='cd ~/Desktop/teaching && lsa'
+alias phi112='cd ~/Desktop/teach-logic/phi112/Brandon && lsa'
 
 # Editing shortcuts
 alias configure='cd ~/Desktop/configs && nvim'
