@@ -50,6 +50,7 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
+- `80-clamav.sh` — `clam {update,home,full}`: ClamAV signature refresh and scan helpers (logs to `~/clam-scan-{home,full}-<ts>.log`). Requires `clamav` + `clamav-update`.
 - `90-nix.sh` — nix profile loader (conditional; only if nix is installed)
 
 ## Neovim Configuration
