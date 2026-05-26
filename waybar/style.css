@@ -41,8 +41,10 @@ window#waybar {
 }
 
 /* Right-side modules */
-#backlight, #pulseaudio, #network, #bluetooth, #battery, #tray {
+#backlight, #pulseaudio, #battery, #tray {
   color: @fg;
   margin: 0 6px;
 }
+/* Icons have no glyph sidebearing, so visually they sit closer than text modules; bump margin to compensate. */
+#tray { margin: 0 10px; }
 #pulseaudio.muted { opacity: 0.6; }

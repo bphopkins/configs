@@ -24,11 +24,12 @@ bindsym $mod+c exec google-chrome-stable
 bindsym $mod+d exec nautilus --new-window /home/bph/Desktop
 bindsym $mod+f exec nautilus --new-window
 bindsym $mod+v exec code
+bindsym $mod+x exec gnome-text-editor
 
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /home/bph/Desktop/configs/wallpapers/gnome-dark-gray.png fill
+output * bg /home/bph/Desktop/configs/wallpapers/monarch1080dark.png fill
 #
 # Example configuration:
 #
@@ -291,3 +292,8 @@ smart_borders on
 
 
 include /etc/sway/config.d/*
+
+# NetworkManager secret agent — pulls 802.1x creds from gnome-keyring.
+# Fedora's /etc/xdg/autostart/nm-applet.desktop is meant to autostart it
+# under Sway via sway-xdg-autostart.target, but doesn't reliably fire here.
+exec nm-applet --indicator
