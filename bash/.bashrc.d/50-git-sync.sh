@@ -10,6 +10,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/teach-logic"
   "$HOME/Desktop/dissertation-template"
   "$HOME/Desktop/scripts"
+  "$HOME/Desktop/opuscula"
 )
 
 gpull() {
