@@ -2,6 +2,7 @@
 REPOS_DESKTOP=(
   "$HOME/Desktop/org"
   "$HOME/Desktop/dissertation"
+  "$HOME/Desktop/n-cube"
   "$HOME/Desktop/teaching"
   "$HOME/Desktop/bphopkins.net"
   "$HOME/Desktop/nousowl.net"

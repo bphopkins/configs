@@ -21,9 +21,9 @@ Each top-level directory (except `wallpapers/`) is a stow "package" with a speci
 | latex      | `~/texmf/tex/latex`          |
 
 Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
-- `stow-all` — git pull then restow all packages (uses `--adopt` to resolve conflicts)
-- `stow-all-dry` — preview what stow-all would do
-- `unstow-all` — remove all managed symlinks
+- `stow-all` — `git pull --ff-only`, then restow every package (`stow -R`). On a conflict (an untracked real file already sitting at a target) it **errors out** rather than resolving it — adopt or remove the file manually (README §8 covers `stow --adopt`), then rerun.
+- `stow-all-dry` — preview what stow-all would do (no changes)
+- `unstow-all` — remove all managed symlinks (`stow -D`)
 
 When adding a new stow package, update both the target map and the ordering array in `60-stow.sh`. Editing existing symlinked files requires no restow; adding new files to a package does.
 
@@ -34,10 +34,11 @@ Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) → 
 ## Git Sync Workflow
 
 Defined in `bash/.bashrc.d/50-git-sync.sh`:
-- `gpullall` — pulls all repos in the `REPOS_DESKTOP` array (ff-only, with submodule handling)
-- `gpushall` — auto-stages (`git add -A`), commits (hostname + timestamp), rebases, and pushes all repos
+- `gpullall` — pulls every repo in the `REPOS_DESKTOP` array (ff-only, with submodule handling)
+- `gpushall` — auto-stages (`git add -A`), commits (hostname + timestamp), rebases, and pushes every repo
+- `gpull <name>` / `gpush <name>` — single-repo variants operating on `~/Desktop/<name>`
 
-To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages follow: `{hostname}: {YYYY-MM-DD HH:MM:SS}`
+To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages follow: `{hostname}: {YYYY-MM-DD HH:MM:SS}`. Note that `REPOS_DESKTOP` spans *all* the user's Desktop repos (dissertation, teaching, etc.), not just this one.
 
 ## Bash Configuration
 
@@ -46,7 +47,7 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
 - `20-path.sh` — PATH additions (guards against duplicates via substring matching)
 - `30-prompt.sh` — prompt config
-- `40-aliases.sh` — aliases (`sysupgrade`, `cc` for claude, navigation shortcuts)
+- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update, hardcoded `/usr/local/texlive/2025` path — bump the year on a new TeX Live), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `phi112`, …)
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
@@ -62,7 +63,7 @@ LazyVim-based setup. Entry point: `nvim/init.lua` bootstraps lazy.nvim via `lua/
 - `lua/plugins/` — plugin specs (each file returns a lazy.nvim plugin spec table)
 - `lua/plugins/inactive/` — disabled plugins (not loaded by lazy.nvim)
 - `lua/snippets/` — LuaSnip snippet libraries
-- `after/ftplugin/` — filetype overrides (tex.lua has 196 lines of custom highlight groups)
+- `after/ftplugin/` — filetype overrides (tex.lua is ~195 lines of custom highlight-group colors)
 
 ### LaTeX toolchain
 VimTeX with latexmk compiler and Okular PDF viewer (forward/reverse sync via neovim-remote). Treesitter highlighting is disabled for LaTeX — VimTeX's syntax engine is the sole highlighter. Custom syntax in `lua/plugins/vimtex.lua` registers 350+ commands across 7 semantic highlight groups (axioms, frame conditions, logic systems, semantic notation, modal operators, proof rules, set notation), colored in `after/ftplugin/tex.lua`.
@@ -97,7 +98,7 @@ stylua (config in `nvim/stylua.toml`: 2-space indent, 100 columns). Run from rep
 
 Custom `.sty` and `.cls` files in `latex/` are stowed into `~/texmf/tex/latex`. Key package:
 
-- **french-logic** — 350+ macros for modal/deontic logic (semantic notation, modal operators, axiom schemas, logic system labels). Single `\usepackage{french-logic}` replaces a 100+ line preamble. Has a `deon` option for DEON conference submissions. This is the source for auto-generated Neovim snippets.
+- **french-logic** — 350+ macros for modal/deontic logic (semantic notation, modal operators, axiom schemas, logic system labels). Single `\usepackage{french-logic}` replaces a 100+ line preamble. Has a `deon` option for DEON conference submissions. **Shared dependency:** sibling repos (`dissertation/`, `dissertation-template/`, `teaching/`, `teach-logic/`) load it from the stowed copy, so edits here ripple into all of them. It is also the source for the auto-generated Neovim snippets — regenerate `french-logic.lua` after any macro change (see Snippets above) or completions go stale.
 - **bph-paper** — article class with BibLaTeX Chicago style and custom quotation environments
 - **logic-hw**, **mod-cv**, **tufte-compact** — homework, CV, and handout classes
 
@@ -108,3 +109,10 @@ Sway uses vim-style navigation (hjkl). Mod4 (Super) is the primary modifier. For
 ## Visual Consistency
 
 TokyoNight "night" theme across Neovim, WezTerm, and Waybar. Source Code Pro 12pt font in both terminals (WezTerm, Alacritty). Forest green (#228B22) accent in Sway borders and Waybar active workspace.
+
+## Pitfalls
+
+- **`stow-all` does not auto-adopt.** It restows (`stow -R`); a pre-existing untracked file at a target makes it error out, not overwrite. Resolve with `stow --adopt` or by removing the file (README §8), then rerun.
+- **Minimal `.gitignore`; `gpushall` runs `git add -A`.** Only `.claude/settings.local.json` is ignored — everything else in the tree gets committed, including the tracked `*.lua.bak` backups under `nvim/`. Don't park large binaries or scratch files here expecting them to be skipped.
+- **`french-logic.sty` is a shared, snippet-coupled dependency** — editing it affects the dissertation/teaching repos and silently desyncs the generated snippet file. See the LaTeX Packages section before touching it.
+- **Adding files to a package needs a restow** (`stow -R <pkg>`) to create the new symlinks; editing already-linked files does not.

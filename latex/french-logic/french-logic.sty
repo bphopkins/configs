@@ -335,6 +335,7 @@
 \newcommand{\langd}{\ensuremath{\mathscr{L}^{\textnormal{\tiny D}}}\xspace}
 \newcommand{\langmd}{\ensuremath{\mathscr{L}^\textnormal{\tiny MD}}\xspace}
 \newcommand{\logic}{\mathcal{L}}
+\newcommand{\metalogic}{\ensuremath{\mathcal{ML}}\xspace}% the metalanguage, in \logic's script; use instead of a literal "ML"
 \newcommand{\logicp}{\logic_{\!\textnormal{\tiny p}}}
 \newcommand{\Lc}{\mathscr{L}^{\textnormal{\tiny C}}}
 
@@ -866,6 +867,16 @@
 \newcommand{\mlto}{\enspace\mathrel{\underline{\longrightarrow}}\enspace}
 \newcommand{\mlforall}{\mathord{\underline{\forall}}}
 \newcommand{\mlexists}{\mathord{\underline{\exists}}}
+% Solo forms: the bare symbols, without connective spacing, for MENTIONING a
+% metalanguage connective rather than USING it (cf. \cnecs vs. \cnecsolo).  Use
+% these when the connectives are named or listed; use the plain forms above when
+% they actually connect (e.g. in frame conditions).
+\newcommand{\mltosolo}{\mathord{\underline{\longrightarrow}}}
+\newcommand{\mlandsolo}{\mathord{\underline{\land}}}
+\newcommand{\mlorsolo}{\mathord{\underline{\lor}}}
+\newcommand{\mlnotsolo}{\mathord{\underline{\lnot}}}
+\newcommand{\mlforallsolo}{\mathord{\underline{\forall}}}
+\newcommand{\mlexistssolo}{\mathord{\underline{\exists}}}
 
 % Misc Other Technical (unsorted)
 \newcommand{\minus}{{\sim}}

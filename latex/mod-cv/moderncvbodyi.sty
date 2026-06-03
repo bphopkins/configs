@@ -70,24 +70,24 @@
 \settoheight{\baseletterheight}{\sectionstyle{o}}
 \setlength{\baseletterheight}{\baseletterheight-0.95ex}
 \RenewDocumentCommand{\section}{sm}{%
-  \par\addvspace{2.5ex}%
+  \par\addvspace{2.2ex \@plus\z@ \@minus.6ex}% trimmed + shrink so small overflows self-heal
   \phantomsection{}% reset the anchor for hyperrefs
   \addcontentsline{toc}{section}{#2}%
   \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{color1}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
-  \par\nobreak\addvspace{1ex}\@afterheading}% to avoid a pagebreak after the heading
+  \par\nobreak\addvspace{1ex \@plus\z@ \@minus.3ex}\@afterheading}% to avoid a pagebreak after the heading
 
 \RenewDocumentCommand{\subsection}{sm}{%
-  \par\addvspace{1ex}%
+  \par\addvspace{.85ex \@plus\z@ \@minus.3ex}%
   \phantomsection{}% reset the anchor for hyperrefs
   \addcontentsline{toc}{subsection}{#2}%
   \cvitem[0ex]{}{\strut\subsectionstyle{#2}}%
-  \par\nobreak\addvspace{.5ex}\@afterheading}% to avoid a pagebreak after the heading
+  \par\nobreak\addvspace{.5ex \@plus\z@ \@minus.2ex}\@afterheading}% to avoid a pagebreak after the heading
 
-\renewcommand*{\cvitem}[3][.25em]{%
+\renewcommand*{\cvitem}[3][.2em]{%
   \begin{tabular}{@{}p{\hintscolumnwidth}@{\hspace{\separatorcolumnwidth}}p{\maincolumnwidth}@{}}%
     \raggedleft\hintstyle{#2} &{#3}%
   \end{tabular}%
-  \par\addvspace{#1}}
+  \par\addvspace{#1 \@plus.03em \@minus.13em}}% rubber gap shrinks to keep a near-overflow on-page
 
 \renewcommand*{\cvdoubleitem}[5][.25em]{%
   \cvitem[#1]{#2}{%
