@@ -47,7 +47,7 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
 - `20-path.sh` — PATH additions (guards against duplicates via substring matching)
 - `30-prompt.sh` — prompt config
-- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update, hardcoded `/usr/local/texlive/2025` path — bump the year on a new TeX Live), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `phi112`, …)
+- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update, hardcoded `/usr/local/texlive/2025` path — bump the year on a new TeX Live), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
