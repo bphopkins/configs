@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A GNU Stow-based dotfiles repository for Fedora Linux, synced across multiple machines (fedxps, bigfed) via git. Configs are stored here at `~/Desktop/configs` and symlinked to their live locations. The user is an academic working in logic/philosophy — the LaTeX and Neovim configs are heavily tailored to dissertation writing.
+A GNU Stow-based dotfiles repository for Fedora Linux, synced across multiple machines (fedxps, bigfed) via git. **This is a public GitHub repo** (`github.com/bphopkins/configs`) — anything committed is published (see Pitfalls). Configs are stored here at `~/Desktop/configs` and symlinked to their live locations. The user is an academic working in logic/philosophy — the LaTeX and Neovim configs are heavily tailored to dissertation writing.
 
 ## Stow Deployment
 
@@ -27,6 +27,8 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 
 When adding a new stow package, update both the target map and the ordering array in `60-stow.sh`. Editing existing symlinked files requires no restow; adding new files to a package does.
 
+`README.md` is the authoritative from-scratch walkthrough for standing this up on a new machine (import live dotfiles → seed commit → dry-run stow → link → verify → reload); its §8 covers conflict resolution (`stow --adopt`), per-package restow, and unlinking.
+
 ## Daily Sync Workflow
 
 Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) → `stow-all` (if files added/deleted). End of session: `gpushall`.
@@ -45,9 +47,9 @@ To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages
 Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered prefix controls load order:
 - `00-shell-opts.sh` — shopt/set options
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
-- `20-path.sh` — PATH additions (guards against duplicates via substring matching)
+- `20-path.sh` — PATH/MANPATH/INFOPATH additions (guards against duplicates via substring matching); also sets `BUN_INSTALL` and prepends `~/bin`, `~/.local/bin`, `~/.local/npm-global/bin`. Hardcodes the `/usr/local/texlive/2025` path in six places — on a new TeX Live, bump the year **here and** in `40-aliases.sh` (`tl-upgrade`)
 - `30-prompt.sh` — prompt config
-- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update, hardcoded `/usr/local/texlive/2025` path — bump the year on a new TeX Live), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
+- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update, hardcoded `/usr/local/texlive/2025` path — on a new TeX Live bump the year here **and** in `20-path.sh`), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
@@ -113,6 +115,6 @@ TokyoNight "night" theme across Neovim, WezTerm, and Waybar. Source Code Pro 12p
 ## Pitfalls
 
 - **`stow-all` does not auto-adopt.** It restows (`stow -R`); a pre-existing untracked file at a target makes it error out, not overwrite. Resolve with `stow --adopt` or by removing the file (README §8), then rerun.
-- **Minimal `.gitignore`; `gpushall` runs `git add -A`.** Only `.claude/settings.local.json` is ignored — everything else in the tree gets committed, including the tracked `*.lua.bak` backups under `nvim/`. Don't park large binaries or scratch files here expecting them to be skipped.
+- **Public repo + minimal `.gitignore` + `gpushall` runs `git add -A`.** Only `.claude/settings.local.json` is ignored — everything else in the tree gets committed *and pushed to a public remote*, including the tracked `*.lua.bak` backups under `nvim/`. Don't park secrets, private data, or large binaries here expecting them to be skipped.
 - **`french-logic.sty` is a shared, snippet-coupled dependency** — editing it affects the dissertation/teaching repos and silently desyncs the generated snippet file. See the LaTeX Packages section before touching it.
 - **Adding files to a package needs a restow** (`stow -R <pkg>`) to create the new symlinks; editing already-linked files does not.

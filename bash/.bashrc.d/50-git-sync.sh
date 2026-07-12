@@ -12,6 +12,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation-template"
   "$HOME/Desktop/scripts"
   "$HOME/Desktop/opuscula"
+  "$HOME/Desktop/sonnerie"
 )
 
 gpull() {
