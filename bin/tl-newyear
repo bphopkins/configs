@@ -1,0 +1,292 @@
+#!/usr/bin/env bash
+#
+# tl-newyear -- migrate to a new TeX Live release, cautiously.
+#
+# tlmgr updates packages *within* a release but refuses to cross a release
+# boundary by design. Crossing one means a parallel install: the new year is
+# installed alongside the old, both are verified to produce identical output,
+# and only then does PATH move. The old tree stays as a fallback.
+#
+# Stages are separate subcommands on purpose -- there is a human go/no-go
+# decision in the middle, and it should not be buried inside a long script.
+#
+#   tl-newyear preflight          check disk/btrfs headroom
+#   tl-newyear baseline           fingerprint all documents on the CURRENT release
+#   tl-newyear install <year>     parallel install (does NOT touch PATH)
+#   tl-newyear compare <year>     recompile on <year>, diff against baseline
+#   tl-newyear visdiff <doc.tex>  pixel-compare one document across releases
+#   tl-newyear switch <year>      migrate symlinks after a clean compare
+#   tl-newyear status             show installed releases and which is active
+#
+# Typical run:
+#   tl-newyear preflight && tl-newyear baseline
+#   tl-newyear install 2027
+#   tl-newyear compare 2027
+#   tl-newyear switch 2027        # only if compare came back clean
+#
+# State (root lists, fingerprints, builds, logs) lives in
+# ~/.cache/tl-newyear; override with TL_NEWYEAR_STATE.
+#
+set -uo pipefail
+
+TL_ROOT=/usr/local/texlive
+STATE="${TL_NEWYEAR_STATE:-$HOME/.cache/tl-newyear}"
+MIRROR=https://mirror.ctan.org/systems/texlive/tlnet
+
+# Resolve through the stow symlink so the helper scripts are found beside us.
+HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+mkdir -p "$STATE"
+export TL_STATE="$STATE"
+
+die()  { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+info() { printf '\033[36m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[33mwarn:\033[0m %s\n' "$*" >&2; }
+
+need_helper() {
+  [ -f "$HERE/$1" ] || die "$1 must sit beside tl-newyear (looked in $HERE)"
+}
+
+# Newest installed release that actually has working binaries.
+current_year() {
+  local y="" d p
+  for d in "$TL_ROOT"/[0-9][0-9][0-9][0-9]/; do
+    for p in "$d/bin"/*/; do
+      [[ -x "$p/tlmgr" ]] && y="$(basename "$d")"
+    done
+  done
+  printf '%s' "$y"
+}
+
+bindir_for() {
+  local year="$1" p
+  for p in "$TL_ROOT/$year/bin"/*/; do
+    [[ -x "$p/tlmgr" ]] && { printf '%s' "${p%/}"; return 0; }
+  done
+  return 1
+}
+
+# ---------------------------------------------------------------- status
+cmd_status() {
+  local active; active=$(current_year)
+  info "installed releases under $TL_ROOT:"
+  local d y
+  for d in "$TL_ROOT"/[0-9][0-9][0-9][0-9]/; do
+    [[ -d "$d" ]] || continue
+    y="$(basename "$d")"
+    printf '  %s  %-6s %s\n' \
+      "$([[ "$y" == "$active" ]] && echo '*' || echo ' ')" \
+      "$y" "$(du -sh "$d" 2>/dev/null | cut -f1)"
+  done
+  echo
+  info "active (newest with working binaries): ${active:-none}"
+  info "PATH resolves pdflatex to: $(command -v pdflatex || echo 'not found')"
+  local n2
+  for d in "$TL_ROOT"/[0-9][0-9][0-9][0-9]/; do
+    y="$(basename "$d")"
+    n2=$(find /usr/local/bin -maxdepth 1 -lname "*texlive/$y*" 2>/dev/null | wc -l)
+    [[ "$n2" -gt 0 ]] && info "/usr/local/bin symlinks -> $y: $n2"
+  done
+  if [[ -f "$STATE/baseline-year" ]]; then
+    info "baseline on file for: $(cat "$STATE/baseline-year")"
+  else
+    info "no baseline recorded yet (run: tl-newyear baseline)"
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------- preflight
+#
+# A scheme-full install writes ~180,000 files. On btrfs that is a metadata
+# storm, and btrfs cannot grow metadata unless the *device* has unallocated
+# space -- free space sitting inside already-allocated data chunks is no use.
+# df will happily report 90GB free while the install dies with ENOSPC. The
+# cure is a filtered balance, which repacks sparse data chunks and hands whole
+# chunks back as unallocated. This cost a failed install on the 2025->2026 run.
+cmd_preflight() {
+  local need_gb="${1:-20}"
+
+  local fstype; fstype=$(findmnt -no FSTYPE / 2>/dev/null)
+  info "root filesystem: ${fstype:-unknown}"
+
+  local avail_gb
+  avail_gb=$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')
+  info "df reports ${avail_gb:-?}G available"
+  if [[ ${avail_gb:-0} -lt $need_gb ]]; then
+    warn "less than ${need_gb}G free -- reclaim space before installing"
+  fi
+
+  if [[ "$fstype" != btrfs ]]; then
+    [[ ${avail_gb:-0} -ge $need_gb ]] && info "preflight OK"
+    return 0
+  fi
+
+  local unalloc
+  unalloc=$(btrfs filesystem usage -g / 2>/dev/null \
+            | awk '/Device unallocated:/ {print int($3)}')
+  if [[ -z "$unalloc" ]]; then
+    warn "could not read btrfs usage (try: sudo $0 preflight)"
+    return 0
+  fi
+
+  info "btrfs device unallocated: ${unalloc}G"
+  if [[ $unalloc -lt $need_gb ]]; then
+    cat >&2 <<EOF
+
+$(printf '\033[33m')Only ${unalloc}G unallocated. The install will very likely fail with
+"No space left on device" even though df shows space free.$(printf '\033[0m')
+
+Reclaim it with a filtered balance (safe, online, pausable):
+
+    sudo btrfs balance start -dusage=0 /     # instant, drops empty chunks
+    sudo btrfs balance start -dusage=50 /    # the real work; can take a while
+    sudo btrfs filesystem usage /            # confirm unallocated grew
+
+Monitor from another shell with: sudo btrfs balance status /
+EOF
+    return 1
+  fi
+  info "preflight OK"
+}
+
+# ---------------------------------------------------------------- baseline
+cmd_baseline() {
+  need_helper tl-roots.sh; need_helper tl-check.sh
+  local year; year=$(current_year)
+  [[ -n "$year" ]] || die "no working TeX Live install found under $TL_ROOT"
+  local bin; bin=$(bindir_for "$year") || die "no bindir for $year"
+
+  info "collecting document roots"
+  bash "$HERE/tl-roots.sh" "$STATE/roots.txt" || die "root collection failed"
+
+  info "fingerprinting on TeX Live $year (this compiles everything)"
+  bash "$HERE/tl-check.sh" "$year" "$bin" "$STATE/roots.txt" || die "baseline failed"
+  printf '%s\n' "$year" > "$STATE/baseline-year"
+  info "baseline stored for $year"
+}
+
+# ---------------------------------------------------------------- install
+cmd_install() {
+  local year="${1:?usage: tl-newyear install <year>}"
+  [[ "$year" =~ ^[0-9]{4}$ ]] || die "year must be four digits"
+  [[ -e "$TL_ROOT/$year" ]] && die "$TL_ROOT/$year already exists -- remove it first
+  (a partial tree from a failed install must go: sudo rm -rf $TL_ROOT/$year)"
+
+  [[ -f "$STATE/baseline-year" ]] || \
+    warn "no baseline recorded -- you will have nothing to compare against"
+
+  cmd_preflight 20 || die "preflight failed; fix the above and retry"
+
+  local work="$STATE/install-$year"
+  rm -rf "$work"; mkdir -p "$work"
+
+  info "downloading installer"
+  curl -fsSL --max-time 600 -o "$work/install-tl-unx.tar.gz" \
+       "$MIRROR/install-tl-unx.tar.gz" || die "download failed"
+  tar xzf "$work/install-tl-unx.tar.gz" -C "$work" || die "unpack failed"
+
+  local inst; inst=$(find "$work" -maxdepth 1 -type d -name 'install-tl-*' | head -1)
+  [[ -n "$inst" ]] || die "installer directory not found"
+
+  # instopt_adjustpath 0 is the important line: the install must not touch
+  # /usr/local/bin, so the previous release stays active until `switch`.
+  # TEXMFLOCAL is shared across releases; TEXMFHOME is the stow target.
+  cat > "$work/profile" <<EOF
+selected_scheme scheme-full
+TEXDIR $TL_ROOT/$year
+TEXMFLOCAL $TL_ROOT/texmf-local
+TEXMFSYSVAR $TL_ROOT/$year/texmf-var
+TEXMFSYSCONFIG $TL_ROOT/$year/texmf-config
+TEXMFVAR ~/.texlive$year/texmf-var
+TEXMFCONFIG ~/.texlive$year/texmf-config
+TEXMFHOME ~/texmf
+instopt_adjustpath 0
+instopt_adjustrepo 1
+instopt_letter 1
+instopt_write18_restricted 1
+tlpdbopt_install_docfiles 1
+tlpdbopt_install_srcfiles 1
+tlpdbopt_autobackup 1
+tlpdbopt_create_formats 1
+EOF
+
+  info "installing TeX Live $year (scheme-full, ~13-16GB, 30-60min)"
+  info "your current release stays active throughout"
+  sudo "$inst/install-tl" -profile "$work/profile" || die "install failed"
+
+  bindir_for "$year" >/dev/null || die "install finished but no tlmgr under $year"
+  info "TeX Live $year installed; PATH still points at $(current_year)"
+  info "next: tl-newyear compare $year"
+}
+
+# ---------------------------------------------------------------- compare
+cmd_compare() {
+  need_helper tl-check.sh; need_helper tl-compare.sh
+  local year="${1:?usage: tl-newyear compare <year>}"
+  local base; base=$(cat "$STATE/baseline-year" 2>/dev/null) \
+    || die "no baseline -- run: tl-newyear baseline"
+  [[ "$base" == "$year" ]] && die "baseline is for $year; nothing to compare"
+  local bin; bin=$(bindir_for "$year") || die "TeX Live $year not installed"
+
+  info "recompiling everything on TeX Live $year"
+  bash "$HERE/tl-check.sh" "$year" "$bin" "$STATE/roots.txt" || die "compare run failed"
+
+  bash "$HERE/tl-compare.sh" "$base" "$year"
+}
+
+# ---------------------------------------------------------------- visdiff
+cmd_visdiff() {
+  need_helper tl-visdiff.sh
+  local doc="${1:?usage: tl-newyear visdiff <doc.tex> [dpi]}"
+  local base; base=$(cat "$STATE/baseline-year" 2>/dev/null) \
+    || die "no baseline -- run: tl-newyear baseline"
+  local newest; newest=$(current_year)
+  bash "$HERE/tl-visdiff.sh" "$doc" "$base" "$newest" "${2:-100}"
+}
+
+# ---------------------------------------------------------------- switch
+cmd_switch() {
+  local year="${1:?usage: tl-newyear switch <year>}"
+  local old; old=$(current_year)
+  local bin; bin=$(bindir_for "$year") || die "TeX Live $year not installed"
+
+  [[ "$old" == "$year" ]] && die "already on $year"
+
+  cat <<EOF
+
+About to move the active toolchain from $old to $year:
+  - remove /usr/local/bin symlinks pointing at $old
+  - create /usr/local/bin symlinks pointing at $year
+
+$TL_ROOT/$old stays on disk as a fallback. To go back:
+  tl-newyear switch $old
+or pin a single shell without switching:
+  TEXLIVE_YEAR=$old bash -l
+
+EOF
+  read -rp "proceed? [y/N] " ans
+  [[ "$ans" =~ ^[Yy]$ ]] || { info "aborted"; return 0; }
+
+  local oldbin; oldbin=$(bindir_for "$old")
+  if [[ -n "$oldbin" ]]; then
+    info "removing $old symlinks"
+    sudo "$oldbin/tlmgr" path remove || warn "path remove reported errors"
+  fi
+  info "adding $year symlinks"
+  sudo "$bin/tlmgr" path add || die "path add failed"
+
+  info "switched to TeX Live $year"
+  info "20-path.sh auto-detects the newest release, so new shells follow along"
+  info "keep $old until you are confident, then: sudo rm -rf $TL_ROOT/$old"
+}
+
+case "${1:-}" in
+  preflight) shift; cmd_preflight "$@" ;;
+  baseline)  shift; cmd_baseline  "$@" ;;
+  install)   shift; cmd_install   "$@" ;;
+  compare)   shift; cmd_compare   "$@" ;;
+  visdiff)   shift; cmd_visdiff   "$@" ;;
+  switch)    shift; cmd_switch    "$@" ;;
+  status)    shift; cmd_status    "$@" ;;
+  *) sed -n '3,32p' "$(readlink -f "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac

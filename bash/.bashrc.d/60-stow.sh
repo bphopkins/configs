@@ -2,6 +2,7 @@
 declare -A STOW_TARGETS=(
   [alacritty]="$HOME/.config/alacritty"
   [bash]="$HOME"
+  [bin]="$HOME/bin"
   [latex]="$HOME/texmf/tex/latex"
   [nvim]="$HOME/.config/nvim"
   [sway]="$HOME/.config/sway"
@@ -10,7 +11,7 @@ declare -A STOW_TARGETS=(
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash wezterm alacritty nvim sway waybar latex)
+STOW_ORDER=(bash wezterm alacritty nvim sway waybar latex bin)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 

@@ -1,5 +1,10 @@
 alias sysupgrade='sudo dnf upgrade --refresh -y && flatpak update -y && flatpak uninstall --unused -y'
-alias tl-upgrade='sudo /usr/local/texlive/2025/bin/x86_64-linux/tlmgr update --self --all'
+# Updates packages *within* a release; tlmgr refuses to cross a release
+# boundary by design. For a new release year, do a parallel install instead.
+# tlmgr is resolved through PATH so this never goes stale on a year bump; the
+# absolute path is passed to sudo because secure_path would otherwise discard
+# the TeX Live PATH entry.
+alias tl-upgrade='sudo "$(command -v tlmgr)" update --self --all'
 
 # Move+List Shortcuts
 alias lsa='ls -a --group-directories-first'
