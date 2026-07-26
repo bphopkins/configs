@@ -10,14 +10,19 @@ I include specific instructions for my personal configuration files for ease in 
 As soon as I boot my computer -- whichever I'm on -- I run the following custom `bash` commands in order:
 ```bash
 gpullall           # Pulls from all my everyday repositories  
-source ~/.bashrc   # Only if necessary, but it's mostly harmless
-stow-all           # Only if files were added or deleted, but it's harmless
+source ~/.bashrc   # Only if necessary (gpullall prints a hint when it is), but it's mostly harmless
+stow-all           # Only if files were added or deleted (gpullall hints about this too), but it's harmless
 ```
 And when I finish for the day I run:
 ```bash
 gpushall
 ```
 I might as well have renamed my pull command `gmorning` and my push command `gnight`, but I don't only ever run them in the morning and night. The idea is just that, whenever I am done working on one machine, I give myself the option to start working on any other machine whenever I want to do more work.
+
+And whenever I'm unsure where a machine stands — after time away, or when I suspect the machines are out of step — I first run:
+```bash
+gstatall -f   # Verdict per repo (needs push / needs pull / DIVERGED); fetches, but pushes and pulls nothing
+```
 
 
 ## (1) From Your Primary Machine

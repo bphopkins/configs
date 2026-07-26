@@ -39,12 +39,23 @@ Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) → 
 
 ## Git Sync Workflow
 
-Defined in `bash/.bashrc.d/50-git-sync.sh`:
-- `gpullall` — pulls every repo in the `REPOS_DESKTOP` array (ff-only, with submodule handling)
-- `gpushall` — auto-stages (`git add -A`), commits (hostname + timestamp), rebases, and pushes every repo
-- `gpull <name>` / `gpush <name>` — single-repo variants operating on `~/Desktop/<name>`
+Defined in `bash/.bashrc.d/50-git-sync.sh`. The single-repo and all-repo commands share the same per-repo helpers (`_gsync_pull_repo` / `_gsync_push_repo`), so their behavior cannot drift apart:
+- `gpullall` — pulls every repo in the `REPOS_DESKTOP` array (ff-only, tags+prune, submodules on demand)
+- `gpushall [-m MSG]` — stages (`git add -A`), vets new files, commits, `pull --rebase=merges`, pushes every repo
+- `gpull <name>...` / `gpush [-m MSG] <name>...` — same flows for one or more repos under `~/Desktop`; names tab-complete from `REPOS_DESKTOP`
+- `gstatall [-f]` — read-only dashboard: branch, dirty count, behind/ahead, and a STATE verdict in words that composes every applicable flag (`needs push` / `needs pull` / `DIVERGED` / `uncommitted` / an in-progress op — e.g. `uncommitted; needs pull`), so dirty work is never elided by a sync verdict. Plain runs read the last fetch; `-f` fetches first so verdicts are current vs origin while still pushing and pulling **nothing**. The safe first move whenever the machines may be out of step
 
-To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages follow: `{hostname}: {YYYY-MM-DD HH:MM:SS}`. Note that `REPOS_DESKTOP` spans *all* the user's Desktop repos (dissertation, teaching, etc.), not just this one.
+Guardrails, shared by the single- and all-repo variants:
+- **New-file vetting**: never-before-tracked files larger than `GSYNC_MAX_MB` (default 25) or matching `GSYNC_SECRET_GLOBS` get a y/N prompt before being committed. Declined files (or any flagged file when stdin is not a tty) are unstaged, stay in the working tree, and are flagged again next run.
+- **Committed new files are listed** in the output (up to 12, then `+N more`), so nothing enters a repo invisibly. This matters because the repo is public and `.gitignore` is minimal.
+- **In-progress rebase/merge/cherry-pick/bisect is detected** and reported as such — previously an unresolved merge could have conflict markers committed by `add -A` + `commit`.
+- **A rebase conflict is auto-aborted**: the repo is returned to a clean state with the local commit intact, and the summary names the repo for manual resolution. A batch command never leaves a repo mid-rebase.
+- **Offline-aware**: one TCP probe of `github.com:22` (all remotes are GitHub-over-SSH); when offline, `gpushall` still commits locally and reports pushes as `[PEND]`, `gpullall` reports offline once and stops.
+- **Non-main branches are synced but flagged** with a warning.
+- **Unpushed work is surfaced**: after pulling, `gpullall`/`gpull` warn when a repo is still ahead of origin, so "up to date" can never be mistaken for "in sync with the other machine".
+- **Post-pull hints**: a `configs` pull that changed `bash/` files or added/removed files in a stow package prints the required follow-up (`source ~/.bashrc`, `stow-all`) — the silent-skip trap from "Daily Sync Workflow" above.
+
+Summaries name the repos that skipped/failed/are pending, and tags are colorized on a tty. The explicit pre-pull fetch was removed (the pull's own fetch serves), halving network round-trips; the only remaining explicit fetch is on the rare set-upstream path. To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages follow `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`. Note that `REPOS_DESKTOP` spans *all* the user's Desktop repos (dissertation, teaching, etc.), not just this one.
 
 ## Bash Configuration
 
@@ -53,8 +64,8 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions (guards against duplicates via substring matching); prepends `~/bin`, `~/.local/bin`, `~/.local/npm-global/bin`, and `~/.bun/bin` if bun is installed (it currently isn't on either machine, so that block is guarded on the directory existing rather than prepending a nonexistent path). Each entry prepends, so the **effective priority is the reverse of the reading order** — TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is auto-detected, not hardcoded**: it picks the newest `/usr/local/texlive/YYYY` that actually contains a working `tlmgr` (half-installed trees are skipped, so a parallel install in progress can't knock TeX Live out of PATH). Override with `TEXLIVE_YEAR=<year>` to pin an older release — see "TeX Live release upgrades" below
 - `30-prompt.sh` — prompt config. Empty by design; inherits the system default from `/etc/bashrc`. See `00-shell-opts.sh` above.
-- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update; resolves `tlmgr` through PATH so it survives year bumps — note this only updates *within* a release, see "TeX Live release upgrades" below), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
-- `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
+- `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update; resolves `tlmgr` through PATH so it survives year bumps — note this only updates *within* a release, see "TeX Live release upgrades" below), `reload` (typo-proof `source ~/.bashrc` — guards against tab-completing into `~/.bash_history`, which would replay every command in it), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
+- `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`, `gpull`, `gpush`, `gstatall`) plus the `_gsync_*` per-repo helpers, new-file vet guards (`GSYNC_MAX_MB`, `GSYNC_SECRET_GLOBS`), and repo-name tab completion — see "Git Sync Workflow" above
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
 - `80-clamav.sh` — `clam {update,home,full}`: ClamAV signature refresh and scan helpers (logs to `~/clam-scan-{home,full}-<ts>.log`). Requires `clamav` + `clamav-update`.

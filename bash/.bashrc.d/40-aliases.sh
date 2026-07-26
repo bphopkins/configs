@@ -6,6 +6,12 @@ alias sysupgrade='sudo dnf upgrade --refresh -y && flatpak update -y && flatpak 
 # the TeX Live PATH entry.
 alias tl-upgrade='sudo "$(command -v tlmgr)" update --self --all'
 
+# Typo-proof re-source. Never type `source ~/.bash...` by hand again: tab can
+# complete it to ~/.bash_history, and sourcing history REPLAYS every command
+# in it. The `;` (not `&&`) keeps the confirmation even if a module returns
+# nonzero; any real error prints above it.
+alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
+
 # Move+List Shortcuts
 alias lsa='ls -a --group-directories-first'
 alias home='cd ~ && lsa'
