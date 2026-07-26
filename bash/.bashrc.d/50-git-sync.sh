@@ -10,11 +10,12 @@
 #   gstatall [-f]           one-line-per-repo status dashboard; -f fetches
 #                           first for current counts (still read-only)
 #
-# Vetting: never-before-tracked files larger than GSYNC_MAX_MB or matching
-# GSYNC_SECRET_GLOBS get a y/N prompt before they are committed. A declined
-# file (or any flagged file when stdin is not a tty) is unstaged, stays in the
-# working tree, and will be flagged again on the next run. Committed new files
-# are listed in the output so nothing enters a repo invisibly.
+# Vetting: newly added paths (including rename targets and typechanges)
+# larger than GSYNC_MAX_MB or matching GSYNC_SECRET_GLOBS get a y/N prompt
+# before they are committed. A declined file (or any flagged file when stdin
+# is not a tty) is unstaged, stays in the working tree, and will be flagged
+# again on the next run. Committed new files are listed in the output so
+# nothing enters a repo invisibly.
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
@@ -73,6 +74,8 @@ _gsync_in_progress() { # print the operation under way, if any; else return 1
     echo "merge in progress"
   elif [[ -f "$g/CHERRY_PICK_HEAD" ]]; then
     echo "cherry-pick in progress"
+  elif [[ -f "$g/REVERT_HEAD" ]]; then
+    echo "revert in progress"
   elif [[ -f "$g/BISECT_LOG" ]]; then
     echo "bisect in progress"
   else
@@ -112,7 +115,14 @@ _gsync_preflight() {
     _gsync_say FAIL "$name: $state — resolve or abort it, then re-run"
     return 1
   fi
-  _GSYNC_BRANCH="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || printf %s HEAD)"
+  # Unborn branch (fresh init, no commits yet): rev-parse prints HEAD *and*
+  # fails, which would corrupt the capture below — and there is nothing to
+  # sync yet, so skip before any mutation can happen.
+  if ! git -C "$repo" rev-parse --verify --quiet HEAD >/dev/null; then
+    _gsync_say SKIP "$name: no commits yet"
+    return 2
+  fi
+  _GSYNC_BRANCH="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null)" || _GSYNC_BRANCH="HEAD"
   if [[ "$_GSYNC_BRANCH" == "HEAD" ]]; then
     _gsync_say SKIP "$name: detached HEAD"
     return 2
@@ -129,7 +139,8 @@ _gsync_preflight() {
 _gsync_ensure_upstream() {
   local name="$1" repo="$2" branch="$3" mode="$4"
   git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1 && return 0
-  if git -C "$repo" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+  # Full ref, not --heads pattern: 'main' would suffix-match 'feature/main'.
+  if git -C "$repo" ls-remote --exit-code origin "refs/heads/$branch" >/dev/null 2>&1; then
     git -C "$repo" fetch --prune --tags >/dev/null 2>&1
     if git -C "$repo" branch -u "origin/$branch" "$branch" >/dev/null 2>&1; then
       return 0
@@ -138,35 +149,53 @@ _gsync_ensure_upstream() {
     return 1
   fi
   if [[ "$mode" == required ]]; then
-    _gsync_say SKIP "$name: no upstream and origin/$branch not found"
+    _gsync_say SKIP "$name: no upstream and origin/$branch not found (or origin unreachable)"
   fi
   return 2
 }
 
-# Vet the newly added (never-before-tracked) staged files against the size and
-# secrets guards; unstage any that are declined. Fills _GSYNC_NEW_FILES with
-# the new files that stay in the commit.
+# Vet the newly added staged paths against the size and secrets guards;
+# unstage any that are declined. Rename detection is disabled for the listing
+# so a rename's target is vetted as the new path it is, and typechanges (T)
+# are included so e.g. a symlink swapped for a real file still meets the size
+# guard. Fills _GSYNC_NEW_FILES with the files that stay in the commit.
 _gsync_vet_new_files() {
-  local name="$1" repo="$2" f reason glob size ans
+  local name="$1" repo="$2" f d reason glob size ans limit
   local new=() drop=()
-  local limit=$((GSYNC_MAX_MB * 1024 * 1024))
   _GSYNC_NEW_FILES=()
+  if [[ "$GSYNC_MAX_MB" =~ ^[0-9]+$ ]]; then
+    limit=$((GSYNC_MAX_MB * 1024 * 1024))
+  else
+    _gsync_say WARN "GSYNC_MAX_MB='$GSYNC_MAX_MB' is not a number — using 25"
+    limit=$((25 * 1024 * 1024))
+  fi
   while IFS= read -r -d '' f; do new+=("$f"); done \
-    < <(git -C "$repo" diff --cached --name-only --diff-filter=A -z)
+    < <(git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=AT -z)
+  # Fail CLOSED: if the listing itself failed, nothing was vetted, so nothing
+  # may be committed. (wait "$!" retrieves the process substitution's status.)
+  if ! wait "$!"; then
+    _gsync_say FAIL "$name: could not list staged files — refusing to commit unvetted"
+    return 1
+  fi
   ((${#new[@]})) || return 0
   for f in "${new[@]}"; do
     reason=""
-    size="$(stat -c %s -- "$repo/$f" 2>/dev/null || echo 0)"
-    if ((size > limit)); then
-      reason="$((size / 1024 / 1024)) MB (guard: GSYNC_MAX_MB=$GSYNC_MAX_MB)"
+    if [[ -e "$repo/$f/.git" ]]; then
+      reason="embedded git repository (would sync as an empty pointer, not files)"
     else
-      for glob in "${GSYNC_SECRET_GLOBS[@]}"; do
-        # shellcheck disable=SC2053  # unquoted RHS is deliberate: pattern match
-        if [[ "${f##*/}" == $glob || "$f" == $glob ]]; then
-          reason="matches secrets pattern '$glob'"
-          break
-        fi
-      done
+      size="$(stat -c %s -- "$repo/$f" 2>/dev/null || echo 0)"
+      if ((size > limit)); then
+        reason="$((size / 1024 / 1024)) MB (guard: GSYNC_MAX_MB=$GSYNC_MAX_MB)"
+      else
+        for glob in "${GSYNC_SECRET_GLOBS[@]}"; do
+          # shellcheck disable=SC2053  # unquoted RHS is deliberate: pattern
+          # match; the slash-wrapped arm matches every path component.
+          if [[ "$f" == $glob || "/$f/" == */$glob/* ]]; then
+            reason="matches secrets pattern '$glob'"
+            break
+          fi
+        done
+      fi
     fi
     if [[ -z "$reason" ]]; then
       _GSYNC_NEW_FILES+=("$f")
@@ -174,6 +203,9 @@ _gsync_vet_new_files() {
     fi
     _gsync_say WARN "$name: new file '$f' — $reason"
     if [[ -t 0 ]]; then
+      # If stdout is being captured, the WARN above is invisible — repeat the
+      # context on stderr so the prompt is never answered blind.
+      [[ -t 1 ]] || printf '[WARN] %s: new file %s — %s\n' "$name" "$f" "$reason" >&2
       read -r -p "        commit it? [y/N] " ans
       if [[ "$ans" == [yY]* ]]; then
         _GSYNC_NEW_FILES+=("$f")
@@ -183,8 +215,22 @@ _gsync_vet_new_files() {
     drop+=("$f")
   done
   if ((${#drop[@]})); then
-    if ! git -C "$repo" reset -q -- "${drop[@]}"; then
-      _gsync_say FAIL "$name: could not unstage declined files"
+    # :(literal) pathspecs: a name with glob characters or a leading ':' must
+    # unstage exactly itself — nothing else, and never silently nothing.
+    local specs=()
+    for f in "${drop[@]}"; do specs+=(":(literal)$f"); done
+    git -C "$repo" reset -q -- "${specs[@]}" 2>/dev/null
+    # Verify the unstage took: a declined file still staged would be committed.
+    while IFS= read -r -d '' f; do
+      for d in "${drop[@]}"; do
+        if [[ "$f" == "$d" ]]; then
+          _gsync_say FAIL "$name: could not unstage declined file '$f' — refusing to commit"
+          return 1
+        fi
+      done
+    done < <(git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=AT -z)
+    if ! wait "$!"; then
+      _gsync_say FAIL "$name: could not re-check staged files — refusing to commit"
       return 1
     fi
     _gsync_say WARN "$name: left uncommitted: ${drop[*]}"
@@ -192,26 +238,46 @@ _gsync_vet_new_files() {
   return 0
 }
 
-# After a configs pull moved HEAD, surface the follow-ups the pull itself
-# can't do: stow-all iterates the arrays already loaded in this shell, so a
-# pulled-in package addition is skipped silently until a re-source.
+# After a configs pull/rebase moved HEAD, surface the follow-ups the sync
+# itself can't do: stow-all iterates the arrays already loaded in this shell,
+# so a pulled-in package addition is skipped silently until a re-source.
+# Parsed NUL-delimited: core.quotePath (default on) C-quotes non-ASCII names
+# in plain output, which would defeat the path matching below.
 _gsync_pull_hints() {
-  local name="$1" repo="$2" old="$3" changed st p q
+  local name="$1" repo="$2" old="$3" st p q i bash_hit=0
   [[ "$name" == configs ]] || return 0
-  changed="$(git -C "$repo" diff --name-status "$old" HEAD 2>/dev/null)" || return 0
-  [[ -n "$changed" ]] || return 0
+  local toks=()
+  while IFS= read -r -d '' p; do toks+=("$p"); done \
+    < <(git -C "$repo" diff --name-status -z "$old" HEAD 2>/dev/null)
+  ((${#toks[@]})) || return 0
   local -A is_pkg=() pkg_hit=()
   if declare -p STOW_ORDER >/dev/null 2>&1; then
     for p in "${STOW_ORDER[@]}"; do is_pkg[$p]=1; done
   fi
-  while IFS=$'\t' read -r st p q; do
-    case "$st" in A* | C* | D | R*) ;; *) continue ;; esac
+  i=0
+  while ((i < ${#toks[@]})); do
+    st="${toks[i]}"
+    p="${toks[i + 1]:-}"
+    q=""
+    if [[ "$st" == [RC]* ]]; then # renames/copies carry two paths
+      q="${toks[i + 2]:-}"
+      i=$((i + 3))
+    else
+      i=$((i + 2))
+    fi
     for p in "$p" "$q"; do
+      [[ -n "$p" ]] || continue
+      [[ "$p" == bash/* ]] && bash_hit=1 # any change to bash/ needs a re-source
+      # adds/deletes/renames/typechanges inside a stow package need a restow
+      case "$st" in
+        A* | C* | D | R* | T) ;;
+        *) continue ;;
+      esac
       [[ "$p" == */* ]] || continue
       [[ -n "${is_pkg[${p%%/*}]:-}" ]] && pkg_hit[${p%%/*}]=1
     done
-  done <<<"$changed"
-  if [[ "$changed" == *$'\t'bash/* ]]; then
+  done
+  if ((bash_hit)); then
     _gsync_say HINT "configs: bash files changed — run: source ~/.bashrc"
   fi
   if ((${#pkg_hit[@]})); then
@@ -231,9 +297,16 @@ _gsync_pull_repo() {
   fi
   _gsync_ensure_upstream "$name" "$repo" "$branch" required || return $?
   old="$(git -C "$repo" rev-parse HEAD)"
-  if ! out="$(git -C "$repo" -c fetch.prune=true pull --ff-only --tags --recurse-submodules=on-demand 2>&1)"; then
-    _gsync_say FAIL "$name: pull failed:"
-    _gsync_detail "$out"
+  # No --tags: tags on fetched history auto-follow, and an explicit --tags
+  # makes one force-moved remote tag wedge every future pull of the repo.
+  if ! out="$(git -C "$repo" -c fetch.prune=true pull --ff-only --recurse-submodules=on-demand 2>&1)"; then
+    ahead="$(git -C "$repo" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)"
+    if [[ "$out" == *[Ff]ast-forward* && "${ahead:-0}" -gt 0 ]]; then
+      _gsync_say FAIL "$name: diverged — $ahead local unpushed commit(s) vs origin; run: gpush $name (it rebases)"
+    else
+      _gsync_say FAIL "$name: pull failed:"
+      _gsync_detail "$out"
+    fi
     return 1
   fi
   if [[ "$(git -C "$repo" rev-parse HEAD)" == "$old" ]]; then
@@ -259,7 +332,7 @@ _gsync_pull_repo() {
 # Returns 0 ok / 1 fail / 2 skip / 3 committed, push pending (offline).
 _gsync_push_repo() {
   local name="$1" repo="$2" msg="$3"
-  local branch committed=0 staged_count=0 new_note="" out ahead have_up
+  local branch committed=0 staged_count=0 new_note="" out ahead have_up prepull integrated=0
   local _GSYNC_BRANCH _GSYNC_NEW_FILES=()
   _gsync_preflight "$name" "$repo" || return $?
   branch="$_GSYNC_BRANCH"
@@ -288,12 +361,18 @@ _gsync_push_repo() {
 
   # Offline: the commit above still landed; report the push as pending.
   if ! _gsync_online; then
-    ahead="$(git -C "$repo" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)"
     if ((committed)); then
       _gsync_say PEND "$name: committed $staged_count path(s); push pending (offline)"
       [[ -n "$new_note" ]] && printf '        new: %s\n' "$new_note"
       return 3
-    elif [[ "${ahead:-0}" -gt 0 ]]; then
+    fi
+    # No upstream means never pushed — "0 ahead" would misreport that.
+    if ! git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+      _gsync_say PEND "$name: no upstream yet — initial push pending (offline)"
+      return 3
+    fi
+    ahead="$(git -C "$repo" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)"
+    if [[ "${ahead:-0}" -gt 0 ]]; then
       _gsync_say PEND "$name: $ahead unpushed commit(s); push pending (offline)"
       return 3
     fi
@@ -310,7 +389,14 @@ _gsync_push_repo() {
 
   if ((have_up == 0)); then
     if out="$(git -C "$repo" push -u origin "$branch" --follow-tags --recurse-submodules=on-demand 2>&1)"; then
-      _gsync_say SYNC "$name: initial push to origin/$branch"
+      if ((committed)); then
+        _gsync_say SYNC "$name: initial push to origin/$branch — committed $staged_count path(s)"
+        if [[ -n "$new_note" ]]; then
+          printf '        new: %s\n' "$new_note"
+        fi
+      else
+        _gsync_say SYNC "$name: initial push to origin/$branch"
+      fi
       return 0
     fi
     _gsync_say FAIL "$name: initial push failed:"
@@ -320,20 +406,33 @@ _gsync_push_repo() {
 
   # Rebase onto the remote, VS Code Sync style. On conflict, abort so no batch
   # command ever leaves a repo mid-rebase; the commit stays intact locally.
-  if ! out="$(git -C "$repo" -c fetch.prune=true pull --rebase=merges --tags --recurse-submodules=on-demand 2>&1)"; then
+  # (No --tags on the fetch — see the pull helper.)
+  prepull="$(git -C "$repo" rev-parse HEAD)"
+  if ! out="$(git -C "$repo" -c fetch.prune=true pull --rebase=merges --recurse-submodules=on-demand 2>&1)"; then
     if [[ "$(_gsync_in_progress "$repo")" == rebase* ]]; then
-      git -C "$repo" rebase --abort >/dev/null 2>&1
-      _gsync_say FAIL "$name: rebase conflict with origin/$branch — aborted; your commit is intact locally. Sync manually: git -C ~/Desktop/$name pull --rebase=merges"
+      if git -C "$repo" rebase --abort >/dev/null 2>&1; then
+        _gsync_say FAIL "$name: rebase conflict with origin/$branch — aborted; your commit is intact locally. Sync manually: git -C ~/Desktop/$name pull --rebase=merges"
+      else
+        _gsync_say FAIL "$name: rebase conflict AND the abort failed — repo left mid-rebase; inspect: git -C ~/Desktop/$name status"
+      fi
     else
       _gsync_say FAIL "$name: pull --rebase failed:"
       _gsync_detail "$out"
     fi
     return 1
   fi
+  # The rebase-pull may have integrated remote commits (fast-forward when we
+  # had nothing local). Report it and fire the configs hints — this must not
+  # be silent for someone whose only daily command is gpushall.
+  if [[ "$(git -C "$repo" rev-parse HEAD)" != "$prepull" ]]; then
+    integrated=1
+    _gsync_say PULL "$name: integrated changes from origin"
+    _gsync_pull_hints "$name" "$repo" "$prepull"
+  fi
 
   ahead="$(git -C "$repo" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)"
   if [[ "${ahead:-0}" -eq 0 ]]; then
-    _gsync_say OK "$name: up to date"
+    ((integrated)) || _gsync_say OK "$name: up to date"
     return 0
   fi
 
@@ -434,9 +533,18 @@ gpushall() {
   local fail_list=() skip_list=() pend_list=()
   local _GSYNC_ONLINE_CACHE=""
   if [[ "${1:-}" == "-m" ]]; then
-    msg="${2:-}"
-  elif [[ -n "${1:-}" ]]; then
-    msg="$1" # legacy positional message
+    if [[ -z "${2:-}" ]]; then
+      echo "Usage: gpushall [-m MSG]"
+      return 1
+    fi
+    msg="$2"
+  elif [[ "${1:-}" == -* ]]; then
+    # Refuse unknown flags: 'gpushall -f' must not commit 13 repos with the
+    # literal message '-f' (the dashboard flag belongs to gstatall).
+    echo "Usage: gpushall [-m MSG]   (for the dashboard, use gstatall -f)"
+    return 1
+  elif (($# > 0)); then
+    msg="$*" # legacy positional message — all words, not just the first
   fi
   [[ -n "$msg" ]] || msg="$(hostname): $(date '+%Y-%m-%d %H:%M:%S')"
   echo "Committing and pushing ${#REPOS_DESKTOP[@]} repositories..."
@@ -490,7 +598,8 @@ gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origi
     fi
     branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
     # -uall enumerates files inside untracked directories, so DIRTY equals
-    # exactly the number of paths gpushall would commit.
+    # the number of paths gpushall would commit (a pending rename counts as
+    # two paths here and one in the commit — the lone exception).
     dirty="$(git -C "$repo" status --porcelain -uall 2>/dev/null | wc -l | tr -d '[:space:]')"
     behind="-"
     ahead="-"
