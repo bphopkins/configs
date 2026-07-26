@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# okular-forward -- forward search: jump from a line in the .tex to that spot in the PDF.
+#
+# Called by VimTeX, not by hand. Wired up in nvim/lua/plugins/vimtex.lua:
+#     vim.g.vimtex_view_general_viewer  = "okular-forward"
+#     vim.g.vimtex_view_general_options = "@pdf @line @tex"
+# so VimTeX invokes it as:  okular-forward <pdf> <line> <tex>
+#
+# Why this wrapper exists rather than calling okular directly: Okular resolves the
+# source file in a SyncTeX jump *relative to the PDF's directory*, but VimTeX hands
+# over an absolute .tex path. Passing that absolute path straight through makes Okular
+# look for e.g. /home/.../chapters/home/.../chapters/ch1.tex and silently do nothing.
+# So we rebase the .tex path onto the PDF's directory before handing it over.
+#
+# --unique reuses an already-open Okular window instead of stacking up new ones.
+
+pdf="$1"
+line="$2"
+tex="$3"
+
+pdfdir=$(cd "$(dirname "$pdf")" && pwd)
+reltex=$(realpath --relative-to="$pdfdir" "$(realpath "$tex")")
+synctex_tex="${pdfdir}/${reltex}"
+
+exec okular --unique "file:${pdf}#src:${line}${synctex_tex}"

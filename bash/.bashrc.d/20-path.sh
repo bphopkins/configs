@@ -17,9 +17,16 @@ if [[ ":$PATH:" != *":$HOME/.local/npm-global/bin:"* ]]; then
 fi
 
 # Bun
-export BUN_INSTALL="$HOME/.bun"
-if [[ ":$PATH:" != *":$BUN_INSTALL/bin:"* ]]; then
-  PATH="$BUN_INSTALL/bin:$PATH"
+#
+# Guarded on the directory existing: bun is not currently installed on either
+# machine, and an unconditional prepend puts a nonexistent directory at the front
+# of PATH, which every command lookup then has to stat past. Reinstalling bun
+# makes this live again with no edit here.
+if [[ -d "$HOME/.bun/bin" ]]; then
+  export BUN_INSTALL="$HOME/.bun"
+  if [[ ":$PATH:" != *":$BUN_INSTALL/bin:"* ]]; then
+    PATH="$BUN_INSTALL/bin:$PATH"
+  fi
 fi
 
 # TeX Live

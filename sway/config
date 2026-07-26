@@ -1,6 +1,6 @@
-# Default config for sway
-#
-# Copy this to ~/.config/sway/config and edit it to your liking.
+# Sway config -- stow-managed from ~/Desktop/configs/sway/config.
+# Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
+# Apply changes with `swaymsg reload` or $mod+Shift+c.
 #
 # Read `man 5 sway` for a complete reference.
 
@@ -167,9 +167,8 @@ output * bg /home/bph/Desktop/configs/wallpapers/monarch1080dark.png fill
 #
 # Layout stuff:
 #
-    # You can "split" the current object of your focus with
-    # $mod+b or $mod+v, for horizontal and vertical splits
-    # respectively.
+    # Split the focused container. (Upstream's defaults were $mod+b / $mod+v;
+    # those keys are launchers here, so splits moved to $mod+Ctrl+h / $mod+Ctrl+v.)
     bindsym $mod+Ctrl+h splith
     bindsym $mod+Ctrl+v splitv
 
@@ -275,8 +274,10 @@ default_floating_border pixel 3     # floating windows too
 workspace_layout default
 
 # Palette
+# $accent is the live one: dodger blue. $forest is the retired forest-green accent,
+# kept so it can be swapped back by changing a single word below. Note that Waybar
+# is still on forest green (waybar/style.css), so the two deliberately differ.
 set $forest #228B22
-# Alternative: magenta (#FF00FF) — more noticeable but less subtle
 set $accent #0088FF
 
 # Format: border  background  text  indicator  child_border

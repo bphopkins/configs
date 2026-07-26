@@ -30,7 +30,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p ~/Desktop/configs/{alacritty,bash,latex,nvim,sway,waybar,wezterm}
+mkdir -p ~/Desktop/configs/{alacritty,bash,bin,latex,nvim,okular,sway,waybar,wezterm}
 ```
 
 
@@ -99,6 +99,27 @@ else
   echo "MISSING: ~/texmf/tex/latex (nothing to import)"
 fi
 
+# BIN: move personal scripts from ~/bin to ~/Desktop/configs/bin
+#
+# Only scripts you wrote belong in the repo. ~/bin is also where some installers
+# drop generated launchers -- `isabelle install ~/bin` writes isabelle and
+# isabelle_java, hardcoding an absolute path to a machine-local Isabelle tree.
+# Those must stay untracked (see §8), so they are excluded here; re-running that
+# one command regenerates them on any machine. Review what landed before §3.
+if [ -d "$HOME/bin" ]; then
+  rsync -a --exclude='.git' --exclude='isabelle' --exclude='isabelle_java' \
+        -- "$HOME/bin/" "$CFG/bin/"
+  mv "$HOME/bin" "$HOME/bin.backup.$ts"
+  mkdir -p "$HOME/bin"
+  # Put the excluded launchers back where they belong: outside the repo.
+  for g in isabelle isabelle_java; do
+    [ -f "$HOME/bin.backup.$ts/$g" ] && cp -p "$HOME/bin.backup.$ts/$g" "$HOME/bin/$g"
+  done
+  echo "IMPORTED: ~/bin -> $CFG/bin (installer-generated launchers left untracked)"
+else
+  echo "MISSING: ~/bin (nothing to import)"
+fi
+
 ```
 It may be worth it at this point to verify that, e.g., your new `nvim` directory respects the structure of the original:
 ```bash
@@ -126,7 +147,7 @@ This simulates the action, reporting back if `stow` sees anything funny about cr
 cd ~/Desktop/configs
 
 # Ensure target directories exist
-mkdir -p ~/.config/{alacritty,nvim,sway,waybar} ~/texmf/tex/latex
+mkdir -p ~/.config/{alacritty,nvim,sway,waybar} ~/texmf/tex/latex ~/bin
 
 # Links to $HOME
 stow -nvt ~ bash
@@ -140,6 +161,12 @@ stow -nvt ~/.config/waybar waybar
 
 # Links to ~/texmf/tex/latex
 stow -nvt ~/texmf/tex/latex latex
+
+# Links to ~/bin
+stow -nvt ~/bin bin
+
+# Links to ~/.config (single file: okularpartrc)
+stow -nvt ~/.config okular
 ```
 
 If the output shows the right link paths, proceed. 
@@ -162,6 +189,12 @@ stow -vt ~/.config/waybar waybar
 
 # Links to ~/texmf/tex/latex
 stow -vt ~/texmf/tex/latex latex
+
+# Links to ~/bin
+stow -vt ~/bin bin
+
+# Links to ~/.config (single file: okularpartrc)
+stow -vt ~/.config okular
 ```
 
 
@@ -176,9 +209,15 @@ ls -l ~/.config/nvim/init.lua
 ls -l ~/.config/sway/config
 ls -l ~/.config/waybar/config ~/.config/waybar/style.css
 ls -l ~/texmf/tex/latex/french-logic/french-logic.sty
+ls -l ~/bin/tl-newyear
+ls -l ~/.config/okularpartrc
 ```
 
 You should see arrows (`->`) pointing into `~/Desktop/configs/...`.
+
+Note that `stow` skips top-level `README.*` and `LICENSE.*` inside each package by
+default, so `nvim/README.md`, `nvim/LICENSE`, and `latex/README.md` are deliberately
+*not* linked. That is correct behavior, not a failed stow.
 
 
 
@@ -216,6 +255,8 @@ But honestly, why not just reboot?
   stow --adopt -vt ~/.config/sway sway
   stow --adopt -vt ~/.config/waybar waybar
   stow --adopt -vt ~/texmf/tex/latex latex
+  stow --adopt -vt ~/bin bin
+  stow --adopt -vt ~/.config okular
   git add -A && git commit -m "Adopt local files"
   ```
 
@@ -229,7 +270,49 @@ But honestly, why not just reboot?
   stow -Dvt ~/.config/sway sway
   stow -Dvt ~/.config/waybar waybar
   stow -Dvt ~/texmf/tex/latex latex
+  stow -Dvt ~/bin bin
+  stow -Dvt ~/.config okular
   ```
+
+- **Okular:** `okularpartrc` is stowed, so the SyncTeX inverse-search setting and the
+  custom annotation toolbar arrive with the repo — no re-configuring by hand. Inverse
+  search does still need `nvr`: `pip install --user neovim-remote`. Only that one file
+  is tracked: `~/.config/okularrc` (window state, Recent Files) and
+  `~/.local/share/okular/docdata/` (per-document annotations, ~13MB) are deliberately
+  excluded and `.gitignore`d — they churn every session and would both spam commits
+  and leak document names into this public repo.
+
+  `okularpartrc` is the only stowed file that the *application* rewrites, rather than
+  your editor — verified to write through the symlink rather than replace it, so
+  changing a setting in Okular's dialog simply shows up as a repo change. If that ever
+  regresses after a KDE upgrade and settings stop syncing, check
+  `ls -l ~/.config/okularpartrc` first: KConfig can save by atomic replace, which would
+  turn the symlink back into a real file with no error. Fix by moving it into `okular/`
+  again and restowing.
+
+- **Homegrown scripts go in `bin/`, not `~/.local/bin`.** `~/.local/bin` is where pip
+  and npm drop their console scripts, and they rewrite that directory on upgrade.
+  Anything you wrote yourself belongs in the `bin` package so it syncs. Note that
+  `~/.local/bin` comes *before* `~/bin` on PATH, so if you move a script, delete the
+  original rather than leaving a copy behind — the old one would keep winning.
+
+  The same applies to launchers other installers generate: `~/bin/isabelle` and
+  `~/bin/isabelle_java` are written by `isabelle install ~/bin` (which is also what
+  created `~/bin` in the first place). Leave them untracked — that command regenerates
+  them, and because it does `rm -f` on its targets, a tracked file of the same name
+  would get its stow symlink silently replaced, breaking the next `stow -R bin`.
+
+- **Adding a new stow package?** Update *both* the `STOW_TARGETS` map and the
+  `STOW_ORDER` array in `bash/.bashrc.d/60-stow.sh`, and remember that on the *other*
+  machine you must `source ~/.bashrc` **before** `stow-all` — `stow-all` iterates the
+  arrays as loaded in the running shell, so a pull that adds a package updates the file
+  on disk but not the arrays in memory, and the new package is skipped **silently**.
+
+- **Rescue files:** `bash/.bashrc.min` and `bash/.bash_profile.min` are stowed to
+  `~/.bashrc.min` and `~/.bash_profile.min`. They are deliberately minimal, known-good
+  shell configs kept for the case where an edit to the real `.bashrc` breaks login. To
+  fall back, copy one over the broken file (or `bash --rcfile ~/.bashrc.min`), repair
+  the real config, then restore.
 
 
 ## (2) Syncing from Another Machine

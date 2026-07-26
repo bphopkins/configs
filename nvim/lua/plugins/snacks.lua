@@ -9,8 +9,8 @@ return {
 
       -- Make explorer show dotfiles by default
       local explorer = opts.picker.sources.explorer or {}
-      explorer.hidden = true -- show .bashrc, .config, etc.
-      explorer.ignored = true -- uncomment if you ALSO want .gitignored stuff
+      explorer.hidden = true -- show dotfiles: .bashrc, .config, etc.
+      explorer.ignored = true -- also show .gitignored files (build artifacts, etc.)
 
       opts.picker.sources.explorer = explorer
 

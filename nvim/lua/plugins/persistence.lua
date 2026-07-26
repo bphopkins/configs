@@ -1,6 +1,6 @@
--- persistence.nvim: autoload only in these roots on empty starts
---   - ~/Desktop/dissertation
---   - ~/Desktop/homepage
+-- persistence.nvim: autoload a session only on an empty start (no file args) and
+-- only when CWD is under one of the approved roots listed in `init` below.
+-- Bypass with NVIM_NOSESSION=1.
 -- Uses only vim.fn (stable) for path ops. Plugin loads eagerly for reliability.
 
 return {

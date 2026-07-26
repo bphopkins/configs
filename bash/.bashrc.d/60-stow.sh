@@ -5,13 +5,17 @@ declare -A STOW_TARGETS=(
   [bin]="$HOME/bin"
   [latex]="$HOME/texmf/tex/latex"
   [nvim]="$HOME/.config/nvim"
+  # okular ships a single file that lives directly in ~/.config, so the target is
+  # ~/.config itself rather than a subdirectory. Stow only links what the package
+  # contains, so this does not put ~/.config under stow's control generally.
+  [okular]="$HOME/.config"
   [sway]="$HOME/.config/sway"
   [waybar]="$HOME/.config/waybar"
   [wezterm]="$HOME"
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash wezterm alacritty nvim sway waybar latex bin)
+STOW_ORDER=(bash wezterm alacritty nvim sway waybar latex bin okular)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 

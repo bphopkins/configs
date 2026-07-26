@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# okular-inverse -- inverse search: jump from a spot in the PDF back to the .tex in Neovim.
+#
+# Called by Okular, not by hand. Configured in ~/.config/okularpartrc:
+#     ExternalEditor=Custom
+#     ExternalEditorCommand=okular-inverse %f %l
+# so Okular invokes it as:  okular-inverse <file> <line>
+#
+# That setting travels with the repo: okularpartrc is stowed as the `okular` package,
+# so a new machine picks it up rather than needing it re-entered by hand. (To set it
+# manually anyway: Okular > Settings > Configure Okular > Editor > Custom Text Editor.)
+#
+# Okular calls this by bare name, so it only has to be somewhere on PATH -- which
+# directory does not matter. It does matter *how Okular was launched*: started by
+# VimTeX it inherits the shell PATH and finds this; started from the desktop it gets
+# the session PATH (/usr/local/bin:/usr/bin) and will not. That is a property of the
+# launch, not of this file's location -- see CLAUDE.md, "The `bin` package".
+#
+# Two wrinkles this handles:
+#   1. Okular passes %f percent-encoded, so a path with spaces or accents arrives as
+#      e.g. "PHI%20112/ch1.tex". urllib.parse.unquote puts it back.
+#   2. The target Neovim is addressed by socket, not by launching a new one. The
+#      socket path must match the one nvim/lua/plugins/vimtex.lua opens:
+#          vim.fn.serverstart("/tmp/nvimsocket")
+#      Change one and you must change the other, or inverse search goes quiet.
+#
+# Requires nvr (neovim-remote), installed via pip: `pip install --user neovim-remote`.
+
+file=$(python3 -c "import urllib.parse,sys; print(urllib.parse.unquote(sys.argv[1]))" "$1")
+
+nvr --servername /tmp/nvimsocket --remote-silent +"$2" "$file"

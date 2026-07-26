@@ -20,6 +20,7 @@ Each top-level directory (except `wallpapers/`) is a stow "package" with a speci
 | waybar     | `~/.config/waybar`           |
 | latex      | `~/texmf/tex/latex`          |
 | bin        | `~/bin`                      |
+| okular     | `~/.config`                  |
 
 Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 - `stow-all` — `git pull --ff-only`, then restow every package (`stow -R`). On a conflict (an untracked real file already sitting at a target) it **errors out** rather than resolving it — adopt or remove the file manually (README §8 covers `stow --adopt`), then rerun.
@@ -34,6 +35,8 @@ When adding a new stow package, update both the target map and the ordering arra
 
 Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) → `stow-all` (if files added/deleted). End of session: `gpushall`.
 
+**The re-source is not optional when a pull adds a stow package.** `60-stow.sh` is itself a bash file, so a pull that adds a package updates it on disk but not the arrays in the running shell — and `stow-all` iterates the in-memory arrays, so it skips the new package **silently**, with no error. This bit the `bin` package and applies again to `okular`. When in doubt, re-source.
+
 ## Git Sync Workflow
 
 Defined in `bash/.bashrc.d/50-git-sync.sh`:
@@ -46,16 +49,18 @@ To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages
 ## Bash Configuration
 
 Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered prefix controls load order:
-- `00-shell-opts.sh` — shopt/set options
+- `00-shell-opts.sh` — shopt/set options. **Deliberately empty**, reserved so there's an obvious home for such options when one is wanted; ditto `30-prompt.sh`. Much of the bash tree is scaffolding like this — an empty numbered module is not dead code to be removed.
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
-- `20-path.sh` — PATH/MANPATH/INFOPATH additions (guards against duplicates via substring matching); also sets `BUN_INSTALL` and prepends `~/bin`, `~/.local/bin`, `~/.local/npm-global/bin`. **TeX Live is auto-detected, not hardcoded**: it picks the newest `/usr/local/texlive/YYYY` that actually contains a working `tlmgr` (half-installed trees are skipped, so a parallel install in progress can't knock TeX Live out of PATH). Override with `TEXLIVE_YEAR=<year>` to pin an older release — see "TeX Live release upgrades" below
-- `30-prompt.sh` — prompt config
+- `20-path.sh` — PATH/MANPATH/INFOPATH additions (guards against duplicates via substring matching); prepends `~/bin`, `~/.local/bin`, `~/.local/npm-global/bin`, and `~/.bun/bin` if bun is installed (it currently isn't on either machine, so that block is guarded on the directory existing rather than prepending a nonexistent path). Each entry prepends, so the **effective priority is the reverse of the reading order** — TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is auto-detected, not hardcoded**: it picks the newest `/usr/local/texlive/YYYY` that actually contains a working `tlmgr` (half-installed trees are skipped, so a parallel install in progress can't knock TeX Live out of PATH). Override with `TEXLIVE_YEAR=<year>` to pin an older release — see "TeX Live release upgrades" below
+- `30-prompt.sh` — prompt config. Empty by design; inherits the system default from `/etc/bashrc`. See `00-shell-opts.sh` above.
 - `40-aliases.sh` — aliases: `sysupgrade` (dnf + flatpak update), `tl-upgrade` (TeX Live `tlmgr` self+all update; resolves `tlmgr` through PATH so it survives year bumps — note this only updates *within* a release, see "TeX Live release upgrades" below), `cc` (`claude --model opus --effort max`), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`)
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
 - `80-clamav.sh` — `clam {update,home,full}`: ClamAV signature refresh and scan helpers (logs to `~/clam-scan-{home,full}-<ts>.log`). Requires `clamav` + `clamav-update`.
-- `90-nix.sh` — nix profile loader (conditional; only if nix is installed)
+- `90-nix.sh` — nix profile loader (conditional; only if nix is installed). Nix is **not** installed on either machine right now; the loader is kept ready for Carnap development, which builds via nix. It's a no-op until then — leave it in place.
+
+Also in the `bash` package, stowed to `~/.bashrc.min` and `~/.bash_profile.min`: minimal known-good rescue configs, for recovering from an edit that breaks login. Not sourced by anything; see README §8.
 
 ## Neovim Configuration
 
@@ -69,7 +74,7 @@ LazyVim-based setup. Entry point: `nvim/init.lua` bootstraps lazy.nvim via `lua/
 - `after/ftplugin/` — filetype overrides (tex.lua is ~195 lines of custom highlight-group colors)
 
 ### LaTeX toolchain
-VimTeX with latexmk compiler and Okular PDF viewer (forward/reverse sync via neovim-remote). Treesitter highlighting is disabled for LaTeX — VimTeX's syntax engine is the sole highlighter. Custom syntax in `lua/plugins/vimtex.lua` registers 350+ commands across 7 semantic highlight groups (axioms, frame conditions, logic systems, semantic notation, modal operators, proof rules, set notation), colored in `after/ftplugin/tex.lua`.
+VimTeX with latexmk compiler and Okular PDF viewer (forward/reverse sync via neovim-remote). Treesitter highlighting is disabled for LaTeX — VimTeX's syntax engine is the sole highlighter. Custom syntax in `lua/plugins/vimtex.lua` registers 208 literal command names plus 25 regex patterns across 7 semantic highlight groups (axioms, frame conditions, logic systems, semantic notation, modal operators, proof rules, set notation), colored in `after/ftplugin/tex.lua`. Measured 2026-07-26: that covers 450 of the `.sty`'s 513 commands, with **no dead registrations** — every name and pattern matches something real. The 63 uncovered commands and all 24 environments (`vimtex_syntax_custom_envs` is unset) are itemised in `TODO.md` item 2.
 
 ### Completion stack (for TeX filetypes)
 blink.cmp (UI) → blink.compat (adapter) → cmp-vimtex (source) → VimTeX (scanner). TeX filetypes only use snippets + VimTeX completions (no LSP). Configured in `lua/plugins/completions.lua`.
@@ -89,6 +94,7 @@ Custom task system in `lua/config/markdown_tasks.lua` with keybindings in `lua/p
 - `<localleader>md` — toggle `@done(timestamp)`
 - `<localleader>ms` — toggle `@started(timestamp)`
 - `<localleader>mD` — toggle checkbox + @done synced
+- `<localleader>mc` — insert `- [ ] ` at the cursor
 - `<CR>` in insert mode — smart newline (continues checkbox lists)
 
 ### Session persistence
@@ -101,9 +107,51 @@ stylua (config in `nvim/stylua.toml`: 2-space indent, 100 columns). Run from rep
 
 Custom `.sty` and `.cls` files in `latex/` are stowed into `~/texmf/tex/latex`. Key package:
 
-- **french-logic** — 350+ macros for modal/deontic logic (semantic notation, modal operators, axiom schemas, logic system labels). Single `\usepackage{french-logic}` replaces a 100+ line preamble. Has a `deon` option for DEON conference submissions. **Shared dependency:** sibling repos (`dissertation/`, `dissertation-template/`, `teaching/`, `teach-logic/`) load it from the stowed copy, so edits here ripple into all of them. It is also the source for the auto-generated Neovim snippets — regenerate `french-logic.lua` after any macro change (see Snippets above) or completions go stale.
+- **french-logic** — 513 commands and 24 environments (counted 2026-07-26) for modal/deontic logic (semantic notation, modal operators, axiom schemas, logic system labels). Single `\usepackage{french-logic}` replaces a 100+ line preamble. Has a `deon` option for DEON conference submissions. **Shared dependency:** sibling repos (`dissertation/`, `dissertation-template/`, `teaching/`, `teach-logic/`) load it from the stowed copy, so edits here ripple into all of them. It is also the source for the auto-generated Neovim snippets — regenerate `french-logic.lua` after any macro change (see Snippets above) or completions go stale.
 - **bph-paper** — article class with BibLaTeX Chicago style and custom quotation environments
 - **logic-hw**, **mod-cv**, **tufte-compact** — homework, CV, and handout classes
+
+## The `bin` package
+
+Everything in `bin/` is stowed to `~/bin` and is on PATH via `20-path.sh`. This is the home for homegrown executables; **pip/npm-installed console scripts stay in `~/.local/bin` and must not be moved here** — their package managers rewrite them on upgrade.
+
+- `tl-newyear` + `tl-{roots,check,compare,visdiff}.sh` — TeX Live release migration. See "TeX Live release upgrades" below.
+- `okular-forward` / `okular-inverse` — SyncTeX bridge between VimTeX and Okular. See below.
+
+**`~/bin` also holds untracked files that do not belong in this repo.** `~/bin/isabelle` and `~/bin/isabelle_java` are generated by Isabelle's own installer — `isabelle install ~/bin` writes them (and `mkdir -p`s `~/bin`, which is how the directory first appeared). They hardcode the release path, are regenerated by re-running that one command, and are correctly machine-local, since `~/opt/Isabelle2025` isn't synced either. Leave them untracked. Note the trap in the other direction: `isabelle install` does `rm -f` on its targets, so if a same-named file were ever tracked here, re-running it after an Isabelle upgrade would silently replace the stow symlink with a real file and the next `stow -R bin` would fail with a conflict.
+
+### The Okular SyncTeX bridge
+
+Two halves, and both must agree on the Neovim socket path:
+
+- **Forward** (tex → PDF): VimTeX calls `okular-forward <pdf> <line> <tex>`, configured in `nvim/lua/plugins/vimtex.lua` via `vimtex_view_general_viewer`. The wrapper exists because Okular resolves a SyncTeX source path *relative to the PDF's directory*, so the absolute path VimTeX supplies has to be rebased first or the jump silently does nothing.
+- **Inverse** (PDF → tex): Okular calls `okular-inverse <file> <line>`, set in `~/.config/okularpartrc` as `ExternalEditorCommand`. It percent-decodes the path and hands it to `nvr` (pip: `neovim-remote`) at `/tmp/nvimsocket` — the same socket `vimtex.lua` opens with `vim.fn.serverstart`. Change one, change the other.
+
+### The `okular` package — and what is deliberately excluded
+
+`~/.config/okularpartrc` **is** stowed (added 2026-07-26), so the `ExternalEditorCommand` above travels with the repo, along with the hand-built `QuickAnnotationTools` toolbar (highlighters on shortcuts 1/2/3, underline 4, insert-text 5, notes 6/7) — the part that would be tedious to rebuild through the GUI. Everything in that file is durable preference: no paths, no window geometry, no resolution-keyed values.
+
+**Nothing else Okular writes belongs in this repo**, and `.gitignore` guards against it:
+
+- `~/.config/okularrc` — window state plus a `[Recent Files]` list rewritten every session. Under `gpushall`'s `git add -A` that means a commit a day, and since both machines rewrite the same ten lines it would collide on every `pull --rebase=merges`. It also has resolution-keyed `[Print Preview]` sizes, and it names refereeing and teaching PDFs — into a public remote.
+- `~/.local/share/okular/docdata/` — ~13MB across ~3,200 XML files of per-document bookmarks, annotations, and page positions. Constantly rewritten, and keyed by filename+size against `~/Desktop/readings/`, which isn't synced — so it would be inert on the other machine anyway.
+
+**`okularpartrc` is the only stowed file that the *application itself* rewrites** — everything else here is written only by an editor. That was the open risk when the package was added, since KConfig saves by atomic replace, which could swap the symlink for a real file and silently un-stow it. **Tested over two write cycles on 2026-07-26 and it survives**, but be precise about the mechanism: KConfig *does* replace-and-rename — the target file's inode changes on each write — it just resolves the symlink first and replaces the file inside the repo rather than clobbering the link in `~/.config`. The link stayed intact, both paths kept reporting the same inode *as each other*, the changed key appeared in the repo file, and every other key was preserved. Toggling a setting back removed its key entirely rather than writing `=false`, so the file returned byte-identical to its prior state.
+
+To re-verify at any time: `[ "$(stat -Lc%i ~/.config/okularpartrc)" = "$(stat -c%i ~/Desktop/configs/okular/okularpartrc)" ]` should hold, and `~/.config/okularpartrc` should still be a symlink.
+
+The practical consequence of replace-and-rename: don't assume anything holding an open file descriptor on the repo copy will see updates, and don't be surprised that `git` reports a whole-file change.
+
+Two consequences. First, changing an Okular preference now dirties the repo, and `gpushall` will commit it — expected, and it only happens on a deliberate change, since this file carries no session state. Second, if Okular settings ever *do* stop syncing after a KDE upgrade, check `ls -l ~/.config/okularpartrc` before anything else; if it is no longer a symlink, move the file back into `okular/` and restow.
+
+**Where `okular-inverse` resolves from — measured, 2026-07-26.** Okular finds it via the PATH of whatever launched it, and only one of the two cases works:
+
+- **Launched by VimTeX** (the normal path): inherits the interactive shell's PATH, so `~/bin/okular-inverse` resolves and inverse search works.
+- **Launched from the desktop** (app grid, Files, `xdg-open`): inherits the session PATH, which is `/usr/local/bin:/usr/bin` — `gnome-shell`'s actual environ, matching `systemctl --user show-environment`. `okular-inverse` is not found and inverse search silently does nothing.
+
+Neither `~/bin` nor `~/.local/bin` is on that session PATH; both come only from `20-path.sh`, which runs for interactive shells only. So this is a property of how Okular is launched, not of where the script lives — verified by resolving the old `~/.local/bin` location against the same session PATH, which also fails. Moving these scripts into the repo changed nothing either way.
+
+If inverse search from a desktop-launched Okular is ever wanted, the fix is a `~/.config/environment.d/*.conf` adding both directories (`PATH=$HOME/bin:$HOME/.local/bin:$PATH` — expansion confirmed working). Deliberately **not** done: it would give PATH a second source of truth that does not reproduce `20-path.sh`'s TeX-Live-first ordering, so a GUI process and a terminal process could disagree about which `pdflatex` wins mid-`tl-newyear`. Only add it against a concrete failure.
 
 ## TeX Live release upgrades
 
@@ -170,15 +218,25 @@ source ~/.bashrc
 
 ## Sway/Waybar
 
-Sway uses vim-style navigation (hjkl). Mod4 (Super) is the primary modifier. Forest green (#228B22) accent color. Waybar config is JSON + `style.css`.
+Sway uses vim-style navigation (hjkl). Mod4 (Super) is the primary modifier. Waybar config is JSON + `style.css`.
+
+**Check which compositor is actually running before testing anything here.** As of 2026-07-26 the live session on `fedxps` is **GNOME** (`gnome-shell` running, `sway` not), even though sway and waybar are both installed and `sway --validate -c sway/config` passes. The config is stowed and ready, it just isn't what's booted. `pgrep -x gnome-shell` / `pgrep -x sway` settles it; `swaymsg` will fail confusingly under GNOME.
+
+**The two bars do not share an accent, on purpose.** Sway's focused-window border is dodger blue (`$accent`, `#0088FF`); Waybar's active workspace is still forest green (`@accent`, `#228B22`). `sway/config` also defines `$forest #228B22`, unused, kept so the old accent can be swapped back in one word — don't "clean it up."
+
+Note `$mod+b` and `$mod+v` are launchers here (Brave, VS Code), not upstream sway's horizontal/vertical splits; splits live on `$mod+Ctrl+h` / `$mod+Ctrl+v`.
+
+`waybar/config` hardcodes `"device": "intel_backlight"` — laptop-specific. On `bigfed` the backlight and battery modules simply don't render.
 
 ## Visual Consistency
 
-TokyoNight "night" theme across Neovim, WezTerm, and Waybar. Source Code Pro 12pt font in both terminals (WezTerm, Alacritty). Forest green (#228B22) accent in Sway borders and Waybar active workspace.
+TokyoNight "night" theme across Neovim, WezTerm, and Waybar. Source Code Pro 12pt font in both terminals (WezTerm, Alacritty). Alacritty carries font settings only — no colorscheme — so it falls back to its own default palette rather than TokyoNight.
 
 ## Pitfalls
 
 - **`stow-all` does not auto-adopt.** It restows (`stow -R`); a pre-existing untracked file at a target makes it error out, not overwrite. Resolve with `stow --adopt` or by removing the file (README §8), then rerun.
-- **Public repo + minimal `.gitignore` + `gpushall` runs `git add -A`.** Only `.claude/settings.local.json` is ignored — everything else in the tree gets committed *and pushed to a public remote*, including the tracked `*.lua.bak` backups under `nvim/`. Don't park secrets, private data, or large binaries here expecting them to be skipped.
+- **Public repo + minimal `.gitignore` + `gpushall` runs `git add -A`.** As of 2026-07-26 `.gitignore` has exactly three entries — `.claude/settings.local.json`, `okular/okularrc`, `okular/docdata/` — and **everything else in the tree gets committed and pushed to a public remote**. Don't park secrets, private data, or large binaries here expecting them to be skipped. Note also that stow's default ignore list covers only `README.*`, `LICENSE.*`, `COPYING`, VCS dirs and `*~` — **not** `*.bak` or `*.save`, so ad-hoc backups left in a package get symlinked into the live config tree as well as published.
+
+- **`latex/mod-cv/` shadows TeX Live's moderncv.** The 36 vendored `moderncv*.sty` files (plus `tweaklist.sty`) are pinned v2.3.1 and are load-bearing for the `mod-cv.cls` fork (it loads them by their upstream names) — they can't be deleted. But because `~/texmf` outranks `texmf-dist`, they also override TeX Live's copies for anything using `\documentclass{moderncv}`, which on TL2026 means a v2.6.1 class over v2.3.1 sub-packages. See `latex/mod-cv/README.md`.
 - **`french-logic.sty` is a shared, snippet-coupled dependency** — editing it affects the dissertation/teaching repos and silently desyncs the generated snippet file. See the LaTeX Packages section before touching it.
 - **Adding files to a package needs a restow** (`stow -R <pkg>`) to create the new symlinks; editing already-linked files does not.

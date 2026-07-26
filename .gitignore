@@ -1,2 +1,13 @@
 # Claude Code machine-local settings — never publish (this repo is public)
 .claude/settings.local.json
+
+# Okular: only okularpartrc (durable preferences) is tracked. Guard against the
+# rest ever being copied or --adopt'ed into the package, because `gpushall` runs
+# `git add -A` and this remote is public:
+#   okularrc  — window state plus a Recent Files list. Rewritten every session, so
+#               it would churn a commit a day and collide on rebase between fedxps
+#               and bigfed; it also names refereeing and teaching PDFs.
+#   docdata/  — per-document bookmarks/annotations/page state, ~13MB and constantly
+#               rewritten, mostly keyed to unsynced ~/Desktop/readings.
+okular/okularrc
+okular/docdata/
