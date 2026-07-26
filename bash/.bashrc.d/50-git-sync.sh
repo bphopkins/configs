@@ -344,10 +344,13 @@ _gsync_push_repo() {
   fi
   if ((committed)); then
     _gsync_say SYNC "$name: committed $staged_count path(s); pushed"
-    [[ -n "$new_note" ]] && printf '        new: %s\n' "$new_note"
+    if [[ -n "$new_note" ]]; then
+      printf '        new: %s\n' "$new_note"
+    fi
   else
     _gsync_say SYNC "$name: pushed $ahead commit(s)"
   fi
+  return 0
 }
 
 gpull() {
