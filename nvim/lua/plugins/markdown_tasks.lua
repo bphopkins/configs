@@ -1,4 +1,3 @@
-
 -- lua/plugins/markdown_tasks.lua
 return {
   -- We piggy-back on plenary just to have a plugin spec to attach keys to.

@@ -3,6 +3,7 @@ ExternalEditor=Custom
 ExternalEditorCommand=okular-inverse %f %l
 
 [General]
+ShellOpenFileInTabs=true
 ttsVoice=English (Caribbean)
 
 [Main View]

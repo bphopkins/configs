@@ -1,4 +1,3 @@
-
 -- lua/config/pandoc.lua
 local M = {}
 
@@ -26,19 +25,24 @@ end
 
 function M.to_html()
   local file, out = output_path("html")
-  if not file then return end
+  if not file then
+    return
+  end
   run_pandoc({ "pandoc", file, "-o", out }, out)
 end
 
 function M.to_pdf()
   local file, out = output_path("pdf")
-  if not file then return end
+  if not file then
+    return
+  end
   run_pandoc({
     "pandoc",
     file,
     "--from=markdown+tex_math_dollars",
     "--pdf-engine=lualatex",
-    "-o", out,
+    "-o",
+    out,
   }, out)
 end
 

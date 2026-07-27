@@ -2,66 +2,11 @@
 
 Planned pieces of work, each big enough to want its own session. Written up in
 enough detail to brief a fresh chat without re-deriving the findings — the notes under
-each item come from a full repo survey on 2026-07-26. (Item 1, the git-sync overhaul,
-was completed 2026-07-26 — see Done. Items keep their original numbers because other
-docs reference them.)
+each item come from a full repo survey on 2026-07-26. (Items 1 and 2 — the git-sync
+overhaul and the french-logic ↔ Neovim optimization — were completed 2026-07-26; see
+Done. Items keep their original numbers because other docs reference them.)
 
-Priority for the next working day: **(2)**.
-
----
-
-## 2. Optimize the `french-logic.sty` ↔ Neovim interplay — *priority*
-
-- [ ] Improve the snippet generator, close the syntax-highlighting coverage gaps, and revisit the colour scheme.
-
-**The pieces involved.** `latex/french-logic/french-logic.sty` (513 commands,
-24 environments) → `nvim/lua/snippets/sty-lua-snippets.py` (281 lines) generates
-`nvim/lua/snippets/french-logic.lua` → snippets loaded via `lua/plugins/snippets.lua`.
-Separately, `lua/plugins/vimtex.lua` registers 208 literal command names and 25 regex
-patterns into 7 semantic highlight groups, which are coloured in
-`after/ftplugin/tex.lua` (195 lines, TokyoNight night palette).
-
-**Highlighting gap A — 63 commands unregistered.** Verified against the `.sty`: there
-are *zero* dead registrations (every name and pattern matches something real), but 63
-defined commands get no custom group. They fall into coherent families whose siblings
-*are* highlighted, with real usage across `dissertation/`, `opuscula/`, `n-cube/`,
-`teaching/`:
-
-| family | members | uses |
-|---|---|---|
-| affirm/deny I/O | `af` `aff` `affirm` `afland` `aflor` `afneg` `afto` `de` `den` `deny` `deneg` `deland` `delor` `deto` `clor` `ilor` `cto` `ito` | ~370 (`\af` 100, `\de` 100) |
-| metalanguage connectives | `mlnot` `mlforall` `mlexists` + the six `*solo` variants | ~20 (`mland`/`mlor`/`mlto` *are* registered — 3 of 12) |
-| misc | `incomp` 28, `tuple` 25, `ecu` 25, `qed` 20, `precedes` 18 | ~116 |
-| axioms | `cax` `caxc` `caxpar` | 11 |
-| logic systems | `Kfour` `Kfive` `Kfourfive` `EN` `Rlog` | 5 |
-
-Note `cax` is missed only because the pattern is `[kdtupwn]ax\w*` — k/d/t/u/p/w/n but
-not `c`. One character.
-
-**Highlighting gap B — all 24 environments, and this is the bigger win.**
-`vim.g.vimtex_syntax_custom_envs` is **never set**, so no environment gets custom
-highlighting at all. Usage counts: `gentzen` 157, `block` 150, `hilbertlist` 143,
-`definition` 104, `theorem` 48, `romanlist` 35, `remark` 21, `arablist` 20,
-`proofsketch` 16, `itemlist` 14, `lemma` 6, `note` 6, `proposition` 5, `convention` 4,
-`digression` 3, `example` 1 — roughly 730 uses. This needs new highlight groups in
-`after/ftplugin/tex.lua` as well as the vimtex registration, so it involves colour
-choices.
-
-**Snippet generator.** Regeneration is manual and there is no check that it has been
-run, so `french-logic.lua` can silently fall out of step with the `.sty` — the failure
-mode is stale completions, with no error. (Verified in sync as of 2026-07-26.) Worth
-considering: a check that flags desync, or wiring regeneration into a git hook.
-
-```bash
-cd ~/Desktop/configs
-python3 nvim/lua/snippets/sty-lua-snippets.py \
-  -i latex/french-logic/french-logic.sty -o nvim/lua/snippets/french-logic.lua
-```
-
-**Careful:** `french-logic.sty` is a shared dependency — `dissertation/`,
-`teaching/`, `teach-logic/`, and `opuscula/` all load the stowed copy, so edits ripple.
-Its line-1 `% !TEX root` pointing at `dissertation.tex` is **intentional** until the
-dissertation is finished (~2027); leave it.
+Priority for the next working day: **(3)**.
 
 ---
 
@@ -69,7 +14,7 @@ dissertation is finished (~2027); leave it.
 
 - [ ] Review the whole modular bash setup for robustness.
 
-Lower priority than 1 and 2. The structure is sound — `.bashrc` sources
+The last remaining survey item (1 and 2 are done). The structure is sound — `.bashrc` sources
 `~/.bashrc.d/*.sh` in numbered order, and everything parses. Things a review might look
 at: whether `00-shell-opts.sh` should finally get real `shopt`/`set` options (history
 handling, `globstar`, `checkwinsize`); whether `30-prompt.sh` should define a prompt
@@ -101,6 +46,79 @@ TeX-Live-first ordering.
 ---
 
 ## Done
+
+- [x] Post-sweep self-audit (prompted by "did anything break?"): discovered that every
+  headless `nvim` run — the day's test probes and `tests/nvim-syntax/run.sh` alike —
+  had been saving a session for its CWD on exit, and the smoke tests had overwritten
+  the real `configs` session with a scratch-file buffer (unrecoverable, low-value; the
+  next interactive exit in `configs` re-creates it). Deleted the five junk/synthetic
+  session files (kept `dissertation.vim` — 7 real buffers, genuine). Added a headless
+  guard to `persistence.lua`: an init()-registered VimLeavePre autocmd calling
+  `stop()` when no UI is attached. First attempt used VimEnter and **failed** —
+  `nvim --headless +qa!` exits before VimEnter fires; the VimLeavePre placement is
+  load-bearing. Verified: neither headless exit pattern saves; the syntax suite leaves
+  no session; a pynvim `ui_attach` instance (interactive-equivalent) still saves
+  normally. @done(2026-07-26)
+
+- [x] Staleness sweep of `nvim/` (full-directory audit). Removed the 8 dead
+  `vimtex_*` settings from `vimtex.lua` — 7 (`root_markers`, `texmf_home`,
+  `includegraphics_search_paths`, `complete_{recursive_bib,input_paths,scan_files_depth}`,
+  `include_search_paths`) were never VimTeX options at all, and `compiler_progname` was
+  deprecated upstream in 2021. Verified inert three ways: grepped every installed plugin,
+  the whole config, and `~/Desktop` scripts for readers (none); confirmed absent from
+  VimTeX code *and* docs; diffed VimTeX's resolved runtime state on a dissertation
+  chapter before/after (identical — root/main-file detection was always VimTeX's own
+  heuristics). Widened persistence autoload from the six-root allowlist to any CWD under
+  `~/Desktop` — sessions were already saved for every CWD (80 on file, incl. Carnap,
+  LogiKEy, org subdirs) and `<leader>qs` already restored anywhere; the list gated only
+  empty-start autoload. Verified end-to-end in a scratch dir (save → autoload-restore →
+  negative control outside Desktop). Everything else checked healthy: syntax regression
+  suite 24/24 before and after; snippet `--check`/`--coverage` clean; treesitter
+  `highlight.disable` still honored by LazyVim's `main`-branch shim (and no latex parser
+  installed — double protection); headless startup clean; new `after/syntax/` live via
+  the existing `after` symlink (no restow needed); `nvr`/`pandoc`/`live-server`/`latexmk`
+  all resolve; lockfile matches installed plugins. `lua/plugins/inactive/` kept
+  deliberately (parked experiments, per session decision). Same-day follow-up resolved
+  the stylua question: it is *load-bearing* — LazyVim format-on-save (conform → Mason's
+  stylua) formats Lua on every in-editor save, which is why the tree was mostly clean;
+  the 4 drifted files had last been written outside Neovim. (Headless probes first made
+  it look inactive: LazyVim registers format-on-save in its VeryLazy callback, which
+  never fires under `--headless` — firing it manually proved the chain.) Formatted the
+  4 files via CLI (verified byte-identical to what an in-editor save produces), added
+  `nvim/.styluaignore` for the 2 generated snippet files (verified honored by both CLI
+  walk and editor path), restowed, corrected CLAUDE.md's formatter docs; `--check` now
+  clean. @done(2026-07-26)
+
+- [x] Follow-ups to item 2, same day: `--coverage` mode in the snippet generator
+  (cross-references the `.sty` against `vimtex.lua`'s registrations; wired into the
+  auto-regen notification, so a new macro without highlighting is flagged on next
+  Neovim start); committed the 24-check headless syntax regression suite as
+  `tests/nvim-syntax/run.sh` (verified both green and red paths); env snippets no
+  longer emit macro-valued optional defaults (`\proof~` dropped its redundant
+  `[\proofname]`). @done(2026-07-26)
+
+- [x] Optimized the `french-logic.sty` ↔ Neovim interplay (was item 2). **Coverage:**
+  registered the ~60 unhighlighted commands (affirm/deny family, metalanguage
+  connectives, `\by`/`\close`/`\infr`/`\hyphantom`, `Rup`/`Rdown`/`Lup`/`Ldown` order
+  conditions, `cax`/`Kfour`/`Kfive`/`Kfourfive`/`EN`/`Rlog`, `r[me]?poss` rules, `qed`,
+  `tuple`, `precedes`, `metalogic`, `incomp`, I/O connectives) — now 504/509 covered,
+  the 5 exclusions deliberate and documented. **Environment names** coloured by family
+  via a new `after/syntax/tex.lua` (theorem-family orange, proof/derivation magenta,
+  lists default cyan); gentzen math-region registration deliberately skipped (retired
+  notation, per session decision). **Three latent bugs found and fixed:** (a) every
+  `re()`/`mre()`/`mare()` pattern registration had been silently dead — VimTeX drops
+  `cmdre` entries without `name`; all 31 patterns now have group-name slugs and were
+  runtime-verified; (b) `argstyle` never accepted highlight groups, so all intended
+  argument colouring was dead — replaced with `arglink()` + explicit links applied in
+  the ftplugin; (c) an unguarded `serverstart("/tmp/nvimsocket")` aborted the whole
+  vimtex `init()` in any second Neovim instance — now `pcall`ed. **Rebalance:**
+  `texCmdRule` dark5 → TokyoNight purple (hue-tied to the magenta proof envs).
+  **Snippets:** generator now parses `\newtheorem` (11 new env snippets incl.
+  `definition`/`theorem`) and env optional args (`proofsketch[Proof sketch]`), stamps
+  the `.sty` sha256 into the output, and gained `--check`; `snippets.lua`
+  auto-regenerates on stamp mismatch at LuaSnip load (chosen over hook/manual
+  options). Verified by a 24-check headless suite plus a live dissertation-chapter
+  smoke test (`\CMr` → axiom gold). @done(2026-07-26)
 
 - [x] Configure markdown-tasks.lua(s) to handle all of the following:
     - mt - toggle `[ ]/[x]`

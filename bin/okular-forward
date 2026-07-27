@@ -7,20 +7,108 @@
 #     vim.g.vimtex_view_general_options = "@pdf @line @tex"
 # so VimTeX invokes it as:  okular-forward <pdf> <line> <tex>
 #
-# Why this wrapper exists rather than calling okular directly: Okular resolves the
-# source file in a SyncTeX jump *relative to the PDF's directory*, but VimTeX hands
-# over an absolute .tex path. Passing that absolute path straight through makes Okular
-# look for e.g. /home/.../chapters/home/.../chapters/ch1.tex and silently do nothing.
-# So we rebase the .tex path onto the PDF's directory before handing it over.
+# Why this wrapper exists rather than calling okular directly -- two reasons:
 #
-# --unique reuses an already-open Okular window instead of stacking up new ones.
+#   1. PATH REBASING. Okular resolves the source file in a SyncTeX jump *relative to
+#      the PDF's directory*, but VimTeX hands over an absolute .tex path. Passing that
+#      absolute path straight through makes Okular look for e.g.
+#      /home/.../chapters/home/.../chapters/ch1.tex and silently do nothing. So we
+#      rebase the .tex path onto the PDF's directory before handing it over.
+#
+#   2. ONE TAB PER DOCUMENT. This is the part that lets several documents stay open
+#      at once. Okular offers only two CLI behaviours, and *both* are wrong for a
+#      VimTeX loop where more than one document is being edited:
+#
+#        okular --unique <pdf>   reuses a single window and REPLACES whatever is in
+#                                it, so compiling deck B evicts deck A. (This was the
+#                                old behaviour of this script.)
+#        okular <pdf>            honours "Open new files in tabs", but has no
+#                                already-open check: every forward search into the
+#                                SAME document appends ANOTHER tab for it. Ten jumps,
+#                                ten tabs.
+#
+#      So neither flag alone works. Instead we do the already-open check ourselves,
+#      over Okular's D-Bus API, and only fall back to the CLI for documents that are
+#      genuinely not open yet:
+#
+#        - Each open tab exports its own object -- /okular, /okular2, /okular3, ...
+#          on service org.kde.okular-<pid> -- and each answers currentDocument().
+#        - Calling openDocument() on the object that already holds our PDF performs
+#          the SyncTeX jump *inside that tab*, creating no new tab.
+#        - tryRaise() on /okularshell brings the window forward.
+#
+#      Note the service name depends on the launch flags: a --unique instance claims
+#      the well-known name org.kde.okular, a normal one registers org.kde.okular-<pid>.
+#      We match both, so a stray --unique instance left over from an older session is
+#      still found rather than being shadowed by a second window.
+#
+# Whether a not-yet-open document lands in a new TAB or a new WINDOW is deliberately
+# left to Okular's own setting rather than hardcoded here:
+#     Settings > Configure Okular > General > "Open new files in tabs"
+# (okularpartrc, [General] ShellOpenFileInTabs). Both modes work with the logic above.
+#
+# VimTeX starts this detached and in the background (vimtex#view#general#_start), so
+# it is safe for this script to do D-Bus round-trips and to wait for a launch to
+# register instead of exec'ing straight into okular.
+
+set -u
 
 pdf="$1"
 line="$2"
 tex="$3"
 
 pdfdir=$(cd "$(dirname "$pdf")" && pwd)
+pdfabs="${pdfdir}/$(basename "$pdf")"
 reltex=$(realpath --relative-to="$pdfdir" "$(realpath "$tex")")
-synctex_tex="${pdfdir}/${reltex}"
+target="file:${pdfabs}#src:${line}${pdfdir}/${reltex}"
 
-exec okular --unique "file:${pdf}#src:${line}${synctex_tex}"
+okular_services() {
+  busctl --user list --no-legend 2>/dev/null \
+    | awk '{print $1}' \
+    | grep -E '^org\.kde\.okular(-[0-9]+)?$'
+}
+
+# Print "<service> <object>" for the tab already showing $pdfabs; non-zero if none.
+find_open_tab() {
+  local svc obj doc
+  for svc in $(okular_services); do
+    # Tab objects are /okular, /okular2, ... ; anchoring on the digits keeps
+    # /okularshell and the /okular/okular__Shell_1/actions/* tree out of the list.
+    for obj in $(busctl --user tree "$svc" 2>/dev/null | grep -oE '/okular[0-9]*$'); do
+      doc=$(busctl --user call "$svc" "$obj" org.kde.okular currentDocument 2>/dev/null)
+      doc=${doc#s \"}
+      doc=${doc%\"}
+      if [ "$doc" = "$pdfabs" ]; then
+        printf '%s %s\n' "$svc" "$obj"
+        return 0
+      fi
+    done
+  done
+  return 1
+}
+
+# Serialise per PDF, so two forward searches fired at the same document while it is
+# still starting up cannot both decide it is absent and open two tabs for it. Keyed
+# on the document, so a jump into deck A never blocks a jump into deck B.
+lockfile="${XDG_RUNTIME_DIR:-/tmp}/okular-forward.$(printf '%s' "$pdfabs" | md5sum | cut -d' ' -f1).lock"
+exec 9>"$lockfile"
+flock 9
+
+if found=$(find_open_tab); then
+  read -r svc obj <<<"$found"
+  if busctl --user call "$svc" "$obj" org.kde.okular openDocument s "$target" >/dev/null 2>&1; then
+    busctl --user call "$svc" /okularshell org.kde.okular tryRaise s "" >/dev/null 2>&1
+    exit 0
+  fi
+  # D-Bus jump failed (instance died mid-call): fall through and open it normally.
+fi
+
+# Not open yet. Launch it -- 9>&- so okular does not inherit, and hold, the lock.
+setsid okular "$target" >/dev/null 2>&1 9>&- &
+
+# Keep the lock until the document is actually addressable on the bus, so a second
+# forward search arriving during startup waits and then jumps into this tab.
+for _ in $(seq 1 40); do
+  find_open_tab >/dev/null 2>&1 && break
+  sleep 0.25
+done

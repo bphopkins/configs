@@ -23,5 +23,7 @@ stow -Rv -t ~/.config/nvim nvim
 * **iamcco/markdown-preview.nvim:** Provides a Markdown preview.
 * **nvim-treesitter/nvim-treesitter:** Disables Treesitter highlighting for LaTeX so that VimTeX's syntax engine is the sole highlighter.
 * **markdown_tasks:** Custom plugin for toggling markdown checkboxes and marking tasks done/started from within Neovim.
-* **folke/persistence.nvim:** Remembers and restores sessions (buffers, terminals, tabs) for the main projects I work on, making it easy to pick up where I left off after a reboot.
+* **folke/persistence.nvim:** Remembers and restores sessions (buffers, terminals, tabs). A session is saved for every directory I work in; a bare `nvim` anywhere under `~/Desktop` autoloads that directory's session, and `<leader>qs` restores one manually anywhere else.
 * **folke/snacks.nvim:** Tweaks LazyVim’s picker so file browsing shows dotfiles by default, mirroring how I look at projects in the shell.
+
+One invisible piece worth knowing about: LazyVim formats on save, which for Lua means Mason’s stylua with the rules in `stylua.toml` — that’s why this config’s Lua always looks uniform without my doing anything. The auto-generated snippet files are excluded via `.styluaignore` so the generator’s output is never reflowed.
