@@ -47,6 +47,16 @@ TeX-Live-first ordering.
 
 ## Done
 
+- [x] Retired the `scripts` repo (survey + fold-in). Verdict of the survey: 14 of its
+  16 items were regenerable one-offs (OCR/PDF/plot/file-management scripts, a stale
+  third-party tweet-deleter) — deleted. Adopted the two keepers: the 153-check
+  git-sync regression battery as `tests/gsync/` (suites re-rooted via `CFG_ROOT` so
+  they test the checkout they live in, not a hardcoded `~/Desktop` path; verified
+  153/153 post-move) and `sysinfo.sh` into `bin/` (stowed). Dropped `scripts` from
+  `REPOS_DESKTOP`; local repo moved to `~/Desktop/archive/scripts` with full history
+  — the **sole** history copy once the GitHub remote is deleted (planned). Docs
+  updated here (CLAUDE.md) and in the Desktop-level CLAUDE.md. @done(2026-08-04)
+
 - [x] Post-sweep self-audit (prompted by "did anything break?"): discovered that every
   headless `nvim` run — the day's test probes and `tests/nvim-syntax/run.sh` alike —
   had been saving a session for its CWD on exit, and the smoke tests had overwritten
