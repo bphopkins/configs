@@ -60,7 +60,7 @@ Guardrails, shared by the single- and all-repo variants:
 
 Summaries name the repos that skipped/failed/are pending, and tags are colorized on a tty. The explicit pre-pull fetch was removed (the pull's own fetch serves), halving network round-trips; the only remaining explicit fetch is on the rare set-upstream path. To add a new repo, append its path to the `REPOS_DESKTOP` array. Commit messages follow `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`. Note that `REPOS_DESKTOP` spans *all* the user's Desktop repos (dissertation, teaching, etc.), not just this one.
 
-**Regression suite:** `tests/gsync/run-all.sh` (153 checks in four suites, sandboxed under `$TMPDIR`, no network) covers all of the above — vetting, guards, hints, the two-machine workflow, the tty prompt, and every 2026-07-26 audit finding. Run it after any edit to `50-git-sync.sh`; see `tests/gsync/README.md` for suite scope and harness conventions.
+**Regression suite:** `tests/gsync/run-all.sh` (153 checks in four suites, sandboxed under `$TMPDIR`, no network) covers all of the above — vetting, guards, hints, the two-machine workflow, the tty prompt, and every 2026-07-26 audit finding. Run it after any edit to `50-git-sync.sh`. A single suite also runs standalone (e.g. `bash tests/gsync/test-audit.sh`) — each resolves the sync script relative to its own location, so it tests the checkout it lives in. See `tests/gsync/README.md` for suite scope and the harness conventions new suites must follow (`passed: N  failed: M` last line, registration in `run-all.sh`'s loop).
 
 ## Bash Configuration
 
