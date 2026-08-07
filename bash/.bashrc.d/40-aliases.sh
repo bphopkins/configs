@@ -1,4 +1,4 @@
-alias sysupgrade='sudo dnf upgrade --refresh -y && flatpak update -y && flatpak uninstall --unused -y'
+alias sysupgrade='sudo dnf upgrade --refresh -y && sudo dnf autoremove -y && flatpak update -y && flatpak uninstall --unused -y'
 # Updates packages *within* a release; tlmgr refuses to cross a release
 # boundary by design. For a new release year, do a parallel install instead.
 # tlmgr is resolved through PATH so this never goes stale on a year bump; the
@@ -27,3 +27,4 @@ alias homepage='cd ~/Desktop/bphopkins.net && nvim'
 alias teach='cd ~/Desktop/teaching && nvim'
 alias nousowl='cd ~/Desktop/nousowl.net && nvim'
 alias cc='claude --model opus --effort max'
+alias ccf='claude --model fable --effort max'
