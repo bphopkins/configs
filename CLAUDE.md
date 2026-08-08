@@ -69,7 +69,7 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim)
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions (guards against duplicates via substring matching); prepends `~/bin`, `~/.local/bin`, `~/.local/npm-global/bin`, and `~/.bun/bin` if bun is installed (it currently isn't on either machine, so that block is guarded on the directory existing rather than prepending a nonexistent path). Each entry prepends, so the **effective priority is the reverse of the reading order** — TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is auto-detected, not hardcoded**: it picks the newest `/usr/local/texlive/YYYY` that actually contains a working `tlmgr` (half-installed trees are skipped, so a parallel install in progress can't knock TeX Live out of PATH). Override with `TEXLIVE_YEAR=<year>` to pin an older release — see "TeX Live release upgrades" below
 - `30-prompt.sh` — prompt config. Empty by design; inherits the system default from `/etc/bashrc`. See `00-shell-opts.sh` above.
-- `40-aliases.sh` — aliases: `sysupgrade` (dnf upgrade + dnf autoremove + flatpak update; autoremove added 2026-08-07 — mark keepers with `dnf mark user <pkg>` since it runs `-y`), `tl-upgrade` (TeX Live `tlmgr` self+all update; resolves `tlmgr` through PATH so it survives year bumps — note this only updates *within* a release, see "TeX Live release upgrades" below), `reload` (typo-proof `source ~/.bashrc` — guards against tab-completing into `~/.bash_history`, which would replay every command in it), `cc` (`claude --model opus --effort max`), `ccf` (`claude --model fable --effort max` — the most capable model, for work that must be done properly), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
+- `40-aliases.sh` — aliases, plus two functions: `sysupgrade` (dnf upgrade + dnf autoremove + flatpak update, then a reboot verdict; autoremove added 2026-08-07 — mark keepers with `dnf mark user <pkg>` since it runs `-y`) and `reboot-check` (the verdict on its own — see "Reboot verdict" below), `tl-upgrade` (TeX Live `tlmgr` self+all update; resolves `tlmgr` through PATH so it survives year bumps — note this only updates *within* a release, see "TeX Live release upgrades" below), `reload` (typo-proof `source ~/.bashrc` — guards against tab-completing into `~/.bash_history`, which would replay every command in it), `cc` (`claude --model opus --effort max`), `ccf` (`claude --model fable --effort max` — the most capable model, for work that must be done properly), plus `cd`+`ls` navigation/edit shortcuts (`configs`, `dissertate`, `teach`, `logic`, …)
 - `50-git-sync.sh` — git sync functions (`gpullall`, `gpushall`, `gpull`, `gpush`, `gstatall`) plus the `_gsync_*` per-repo helpers, new-file vet guards (`GSYNC_MAX_MB`, `GSYNC_SECRET_GLOBS`), and repo-name tab completion — see "Git Sync Workflow" above
 - `60-stow.sh` — stow functions (`stow-all`, `unstow-all`)
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]` items from markdown files
@@ -77,6 +77,33 @@ Modular design: `.bashrc` sources all `~/.bashrc.d/*.sh` files. The numbered pre
 - `90-nix.sh` — nix profile loader (conditional; only if nix is installed). Nix is **not** installed on either machine right now; the loader is kept ready for Carnap development, which builds via nix. It's a no-op until then — leave it in place.
 
 Also in the `bash` package, stowed to `~/.bashrc.min` and `~/.bash_profile.min`: minimal known-good rescue configs, for recovering from an edit that breaks login. Not sourced by anything; see README §8.
+
+### Reboot verdict (added 2026-08-08)
+
+`sysupgrade` ends by printing whether the upgrade actually earned a reboot, replacing a reboot-every-day habit with dnf's own hint. `reboot-check` runs the same verdict standalone, unprivileged (it reads the rpmdb — no sudo prompt), so "do I need to reboot?" is answerable any time.
+
+The signal is `dnf needs-restarting` from **`dnf5-plugins`** (a dependency worth knowing about — the verdict degrades to `[WARN] Reboot status unknown` without it). It compares install times of a core package set against boot time: kernel, systemd, the [Red Hat core-libs list](https://access.redhat.com/solutions/27943), plus anything carrying a `reboot_suggested` advisory. Output is one line, tagged and colorized like the gsync helpers.
+
+Four verdicts, and the exit status matches (`0` nothing, `1` reboot, `2` could not tell, `3` re-login):
+
+| Verdict | Meaning |
+|---------|---------|
+| `[REBOOT]` | Core packages updated since boot — or a stale **system** service, which names `systemctl restart <unit>` as the surgical alternative |
+| `[RELOGIN]` | Nothing core changed, but **session** services are running stale code — a logout clears it |
+| `[ OK ]` | Nothing has changed since boot |
+| `[WARN]` | `dnf needs-restarting` failed; status genuinely unknown |
+
+Findings baked into the implementation — each measured, and each a way this could have been written wrong:
+
+- **The verdict is parsed from `--json`, never from the exit status.** `needs-restarting` exits 1 both for "reboot required" *and* for its own errors — `dnf -C needs-restarting` on a cold cache exits 1 with "no cache for repository". An exit-code test therefore reports a phantom reboot on any failure. `reboot_required` is a documented JSON field; the human-readable text is neither a contract nor untranslated.
+- **No `-C`.** With any existing metadata cache the check works offline (verified under `unshare -n`, with both fresh and expired caches), so cacheonly buys nothing and reintroduces the cold-cache false positive above.
+- **`sysupgrade` is a function now, not an alias** — an alias can't run anything *after* its chain. The `unalias sysupgrade` line guarding the definition is **load-bearing**: aliases expand at parse time, so in a shell that still holds the old alias, `reload` would die with a syntax error on `sysupgrade() {` and silently drop every definition below it in the file (`reload`, `byebye`, the navigation aliases). Keep it until both machines have started a fresh login shell. `sysupgrade` returns the *chain's* status, not the verdict's, so `sysupgrade && …` still means "the upgrade succeeded".
+
+- **Scope of a stale service is reconstructed, because dnf doesn't report it.** `needs-restarting -s --json` carries only `type` and `unit` — no scope — yet unit names genuinely collide across the two managers (`systemd-tmpfiles-setup.service` and `uresourced.service` are loaded in *both* system and user scope here). Scope is asked of systemd, **system manager first**, so a collision resolves to `system`. Ambiguity always resolves that way: telling you a re-login suffices when it doesn't is the one genuinely wrong answer this can give.
+- **Scope is asked via `systemctl show -p`, not `list-units`** — deliberately, and the two are not interchangeable in durability. `show` is systemd's property interface (the same data as its D-Bus API, `Key=Value` in blank-line-separated blocks); `list-units` prints a human table, the kind of output `systemctl(1)` flags as unsuitable for programmatic consumption. Both gave an identical classification when compared, so this costs nothing and removes a column-parse from the maintenance surface. The block parse is order-**independent** because systemd emits properties in its own canonical order, not the requested one — `-p LoadState -p Id` comes back `Id` first (verified), so anything zipping by position would be silently wrong. `Id=` is echoed even for unknown units, so blocks self-identify.
+- **The service scan only runs when no reboot is already recommended.** It costs ~1.5s (the whole check goes 1.7s → 3.2s), and if a reboot is warranted anyway, whether a logout would *also* have sufficed is moot. The common post-upgrade path never pays for it.
+
+The `-s` check is the one the man page calls "quite aggressive" — on this machine it lists ~23 units, mostly GNOME session ones. That aggressiveness is tolerable *because* of the gating above: those units go stale mainly when systemd or glibc is updated, which already trips the core-package hint, so they rarely reach the `[RELOGIN]` branch on their own. Flatpaks are not consulted at all: sandboxed userspace can't oblige a reboot, at most an app restart.
 
 ## Neovim Configuration
 
