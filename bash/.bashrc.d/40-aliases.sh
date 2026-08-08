@@ -12,6 +12,14 @@ alias tl-upgrade='sudo "$(command -v tlmgr)" update --self --all'
 # nonzero; any real error prints above it.
 alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 
+# Power off now. `shutdown` on its own looks broken but isn't: it's a symlink
+# to systemctl, and for SysV compat a bare invocation defaults to `+1`, so it
+# SCHEDULES for one minute out rather than acting (cancel with `shutdown -c`).
+# `poweroff` is the immediate verb. No sudo -- polkit authorizes power-off for
+# an active local session. Block inhibitors are honoured, so this refuses while
+# a dnf transaction is mid-flight and names the culprit; override with -i.
+alias byebye='systemctl poweroff'
+
 # Move+List Shortcuts
 alias lsa='ls -a --group-directories-first'
 alias home='cd ~ && lsa'
