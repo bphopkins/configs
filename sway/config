@@ -23,7 +23,6 @@ bindsym $mod+b exec brave-browser
 bindsym $mod+c exec google-chrome-stable
 bindsym $mod+d exec nautilus --new-window /home/bph/Desktop
 bindsym $mod+f exec nautilus --new-window
-bindsym $mod+v exec code
 bindsym $mod+x exec gnome-text-editor
 
 ### Output configuration
