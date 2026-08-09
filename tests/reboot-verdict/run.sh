@@ -49,6 +49,17 @@ v="${STUB_MAIN-}"
 case "$v" in
   FAIL)  echo "stub: simulated needs-restarting failure" >&2; exit 1 ;;
   BLANK) echo ;;
+  # PROMPT reproduces the 2026-08-09 hang: real dnf writes an OpenPGP
+  # key-import prompt to STDOUT -- the same stream as --json, so the caller
+  # must capture it and therefore can never display it -- then blocks in
+  # read() on stdin. Record which we got, so reboot-check's `</dev/null`
+  # guard is asserted rather than assumed; without it, dnf consumes the
+  # caller's stdin and (on a terminal) waits forever with nothing on screen.
+  PROMPT)
+    printf 'Importing OpenPGP key 0x957F5868:\nIs this ok [y/N]: '
+    if read -r _; then echo HAD_DATA > "${STUB_PROBE:-/dev/null}"
+    else echo EOF > "${STUB_PROBE:-/dev/null}"; fi
+    exit 1 ;;
   *)     printf '%s\n' "$v" ;;
 esac
 EOF
@@ -144,6 +155,18 @@ check "dnf dead: rc=2"                   [ "$rc" -eq 2 ]
 vrun STUB_MAIN="$MAIN_NO_FIELD" reboot-check
 check "schema drift: [WARN], no guess"   contains "$out" "Reboot status unknown"
 check "schema drift: rc=2"               [ "$rc" -eq 2 ]
+
+# --- a hidden dnf prompt must not hang (the 2026-08-09 fix) ------------------
+# Feeding stdin "y" proves the guard structurally: with `</dev/null` the stub
+# sees EOF, so dnf cannot consume the caller's input and cannot block. Drop the
+# redirect from 40-aliases.sh and the probe reads HAD_DATA instead -- and on a
+# real terminal that same code path waits for a keystroke forever.
+PROBE="$SB/stdin-probe"
+vrun STUB_MAIN=PROMPT STUB_PROBE="$PROBE" reboot-check <<<"y"
+check "prompt: dnf got EOF, not our stdin" [ "$(cat "$PROBE" 2>/dev/null)" = EOF ]
+check "prompt: [WARN], not a false verdict" contains "$out" "Reboot status unknown"
+check "prompt: names the hidden-prompt case" contains "$out" "hidden prompt"
+check "prompt: rc=2"                     [ "$rc" -eq 2 ]
 
 # --- the service scan fails loud (the 2026-08-08 fix) -----------------------
 vrun STUB_MAIN="$MAIN_FALSE" STUB_SVC=FAIL reboot-check

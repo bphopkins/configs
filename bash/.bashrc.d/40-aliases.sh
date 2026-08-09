@@ -22,6 +22,26 @@
 # false positive above. Runs unprivileged -- it reads the rpmdb, so calling it
 # outside `sysupgrade` never raises a sudo prompt.
 #
+# Both dnf calls take `</dev/null`, and it is load-bearing (added 2026-08-09
+# after a real 6-minute silent hang). dnf writes an OpenPGP key-import prompt
+# to *stdout* -- the same stream as the `--json` payload -- so capturing stdout
+# with `$(...)` is mandatory to parse the verdict and therefore guarantees the
+# prompt is never seen. With stderr also discarded, dnf then blocks forever in
+# read() on the tty with nothing on screen: a question whose text was thrown
+# away is indistinguishable from a crash. Closing stdin makes blocking
+# structurally impossible (stronger than `--assumeno`, which depends on dnf
+# honouring it for every prompt type); the prompt defaults to "no", the call
+# fails, and the existing no-JSON-on-stdout path reports [WARN] -- which is the
+# correct answer, since the verdict genuinely is unknown until a human answers.
+#
+# What triggered it: dnf5 keeps a per-repo OpenPGP keyring inside its metadata
+# cache, distinct from the rpmdb's `gpg-pubkey` entries (rpmdb signs *packages*;
+# this keyring verifies repo *metadata*, and only for repos with
+# `repo_gpgcheck=1` -- here, tailscale alone). Clearing `~/.cache/libdnf5`
+# destroys it, so the next *unprivileged* dnf run re-prompts even though
+# `rpm -q gpg-pubkey` still lists the key. Root's cache is separate, which is
+# why `sudo dnf upgrade` was unaffected and only the verdict step stalled.
+#
 # Join a list for display: first few names, then "+N more". Unit names lose
 # their `.service` suffix -- 20-odd of those is a wall of text otherwise.
 _reboot_list() { # $1 = how many to show, rest = items
@@ -87,7 +107,7 @@ _reboot_stale_services() {
   # success the contract is a JSON array, `[]` when nothing is stale; a failed
   # scan leaves stdout empty with errors on stderr (both measured 2026-08-08).
   # No array, no verdict.
-  out="$(dnf needs-restarting -s --json 2>/dev/null)"
+  out="$(dnf needs-restarting -s --json 2>/dev/null </dev/null)"
   [[ "$out" == *\[* ]] || return 2
   # dnf lists a unit once per stale dependency, hence sort -u.
   mapfile -t stale < <(grep -o '"unit"[[:space:]]*:[[:space:]]*"[^"]*"' <<<"$out" |
@@ -111,7 +131,7 @@ _reboot_stale_services() {
 reboot-check() {
   local json seg verdict list noun count color="" reset=""
   local -a pkgs=()
-  json="$(dnf needs-restarting --json 2>/dev/null)"
+  json="$(dnf needs-restarting --json 2>/dev/null </dev/null)"
 
   if [[ "$json" =~ \"reboot_required\"[[:space:]]*:[[:space:]]*true ]]; then
     verdict=yes
@@ -191,7 +211,7 @@ reboot-check() {
       ;;
     *)
       [[ -n "$reset" ]] && color=$'\e[31m'
-      printf '%s[WARN]%s Reboot status unknown -- dnf needs-restarting failed (is dnf5-plugins installed?)\n' \
+      printf '%s[WARN]%s Reboot status unknown -- dnf needs-restarting failed (is dnf5-plugins installed? or dnf hit a hidden prompt -- run `dnf needs-restarting --json` directly to see it)\n' \
         "$color" "$reset"
       return 2
       ;;

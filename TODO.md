@@ -6,7 +6,73 @@ each item come from a full repo survey on 2026-07-26. (Items 1 and 2 — the git
 overhaul and the french-logic ↔ Neovim optimization — were completed 2026-07-26; see
 Done. Items keep their original numbers because other docs reference them.)
 
-Priority for the next working day: **(3)**.
+Priority for the next working day: **(3)**, then **(4)**.
+
+---
+
+## 4. Decide how `reboot-check` should depend on repo metadata (opened 2026-08-09)
+
+- [ ] Pick one of the three options below; possibly revisit `gpushall` alongside it.
+
+**What happened.** `sysupgrade` appeared to hang for ~6 minutes. It had not: the upgrade
+was finished (nothing to do), and the stall was the final verdict step,
+`dnf needs-restarting --json`, blocked in `read()` on the terminal waiting for an
+OpenPGP key-import confirmation that **could not be displayed**. dnf writes that prompt
+to *stdout* — the same stream as the `--json` payload — and `reboot-check` must capture
+stdout to parse the verdict, so the question went into a pipe with `2>/dev/null`
+discarding stderr. A question whose text is thrown away is indistinguishable from a crash.
+
+**Why the key was needed at all.** dnf5 keeps a **per-repo OpenPGP keyring inside its
+metadata cache**, distinct from the rpmdb's `gpg-pubkey` entries: the rpmdb keyring
+verifies *package* signatures, the cache keyring verifies *repository metadata*, and only
+for repos with `repo_gpgcheck=1` — here, **tailscale alone** of 17 repos. Clearing
+`~/.cache/libdnf5` (done during the 2026-08-09 cruft cleanup) destroys it, so the next
+*unprivileged* dnf run re-prompts even though `rpm -q gpg-pubkey` still lists the key.
+Root's cache is separate, which is why `sudo dnf upgrade` was unaffected and only the
+verdict step stalled. **This distinction cost the diagnosis — don't re-derive it.**
+
+**Already done (2026-08-09), not the open question.** Both calls now take `</dev/null`,
+so blocking is structurally impossible; the `[WARN]` text names the hidden-prompt case
+and the command that reveals it; `tests/reboot-verdict/run.sh` gained 4 checks (51 total)
+including a stub `PROMPT` mode, and was mutation-verified — stripping the redirect fails
+exactly the new guard check and nothing else.
+
+**The open question: should the verdict depend on repo metadata at all?** Measured
+2026-08-09, warm cache, identical verdicts:
+
+| | Time | Network / keyring | Verdict inputs |
+|---|---|---|---|
+| repos enabled (current) | 1.69s | yes — hence prompts | core packages **+ `reboot_suggested` advisories** |
+| `--disablerepo='*'` | 0.74s | never | core packages only |
+
+`man dnf5-needs-restarting` confirms advisories are a real input, so disabling repos
+genuinely narrows the verdict. Options:
+
+1. **Hybrid fallback** — full check first; on any failure retry with `--disablerepo='*'`
+   and report the core-package verdict flagged as degraded. Turns "unknown" into "the
+   answer minus one input". ~6 lines + tests.
+2. **Always `--disablerepo='*'`** — 2.3× faster, permanently immune, but silently
+   narrows what the verdict means, against this file's stated intent of not
+   second-guessing dnf's own recommendation.
+3. **Leave as-is** — it can never hang and warns legibly; the trigger is rare (one repo
+   uses `repo_gpgcheck=1`). Accept a rare 30-second manual detour over a second code path.
+
+**Also worth folding in:** both calls still `2>/dev/null`, so a *non-prompt* failure
+(corrupt cache, missing plugin) produces a `[WARN]` that explains nothing. Surfacing a
+truncated stderr in that message is cheap and independent of the choice above.
+
+**Considered and declined:** `-C` / `--cacheonly` — already rejected in the
+`40-aliases.sh` header as the cold-cache false-positive source, tested under `unshare -n`.
+Running the verdict under `sudo` inside `sysupgrade` to reuse root's warm cache — breaks
+the deliberate property that standalone `reboot-check` never raises a sudo prompt.
+Auto-answering the prompt (`--assumeyes`) — would silently trust a rotated signing key.
+
+**Upstream angle:** dnf interleaving an interactive prompt with `--json` output is
+arguably a dnf5 bug; no correct caller can both parse the JSON and show the question.
+Worth a Fedora report regardless of which option is chosen locally.
+
+**Possible adjacent scope:** the user flagged 2026-08-09 that this may warrant rethinking
+`gpushall` as well — reason not yet articulated; ask before assuming a connection.
 
 ---
 
