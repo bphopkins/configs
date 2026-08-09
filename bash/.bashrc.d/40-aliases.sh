@@ -64,6 +64,8 @@ _reboot_loaded_in() { # $1 = --system|--user, rest = unit names
 }
 
 # Partition the stale-service list by systemd scope, printing "<scope>\t<unit>".
+# Returns 2, printing nothing, when the scan itself could not run -- the caller
+# must surface that, never conflate it with "nothing stale".
 #
 # dnf reports a bare unit name and nothing else -- its --json carries only
 # `type` and `unit`, with no scope -- yet names genuinely collide across the two
@@ -77,11 +79,18 @@ _reboot_loaded_in() { # $1 = --system|--user, rest = unit names
 # needing more than a logout. A machine with no user manager at all (an SSH
 # session without lingering) simply classifies everything as system.
 _reboot_stale_services() {
-  local unit sys_loaded user_loaded
+  local unit out sys_loaded user_loaded
   local -a stale=()
+  # Success is judged by stdout shape, never by exit status: `-s` overloads
+  # exit 1 for "services need restarting" as well as for its own failures
+  # (documented -- the same trap the header describes for the main check). On
+  # success the contract is a JSON array, `[]` when nothing is stale; a failed
+  # scan leaves stdout empty with errors on stderr (both measured 2026-08-08).
+  # No array, no verdict.
+  out="$(dnf needs-restarting -s --json 2>/dev/null)"
+  [[ "$out" == *\[* ]] || return 2
   # dnf lists a unit once per stale dependency, hence sort -u.
-  mapfile -t stale < <(dnf needs-restarting -s --json 2>/dev/null |
-    grep -o '"unit"[[:space:]]*:[[:space:]]*"[^"]*"' |
+  mapfile -t stale < <(grep -o '"unit"[[:space:]]*:[[:space:]]*"[^"]*"' <<<"$out" |
     sed 's/^.*:[[:space:]]*"//; s/"$//' | sort -u)
   ((${#stale[@]})) || return 0
 
@@ -138,14 +147,25 @@ reboot-check() {
       # Only now is the service scan worth its ~3s: if a reboot is already
       # recommended, whether a logout would ALSO have sufficed is moot. So the
       # common post-upgrade path never pays for this.
-      local line
+      local line svc
       local -a session=() system=()
+      if ! svc="$(_reboot_stale_services)"; then
+        # Fail loud, mirroring the main check. These verdicts fire rarely by
+        # design, so a scan that died silently would be indistinguishable from
+        # a clean machine indefinitely -- and "[ OK ]" would claim more than
+        # was checked. Distinct message from the plugin-missing WARN below:
+        # here dnf answered the core question and only this scan failed.
+        [[ -n "$reset" ]] && color=$'\e[31m'
+        printf '%s[WARN]%s No core updates since boot, but the service scan failed -- stale-service status unknown\n' \
+          "$color" "$reset"
+        return 2
+      fi
       while IFS= read -r line; do
         case "$line" in
           system*) system+=("${line#*$'\t'}") ;;
           session*) session+=("${line#*$'\t'}") ;;
         esac
-      done < <(_reboot_stale_services)
+      done <<<"$svc"
 
       if ((${#system[@]})); then
         # Not a kernel-level reboot, but not a logout either: these run outside
