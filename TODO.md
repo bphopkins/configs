@@ -6,73 +6,7 @@ each item come from a full repo survey on 2026-07-26. (Items 1 and 2 — the git
 overhaul and the french-logic ↔ Neovim optimization — were completed 2026-07-26; see
 Done. Items keep their original numbers because other docs reference them.)
 
-Priority for the next working day: **(3)**, then **(4)**.
-
----
-
-## 4. Decide how `reboot-check` should depend on repo metadata (opened 2026-08-09)
-
-- [ ] Pick one of the three options below; possibly revisit `gpushall` alongside it.
-
-**What happened.** `sysupgrade` appeared to hang for ~6 minutes. It had not: the upgrade
-was finished (nothing to do), and the stall was the final verdict step,
-`dnf needs-restarting --json`, blocked in `read()` on the terminal waiting for an
-OpenPGP key-import confirmation that **could not be displayed**. dnf writes that prompt
-to *stdout* — the same stream as the `--json` payload — and `reboot-check` must capture
-stdout to parse the verdict, so the question went into a pipe with `2>/dev/null`
-discarding stderr. A question whose text is thrown away is indistinguishable from a crash.
-
-**Why the key was needed at all.** dnf5 keeps a **per-repo OpenPGP keyring inside its
-metadata cache**, distinct from the rpmdb's `gpg-pubkey` entries: the rpmdb keyring
-verifies *package* signatures, the cache keyring verifies *repository metadata*, and only
-for repos with `repo_gpgcheck=1` — here, **tailscale alone** of 17 repos. Clearing
-`~/.cache/libdnf5` (done during the 2026-08-09 cruft cleanup) destroys it, so the next
-*unprivileged* dnf run re-prompts even though `rpm -q gpg-pubkey` still lists the key.
-Root's cache is separate, which is why `sudo dnf upgrade` was unaffected and only the
-verdict step stalled. **This distinction cost the diagnosis — don't re-derive it.**
-
-**Already done (2026-08-09), not the open question.** Both calls now take `</dev/null`,
-so blocking is structurally impossible; the `[WARN]` text names the hidden-prompt case
-and the command that reveals it; `tests/reboot-verdict/run.sh` gained 4 checks (51 total)
-including a stub `PROMPT` mode, and was mutation-verified — stripping the redirect fails
-exactly the new guard check and nothing else.
-
-**The open question: should the verdict depend on repo metadata at all?** Measured
-2026-08-09, warm cache, identical verdicts:
-
-| | Time | Network / keyring | Verdict inputs |
-|---|---|---|---|
-| repos enabled (current) | 1.69s | yes — hence prompts | core packages **+ `reboot_suggested` advisories** |
-| `--disablerepo='*'` | 0.74s | never | core packages only |
-
-`man dnf5-needs-restarting` confirms advisories are a real input, so disabling repos
-genuinely narrows the verdict. Options:
-
-1. **Hybrid fallback** — full check first; on any failure retry with `--disablerepo='*'`
-   and report the core-package verdict flagged as degraded. Turns "unknown" into "the
-   answer minus one input". ~6 lines + tests.
-2. **Always `--disablerepo='*'`** — 2.3× faster, permanently immune, but silently
-   narrows what the verdict means, against this file's stated intent of not
-   second-guessing dnf's own recommendation.
-3. **Leave as-is** — it can never hang and warns legibly; the trigger is rare (one repo
-   uses `repo_gpgcheck=1`). Accept a rare 30-second manual detour over a second code path.
-
-**Also worth folding in:** both calls still `2>/dev/null`, so a *non-prompt* failure
-(corrupt cache, missing plugin) produces a `[WARN]` that explains nothing. Surfacing a
-truncated stderr in that message is cheap and independent of the choice above.
-
-**Considered and declined:** `-C` / `--cacheonly` — already rejected in the
-`40-aliases.sh` header as the cold-cache false-positive source, tested under `unshare -n`.
-Running the verdict under `sudo` inside `sysupgrade` to reuse root's warm cache — breaks
-the deliberate property that standalone `reboot-check` never raises a sudo prompt.
-Auto-answering the prompt (`--assumeyes`) — would silently trust a rotated signing key.
-
-**Upstream angle:** dnf interleaving an interactive prompt with `--json` output is
-arguably a dnf5 bug; no correct caller can both parse the JSON and show the question.
-Worth a Fedora report regardless of which option is chosen locally.
-
-**Possible adjacent scope:** the user flagged 2026-08-09 that this may warrant rethinking
-`gpushall` as well — reason not yet articulated; ask before assuming a connection.
+Priority for the next working day: **(3)**.
 
 ---
 
@@ -98,6 +32,13 @@ TeX-Live-first ordering.
 
 ## Notes
 
+- From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,
+  deliberately not acted on absent a concrete failure: the five network git calls in
+  `50-git-sync.sh` have no timeout beyond the 4s TCP probe of `github.com:22`, so a
+  connection black-holed *after* the probe hangs — silently at the `>/dev/null 2>&1`
+  sites; and `git commit -m` in `_gsync_push_repo` is the one place a future
+  pre-commit hook could recreate the dnf-style invisible prompt (captured stdout +
+  live terminal stdin) — `</dev/null` there is free insurance if hooks ever appear.
 - `markdown-preview.nvim` is pinned to commit `a923f5f` (2023-10-17). That is not a
   stale pin — it is the newest commit upstream has ever had; the project was abandoned
   in October 2023. Nothing to update. It works today; if a future Neovim release breaks
@@ -112,6 +53,38 @@ TeX-Live-first ordering.
 ---
 
 ## Done
+
+- [x] Decided how `reboot-check` depends on repo metadata (was item 4): adopted the
+  **hybrid fallback**. Full check first (advisories are a documented input, so repos
+  stay enabled); on any unparseable verdict a retry with `--disable-repo='*'` — no
+  metadata, no keyring, works with zero cache — reports the core-package verdict
+  visibly flagged as degraded. Exit codes stay verdict-matched (rc 2 remains "no
+  verdict at all"); the degraded message shrinks its claim to its evidence ("no core
+  updates or stale services since boot") and carries the failing call's stderr
+  excerpt plus a paste-ready remedy (`dnf needs-restarting`). The service scan runs
+  `--disable-repo='*'` unconditionally — dnf5-needs-restarting(8) defines `-s` by
+  rpmdb facts alone, no advisory input; measured byte-identical and ~1.2s faster
+  (the scan was empty that day, so the man-page definition carries the semantic
+  claim). Both calls surface stderr's first line in degraded/[WARN] messages.
+  **Live findings that correct this item's original account** (same dnf5 5.4.2.1
+  as the incident): with a tty on stdin dnf asks and blocks — reproduced via a pty,
+  and the question never even flushes through a captured stdout, so the hang is
+  signless; with stdin closed the question lands on *stderr*, EOF declines it, and
+  dnf **skips the unverifiable repo and succeeds** — so a declined key no longer
+  fails the check (the "declined key → [WARN]" model was wrong), and the hybrid's
+  real triggers are hard failures. Degraded path live-verified with a cold cache
+  behind a dead proxy: flagged core verdict with the true cause in-line, 2.9s.
+  Suite grown to 75 checks, mutation-verified five ways (fallback disabled → exactly
+  the 15 fallback checks fail; `-s` repos re-enabled → exactly 1; degraded note
+  silenced → exactly 5; each `</dev/null` guard → exactly its own stdin probe).
+  Declined: always `--disable-repo='*'` for the main check (silently narrows the
+  verdict); rc 2 for a degraded no; prompt-text sniffing (dnf's human text is not a
+  contract — and its stream choice proved variable within one day); upstream dnf5
+  report (user decision 2026-08-09: local workflow only); any gpushall change — an
+  independent audit found the dnf bug class absent from `50-git-sync.sh` (git, ssh,
+  and gpg all prompt via `/dev/tty`, so nothing blocks invisibly under capture; the
+  vet prompt is `[[ -t 0 ]]`-gated), with two adjacent observations recorded under
+  Notes. @done(2026-08-09)
 
 - [x] Retired the `scripts` repo (survey + fold-in). Verdict of the survey: 14 of its
   16 items were regenerable one-offs (OCR/PDF/plot/file-management scripts, a stale

@@ -3,7 +3,11 @@
 # (reboot-check, the _reboot_* helpers, and sysupgrade's status contract).
 # Written 2026-08-08 alongside the fail-loud service-scan fix; the "svc dead"
 # checks below fail against the pre-fix code, which read a failed scan as an
-# empty result and printed a false "[ OK ]".
+# empty result and printed a false "[ OK ]". The hybrid-fallback section
+# (2026-08-09, TODO item 4) fails against pre-hybrid code: a repo-metadata
+# failure must degrade the verdict to core-packages-only -- flagged, with the
+# failing call's stderr and a paste-ready remedy in the message -- never
+# produce a bare [WARN] while the rpmdb could still answer.
 #
 # Hermetic: dnf, systemctl, sudo, and flatpak are PATH-stubbed under a $TMPDIR
 # sandbox -- no package operations, no privileges, no network. The stub dnf
@@ -17,7 +21,7 @@
 # contract the stubs encode still holds on this machine.
 #
 # Run from anywhere after any edit to the verdict functions, or when a dnf5
-# update makes verdicts look wrong (~10 s, most of it the live section).
+# update makes verdicts look wrong (~7 s, most of it the live section).
 # Last line follows the tests/gsync convention: "passed: N  failed: M";
 # exit 0 iff nothing failed. Requires bash 5+, GNU coreutils.
 set -u
@@ -37,15 +41,21 @@ mkdir -p "$SB/bin"
 # dnf: upgrade/autoremove obey STUB_UPGRADE (ok|FAIL); needs-restarting emits
 # STUB_MAIN -- or, with -s, STUB_SVC -- verbatim on stdout, or simulates a
 # failure (error on stderr, exit 1, empty stdout: the measured real shape) or
-# a degenerate blank line.
+# a degenerate blank line. Every invocation appends its argv to STUB_ARGLOG
+# (one line each), and a main-check retry carrying --disable-repo='*' emits
+# STUB_FALLBACK instead when that is set -- the hybrid-fallback fixture.
 cat > "$SB/bin/dnf" <<'EOF'
 #!/usr/bin/env bash
+printf '%s\n' "$*" >> "${STUB_ARGLOG:-/dev/null}"
 if [[ "${1-}" == upgrade || "${1-}" == autoremove ]]; then
   if [[ "${STUB_UPGRADE-ok}" == FAIL ]]; then echo "stub: $1 failed" >&2; exit 1; fi
   echo "stub: $1 ok"; exit 0
 fi
 v="${STUB_MAIN-}"
 [[ " $* " == *" -s "* ]] && v="${STUB_SVC-}"
+if [[ -n "${STUB_FALLBACK-}" && " $* " != *" -s "* && " $* " == *"--disable-repo=*"* ]]; then
+  v="$STUB_FALLBACK"
+fi
 case "$v" in
   FAIL)  echo "stub: simulated needs-restarting failure" >&2; exit 1 ;;
   BLANK) echo ;;
@@ -150,6 +160,7 @@ check "no pkg list: rc=1"                [ "$rc" -eq 1 ]
 vrun STUB_MAIN=FAIL reboot-check
 check "dnf dead: [WARN]"                 contains "$out" "Reboot status unknown"
 check "dnf dead: names the likely fix"   contains "$out" "dnf5-plugins"
+check "dnf dead: stderr surfaced"        contains "$out" "simulated needs-restarting failure"
 check "dnf dead: rc=2"                   [ "$rc" -eq 2 ]
 
 vrun STUB_MAIN="$MAIN_NO_FIELD" reboot-check
@@ -160,18 +171,73 @@ check "schema drift: rc=2"               [ "$rc" -eq 2 ]
 # Feeding stdin "y" proves the guard structurally: with `</dev/null` the stub
 # sees EOF, so dnf cannot consume the caller's input and cannot block. Drop the
 # redirect from 40-aliases.sh and the probe reads HAD_DATA instead -- and on a
-# real terminal that same code path waits for a keystroke forever.
+# real terminal that same code path waits for a keystroke forever. With no
+# STUB_FALLBACK the hybrid retry prompts-and-dies too, so this lands in WARN;
+# the realistic outcome (the fallback answers) is in the hybrid section below.
+# Division of labour (mutation-verified 2026-08-09): the probe HERE guards the
+# retry's redirect -- the retry's PROMPT run overwrites the first call's
+# record, so a stripped retry redirect is what leaves HAD_DATA behind. The
+# main call's redirect is guarded by the hybrid section's probe, where the
+# retry emits STUB_FALLBACK and never touches the probe. Each stripped
+# redirect fails exactly its own check; neither probe is redundant.
 PROBE="$SB/stdin-probe"
 vrun STUB_MAIN=PROMPT STUB_PROBE="$PROBE" reboot-check <<<"y"
 check "prompt: dnf got EOF, not our stdin" [ "$(cat "$PROBE" 2>/dev/null)" = EOF ]
 check "prompt: [WARN], not a false verdict" contains "$out" "Reboot status unknown"
-check "prompt: names the hidden-prompt case" contains "$out" "hidden prompt"
+check "prompt: WARN owns the fallback too" contains "$out" "even with repos disabled"
 check "prompt: rc=2"                     [ "$rc" -eq 2 ]
+
+# --- hybrid fallback: a metadata failure degrades the verdict, never blinds it
+# (2026-08-09, TODO item 4). Full check first; on no parseable verdict, retry
+# with --disable-repo='*' and report the core-package verdict flagged as
+# degraded, remedy included. The service scan carries --disable-repo='*'
+# unconditionally -- rpmdb-only semantics, see the 40-aliases.sh header.
+ARGLOG="$SB/dnf-arglog"
+: > "$ARGLOG"
+vrun STUB_MAIN="$MAIN_FALSE" STUB_SVC='[]' STUB_ARGLOG="$ARGLOG" reboot-check
+check "healthy: exactly one main call"   [ "$(grep -cv -- ' -s ' "$ARGLOG")" -eq 1 ]
+check "healthy: main call keeps repos"   lacks "$(grep -v -- ' -s ' "$ARGLOG")" "--disable-repo"
+check "healthy: no degraded wording"     lacks "$out" "advisories not consulted"
+check "svc scan: repos always disabled"  contains "$(grep -- ' -s ' "$ARGLOG")" "--disable-repo=*"
+
+vrun STUB_MAIN=FAIL STUB_FALLBACK="$MAIN_FALSE" STUB_SVC='[]' reboot-check
+check "degraded no: verdict-matched OK"  contains "$out" "[ OK ] No reboot needed"
+check "degraded no: rc=0"                [ "$rc" -eq 0 ]
+check "degraded no: claim shrunk"        contains "$out" "no core updates or stale services since boot"
+check "degraded no: overclaim gone"      lacks "$out" "nothing has changed since boot"
+check "degraded no: flagged"             contains "$out" "advisories not consulted"
+check "degraded no: stderr surfaced"     contains "$out" "simulated needs-restarting failure"
+check "degraded no: remedy paste-ready"  contains "$out" "run: dnf needs-restarting"
+
+vrun STUB_MAIN=FAIL STUB_FALLBACK="$MAIN_TRUE_MIN" STUB_SVC='[]' reboot-check
+check "degraded yes: [REBOOT]"           contains "$out" "[REBOOT] Reboot recommended"
+check "degraded yes: rc=1"               [ "$rc" -eq 1 ]
+check "degraded yes: flagged"            contains "$out" "advisories not consulted"
+check "degraded yes: pkg list intact"    contains "$out" "kernel-core, glibc"
+
+# The original incident, end to end: the key prompt is suppressed by
+# </dev/null AND the fallback still produces an answer instead of [WARN].
+# The probe here guards the MAIN call's redirect -- see the note above the
+# first probe for why the two probes split the two redirects between them.
+PROBE2="$SB/stdin-probe2"
+vrun STUB_MAIN=PROMPT STUB_PROBE="$PROBE2" STUB_FALLBACK="$MAIN_FALSE" STUB_SVC='[]' reboot-check <<<"y"
+check "prompt+fallback: stdin guard holds" [ "$(cat "$PROBE2" 2>/dev/null)" = EOF ]
+check "prompt+fallback: degraded verdict"  contains "$out" "[ OK ] No reboot needed"
+check "prompt+fallback: not a WARN"        lacks "$out" "Reboot status unknown"
+check "prompt+fallback: rc=0"              [ "$rc" -eq 0 ]
+
+# Degradation must reach the service-scan verdicts too.
+vrun STUB_MAIN=FAIL STUB_FALLBACK="$MAIN_FALSE" STUB_SVC="$(svc_json bar.service)" \
+  STUB_USER_LOADED="bar.service" reboot-check
+check "degraded relogin: [RELOGIN]"      contains "$out" "[RELOGIN]"
+check "degraded relogin: rc=3"           [ "$rc" -eq 3 ]
+check "degraded relogin: flagged"        contains "$out" "advisories not consulted"
 
 # --- the service scan fails loud (the 2026-08-08 fix) -----------------------
 vrun STUB_MAIN="$MAIN_FALSE" STUB_SVC=FAIL reboot-check
 check "svc dead: WARN, not OK"           contains "$out" "service scan failed"
 check "svc dead: core state still told"  contains "$out" "No core updates since boot"
+check "svc dead: stderr surfaced"        contains "$out" "simulated needs-restarting failure"
 check "svc dead: rc=2"                   [ "$rc" -eq 2 ]
 
 vrun STUB_MAIN="$MAIN_FALSE" STUB_SVC=BLANK reboot-check
