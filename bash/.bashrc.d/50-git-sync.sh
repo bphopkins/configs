@@ -31,6 +31,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation-template"
   "$HOME/Desktop/opuscula"
   "$HOME/Desktop/sonnerie"
+  "$HOME/Desktop/sylloge"
 )
 
 # Vet thresholds. GSYNC_MAX_MB may be overridden in the environment; the
