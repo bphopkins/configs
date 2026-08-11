@@ -25,6 +25,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/teaching"
   "$HOME/Desktop/bphopkins.net"
   "$HOME/Desktop/nousowl.net"
+  "$HOME/Desktop/nousowl"
   "$HOME/Desktop/configs"
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/teach-logic"
