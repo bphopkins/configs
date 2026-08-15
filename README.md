@@ -35,7 +35,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p ~/Desktop/configs/{alacritty,bash,bin,latex,nvim,okular,sway,waybar,wezterm}
+mkdir -p ~/Desktop/configs/{alacritty,bash,bin,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
 ```
 
 
@@ -152,7 +152,7 @@ This simulates the action, reporting back if `stow` sees anything funny about cr
 cd ~/Desktop/configs
 
 # Ensure target directories exist
-mkdir -p ~/.config/{alacritty,nvim,sway,waybar} ~/texmf/tex/latex ~/bin
+mkdir -p ~/.config/{alacritty,mako,nvim,sway,swaylock,waybar,wofi} ~/texmf/tex/latex ~/bin
 
 # Links to $HOME
 stow -nvt ~ bash
@@ -162,7 +162,10 @@ stow -nvt ~ wezterm
 stow -nvt ~/.config/alacritty alacritty
 stow -nvt ~/.config/nvim nvim
 stow -nvt ~/.config/sway sway
+stow -nvt ~/.config/swaylock swaylock
+stow -nvt ~/.config/mako mako
 stow -nvt ~/.config/waybar waybar
+stow -nvt ~/.config/wofi wofi
 
 # Links to ~/texmf/tex/latex
 stow -nvt ~/texmf/tex/latex latex

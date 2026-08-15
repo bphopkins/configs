@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Undo the temporary settings from a battery calibration run.
+# Written 2026-08-11 for the fedxps pack swap; safe to reuse on later runs.
+#
+#   battcal-restore --check   read-only audit, changes nothing
+#   battcal-restore           restore, verifying each step
+#   battcal-restore --keep-poweroff
+#                             restore, but leave CriticalPowerAction=PowerOff
+#                             (see NOTE below -- this is the kinder setting)
+#   battcal-restore --force   skip the "did the gauge actually learn?" guard
+#
+# NOTE: stock config is CriticalPowerAction=Auto, which on this machine resolves
+# to Sleep, not PowerOff -- and there is no hibernation here (zram-only swap).
+# So at critical battery the stock setting suspends, then drains to the pack's
+# hard protection cutoff. --keep-poweroff avoids that. Verify what the daemon
+# actually intends with GetCriticalAction; never trust the config file alone.
+
+set -uo pipefail
+B=/sys/class/power_supply/BAT0
+BAK=$HOME/Desktop/UPower.conf.bak
+UPDEV=/org/freedesktop/UPower/devices/battery_BAT0
+
+CHECK=0; FORCE=0; KEEP_PO=0
+for a in "$@"; do case "$a" in
+  --check) CHECK=1 ;;
+  --force) FORCE=1 ;;
+  --keep-poweroff) KEEP_PO=1 ;;
+  *) echo "unknown option: $a" >&2; exit 2 ;;
+esac; done
+
+ok(){   printf '  \033[32mok\033[0m    %s\n' "$1"; }
+bad(){  printf '  \033[31mDRIFT\033[0m %s\n' "$1"; RC=1; }
+info(){ printf '        %s\n' "$1"; }
+RC=0
+
+crit_action(){ gdbus call --system --dest org.freedesktop.UPower \
+  --object-path /org/freedesktop/UPower --method \
+  org.freedesktop.UPower.GetCriticalAction 2>/dev/null | tr -d "(),'"; }
+thresh_enabled(){ gdbus call --system --dest org.freedesktop.UPower \
+  --object-path $UPDEV --method org.freedesktop.DBus.Properties.Get \
+  org.freedesktop.UPower.Device ChargeThresholdEnabled 2>/dev/null | grep -o 'true\|false'; }
+
+# `pgrep -f PATTERN` also matches the invoking shell when that shell's own command
+# line contains PATTERN -- which made the old `pkill -f` able to kill its caller.
+# Match on process *name* plus cmdline instead, and kill only specific PIDs.
+inhibitor_pids(){ local p; for p in $(pgrep -x systemd-inhibit 2>/dev/null); do
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q 'battery-calibration' && echo "$p"
+done; }
+battlog_pids(){ pgrep -f '^bash .*/battlog$' 2>/dev/null; }
+
+check_key(){ if grep -qx "$1=$2" /etc/UPower/UPower.conf; then ok "$1=$2"
+  else bad "$1 is $(grep -m1 -E "^$1=" /etc/UPower/UPower.conf | cut -d= -f2-) (stock is $2)"; fi; }
+
+echo
+echo "== did the gauge actually learn? =="
+CF=$(<"$B"/charge_full); CFD=$(<"$B"/charge_full_design); CYC=$(<"$B"/cycle_count)
+printf '        charge_full        %s\n        charge_full_design %s\n        cycle_count        %s\n' "$CF" "$CFD" "$CYC"
+sudo -n true 2>/dev/null && sudo dmidecode -t 22 2>/dev/null | grep -i 'Maximum Error' | sed 's/^\s*/        /'
+if [ "$CF" = "$CFD" ] && [ "$CYC" = "0" ]; then
+  echo
+  echo "  !! charge_full is still a verbatim copy of design and cycle_count is 0."
+  echo "     The calibration has NOT completed. Capture battreport first."
+  if [ "$CHECK" = 0 ] && [ "$FORCE" = 0 ]; then
+    echo "     Refusing to restore. Use --force to override."; exit 1
+  fi
+  [ "$FORCE" = 1 ] && echo "     --force given, continuing anyway."
+fi
+
+echo
+echo "== 1. UPower.conf =="
+if [ "$CHECK" = 1 ]; then
+  grep -E '^(Percentage(Low|Critical|Action)|TimeCritical|CriticalPowerAction)=' /etc/UPower/UPower.conf | sed 's/^/        /'
+  info "daemon intends: $(crit_action)"
+  check_key PercentageLow 20.0
+  check_key PercentageCritical 5.0
+  check_key PercentageAction 2.0
+  check_key TimeCritical 300
+  [ "$KEEP_PO" = 1 ] && check_key CriticalPowerAction PowerOff || check_key CriticalPowerAction Auto
+elif [ -f "$BAK" ]; then
+  # Validate the backup BEFORE overwriting /etc. A truncated or wrong file here
+  # would leave UPower misconfigured with the only copy of the original gone.
+  MISSING=""
+  for k in PercentageLow PercentageCritical PercentageAction TimeCritical CriticalPowerAction; do
+    grep -qE "^$k=" "$BAK" || MISSING="$MISSING $k"
+  done
+  BAKLINES=$(wc -l < "$BAK")
+  if [ -n "$MISSING" ] || [ "$BAKLINES" -lt 50 ]; then
+    bad "backup looks wrong (${BAKLINES} lines, missing:${MISSING:- nothing}) -- NOT touching /etc"
+    info "restore by hand: PercentageLow=20.0 Critical=5.0 Action=2.0 TimeCritical=300 CriticalPowerAction=Auto"
+  else
+    info "backup validated: ${BAKLINES} lines, all 5 keys present"
+    sudo cp "$BAK" /etc/UPower/UPower.conf || bad "cp failed"
+    if [ "$KEEP_PO" = 1 ]; then
+      sudo sed -i -E 's/^CriticalPowerAction=.*/CriticalPowerAction=PowerOff/' /etc/UPower/UPower.conf
+      info "kept CriticalPowerAction=PowerOff by request"
+    fi
+    sudo systemctl restart upower && sleep 2
+    grep -E '^(Percentage(Low|Critical|Action)|TimeCritical|CriticalPowerAction)=' /etc/UPower/UPower.conf | sed 's/^/        /'
+    info "daemon intends: $(crit_action)"
+    ok "restored from $BAK"
+    info "once you trust this, delete the backup:  rm $BAK"
+  fi
+else
+  bad "no backup at $BAK -- restore by hand: PercentageLow=20.0 Critical=5.0 Action=2.0 TimeCritical=300 CriticalPowerAction=Auto"
+fi
+
+echo
+echo "== 2. GNOME idle suspend on battery =="
+K="org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type"
+CUR=$(gsettings get $K)
+if [ "$CHECK" = 1 ]; then
+  [ "$CUR" = "'suspend'" ] && ok "sleep-inactive-battery-type = $CUR" || bad "sleep-inactive-battery-type = $CUR (expected 'suspend')"
+else
+  gsettings set $K 'suspend'
+  NEW=$(gsettings get $K)
+  [ "$NEW" = "'suspend'" ] && ok "sleep-inactive-battery-type = $NEW" || bad "failed to set, still $NEW"
+fi
+
+echo
+echo "== 3. 80% charge limit =="
+EN=$(thresh_enabled); SYS=$(<"$B"/charge_control_end_threshold)
+if [ "$CHECK" = 1 ]; then
+  info "upower ChargeThresholdEnabled = ${EN:-unknown}"
+  [ "$SYS" = "80" ] && ok "sysfs charge_control_end_threshold = 80" || bad "sysfs charge_control_end_threshold = $SYS (expected 80)"
+else
+  # Retry even if upower already claims true -- it can report a stored preference
+  # while the firmware has not applied it. sysfs is the arbiter.
+  if [ "$EN" != "true" ] || [ "$SYS" != "80" ]; then
+    gdbus call --system --dest org.freedesktop.UPower --object-path $UPDEV \
+      --method org.freedesktop.UPower.Device.EnableChargeThreshold true >/dev/null 2>&1 \
+      || info "D-Bus call refused (polkit) -- toggle it in Settings > Power > Battery Charge Limit"
+    sleep 2
+  fi
+  SYS=$(<"$B"/charge_control_end_threshold)
+  info "upower ChargeThresholdEnabled = $(thresh_enabled)"
+  # sysfs is the truth; upower may report a stored preference instead.
+  [ "$SYS" = "80" ] && ok "sysfs charge_control_end_threshold = 80" || bad "sysfs charge_control_end_threshold = $SYS (expected 80)"
+fi
+
+echo
+echo "== 4. leftovers =="
+INH=$(inhibitor_pids)
+if [ -n "$INH" ]; then
+  if [ "$CHECK" = 1 ]; then bad "calibration inhibitor still held (pid $INH)"
+  else kill $INH 2>/dev/null && ok "released calibration inhibitor (pid $INH)" \
+                             || bad "could not kill inhibitor pid $INH"; fi
+else ok "no calibration inhibitor held"; fi
+BL=$(battlog_pids)
+[ -n "$BL" ] && info "battlog still sampling (pid $BL) -- fine; kill it if you're done" \
+             || ok "battlog not running"
+
+echo
+[ "$RC" = 0 ] && echo "All settings at their intended values." \
+              || echo "Some items drifted -- see DRIFT lines above."
+exit $RC

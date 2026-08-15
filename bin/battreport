@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+B=/sys/class/power_supply/BAT0
+OUT=~/Desktop/battery-$(date +%Y%m%d-%H%M).txt
+sudo -v
+{
+  echo "Battery report — $(date -Iseconds)"
+  echo "Kernel: $(uname -r)   BIOS: $(sudo dmidecode -s bios-version 2>/dev/null)"
+  echo
+  echo "== sysfs =="
+  for f in "$B"/*; do
+    [ -f "$f" ] && [ -r "$f" ] && printf '%-32s %s\n' "$(basename "$f")" "$(cat "$f" 2>/dev/null)"
+  done
+  echo
+  echo "== computed =="
+  awk -v cfd="$(<$B/charge_full_design)" -v cf="$(<$B/charge_full)" \
+      -v cn="$(<$B/charge_now)" -v v="$(<$B/voltage_min_design)" 'BEGIN{
+    printf "design          %.2f Wh  (%.0f mAh)\n", cfd*v/1e12, cfd/1000
+    printf "full (learned)  %.2f Wh  (%.0f mAh)\n", cf*v/1e12, cf/1000
+    printf "now             %.2f Wh  (%.0f mAh)\n", cn*v/1e12, cn/1000
+    printf "health          %.1f %%\n", 100*cf/cfd
+  }'
+  echo
+  echo "== upower =="
+  upower -i "$(upower -e | grep -m1 BAT)"
+  echo
+  echo "== SMBIOS portable battery =="
+  sudo dmidecode -t 22 2>/dev/null || echo "(unavailable)"
+} > "$OUT"
+echo "Wrote $OUT"

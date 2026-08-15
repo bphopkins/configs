@@ -30,6 +30,160 @@ TeX-Live-first ordering.
 
 ---
 
+## 5. Sway config: the deferred tiers — COMPLETE 2026-08-13
+
+- [x] All four tiers done, verified from inside a live Sway session. @done(2026-08-13)
+
+Kept rather than folded into Done because the per-tier notes below record *why* things
+were done the way they were, and the declined list at the foot is the part most likely to
+be re-proposed by a future session. From a full inspection on 2026-08-13.
+
+**Tier 1 — lid/lock. DONE 2026-08-13**, see the Done entry. Screen blanking and idle
+timers remain **declined**. One follow-up if a timer is ever added after all: pair it
+with `for_window [app_id=".*"] inhibit_idle fullscreen`, or a fullscreen talk will lock
+mid-presentation.
+
+**Tier 2 — `focus parent`. DONE 2026-08-13.** `$mod+p` walks up the tree, `$mod+Shift+p`
+(`focus child`) comes back down; the pair is bound because parent alone leaves you
+steering back with direction keys. `$mod+v` remains deliberately free.
+
+**Tier 3 — screenshots. DONE 2026-08-13.** `Print` full-screen->file, `Shift+Print`
+region->clipboard, `$mod+Print` region->file.
+
+Two findings baked in. **The cancel guard is load-bearing:** written the obvious way as
+`grim -g "$(slurp)" - | wl-copy`, pressing Esc leaves an empty geometry, grim fails, and
+wl-copy still runs with empty stdin — silently **wiping the clipboard**. Testing both
+slurp's exit status and the resulting string means a cancelled screenshot changes nothing;
+verified with stub slurps for both the cancel and success paths.
+
+**The destination is not redirectable from bash.** grim honours `GRIM_DEFAULT_DIR`, but
+the `XDG_PICTURES_DIR` *environment variable* is ignored — setting it to a scratch dir
+still wrote to `~/Pictures`, so grim reads `~/.config/user-dirs.dirs` instead and the man
+page's "falls back first to `$XDG_PICTURES_DIR`" names the value, not the variable. And
+exporting `GRIM_DEFAULT_DIR` from `bash/.bashrc.d` would not reach the keybinding anyway:
+sway's children inherit the *session* environment, not an interactive shell's — the same
+trap documented for `okular-inverse`. Redirecting it would mean naming a path in
+`sway/config`. Left at `~/Pictures`.
+
+**Tier 4 — DONE 2026-08-13.** `$mod+Tab` -> `workspace back_and_forth` (the third motion
+the `$alt` prev/next pair left missing). `client.urgent` now uses `$urgent` `#d08770`, so
+sway finally matches Waybar, mako and swaylock — one urgent colour desktop-wide. Waybar's
+battery gained `states` (warning 20 / critical 10) with CSS classes, plus **notifications
+via waybar's own `events` mechanism** — no daemon, no timer, because the module already
+polls; critical fires at `urgency=critical`, which mako keeps on screen until dismissed.
+Two incidental fixes found while there: the battery format used `{icon}` with no
+`format-icons` array, so it rendered nothing (dropped — this bar is deliberately all
+plain text); and the clock's `interval` defaulted to **60**, polling on the minute, which
+is why `%T` showed `00` seconds forever under Sway while GNOME ticked. `interval: 1`
+fixes it — verified by diffing two `grim` captures of the clock region 1.6 s apart.
+
+A follow-on from that: with seconds now visible, the centred clock **jittered** once a
+second, because the default proportional font renders different digits at different
+widths (measured 145 <-> 146 px) and `modules-center` turns a width change into
+horizontal movement. Fixed with `font-feature-settings: "tnum"` on `#clock` — tabular
+figures, so every digit has one advance width; re-measured as a constant 155 px at a
+constant offset across 8 consecutive seconds. Two things learned doing it, both now in
+`CLAUDE.md`: GTK3 **rejects** the CSS-spec form `"tnum" 1` and knows nothing of
+`font-variant-numeric`; and **a CSS parse error makes waybar exit silently**, leaving
+sway with no bar and nothing in the journal but `Using CSS file …`. Parse-check
+`style.css` before every reload.
+
+**Not a gap, checked 2026-08-13:** `xdg-desktop-portal-wlr` *is* installed (it is a
+libexec binary, so `command -v` misses it) and Fedora ships
+`/usr/share/xdg-desktop-portal/sway-portals.conf` routing ScreenCast/Screenshot to wlr —
+screen sharing will work. mako is installed and D-Bus-activated
+(`fr.emersion.mako.service`), so notifications need no `exec` line.
+
+**`seat * xcursor_theme`: investigated and struck, 2026-08-13.** It was on Tier 4 on the
+theory that XWayland clients fall back to an unthemed X cursor. Tested live by running
+the *same* binary on both backends (`alacritty` vs `env -u WAYLAND_DISPLAY alacritty`,
+which is the way to force XWayland here) — **the cursors are identical**. The reason is
+structural, so it is stable: Adwaita is the only cursor theme installed, and
+`/usr/share/icons/default/index.theme` has `Inherits=Adwaita`, so the unnamed `default`
+theme that both paths resolve lands on the same theme either way; `XCURSOR_SIZE=24` is
+set session-wide. Nothing to fix unless a second cursor theme is ever installed. (Unrelated
+observation from the same test, deliberately not pursued: the XWayland Alacritty renders
+its font larger. `Xft.dpi` is unset and output scale is 1.0, so the likely cause is X11
+clients deriving DPI from the panel's EDID physical size rather than assuming 96 —
+unverified, and moot while every app in use is native Wayland.)
+
+**Regression suite added 2026-08-13:** `tests/desktop/run.sh`, 24 checks, mutation-verified.
+It guards the four silent-catastrophic failure modes this work uncovered (waybar CSS typo
+kills the bar; unknown swaylock key means no lock; `sway --validate` skips binding command
+bodies; mako/wofi unknown keys), plus the cross-config wiring that nothing else holds in
+place. Run it after touching sway, waybar, swaylock, mako or wofi.
+
+**Considered and DECLINED 2026-08-13** (asked and answered, do not re-propose):
+
+- *Clipboard persistence* (`wl-clip-persist` / `cliphist`) — has never actually been a
+  problem in practice, and is not worth running a daemon for.
+- *Multi-monitor bindings* — sway has never been used with multiple monitors; the one
+  attempt was on `bigfed`, which has been abandoned as a sway machine.
+- *`for_window` floating rules* — no misbehaving dialog was ever demonstrated, so there is
+  nothing to fix yet. The `inhibit_idle fullscreen` half only applies if idle timers are
+  ever adopted, which they are not.
+- *A clock on the lock screen* — wanted, but mainline swaylock cannot do it (see the
+  swaylock note in `CLAUDE.md`); `indicator-idle-visible` was taken instead.
+
+---
+
+## 6. Impose an explicit logic on the sway keybindings
+
+- [ ] Investigate the implicit logic already present in the bindings, propose an explicit
+  one to follow going forward, and rewrite the grammar header in `sway/config` to state
+  it. Optimise for *conceptualising the action-space cleanly* and remembering bindings —
+  not for tidiness. Explicit exceptions for workflow are expected and fine.
+
+Raised 2026-08-13 after the config work of that day. The complaint, in the user's words:
+there is no visible logic to the difference between `$mod+Shift` and `$mod+Ctrl`, which
+makes it hard to keep in his head where a binding lives.
+
+**Measurements already taken — do not re-derive.** Counts as of 2026-08-13: plain `$mod`
+32 bindings, `$mod+Shift` 24, `$mod+Ctrl` 3, `$mod+$alt` 8.
+
+- **A logic is already ~79% present.** 19 of the 24 `$mod+Shift` bindings are one idea:
+  *take the focused window with you* — move directionally (8), send to workspace (10),
+  stash in scratchpad (1). The `$mod+$alt+Shift` pair (carry window across workspaces)
+  reinforces it.
+- **Two of the five exceptions probably are not exceptions.** `Shift+f` (fullscreen) and
+  `Shift+space` (floating toggle) fit if the rule is widened from "move the window" to
+  "act on the focused window" — state counts as much as position.
+- **Three are genuine.** `Shift+c` (reload) and `Shift+Escape` (poweroff) act on the
+  session, not a window. `Shift+p` (focus child) is focus navigation — and was added on
+  2026-08-13 *by an assistant who did not notice it broke the pattern*, because there was
+  no stated rule to check against. That is the ongoing cost, and the best argument for
+  doing this at all.
+- **`$mod+Ctrl` is the real problem, and it is definitional.** Only 3 bindings, spanning
+  two unrelated concepts: `Ctrl+h`/`Ctrl+v` (container structure) and `Ctrl+l` (lock,
+  session). The lock landed there in 2026-08-13 purely because `$mod+l` was taken by
+  `focus right` — key availability driving semantics, which is how drift starts. Decide
+  **what Ctrl means** first; placements follow.
+
+**Starting hypothesis, not a conclusion:** *Shift acts on the focused window; Ctrl acts on
+the environment around it.* Splits shape the container, lock/reload/power act on the
+session — all "not the window". Under that rule the required changes are **two bindings**
+(`reload` -> `$mod+Ctrl+c`, `poweroff` -> `$mod+Ctrl+Escape`), both rarely pressed, plus
+rehoming or explicitly excusing `focus child`. Test the hypothesis; do not assume it.
+
+**Constraints, from the user directly:**
+
+- He is *happy with the bindings* and does not want to deviate much — the value is the
+  stated rule, not the moves. If the rule ever demands relocating something pressed daily,
+  the rule bends, not the binding.
+- Deliberate upstream divergences to preserve: `$mod+q` kill (not `$mod+Shift+q`),
+  `$mod+Escape` exit (moved off `$mod+Shift+l` on 2025-11-10 because `l` is `$right`),
+  splits on `$mod+Ctrl+h`/`v` (because `$mod+b`/`$mod+v` are launchers). `$mod+v` is
+  deliberately free. Every motion is bound for **both** vim keys and arrows — keep that.
+- Tabbed/stacking layouts are declined (see item 5), so the layout tier stays small.
+
+**Also fix as part of this:** the "Binding grammar" header at the top of `sway/config` is
+self-contradictory — it asserts both `$mod+Shift+hjkl = move the window` *and*
+`$mod+Shift+<key> = the heavier variant of the unshifted action`. Two rules for one
+modifier, the second vague enough to justify anything. It documents the mess rather than
+resolving it, and is part of why the scheme still reads murky.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,
@@ -43,6 +197,20 @@ TeX-Live-first ordering.
   stale pin — it is the newest commit upstream has ever had; the project was abandoned
   in October 2023. Nothing to update. It works today; if a future Neovim release breaks
   it, the replacements to look at are `render-markdown.nvim` or `peek.nvim`.
+- Desktop typography under Sway, surveyed 2026-08-13. The bar and the launcher were
+  brought in line; the rest was **deliberately left alone**. There is no XSettings daemon under sway, so GTK3 apps read gsettings
+  directly (`Adwaita Sans 11`) and agree with each other — but anything shipping its own
+  stylesheet does not participate. `wofi` ($mod+a) *was* the worst outlier — no config at
+  all, running on compiled-in defaults — and got its own stow package the same day
+  (palette + Source Code Pro matching Waybar; see `CLAUDE.md`). mako and swaylock still
+  fall back to their own defaults for fonts, which has not mattered in practice. Judged too big to
+  fold into a config pass; it is a design question, not a config sweep. Waybar was
+  monospaced (Source Code Pro, matching the terminals) on its own merits — see `CLAUDE.md`.
+  Note the Wi-Fi tray icon can never join in: it is an SNI *icon* painted by `nm-applet`
+  from the Adwaita icon theme, not text, so no font setting reaches it. Replacing it with
+  waybar's text `network` module is possible but `nm-applet` must keep running regardless
+  — it is the 802.1x secret agent — so that would add a text indicator without removing
+  the icon.
 - Alacritty carries font settings only, no colourscheme, so it is the one terminal not
   on TokyoNight. Deliberate or not, it's a one-block fix whenever wanted.
 - `wallpapers/monarch1080.png` (2.0 MB) and the five solid-colour PNGs are referenced
@@ -54,6 +222,40 @@ TeX-Live-first ordering.
 
 ## Done
 
+- [x] **Tier 1 of item 5: lock before suspend** (`swaylock` + `swayidle`), plus a `mako`
+  notification config — both new stow packages, both verified in a live Sway session.
+  **The lock is `before-sleep` only**, with no `timeout` clause, so the no-idle-timers
+  posture is structurally preserved; it exists solely to close the measured hole that
+  lid-close → suspend → reopen landed on an unlocked desktop. `$mod+Ctrl+l` locks on
+  demand. Verified: PAM authentication works (password unlock succeeded under a
+  watchdog harness that made lockout impossible), and the lid path now locks.
+  **mako:** its `default-timeout` defaults to `0` — never expire — which is why the
+  NetworkManager "Connection Established" popup persisted until clicked; now 5 s, with
+  `ignore-timeout=1` so a sender asking to persist forever cannot override that, and a
+  `[urgency=critical]` section giving persistence back where it belongs. Both configs
+  had every key validated against their man pages first, because an unrecognised key
+  makes swaylock **exit** — i.e. no lock at all, a fail-open direction. Also learned and
+  recorded: **sway is `fedxps`-only**; `bigfed` never boots it, which moots the
+  cross-machine caveats in these packages. @done(2026-08-13)
+- [x] Inspected `sway/config` end to end and restructured it for readability, plus two
+  defect fixes (opened item 5 for the deferred tiers). **Verification:** `sway --validate`
+  clean, and — because validate provably does *not* check `bindsym` command bodies — all
+  83 bindings were additionally executed against a headless nested sway, giving zero
+  parse errors; the restructure was diffed as a normalized *set* of active directives to
+  prove nothing was lost (115 before, 115 after, only the intended changes).
+  **Fixed:** the `$mod+Shift+Escape` poweroff nag's Cancel button did nothing — per
+  `man 1 swaynag` only `-z`/`-Z` dismiss, so `-b 'Cancel' 'true'` ran `true` and left the
+  bar on screen; now `-s 'Cancel'` renames the built-in dismiss button, and `-b` became
+  `-B` on both nags so neither action can be routed through `$TERMINAL`. Also replaced
+  the two hardcoded `/home/bph/` paths with `~` (verified sway expands it — validate
+  stats the background path, so a bogus one fails rc=1 while the `~` form passes).
+  **Readability:** the live touchpad block was sitting under an `# Example configuration:`
+  header with more commented example below it; app launchers lived under `### Variables`;
+  the trackpad toggle was orphaned flush-left in no section; a stray `# ~/.config/sway/config`
+  comment pointed at exactly the file the header warns against editing. Bindings are now
+  grouped by function with the binding grammar stated once at the top, every parked
+  decision carries its reason inline, and a "Deliberate omissions" section records the
+  declined items. @done(2026-08-13)
 - [x] Decided how `reboot-check` depends on repo metadata (was item 4): adopted the
   **hybrid fallback**. Full check first (advisories are a documented input, so repos
   stay enabled); on any unparseable verdict a retry with `--disable-repo='*'` — no

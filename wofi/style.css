@@ -1,0 +1,87 @@
+/* wofi -- stow-managed from ~/Desktop/configs/wofi/style.css.
+   Edit it here, not at ~/.config/wofi/style.css (that is a symlink into this repo).
+
+   Palette and typeface deliberately match waybar/style.css, so the launcher
+   reads as part of the same desktop rather than as a stray GTK dialog. wofi is
+   GTK3, the same toolkit as Waybar, so the same dialect applies -- and the same
+   trap: verify this parses before relying on it, since a CSS error here means a
+   launcher that misbehaves with no useful error:
+
+     python3 -c 'import gi;gi.require_version("Gtk","3.0");from gi.repository import Gtk;Gtk.CssProvider().load_from_data(open("wofi/style.css","rb").read())'
+
+   Widget names come from wofi(5) CSS SELECTORS: #window, #outer-box, #input,
+   #scroll, #inner-box, #entry, #text. */
+
+@define-color bg     #000000;
+@define-color fg     #ffffff;
+@define-color muted  #9e9e9e;
+@define-color accent #228B22;   /* Waybar's accent (forest green), not sway's blue */
+
+* {
+  /* Same as Waybar and both terminals. */
+  font-family: "Source Code Pro", monospace;
+  font-size: 13px;
+  border-radius: 0;
+}
+
+#window {
+  background-color: @bg;
+  color: @fg;
+  /* 3px accent border, matching sway's `default_border pixel 3` and Waybar's
+     3px active-workspace underline. */
+  border: 3px solid @accent;
+}
+
+#outer-box {
+  padding: 10px;
+}
+
+/* Search field */
+#input {
+  background-color: @bg;
+  color: @fg;
+  border: none;
+  border-bottom: 2px solid @muted;
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  /* GTK draws a focus ring on the entry by default; the border-bottom is the
+     affordance here, so suppress it. */
+  outline: none;
+  box-shadow: none;
+}
+
+#input image {
+  color: @muted;
+}
+
+#scroll {
+  background-color: @bg;
+}
+
+#inner-box {
+  background-color: @bg;
+}
+
+/* One row per application. */
+#entry {
+  background-color: transparent;
+  padding: 5px 6px;
+  border: none;
+}
+
+#entry #text {
+  color: @muted;
+}
+
+/* The selected row is the one thing that should catch the eye. Bar down the
+   left rather than a full fill: it marks position without repainting the row,
+   which is easier to read while scrolling. */
+#entry:selected {
+  background-color: rgba(34, 139, 34, 0.18);
+  border-left: 3px solid @accent;
+  padding-left: 3px;             /* keep text aligned despite the 3px border */
+}
+
+#entry:selected #text {
+  color: @fg;
+}

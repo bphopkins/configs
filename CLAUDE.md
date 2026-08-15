@@ -19,7 +19,10 @@ Each top-level directory (except `wallpapers/` and `tests/`) is a stow "package"
 | alacritty  | `~/.config/alacritty`        |
 | nvim       | `~/.config/nvim`             |
 | sway       | `~/.config/sway`             |
+| swaylock   | `~/.config/swaylock`         |
+| mako       | `~/.config/mako`             |
 | waybar     | `~/.config/waybar`           |
+| wofi       | `~/.config/wofi`             |
 | latex      | `~/texmf/tex/latex`          |
 | bin        | `~/bin`                      |
 | okular     | `~/.config`                  |
@@ -233,7 +236,11 @@ Note the service name depends on launch flags: a `--unique` instance claims the 
 
 **Tabs vs. separate windows is not hardcoded** — the wrapper is mode-agnostic and both were tested. Flip it in Okular: Settings → Configure Okular → General → "Open new files in tabs" (`okularpartrc`, `[General] ShellOpenFileInTabs`). Toggle it *through the GUI*, not by editing the file, since Okular rewrites `okularpartrc` on exit and would clobber a hand edit. It governs only where *newly opened* documents land; already-open ones do not rearrange, so close Okular and let the next forward search reopen them.
 
-**Measured limitation, tabs mode:** a forward search into a *background* tab lands on the correct page but does **not** switch to that tab — you get no visible feedback until you switch, at which point it is already in the right place. Confirmed by triggering the exported `file_close` action over D-Bus and seeing which document vanished. There is no clean fix: Okular exports only 11 actions and none is tab-related (it *has* `activateNextTab` / `Switch to Tab %1` internally, just not on the bus); the one call that does activate a tab (`shell.openDocument`) always appends a new one, and `file_close` only closes the *active* tab, so the stale duplicate cannot be cleaned up. Key injection is out too — Okular here is a native Wayland client (`libqwayland.so`, not `libqxcb.so`), so `xdotool` cannot reach it, and `wtype` needs `zwp_virtual_keyboard_v1`, which GNOME does not implement. **Separate-windows mode is the likely fix if the silent jump ever grates, but it is unconfirmed.** There, each document gets its own process and so its own `/okularshell`, and `tryRaise()` was verified to succeed and to target the right window — but whether GNOME actually *raises* it was never tested. Doubt it: the wrapper passes an empty activation token (`tryRaise s ""`), and Wayland focus-stealing prevention will generally refuse to activate without a valid `xdg-activation-v1` token, marking the window as demanding attention instead. GNOME exposes no setting to relax this, and its `Introspect.ActivateWindow` D-Bus route is access-denied. Sway does have the knob — `focus_on_window_activation focus` — and its `layout tabbed` would supply the tab bar at the compositor level, so windows-mode-under-sway is the configuration most likely to give jump-and-show; untried, and both settings would need adding (`sway/config` has `layout tabbed` only as a commented-out binding). **Test before relying on any of this:** put both Okular windows behind the terminal, forward-search the one not on top, and see whether it comes forward or merely flashes in the dash.
+**Measured limitation, tabs mode:** a forward search into a *background* tab lands on the correct page but does **not** switch to that tab — you get no visible feedback until you switch, at which point it is already in the right place. Confirmed by triggering the exported `file_close` action over D-Bus and seeing which document vanished. There is no clean fix: Okular exports only 11 actions and none is tab-related (it *has* `activateNextTab` / `Switch to Tab %1` internally, just not on the bus); the one call that does activate a tab (`shell.openDocument`) always appends a new one, and `file_close` only closes the *active* tab, so the stale duplicate cannot be cleaned up. Key injection is out too — Okular here is a native Wayland client (`libqwayland.so`, not `libqxcb.so`), so `xdotool` cannot reach it, and `wtype` needs `zwp_virtual_keyboard_v1`, which GNOME does not implement. **Separate-windows mode is the likely fix if the silent jump ever grates, but it is unconfirmed.** There, each document gets its own process and so its own `/okularshell`, and `tryRaise()` was verified to succeed and to target the right window — but whether GNOME actually *raises* it was never tested. Doubt it: the wrapper passes an empty activation token (`tryRaise s ""`), and Wayland focus-stealing prevention will generally refuse to activate without a valid `xdg-activation-v1` token, marking the window as demanding attention instead. GNOME exposes no setting to relax this, and its `Introspect.ActivateWindow` D-Bus route is access-denied. **Settled under Sway on 2026-08-13 — and the answer closes the question rather than fixing it.** The hoped-for knob was sway's `focus_on_window_activation`, on the theory that sway would honour what GNOME refused. It does not apply: sway's **default is `urgent`**, so any activation request that arrives gets flagged urgent — and a recording of sway's `window`/`workspace` event stream across a real forward search into an off-screen Okular showed **zero `urgent=True` events**, alongside no focus change. The request is not being refused by the compositor; it is not reaching it at all. So the knob governs a request that never arrives, and setting it would change nothing.
+
+What *does* work, verified the same day: **the SyncTeX jump itself is fine.** With Okular parked on page 10 and the real wrapper invoked for line 1, the page moved to 1 and the wrapper exited 0. Only `tryRaise` silently no-ops.
+
+**Verdict: deliberately not fixed.** The failure does not occur in the way this machine is actually used (Okular sits beside Neovim on one workspace, so the jump is visible and no raise is needed); it only shows up when Okular is hidden. And every fix that would work costs more than the defect: `swaymsg '[app_id="org.kde.okular"] focus'` in the wrapper *would* raise it reliably — sway focusing its own window needs no activation token — but in the side-by-side layout that pulls keyboard focus out of Neovim on every `\lv`, trading a silent success for a disruptive one. A conditional variant (raise only when Okular is on another workspace) is ~8 lines and permanently couples a compositor-agnostic wrapper to sway, to buy a case that does not arise. If the silent jump ever does grate, the cheaper answer is feedback rather than focus — `notify-send` from the wrapper, which is now non-intrusive since mako auto-dismisses after 5s.
 
 ### The `okular` package — and what is deliberately excluded
 
@@ -328,15 +335,125 @@ source ~/.bashrc
 
 ## Sway/Waybar
 
-Sway uses vim-style navigation (hjkl). Mod4 (Super) is the primary modifier. Waybar config is JSON + `style.css`.
+Sway uses vim-style navigation (hjkl). Mod4 (Super) is the primary modifier. Waybar config is JSON + `style.css`. The binding grammar is stated at the top of `sway/config` itself — read that before adding a binding, and note that every motion is bound for **both** vim keys and arrow keys, deliberately.
 
-**Check which compositor is actually running before testing anything here.** As of 2026-07-26 the live session on `fedxps` is **GNOME** (`gnome-shell` running, `sway` not), even though sway and waybar are both installed and `sway --validate -c sway/config` passes. The config is stowed and ready, it just isn't what's booted. `pgrep -x gnome-shell` / `pgrep -x sway` settles it; `swaymsg` will fail confusingly under GNOME.
+**Sway is a `fedxps` -only environment (confirmed 2026-08-13).** `bigfed` runs a multi-monitor setup that sway does not suit, and sway is never booted there. So the sway/swaylock/mako packages are effectively single-machine, cross-machine drift is not a concern for them, and laptop-specific settings in them need no guard. (This is why `waybar/config` can hardcode `"device": "intel_backlight"` without consequence, and why the touchpad block and `$mod+m` need no no-touchpad fallback.)
+
+**`fedxps` dual-boots GNOME and Sway, so check which compositor is live before testing anything here.** `pgrep -x gnome-shell` / `pgrep -x sway` settles it; `swaymsg` fails confusingly under GNOME. Much of this repo's sway work was done from a GNOME session against `sway --validate` plus a headless nested sway (see "Verifying a sway config" below), which covers everything except what needs a real seat — locking, lid behaviour, and anything cursor- or notification-related.
 
 **The two bars do not share an accent, on purpose.** Sway's focused-window border is dodger blue (`$accent`, `#0088FF`); Waybar's active workspace is still forest green (`@accent`, `#228B22`). `sway/config` also defines `$forest #228B22`, unused, kept so the old accent can be swapped back in one word — don't "clean it up."
 
 Note `$mod+b` is a launcher here (Brave), not upstream sway's horizontal split; splits live on `$mod+Ctrl+h` / `$mod+Ctrl+v`. `$mod+v` was a VS Code launcher until 2026-08-09, when VS Code was uninstalled and the binding removed — the key is now **free**, and deliberately not rebound to the vertical split, so the split pair stays uniform under `$mod+Ctrl`.
 
-`waybar/config` hardcodes `"device": "intel_backlight"` — laptop-specific. On `bigfed` the backlight and battery modules simply don't render.
+`waybar/config` hardcodes `"device": "intel_backlight"` — laptop-specific, and harmless given sway is `fedxps`-only.
+
+**One urgent colour across the whole desktop.** `#d08770` is now the "something needs you" signal in four places: sway's `client.urgent` (via `$urgent`), Waybar's urgent workspace and `#battery.critical`, mako's `[urgency=critical]` border, and swaylock's wrong-password ring. Changing it means changing all four — they are deliberately not derived from one another, because they live in four different config languages.
+
+**`"interval"` in Waybar's clock is load-bearing if the format shows seconds.** It defaults to **60**, and Waybar polls on the minute — so `%T` rendered its seconds field as `00` permanently and the clock looked frozen rather than slow. `"interval": 1` fixes it (verified by diffing two `grim` captures of the clock region 1.6 s apart). This is the whole explanation for "GNOME ticks, Sway doesn't"; nothing about the format string was wrong.
+
+**Low-battery notifications come from Waybar itself, not a daemon.** `waybar-battery(5)`'s `events` object runs a command on entering a state (`on-discharging-warning` / `on-discharging-critical`), which is the mechanism the man page's own example uses for exactly this. So there is no timer, script, or background process to maintain — the module was already polling. The critical one is sent at `urgency=critical`, which mako is configured to keep on screen until dismissed.
+
+Note `{icon}` in a Waybar format requires a `format-icons` array of glyphs from an icon font. The battery module used `{icon}` with no such array until 2026-08-13, so it silently rendered nothing. This bar is deliberately all plain text — no icon font is installed — so `{icon}` was dropped rather than fed.
+
+**Waybar format strings take libfmt width specifiers, and that is the clean way to stop the right-hand modules reflowing.** `{capacity:>3}%` right-aligns the number in a 3-character field, so `0%`, `20%` and `100%` all render as a constant 4 characters. Combined with the monospace font that makes each module a fixed-width slot, so a value changing digit count no longer shoves its neighbours sideways — the same property that makes the clock sit still, achieved the same way (constant string length) rather than via CSS `min-width`. Applied to `pulseaudio`, `backlight` and `battery` on 2026-08-13.
+
+Worth knowing for the general case: GTK3 accepts `px`, `em` and `rem` for `min-width` but **rejects `ch`**, so a character-grid width cannot be expressed in CSS here — which is the other reason the format-string route is better. Source Code Pro's advance is exactly `0.6em` (measured: 8.89 px at 11pt ≈ 14.67 px), if a px calculation is ever needed.
+
+**A CSS parse error makes Waybar exit, and nothing tells you why.** Learned the hard way on 2026-08-13: an invalid property *value* in `style.css` left the session with **no bar at all**, and sway did not bring it back. The journal is no help — it logs `Using CSS file …` and then simply stops, with no error line and no coredump. So the failure looks like "the bar vanished", not "the stylesheet is wrong". **Parse-check before reloading**, which needs no display and no bar:
+
+```bash
+python3 -c 'import gi;gi.require_version("Gtk","3.0");from gi.repository import Gtk;Gtk.CssProvider().load_from_data(open("waybar/style.css","rb").read())'
+```
+
+Silence means it parses. This matters because Waybar is sway's bar (`swaybar_command`), so the blast radius of a typo here is the whole status bar.
+
+**Waybar is GTK3, and its CSS dialect is narrower than the web's.** Measured with the checker above: `font-feature-settings: "tnum"` is **accepted**, the CSS-spec form `font-feature-settings: "tnum" 1` is **rejected** ("Junk at end of value"), and `font-variant-numeric: tabular-nums` is not a recognised property at all. Don't assume a property that works in a browser works here.
+
+**The bar is monospace (Source Code Pro), matching WezTerm and Alacritty.** Adopted 2026-08-13, replacing the inherited GTK default (Adwaita Sans 11). The reasoning: the bar is almost entirely numbers — a clock and three percentages — so fixed advance widths suit its content, and aligning it with the terminals is a more useful allegiance than aligning it with GTK apps. Bar height was unchanged at 27px, so nothing reflowed. Reverting is deleting one `font-family` line.
+
+This also fixed an inconsistency introduced the same day: `tnum` had been applied to `#clock` only, so the centre of the bar had tabular digits while the right-hand percentages stayed proportional. Monospacing the whole bar makes that uniform, and leaves `tnum` redundant — it is kept anyway, documented in-line, precisely so that dropping `font-family` is a safe one-line revert rather than a silent return of the jitter.
+
+**The clock uses tabular figures for a measured reason.** With the default proportional font, the rendered time string changed width as the seconds ticked (145 ↔ 146 px), and because `clock` sits in `modules-center` that width change became visible horizontal jitter — the clock wobbled once a second. `font-feature-settings: "tnum"` on `#clock` gives every digit one advance width; re-measured across 8 consecutive seconds the string is now a constant 155 px at a constant offset. Monospacing the module would also have worked but would have changed the typeface; this does not.
+
+### Locking: swaylock + swayidle (added 2026-08-13)
+
+**The lock is `before-sleep` only — it is not an idle timer, and that distinction is the whole design.** `sway/config` ends with `exec swayidle -w before-sleep 'swaylock -f'`, which has **no `timeout` clause**, so it structurally cannot blank or lock during work. It exists to close one measured hole: logind's default `HandleLidSwitch=suspend` applies, so closing the lid suspends, and before this change reopening returned straight to an **unlocked** desktop (verified by closing the lid and reopening it). Screen blanking and idle timers remain declined — see "Deliberate omissions".
+
+- **`-w` (swayidle) with `-f` (swaylock) is the pairing the swayidle man page prescribes**, and both halves are load-bearing: `-f` detaches only once the screen is actually locked, and `-w` makes swayidle hold logind's inhibitor until that returns — so the machine cannot suspend with the desktop still on screen. logind caps that wait at `InhibitDelayMaxSec` (5 s here, read from `InhibitDelayMaxUSec` on the bus); swaylock comes up well inside it.
+- **`exec`, not `exec_always`** — a reload must not spawn a second swayidle. The consequence to remember: `swaymsg reload` does **not** start it, so after editing you must either re-login or run it by hand for the current session.
+- **Lock on demand is `$mod+Ctrl+l`**, not `$mod+l` — `l` is `$right`. This is the same collision that moved the exit binding off `$mod+Shift+l` on 2025-11-10.
+- **The `swaylock` package exists so the two call sites stay in sync.** swaylock is invoked from both the keybinding and the before-sleep hook; inline colour flags would drift, so both are a bare `swaylock -f` and everything cosmetic lives in `swaylock/config`.
+- **An unrecognised key makes swaylock exit**, which means *no lock at all* rather than a visibly broken one — a fail-open direction that is easy to miss. Every key in `swaylock/config` was checked against `man 1 swaylock` (54 documented long options) for that reason; re-check after a swaylock upgrade.
+- PAM is already correct on Fedora (`/etc/pam.d/swaylock` is `auth include login`, and non-setuid swaylock authenticates via the setuid `unix_chkpwd` helper). Verified live: password unlock works.
+
+### Notifications: mako (added 2026-08-13)
+
+**mako's `default-timeout` defaults to `0`, which means notifications never expire.** That is why the NetworkManager "Connection Established" popup used to sit on screen until clicked. `mako/config` sets `default-timeout=5000`.
+
+`ignore-timeout=1` is set alongside it and is **not redundant**: `default-timeout` only applies when the sender expresses no preference, so an application that asks to persist forever (`expire_timeout=0`) would still persist. `ignore-timeout` makes our policy win. The one case where persisting is correct is given back by a `[urgency=critical]` criteria section setting `default-timeout=0`.
+
+mako is **not** launched from `sway/config` — it is D-Bus activated via `/usr/share/dbus-1/services/fr.emersion.mako.service`, so it starts on the first notification and needs no `exec` line. It does **not** watch its config: apply changes with `makoctl reload` (exit 0 means accepted).
+
+### The launcher: wofi (styled 2026-08-13)
+
+`$mod+a` runs `wofi --show drun`. It went unstyled until 2026-08-13, which is the whole reason it looked like a stray GTK dialog rather than part of the desktop — there was no config at all, so it ran on bare defaults.
+
+wofi is GTK3, the same toolkit as Waybar, so **the same narrow CSS dialect applies** (no `ch` units, no `font-variant-numeric`, `"tnum" 1` rejected) and the same parse-check is the way to verify a change before trusting it:
+
+```bash
+python3 -c 'import gi;gi.require_version("Gtk","3.0");from gi.repository import Gtk;Gtk.CssProvider().load_from_data(open("wofi/style.css","rb").read())'
+```
+
+Palette and typeface deliberately match `waybar/style.css` — black, Waybar's forest-green `@accent` (not sway's blue), Source Code Pro, and a 3px border echoing sway's `default_border pixel 3`.
+
+Three behavioural settings matter more than the styling, and each fixes a real annoyance in bare wofi:
+
+- **`matching=fuzzy` + `insensitive=true`.** The default is a literal, case-*sensitive* substring match, which is most of why stock wofi feels obstinate — `gimp` will not find "GNU Image Manipulation Program" without this.
+- **`no_actions=true`** suppresses per-app `.desktop` actions ("New Window", "Private Browsing"), which roughly triple the list length.
+- **`hide_scroll=true`** removes a gutter that otherwise shifts the text; keyboard scrolling is unaffected.
+
+Deliberately no icons (`allow_images=false`), matching the text-only Waybar — no icon font is installed. `image_size` is set anyway so enabling them is a one-word change. Every key was validated against wofi(5)'s 63 documented options; the CSS node names (`#window`, `#input`, `#entry`, `#text`, …) come from its CSS SELECTORS section.
+
+wofi reads its config at launch, so there is nothing to reload — just run it again.
+
+### Verifying a sway config (2026-08-13)
+
+**`sway --validate` does not check the command body of a `bindsym`** — measured, and the reason a config can validate clean and still be broken. `bindsym $mod+Escape totallynotacommand` exits 0; the same bogus word as a top-level directive exits 1 with `Unknown/invalid command`. Sway defers binding commands to execution time, so a typo there fails **silently at runtime**, with no error anywhere. Validate does cover everything else, including stat-ing the `output bg` path (a bad wallpaper path is a hard load error, not a silent fallback).
+
+Two checks that close the gap:
+
+- **One command:** `swaymsg -- '<the command>'`. Distinguish the two failure classes in the reply — `Unknown/invalid command` is a real config bug; `Can't move an empty workspace`, `Cannot resize nothing`, `Scratchpad is empty` are *state* complaints that prove the command parsed and reached semantic evaluation.
+
+  **Automating that discrimination is trickier than it looks, and both obvious approaches are wrong** (found by mutation-testing `tests/desktop/run.sh`, 2026-08-13). Grepping the raw reply for `Unknown/invalid command` **never matches**: sway's IPC JSON escapes the slash, so the bytes actually read `Unknown\/invalid command` — a check written that way passes vacuously forever. And the `parse_error` field is **not** a discriminator either: sway sets `parse_error: true` for pure state failures too (`Scratchpad is empty` arrives with it set), so keying on it flags every valid command as broken. What works is decoding the JSON first and matching the decoded string:
+
+  ```bash
+  swaymsg -- '<cmd>' | jq -r 'any(.[]?; (.error // "") | test("Unknown/invalid command"))'
+  ```
+- **The whole file:** load it in a headless nested sway, which works fine from a GNOME session:
+  ```bash
+  WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 SWAYSOCK=/tmp/sway-test.sock \
+    sway -c /path/to/test.conf &
+  SWAYSOCK=/tmp/sway-test.sock swaymsg -t get_tree     # then swaymsg exit
+  ```
+  **Strip `include /etc/sway/config.d/*` from the copy you test first.** That include runs `/usr/libexec/sway-systemd/session.sh`, which sets `XDG_CURRENT_DESKTOP=sway` and `XDG_SESSION_TYPE=wayland` in the **live** systemd user and D-Bus environment — i.e. a test run would reach out and reconfigure the GNOME session you are sitting in. Strip startup `exec` lines too. All 83 bindings were verified this way on 2026-08-13: zero parse errors.
+
+**swaynag button flags are not interchangeable, and the difference is silent.** Only `-z` / `-Z` dismiss the nag; `-b` / `-B` run their action and **leave the bar on screen**. A "Cancel" button built with `-b ... 'true'` therefore does nothing visible — which is what `$mod+Shift+Escape` did until 2026-08-13. There is always a built-in dismiss button; `-s <text>` only renames it, so `-s 'Cancel'` is the correct way to get a working Cancel. Prefer `-B` over `-b`: `-b` routes its action through `$TERMINAL` when that variable is set (it is unset on both machines, so `-b` happened to work).
+
+**Waybar is launched as sway's bar (`bar { swaybar_command waybar }`), deliberately.** Sway respawns it if it dies and there is no duplicate-process problem on reload — the failure mode `exec_always waybar` has. The price: sway's own bar settings (`position`, `mode`, `hidden_state`, colors, font) are **dead config**, because Waybar ignores sway's bar protocol and reads `~/.config/waybar/config` instead. Sway currently believes that bar is `position: bottom, mode: dock` while Waybar renders at top. Nothing is wrong, but anything added to that `bar {}` block will silently do nothing — change Waybar's own config. This is also why `$mod+w` toggles visibility via `killall -SIGUSR1 waybar` rather than sway's `mode hide`. Sway appends `-b bar-0` to the command; Waybar ignores an unmatched bar id (verified — byte-identical startup with and without).
+
+**Regression suite:** `tests/desktop/run.sh` (24 checks, ~10 s) covers all five desktop configs — sway, waybar, swaylock, mako, wofi. It exists because this subsystem's failure modes are *silent and catastrophic*: a CSS typo removes the whole bar, an unknown swaylock key means no lock at all, and `sway --validate` ignores binding commands entirely. So the suite validates the sway config, rejects duplicate chords, checks every binary a binding names, **executes every non-exec binding command against a headless nested sway** (the gap validate leaves), parses both GTK3 stylesheets and the waybar JSON, validates every swaylock/mako/wofi key against that machine's own man pages (so it tracks the installed version rather than a snapshot), and holds the cross-config wiring in place: the `#d08770` urgent colour across all four languages, the two identical `swaylock -f` call sites, the absence of a `timeout` clause in the swayidle line, and agreement between the two `60-stow.sh` arrays.
+
+Two self-guards worth knowing: the CSS checker is proved non-vacuous by feeding it known-bad CSS, and the whole suite was mutation-verified — eleven single breaks, each caught by exactly its own check. Run it after editing any of the five configs.
+
+**The nested-sway config copy must have three things stripped, and the third one caused a real outage.** `include /etc/sway/config.d/*` (rewrites the live systemd/D-Bus environment) and startup `exec` lines are the obvious two. The third is the **`bar { swaybar_command waybar }` block**: a nested sway spawns its own Waybar, and attached to a headless compositor it cannot draw on, one was measured growing to **9.2 GB RSS / 34 GB virtual** and tripping the kernel OOM killer (2026-08-13, during a 12-iteration mutation run). The damage was not confined to the bar, because `assign-cgroups.py` had placed that Waybar in the **terminal's** systemd scope — so the OOM kill took down the whole WezTerm scope and closed every window in it (`app-org.wezfurlong.wezterm-….scope: Failed with result 'oom-kill'`). The suite now strips the bar block, asserts the stripped copy contains no `swaybar_command`, and asserts it leaks no processes; re-verified afterwards across 12 runs with a peak Waybar RSS of 57 MB. **General lesson: a test that starts a compositor starts everything that compositor's config starts.**
+
+### Deliberate omissions in `sway/config`
+
+Recorded in the config's own "Deliberate omissions" section so they aren't "fixed" later, and repeated here because they read as gaps:
+
+- **No idle timers and no screen blanking.** The screen stays on until dimmed by hand, because sway sessions here are long stretches of focused work — the same posture as leaving Caffeine on under GNOME. This is a standing decision, not an oversight, and the swayidle line in `sway/config` does **not** contradict it: that line has no `timeout` clause at all, only `before-sleep`, so it structurally cannot blank or lock mid-work. See "Locking: swaylock + swayidle" above for what it does do — and note the lid hole it closed is no longer open.
+- **No tabbed or stacking container layouts.** Unbound since 2025-11-10 — the bindings were clunky and the feature goes unused, since every app that needs tabs brings its own (WezTerm, browsers, Okular). Independent of `workspace_layout default`, which only governs how *new workspaces* start.
+- **No clock on the lock screen.** Mainline swaylock has none: `--clock` / `--timestr` / `--datestr` belong to `swaylock-effects`, a separate fork, so a real clock would mean replacing the packaged binary. Instead `indicator-idle-visible` keeps the ring on screen, which answers the actual question ("is the lock up, or is the machine off?") without a fork. Username and session detail are deliberately not displayed.
 
 ## Visual Consistency
 

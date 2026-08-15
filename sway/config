@@ -2,144 +2,191 @@
 # Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
 # Apply changes with `swaymsg reload` or $mod+Shift+c.
 #
+# Binding grammar, so it doesn't have to be inferred from the list below:
+#
+#   $mod+<letter>          launch or invoke a thing (mnemonic)
+#   $mod+hjkl  / arrows    move focus
+#   $mod+Shift+hjkl        move the focused window
+#   $mod+$alt+left|right   walk workspaces   (+Shift carries the window along)
+#   $mod+Ctrl+<key>        structural: container splits
+#   $mod+Shift+<key>       the heavier variant of the unshifted action
+#
+# Both vim keys and arrow keys are bound for every motion, on purpose -- the
+# parity is maintained deliberately, so add arrow variants to any new motion.
+#
+# Caution when editing: `sway --validate` does NOT check the command body of a
+# bindsym. A typo there passes validation and fails silently at runtime. Verify
+# bindings by running the command directly: `swaymsg -- <the command>`.
+#
 # Read `man 5 sway` for a complete reference.
 
+
 ### Variables
-#
-# Logo key. Use Mod1 for Alt.
+
 set $mod Mod4
 set $alt Mod1
-# Home row direction keys, like vim
+
+# Home row direction keys, like vim.
 set $left h
 set $down j
 set $up k
 set $right l
-# Your preferred terminal emulator
+
 set $term wezterm
-# Your preferred application launcher
 set $menu wofi --show drun
-# Application Launchers
-bindsym $mod+b exec brave-browser
-bindsym $mod+c exec google-chrome-stable
-bindsym $mod+d exec nautilus --new-window /home/bph/Desktop
-bindsym $mod+f exec nautilus --new-window
-bindsym $mod+x exec gnome-text-editor
+
 
 ### Output configuration
-#
-# Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /home/bph/Desktop/configs/wallpapers/monarch1080dark.png fill
-#
-# Example configuration:
-#
-#   output HDMI-A-1 resolution 1920x1080 position 1920,0
-#
-# You can get the names of your outputs by running: swaymsg -t get_outputs
 
-### Idle configuration
-#
-# Example configuration:
-#
-# exec swayidle -w \
-#          timeout 300 'swaylock -f -c 000000' \
-#          timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-#          before-sleep 'swaylock -f -c 000000'
-#
-# This will lock your screen after 300 seconds of inactivity, then turn off
-# your displays after another 300 seconds, and turn your screens back on when
-# resumed. It will also lock your screen before your computer goes to sleep.
+# `~` is expanded here (sway runs background paths through wordexp), and an
+# unreadable path is a hard config error rather than a silent fallback, so a
+# typo in this path fails loudly at load.
+output * bg ~/Desktop/configs/wallpapers/monarch1080dark.png fill
+
+# Additional outputs are auto-enabled and arranged left-to-right in connection
+# order. To pin one:  output HDMI-A-1 resolution 1920x1080 position 1920,0
+# Output names come from `swaymsg -t get_outputs`.
+
 
 ### Input configuration
-#
-# Example configuration:
-#
-   input type:touchpad {
-       dwt enabled
-       tap enabled
-       natural_scroll enabled
-       middle_emulation enabled
-   }
-#
-#   input type:keyboard {
-#       xkb_layout "eu"
-#   }
-#
-# You can also configure each device individually.
-# Read `man 5 sway-input` for more information about this section.
+
+# This block is LIVE, not an example. Devices can also be addressed
+# individually rather than by type -- see `man 5 sway-input`.
+input type:touchpad {
+    dwt enabled                 # disable-while-typing
+    tap enabled                 # tap to click
+    natural_scroll enabled
+    middle_emulation enabled
+}
+
 
 ### Key bindings
+
 #
-# Basics:
+# Session, power, and the bar
 #
-    # Start a terminal
-    bindsym $mod+Return exec $term
-    bindsym $mod+t exec $term
-
-    # Kill focused window
-    bindsym $mod+q kill
-
-    # Start your launcher
-    bindsym $mod+a exec $menu
-
-    # Drag floating windows by holding down $mod and left mouse button.
-    # Resize them with right mouse button + $mod.
-    # Despite the name, also works for non-floating windows.
-    # Change normal to inverse to use left mouse button for resizing and right
-    # mouse button for dragging.
-    floating_modifier $mod normal
-
-    # Toggle Waybar
-    bindsym $mod+w exec killall -SIGUSR1 waybar
-
-    # Reload the configuration file
     bindsym $mod+Shift+c reload
 
-    # Exit sway (logs you out of your Wayland session)
-    bindsym $mod+Escape exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
+    # swaynag gotcha: only -z/-Z buttons dismiss the nag; -b/-B run their action
+    # and leave the bar on screen. The dismiss button is built in -- `-s` only
+    # renames it, which is how "Cancel" below is made to actually cancel.
+    # Use -B rather than -b: -b routes the action through $TERMINAL when that
+    # variable is set, which is not wanted for either of these.
+    bindsym $mod+Escape exec swaynag -t warning -s 'Cancel' \
+        -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' \
+        -B 'Yes, exit sway' 'swaymsg exit'
 
-    # Power options (pick keys you like)
-    bindsym $mod+Shift+Escape exec swaynag -t warning -m 'Shut down?' -b 'Poweroff' 'systemctl poweroff' -b 'Cancel' 'true'
+    bindsym $mod+Shift+Escape exec swaynag -t warning -s 'Cancel' \
+        -m 'Shut down?' \
+        -B 'Poweroff' 'systemctl poweroff'
+
     #bindsym $mod+Shift+r exec systemctl reboot
 
+    # Lock on demand. Not $mod+l: that is `focus right` ($right = l) -- the same
+    # collision that moved the exit binding off $mod+Shift+l on 2025-11-10. The
+    # Ctrl tier is otherwise only the two split bindings, so `l` stays mnemonic.
+    # Appearance is in the swaylock package, not inline -- see swaylock/config.
+    bindsym $mod+Ctrl+l exec swaylock -f
+
+    # Toggle Waybar. Sway's own bar hiding (`mode hide`) does not work here
+    # because Waybar ignores sway's bar protocol and reads its own config, so
+    # the toggle goes through Waybar's SIGUSR1 handler instead. See ### Status
+    # bar below for why Waybar is launched as sway's bar in the first place.
+    bindsym $mod+w exec killall -SIGUSR1 waybar
 
 #
-# Moving around:
+# Launchers
 #
-    # Move your focus around
-    bindsym $mod+$left focus left
-    bindsym $mod+$down focus down
-    bindsym $mod+$up focus up
+    bindsym $mod+Return exec $term
+    bindsym $mod+t      exec $term
+    bindsym $mod+a      exec $menu
+    bindsym $mod+b      exec brave-browser
+    bindsym $mod+c      exec google-chrome-stable
+    bindsym $mod+d      exec nautilus --new-window ~/Desktop
+    bindsym $mod+f      exec nautilus --new-window
+    bindsym $mod+x      exec gnome-text-editor
+
+#
+# Windows
+#
+    bindsym $mod+q kill
+
+    # Make the focused window fullscreen
+    bindsym $mod+Shift+f fullscreen
+
+    # Toggle the focused window between tiling and floating
+    bindsym $mod+Shift+space floating toggle
+
+    # Swap focus between the tiling area and the floating area
+    bindsym $mod+space focus mode_toggle
+
+    # Drag floating windows with $mod + left mouse button, resize with $mod +
+    # right. Despite the name this also works on tiled windows. `inverse` swaps
+    # the two buttons.
+    floating_modifier $mod normal
+
+#
+# Focus
+#
+    bindsym $mod+$left  focus left
+    bindsym $mod+$down  focus down
+    bindsym $mod+$up    focus up
     bindsym $mod+$right focus right
-    # Or use $mod+[up|down|left|right]
-    bindsym $mod+Left focus left
-    bindsym $mod+Down focus down
-    bindsym $mod+Up focus up
-    bindsym $mod+Right focus right
 
-    # Move the focused window with the same, but add Shift
-    bindsym $mod+Shift+$left move left
-    bindsym $mod+Shift+$down move down
-    bindsym $mod+Shift+$up move up
+    bindsym $mod+Left   focus left
+    bindsym $mod+Down   focus down
+    bindsym $mod+Up     focus up
+    bindsym $mod+Right  focus right
+
+    # Select the parent container, so a whole column/row can be moved, resized,
+    # floated or fullscreened as a unit rather than one window at a time. Press
+    # $mod+p repeatedly to walk further up the tree. Rehomed to p (mnemonic, and
+    # free) because upstream's $mod+a is the launcher here.
+    #
+    # focus child is the inverse and is bound because the pair is what makes
+    # this usable: after going up, it returns to the window you came from,
+    # rather than having to steer back down with the direction keys.
+    bindsym $mod+p       focus parent
+    bindsym $mod+Shift+p focus child
+
+#
+# Moving windows
+#
+    bindsym $mod+Shift+$left  move left
+    bindsym $mod+Shift+$down  move down
+    bindsym $mod+Shift+$up    move up
     bindsym $mod+Shift+$right move right
-    # Ditto, with arrow keys
-    bindsym $mod+Shift+Left move left
-    bindsym $mod+Shift+Down move down
-    bindsym $mod+Shift+Up move up
-    bindsym $mod+Shift+Right move right
+
+    bindsym $mod+Shift+Left   move left
+    bindsym $mod+Shift+Down   move down
+    bindsym $mod+Shift+Up     move up
+    bindsym $mod+Shift+Right  move right
+
 #
-# Workspaces:
+# Workspaces
 #
-    # Switch workspace
+    # Walk workspaces on the current output. prev/next_on_output cycle only
+    # among workspaces that actually exist, so they skip unopened numbers.
     bindsym $mod+$alt+$left  workspace prev_on_output
     bindsym $mod+$alt+$right workspace next_on_output
-    bindsym $mod+$alt+Left  workspace prev_on_output
-    bindsym $mod+$alt+Right workspace next_on_output
+    bindsym $mod+$alt+Left   workspace prev_on_output
+    bindsym $mod+$alt+Right  workspace next_on_output
+
+    # Same, carrying the focused window along. `move container` does not follow
+    # focus, hence the second command in each chain. Verified correct including
+    # the case where the move empties (and so destroys) the current workspace.
     bindsym $mod+$alt+Shift+$left  move container to workspace prev_on_output; workspace prev_on_output
     bindsym $mod+$alt+Shift+$right move container to workspace next_on_output; workspace next_on_output
-    bindsym $mod+$alt+Shift+Left  move container to workspace prev_on_output; workspace prev_on_output
-    bindsym $mod+$alt+Shift+Right move container to workspace next_on_output; workspace next_on_output
+    bindsym $mod+$alt+Shift+Left   move container to workspace prev_on_output; workspace prev_on_output
+    bindsym $mod+$alt+Shift+Right  move container to workspace next_on_output; workspace next_on_output
 
-    # Switch to workspace
+    # Bounce back to the previously focused workspace. The third motion the
+    # $alt prev/next pair leaves missing: those two walk the row, this one
+    # returns to wherever you just were regardless of distance.
+    bindsym $mod+Tab workspace back_and_forth
+
+    # Jump to a workspace by number. Workspaces can carry any name, not just
+    # numbers; 1-10 is simply the default scheme.
     bindsym $mod+1 workspace number 1
     bindsym $mod+2 workspace number 2
     bindsym $mod+3 workspace number 3
@@ -150,7 +197,8 @@ output * bg /home/bph/Desktop/configs/wallpapers/monarch1080dark.png fill
     bindsym $mod+8 workspace number 8
     bindsym $mod+9 workspace number 9
     bindsym $mod+0 workspace number 10
-    # Move focused container to workspace
+
+    # Send the focused window to a workspace by number
     bindsym $mod+Shift+1 move container to workspace number 1
     bindsym $mod+Shift+2 move container to workspace number 2
     bindsym $mod+Shift+3 move container to workspace number 3
@@ -161,139 +209,183 @@ output * bg /home/bph/Desktop/configs/wallpapers/monarch1080dark.png fill
     bindsym $mod+Shift+8 move container to workspace number 8
     bindsym $mod+Shift+9 move container to workspace number 9
     bindsym $mod+Shift+0 move container to workspace number 10
-    # Note: workspaces can have any name you want, not just numbers.
-    # We just use 1-10 as the default.
+
 #
-# Layout stuff:
+# Layout
 #
     # Split the focused container. (Upstream's defaults were $mod+b / $mod+v;
     # those keys are launchers here, so splits moved to $mod+Ctrl+h / $mod+Ctrl+v.)
     bindsym $mod+Ctrl+h splith
     bindsym $mod+Ctrl+v splitv
 
-    # Switch the current container between different layout styles
+    # Tabbed and stacking container layouts are deliberately unbound, not
+    # forgotten: the keybindings were clunky and the feature goes unused, since
+    # every application that needs tabs here brings its own (WezTerm, browsers,
+    # Okular). Note this is a separate choice from `workspace_layout default`
+    # below, which only governs how *new* workspaces start -- restoring these
+    # bindings would not put a tab bar on anything by default.
     #bindsym $mod+s layout stacking
     # bindsym $mod+Shift+t layout tabbed
     # bindsym $mod+Shift+s layout toggle split
 
-    # Make the current focus fullscreen
-    bindsym $mod+Shift+f fullscreen
-
-    # Toggle the current focus between tiling and floating mode
-    bindsym $mod+Shift+space floating toggle
-
-    # Swap focus between the tiling area and the floating area
-    bindsym $mod+space focus mode_toggle
-
-    # Move focus to the parent container
-    #bindsym $mod+a focus parent
 #
-# Scratchpad:
+# Scratchpad
 #
-    # Sway has a "scratchpad", which is a bag of holding for windows.
-    # You can send windows there and get them back later.
-
-    # Move the currently focused window to the scratchpad
+    # The scratchpad is a bag of holding for windows: send one away, get it back
+    # later. With several inside, `scratchpad show` cycles through them.
     bindsym $mod+Shift+minus move scratchpad
-
-    # Show the next scratchpad window or hide the focused scratchpad window.
-    # If there are multiple scratchpad windows, this command cycles through them.
     bindsym $mod+minus scratchpad show
 
-# Toggle trackpad
-bindsym $mod+m input type:touchpad events toggle enabled disabled
+#
+# Hardware and media
+#
+    # --locked keeps these working while swaylock is up, so volume and
+    # brightness stay adjustable on a locked machine.
+    bindsym --locked XF86AudioMute        exec pactl set-sink-mute \@DEFAULT_SINK@ toggle
+    bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume \@DEFAULT_SINK@ -5%
+    bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume \@DEFAULT_SINK@ +5%
+    bindsym --locked XF86AudioMicMute     exec pactl set-source-mute \@DEFAULT_SOURCE@ toggle
+
+    bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
+    bindsym --locked XF86MonBrightnessUp   exec brightnessctl set 5%+
+
+    # Toggle the trackpad.
+    bindsym $mod+m input type:touchpad events toggle enabled disabled
 
 #
-# Resizing containers:
+# Screenshots
+#
+    # Whole screen -> file, landing in ~/Pictures as YYYYMMDD_HHhMMmSSs_grim.png.
+    #
+    # Measured 2026-08-13, because the man page misleads here: grim honours
+    # $GRIM_DEFAULT_DIR, but the **$XDG_PICTURES_DIR environment variable is
+    # ignored** -- setting it to a scratch directory still wrote to ~/Pictures.
+    # grim reads the pictures directory from ~/.config/user-dirs.dirs instead, so
+    # the man page's "falls back first to $XDG_PICTURES_DIR" names the value, not
+    # the variable. Two consequences: `export XDG_PICTURES_DIR=...` would do
+    # nothing, and exporting GRIM_DEFAULT_DIR from bash/.bashrc.d would not reach
+    # this binding either -- sway's children inherit the *session* environment,
+    # not an interactive shell's. Redirecting it would mean naming a path here.
+    bindsym Print exec grim
+
+    # Region -> clipboard, and region -> file. slurp prints the geometry; Esc
+    # cancels it.
+    #
+    # The guard is not decoration. Written the obvious way as
+    # `grim -g "$(slurp)" - | wl-copy`, cancelling the selection leaves an empty
+    # geometry, grim fails, and wl-copy still runs with nothing on stdin -- which
+    # silently WIPES the clipboard. Testing both the exit status and the string
+    # means a cancelled screenshot changes nothing at all.
+    bindsym Shift+Print exec sh -c 'g=$(slurp) && [ -n "$g" ] && grim -g "$g" - | wl-copy'
+    bindsym $mod+Print  exec sh -c 'g=$(slurp) && [ -n "$g" ] && grim -g "$g"'
+
+#
+# Resize mode
 #
 mode "resize" {
-    # left will shrink the containers width
-    # right will grow the containers width
-    # up will shrink the containers height
-    # down will grow the containers height
-    bindsym $left resize shrink width 10px
-    bindsym $down resize grow height 10px
-    bindsym $up resize shrink height 10px
+    # left/right shrink and grow width; up/down shrink and grow height
+    bindsym $left  resize shrink width 10px
+    bindsym $down  resize grow height 10px
+    bindsym $up    resize shrink height 10px
     bindsym $right resize grow width 10px
 
-    # Ditto, with arrow keys
-    bindsym Left resize shrink width 10px
-    bindsym Down resize grow height 10px
-    bindsym Up resize shrink height 10px
-    bindsym Right resize grow width 10px
+    bindsym Left   resize shrink width 10px
+    bindsym Down   resize grow height 10px
+    bindsym Up     resize shrink height 10px
+    bindsym Right  resize grow width 10px
 
     # Return to default mode
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
 bindsym $mod+r mode "resize"
-#
-# Utilities:
-#
-    # Special keys to adjust volume via PulseAudio
-    bindsym --locked XF86AudioMute exec pactl set-sink-mute \@DEFAULT_SINK@ toggle
-    bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume \@DEFAULT_SINK@ -5%
-    bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume \@DEFAULT_SINK@ +5%
-    bindsym --locked XF86AudioMicMute exec pactl set-source-mute \@DEFAULT_SOURCE@ toggle
-    # Special keys to adjust brightness via brightnessctl
-    bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
-    bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
-    # Special key to take a screenshot with grim
-    bindsym Print exec grim
 
-#
-# Status Bar:
-#
-# ~/.config/sway/config
+
+### Status bar
+
+# Waybar is launched as sway's bar rather than via `exec_always waybar`. The
+# trade-off, deliberately taken: sway respawns Waybar if it dies and there is no
+# duplicate-process problem on reload, but sway's own bar settings (position,
+# mode, hidden_state, colors, font) are dead config here -- Waybar ignores the
+# bar protocol and reads ~/.config/waybar/config instead. So do not add settings
+# to this block expecting them to take effect; change Waybar's own config.
+# Sway appends `-b bar-0` to this command; Waybar ignores an unmatched bar id.
+# Visibility is toggled with $mod+w -- see "Session, power, and the bar" above.
 bar {
     swaybar_command waybar
 }
 
-# Read `man 5 sway-bar` for more information about this section. Example config:
-#bar {
-#     position top
-#
-#    # When the status_command prints a new line to stdout, swaybar updates.
-#    # The default just shows the current date and time.
-#    status_command while date +'%Y-%m-%d %T'; do sleep 1; done
-#
-#    colors {
-#        statusline #ffffff
-#        background #323232
-#        inactive_workspace #32323200 #32323200 #5c5c5c
-#    }
-#}
 
-### Focus/Titlebars/Outlines
-# Remove titlebars and use a thicker outline
+### Appearance
+
+# No titlebars; a thicker outline carries the focus signal instead.
 default_border pixel 3              # tiling windows: border, no titlebar
 default_floating_border pixel 3     # floating windows too
 
-# Start new workspaces in split layout (no tab bar)
+# Hide borders when a workspace holds only one tiled window.
+smart_borders on
+
+# Start new workspaces in split layout (no tab bar).
 workspace_layout default
 
-# Palette
-# $accent is the live one: dodger blue. $forest is the retired forest-green accent,
-# kept so it can be swapped back by changing a single word below. Note that Waybar
-# is still on forest green (waybar/style.css), so the two deliberately differ.
+# Palette.
+# $accent is the live one: dodger blue. $forest is the retired forest-green
+# accent, kept so it can be swapped back by changing a single word below. Note
+# that Waybar is still on forest green (waybar/style.css), so the two
+# deliberately differ.
 set $forest #228B22
 set $accent #0088FF
+
+# $urgent is shared with the rest of the desktop on purpose: Waybar's urgent
+# workspace, mako's critical border, and swaylock's wrong-password ring all use
+# this same colour, so "something needs you" looks identical everywhere.
+set $urgent #d08770
 
 # Format: border  background  text  indicator  child_border
 client.focused          $accent  #000000 #ffffff $accent $accent
 client.focused_inactive #5f676a  #000000 #ffffff #5f676a #5f676a
 client.unfocused        #434c5e  #000000 #ffffff #434c5e #434c5e
-
-# (Optional) Hide borders when there is only one window
-smart_borders on
+client.urgent           $urgent  #000000 #ffffff $urgent $urgent
 
 
+### Deliberate omissions
+#
+# Recorded so they are not mistaken for oversights and "fixed" later:
+#
+# * No idle timers and no screen blanking. The screen stays on until dimmed by
+#   hand, because sway sessions here are long stretches of focused work. This is
+#   the same posture as leaving Caffeine on under GNOME. Note that the swayidle
+#   line under "Includes and startup" is NOT a timer -- it has no `timeout`
+#   clause at all, only `before-sleep`, so it can never blank or lock mid-work.
+#
+#   The hole this deliberately leaves closed as of 2026-08-13: logind's default
+#   HandleLidSwitch=suspend applies, so closing the lid suspends, and before
+#   2026-08-13 reopening it returned straight to an unlocked desktop (verified
+#   by test). The before-sleep hook now locks first.
+#
+# * No tabbed or stacking container layouts -- see the Layout section above.
 
 
+### Includes and startup
 
 include /etc/sway/config.d/*
 
-# NetworkManager secret agent — pulls 802.1x creds from gnome-keyring.
+# Lock the screen before the machine suspends -- and ONLY that. There is no
+# `timeout` clause, so this never blanks or locks during work; see "Deliberate
+# omissions" above. Without it, logind's HandleLidSwitch=suspend meant closing
+# the lid and reopening returned straight to an unlocked desktop.
+#
+# `-w` (swayidle) plus `-f` (swaylock) is the pairing the swayidle man page
+# prescribes: -f detaches only once the screen is actually locked, and -w makes
+# swayidle hold logind's inhibitor until then, so the machine cannot suspend
+# with the desktop still visible. logind caps that wait at InhibitDelayMaxSec
+# (5s here); swaylock comes up well inside it.
+#
+# `exec`, not `exec_always`: a reload must not spawn a second swayidle.
+exec swayidle -w before-sleep 'swaylock -f'
+
+# NetworkManager secret agent -- pulls 802.1x creds from gnome-keyring.
 # Fedora's /etc/xdg/autostart/nm-applet.desktop is meant to autostart it
 # under Sway via sway-xdg-autostart.target, but doesn't reliably fire here.
+# `exec`, not `exec_always`, so a reload does not stack up applets.
 exec nm-applet --indicator

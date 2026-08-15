@@ -9,12 +9,45 @@
 window#waybar {
   background-color: @bg;
   color: @fg;
+  /* Monospace, matching WezTerm and Alacritty (both Source Code Pro 12). This
+     bar is almost entirely numbers -- a clock and three percentages -- so fixed
+     advance widths suit it, and it aligns the bar with the terminals rather
+     than with GTK apps. Without this the bar inherits the GTK default
+     (Adwaita Sans 11, from gsettings, since there is no XSettings daemon under
+     sway and no ~/.config/gtk-3.0/settings.ini).
+     To revert: delete this font-family line -- nothing else depends on it. */
+  font-family: "Source Code Pro", monospace;
+  /* Bold everything. 600 is Semibold, which Source Code Pro ships as a real
+     designed face, so this is not a synthesised bold. Delete this line to go
+     back to the clock being the only bold element. */
+  font-weight: 600;
 }
 
 /* Center clock */
 #clock {
   color: @fg;       /* use @accent if you want it highlighted */
+  /* Same weight as the rest of the bar. Stated explicitly rather than
+     inherited, so that deleting the bar-wide `font-weight` above returns the
+     clock to being the only bold element -- its original design -- instead of
+     flattening the whole bar to regular. */
   font-weight: 600;
+  /* Tabular figures. REDUNDANT while the bar is monospace (Source Code Pro
+     already gives every digit one advance width) -- kept deliberately, because
+     it is what makes dropping the font-family above a safe one-line revert: without
+     it, going back to the proportional GTK default would silently reintroduce the
+     jitter this was added to fix. Delete both lines together or neither.
+
+     The original problem: with the proportional default font the rendered time
+     string changed width as the seconds ticked (measured: 145 <-> 146 px) and,
+     because this module is centred, that width change became visible horizontal
+     movement once per second.
+
+     Note the syntax: GTK3 accepts `"tnum"` but REJECTS the CSS-spec form
+     `"tnum" 1` ("Junk at end of value"). waybar treats a CSS parse error as
+     fatal -- it exits and sway is left with no bar at all -- so verify any
+     change here parses before reloading:
+       python3 -c 'import gi;gi.require_version("Gtk","3.0");from gi.repository import Gtk;Gtk.CssProvider().load_from_data(open("waybar/style.css","rb").read())' */
+  font-feature-settings: "tnum";
 }
 
 /* Workspaces (left) */
@@ -45,6 +78,19 @@ window#waybar {
   color: @fg;
   margin: 0 6px;
 }
-/* Icons have no glyph sidebearing, so visually they sit closer than text modules; bump margin to compensate. */
-#tray { margin: 0 10px; }
+/* The tray used to carry a wider margin (10px) because an icon has no glyph
+   sidebearing and so sits visually closer than a text module. That compensation
+   is now double-counted: the right-hand formats pad to a fixed field width
+   ({volume:>3}), which puts up to two leading spaces -- ~18px at this font --
+   between the icon and the digits. So the tray uses the shared margin, and drops
+   its right margin entirely -- that is the side facing the padded number, and
+   the padding is already doing the separating. */
+#tray { margin-right: 0; }
 #pulseaudio.muted { opacity: 0.6; }
+
+/* Battery thresholds. The class names come from "states" in waybar/config
+   (warning: 20, critical: 10); @urgent is the same colour sway, mako and
+   swaylock use for their own bad-news states, so this reads as one signal. */
+#battery.warning  { color: @urgent; }
+#battery.critical { color: @bg; background: @urgent; font-weight: 700; }
+#battery.charging { color: @accent; }

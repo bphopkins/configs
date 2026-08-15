@@ -6,12 +6,41 @@
   "modules-center": ["clock"],
   "modules-right":  ["tray", "pulseaudio", "backlight", "battery"],
 
-  "clock": { "format": "{:%Y-%m-%d %T}" },                 // 24-hr, your exact format
+  // 24-hr, seconds shown. "interval" is load-bearing: it defaults to 60, which
+  // polls once a minute on the minute -- so %S rendered as "00" forever and the
+  // seconds field looked frozen. 1 makes it actually tick.
+  "clock": {
+    "interval": 1,
+    "format": "{:%Y-%m-%d %T}"
+  },
+
   "backlight": {
     "device": "intel_backlight",
-    "format": "{percent}%"
+    "format": "{percent:>3}%"
   },
-  "pulseaudio": { "format": "{volume}%", "tooltip": false },
-  "battery": { "format": "{capacity}% {icon}" },
+
+  "pulseaudio": { "format": "{volume:>3}%", "tooltip": false },
+
+  // states -> CSS classes (#battery.warning / #battery.critical) in style.css.
+  // events -> commands run on entering a state; this is waybar's own documented
+  // mechanism, so low-battery notifications need no daemon or timer of their own.
+  // The critical one is urgency=critical, which mako is configured to keep on
+  // screen until dismissed -- exactly the case where persisting is correct.
+  //
+  // No {icon}: that placeholder needs a "format-icons" array of glyphs from an
+  // icon font, which was never defined here, so it rendered as nothing. The rest
+  // of this bar is plain text, so the battery is too. Charging is marked "+".
+  "battery": {
+    "interval": 30,
+    "states": { "warning": 20, "critical": 10 },
+    "format": "{capacity:>3}%",
+    "format-charging": "{capacity:>3}% +",
+    "tooltip-format": "{capacity}%  ({time})",
+    "events": {
+      "on-discharging-warning":  "notify-send -u normal 'Battery low' 'Below 20 percent.'",
+      "on-discharging-critical": "notify-send -u critical 'Battery critical' 'Below 10 percent -- plug in.'"
+    }
+  },
+
   "tray": { "icon-size": 16, "spacing": 8 }
 }

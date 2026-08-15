@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Sample BAT0 once a minute into a daily CSV on ~/Desktop.
+# Companion to battreport: battreport is a snapshot, battlog is the curve.
+# Runs until killed or the machine powers off. Safe to start twice (appends).
+B=/sys/class/power_supply/BAT0
+OUT=$HOME/Desktop/battery-log-$(date +%Y%m%d).csv
+UPDEV=$(upower -e | grep -m1 BAT)
+
+[ -s "$OUT" ] || echo "iso_time,status,capacity,charge_now_uAh,voltage_now_uV,current_now_uA,power_W,warning_level" > "$OUT"
+
+while :; do
+  st=$(<"$B"/status)
+  cap=$(<"$B"/capacity)
+  cn=$(<"$B"/charge_now)
+  vn=$(<"$B"/voltage_now)
+  cur=$(<"$B"/current_now)
+  pw=$(awk -v v="$vn" -v c="$cur" 'BEGIN{printf "%.2f", v*c/1e12}')
+  wl=$(upower -i "$UPDEV" 2>/dev/null | awk -F: '/warning-level/{gsub(/[[:space:]]/,"",$2); print $2}')
+  printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
+    "$(date -Iseconds)" "$st" "$cap" "$cn" "$vn" "$cur" "$pw" "$wl" >> "$OUT"
+  sync -f "$OUT"
+  sleep 60
+done

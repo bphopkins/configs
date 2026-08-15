@@ -1,0 +1,56 @@
+# mako -- stow-managed from ~/Desktop/configs/mako/config.
+# Edit it here, not at ~/.config/mako/config (that is a symlink into this repo).
+# Apply changes with `makoctl reload` -- mako does not watch this file.
+#
+# Why this file exists: mako's `default-timeout` defaults to **0**, which means
+# notifications never expire and sit there until clicked. That is why the
+# NetworkManager "Connection Established" popup stayed on screen after login.
+#
+# mako is not launched from sway/config -- it is D-Bus activated
+# (/usr/share/dbus-1/services/fr.emersion.mako.service), so it starts on the
+# first notification and needs no `exec` line.
+#
+# Syntax (man 5 mako): `option=value` at the top for globals, then optional
+# `[field=value]` criteria sections. Later matching sections win per-option.
+
+### Timeouts -- the reason this file exists
+
+# Dismiss after 5 seconds.
+default-timeout=5000
+
+# Honour OUR timeout rather than the sender's. Without this, an application that
+# asks to persist forever (expire_timeout=0) still would, and the setting above
+# would not help it -- `default-timeout` only applies when the sender expresses
+# no preference. The urgency rules below give back the one case where persisting
+# is actually correct.
+ignore-timeout=1
+
+### Appearance -- same palette as sway/config
+
+background-color=#000000
+text-color=#ffffff
+border-color=#0088FF
+border-size=3
+border-radius=0
+padding=12
+margin=10
+width=380
+anchor=top-right
+layer=overlay
+max-visible=5
+
+### Per-urgency policy
+
+# Background chatter: shorter, and in the muted border colour used by
+# client.unfocused in sway/config.
+[urgency=low]
+default-timeout=3000
+border-color=#434c5e
+
+# Genuinely urgent things wait for you. default-timeout=0 restores
+# never-expire, which `ignore-timeout` above would otherwise have overridden.
+# Border is Waybar's @urgent orange, so this reads as the same signal the bar
+# uses for an urgent window -- and the same one swaylock uses for a bad password.
+[urgency=critical]
+default-timeout=0
+border-color=#d08770

@@ -1,0 +1,48 @@
+# wofi -- stow-managed from ~/Desktop/configs/wofi/config.
+# Edit it here, not at ~/.config/wofi/config (that is a symlink into this repo).
+# Invoked from sway/config as `$menu` ($mod+a), defined as `wofi --show drun`.
+#
+# Syntax (man 5 wofi): snake_case key=value, one per line, `#` comments. Most
+# keys are the wofi(1) command-line flags in snake case. Every key below was
+# checked against wofi(5)'s 63 documented options.
+#
+# Deliberately plain: this is a list you scroll and type into, not a dashboard.
+# No icons, no multi-column grid, no action expansion.
+
+# drun = .desktop application entries (the same set GNOME's app grid shows),
+# as opposed to `run` which lists raw executables on PATH.
+show=drun
+
+# A tall, narrow list reads better than a wide one for scanning names.
+width=520
+height=460
+lines=12
+columns=1
+location=center
+
+prompt=Applications
+
+# Search behaviour. `contains` (the default) only matches a literal substring;
+# fuzzy lets "gimp" find "GNU Image Manipulation Program" and tolerates typos.
+# insensitive because nobody wants to hold Shift to find "Firefox".
+matching=fuzzy
+insensitive=true
+
+# No icons -- the rest of this desktop (Waybar especially) is deliberately
+# text-only, and no icon font is installed. Flip allow_images to true if you
+# ever want them; image_size is here so that switch is one word.
+allow_images=false
+image_size=24
+
+# Don't expand entries into their .desktop actions (e.g. "New Window",
+# "Private Browsing"). They roughly triple the list length for something rarely
+# wanted, and this launcher is meant to be scanned quickly.
+no_actions=true
+
+# The scrollbar adds a gutter that shifts the text; keyboard scrolling works
+# regardless.
+hide_scroll=true
+
+# Layer-shell overlay rather than a normal tiled window, so opening the
+# launcher never rearranges the workspace behind it.
+normal_window=false

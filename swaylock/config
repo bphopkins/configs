@@ -1,0 +1,74 @@
+# swaylock -- stow-managed from ~/Desktop/configs/swaylock/config.
+# Edit it here, not at ~/.config/swaylock/config (that is a symlink into this repo).
+#
+# Why this file exists rather than inline flags: swaylock is invoked from two
+# places in sway/config -- the $mod+Ctrl+l binding and swayidle's before-sleep
+# hook -- so inline colours would have to be kept in sync by hand. Both call
+# sites are a bare `swaylock -f`; everything cosmetic lives here.
+#
+# Syntax (man 1 swaylock): long option names with no leading dashes, `=` for
+# options that take an argument, bare name for flags. Colours are RRGGBB or
+# RRGGBBAA. An unrecognised key makes swaylock exit, which would mean NO LOCK
+# rather than a broken lock -- so keep keys verified against `man 1 swaylock`.
+#
+# Palette is deliberately the same as sway/config's:
+#   background #000000   accent (ring) #0088FF   text #ffffff
+#   verifying  #5f676a   (client.focused_inactive)
+#   wrong      #d08770   (Waybar's @urgent, so a failed unlock reads as the same
+#                         signal the bar uses for an urgent window)
+
+# Flat black, matching the client.* backgrounds in sway/config. Deliberately not
+# the wallpaper: a lock screen that depends on a file path gains a failure mode
+# for no security benefit.
+color=000000
+
+indicator-radius=100
+indicator-thickness=8
+show-failed-attempts
+
+# Keep the ring on screen instead of only revealing it on the first keypress.
+# Without this a locked machine is indistinguishable from a powered-off one,
+# which is disorienting -- you cannot tell the lock is there until you type.
+#
+# Note this is as far as mainline swaylock goes: it has no clock. The --clock /
+# --timestr / --datestr options belong to `swaylock-effects`, a separate fork,
+# so showing the actual time would mean replacing the packaged swaylock. Not
+# done -- the ring alone answers "is the lock screen up?", which was the point.
+# Deliberately no username or session detail on screen either.
+indicator-idle-visible
+
+# Idle / typing
+ring-color=0088FF
+inside-color=000000AA
+line-color=00000000
+separator-color=00000000
+text-color=ffffff
+key-hl-color=ffffff
+bs-hl-color=d08770
+
+# Verifying the password
+ring-ver-color=5f676a
+inside-ver-color=000000AA
+line-ver-color=00000000
+text-ver-color=ffffff
+
+# Wrong password
+ring-wrong-color=d08770
+inside-wrong-color=000000AA
+line-wrong-color=00000000
+text-wrong-color=ffffff
+
+# Input cleared
+ring-clear-color=ffffff
+inside-clear-color=000000AA
+line-clear-color=00000000
+text-clear-color=000000
+
+# Caps Lock is on -- worth shouting about, since it is the usual reason a
+# correct password is rejected.
+ring-caps-lock-color=d08770
+inside-caps-lock-color=000000AA
+line-caps-lock-color=00000000
+text-caps-lock-color=ffffff
+caps-lock-key-hl-color=d08770
+caps-lock-bs-hl-color=d08770
