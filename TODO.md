@@ -22,11 +22,24 @@ rather than inherit `/etc/bashrc`'s; and whether the aliases in `40-aliases.sh` 
 match how the machines are actually used.
 
 **Deliberate, not oversights:** `00-shell-opts.sh` and `30-prompt.sh` are *reserved
-empty slots*, not dead files. `90-nix.sh` is kept ready for Carnap development even
-though nix isn't installed. `.bashrc.min` / `.bash_profile.min` are rescue configs.
+empty slots*, not dead files. `90-nix.sh` is **load-bearing on bigfed**, where nix has
+been installed since 2025-03-05 and this file is the only thing putting it on PATH —
+bigfed is the machine that builds Carnap, and the Stage 3 build ran through it.
+`.bashrc.min` / `.bash_profile.min` are rescue configs.
 A `~/.config/environment.d` PATH drop-in was considered and **declined** — it would
 give PATH a second source of truth that wouldn't reproduce `20-path.sh`'s
 TeX-Live-first ordering.
+
+*Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
+Carnap development even though nix isn't installed" — false when written (2026-07-26),
+since nix had been on bigfed for seventeen months by then. It was written from fedxps,
+where nix genuinely is absent, and generalised without checking the other machine. The
+same claim appeared in `90-nix.sh` and `CLAUDE.md` and was corrected there on
+2026-08-17; **this third restatement was missed by that sweep and caught a day later**,
+which is the argument for the `grep -rn` step whenever a restated fact changes. Note the
+failure mode is not staleness but *unverified generalisation across machines*: a
+two-machine setup makes "on either machine" the easiest sentence to write and the
+hardest to check.
 
 ---
 
@@ -181,6 +194,69 @@ self-contradictory — it asserts both `$mod+Shift+hjkl = move the window` *and*
 `$mod+Shift+<key> = the heavier variant of the unshifted action`. Two rules for one
 modifier, the second vague enough to justify anything. It documents the mess rather than
 resolving it, and is part of why the scheme still reads murky.
+
+---
+
+## 7. A dedicated secret scan across the repos
+
+- [ ] Build a content-based secret scan. Decide first whether it belongs inside
+  `gpushall` or — the stated preference — as a separate command run across all of
+  `REPOS_DESKTOP` on its own schedule.
+
+Raised 2026-08-17 out of a full public-exposure audit of this repo (all 138 tracked files,
+the working tree, and all 89 commits / 376 blobs of history). **The audit found nothing to
+remove**: no key, token, JWT, IP, MAC, phone, address, student data, or third-party PII has
+ever been committed, in HEAD or in history. This item is about the *mechanism*, not a spill.
+
+**The gap, precisely.** `_gsync_vet_new_files` lists staged paths with
+
+```
+git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=AT -z
+```
+
+`AT` is **Added + Typechanged**. Modifications (`M`) to already-tracked files are never
+vetted — no size check, no glob check, no prompt. So a secret pasted into `CLAUDE.md`
+(78 KB of constantly-churning prose), `TODO.md`, or any `bash/.bashrc.d/*.sh` commits and
+pushes to a public remote in silence. Given this repo's file mix, that is the most
+realistic remaining leak path.
+
+**Do not "fix" it by adding `M` to the diff-filter.** The vet matches *filenames* against
+`GSYNC_SECRET_GLOBS`, and a modified file's name has not changed — it was already vetted
+when it was added. Re-globbing it every run buys nothing and would prompt on ordinary
+edits. Closing this needs a different instrument: a scan of the *content* of the staged
+diff.
+
+**Shape of the remedy, when it is built.** Scan added lines only (`diff --cached -U0`,
+`^+` minus `+++`) for high-signal patterns, and keep the list tight so it stays
+false-positive-free enough to be trusted: `BEGIN [A-Z ]*PRIVATE KEY`, `BEGIN CERTIFICATE`,
+provider prefixes (`ghp_`, `gho_`, `github_pat_`, `sk-ant-`, `sk-`+20, `AKIA`, `AIza`,
+`xox[abprs]-`, `glpat-`), JWTs (`eyJ` + two more dot-separated b64 segments), and
+`Authorization:\s*(Bearer|Basic)`. Prompt with the same `[[ -t 0 ]]`-gated y/N flow as the
+existing vet, and fail the same way it does — **closed**, refusing the commit if the
+listing itself errors. Extend `tests/gsync/` in step; note that a naive fixture will trip
+the scanner on the test file itself, which is exactly the false-positive shape to design
+against.
+
+**Two things already decided (2026-08-17), so they need no re-litigating:**
+
+- **`.gitignore` is the cheap second layer, and it was taken.** It had only the three
+  path-specific rules and now carries generic hygiene groups. That was not speculative:
+  `init.el~` (2025-10-30), `sway/config.save` (2025-11-09) and two nvim `*.bak` files
+  (2026-03-19) had *already* been committed and published by `git add -A`, and are still
+  in history. Ignore rules refuse where the vet only prompts, and they cover the
+  modified-file gap the vet structurally cannot see — but only for whole files, never for
+  a secret inside a legitimate one. Hence this item.
+- **The preference is a dedicated scan over `REPOS_DESKTOP`, not a `gpushall` bolt-on.**
+  `gpushall` is already the most safety-critical function here, guarded by 153 checks;
+  growing it has a cost. A separate command can also be run on demand and against repos
+  that are not being pushed.
+
+**Worth folding in while there:** `GSYNC_MAX_MB` is env-overridable, so a stray value in
+the environment silently relaxes the size guard (a non-numeric one already warns and falls
+back to 25; a numeric one does not). And the audit's other standing note — `~/.bashrc.d`,
+`~/.config/nvim/{lua,after}`, and each `~/texmf/tex/latex/<pkg>` are whole-**directory**
+symlinks into this repo, so anything a tool writes under those paths lands in the working
+tree with no further step. All are clean today.
 
 ---
 

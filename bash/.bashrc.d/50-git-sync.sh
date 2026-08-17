@@ -16,6 +16,13 @@
 # is not a tty) is unstaged, stays in the working tree, and will be flagged
 # again on the next run. Committed new files are listed in the output so
 # nothing enters a repo invisibly.
+#
+# Scope, deliberately: the vet matches FILENAMES, and only paths new to the
+# repo (--diff-filter=AT below). A secret pasted into an already-tracked file
+# is not checked, and adding M to that filter would not help -- a modified
+# file's name has not changed, so re-globbing it buys nothing and would prompt
+# on ordinary edits. .gitignore is the standing second layer; a content scan of
+# the staged diff is the real remedy, deferred as TODO.md item 7.
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(

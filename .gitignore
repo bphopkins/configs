@@ -11,3 +11,71 @@
 #               rewritten, mostly keyed to unsynced ~/Desktop/readings.
 okular/okularrc
 okular/docdata/
+
+# --- Editor and OS scratch --------------------------------------------------
+# Precedent, not hypothesis: `git add -A` has already published four of these —
+# init.el~ (2025-10-30), sway/config.save (2025-11-09), and two nvim *.bak files
+# (2026-03-19). Each was deleted later, but they remain in history.
+#
+# Two things sharpen this beyond the usual. Stow's default ignore list covers
+# *~ but NOT *.bak/*.save, so an ad-hoc backup left in a package is symlinked
+# into the live config tree as well as published. And ~/.bashrc.d,
+# ~/.config/nvim/{lua,after}, and each ~/texmf/tex/latex/<pkg> are whole-
+# DIRECTORY symlinks into this repo, so anything a tool writes under them lands
+# straight in the working tree.
+*~
+*.bak
+*.save
+*.old
+*.orig
+*.rej
+*.swp
+*.swo
+.*.sw?
+.DS_Store
+
+# --- Secrets: a second layer behind gpushall's vet --------------------------
+# The vet (GSYNC_SECRET_GLOBS in bash/.bashrc.d/50-git-sync.sh) prompts y/N;
+# these refuse outright. Kept deliberately in sync with that list, plus the
+# names it does not carry. Note the vet fires only on paths NEW to the repo,
+# so it cannot see a secret pasted into an already-tracked file — see TODO.md
+# item 7. Anything here can still be committed on purpose with `git add -f`.
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+*.jks
+*.gpg
+*.asc
+*.ovpn
+*.kubeconfig
+.netrc
+.npmrc
+.pypirc
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+known_hosts
+authorized_keys
+*credentials*
+*_token*
+
+# --- Build and tool artifacts -----------------------------------------------
+# latex/ is a live stow package, and tests/nvim-syntax/run.sh is the one test
+# that cd's into the repo (it opens tests/nvim-syntax/test.tex), so a LaTeX or
+# Python run can drop artifacts here.
+*.aux
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+*.out
+*.log
+ls-R
+__pycache__/
+*.pyc
