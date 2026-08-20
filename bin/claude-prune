@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""claude-prune — drop dead weight from the shared per-repo permission lists.
+
+    claude-prune             dry run: report what would go, change nothing
+    claude-prune --apply     write the pruned lists, appending to PRUNED.txt
+
+Run this AFTER `claude-link --adopt` on each machine. Adoption is deliberately
+lossless -- it unions the machine's own list into the shared one and cannot know
+which entries were previously dropped on purpose -- so the first adopt on a
+machine re-admits whatever was pruned before. Pruning is curation and is kept
+separate for that reason. Idempotent: once a repo's list is a symlink to the
+shared copy, there is nothing local left to re-admit.
+
+Nothing is silently lost: every dropped entry is appended to PRUNED.txt with the
+rule that caught it, and re-approving one in a session simply adds it back.
+"""
+import json, math, os, pathlib, re, sys
+
+CFG = pathlib.Path(os.environ.get("CLAUDE_LINK_CFG",
+                                  pathlib.Path.home()/"Desktop/org/claude-config"))
+APPLY = "--apply" in sys.argv[1:]
+for a in sys.argv[1:]:
+    if a not in ("--apply",):
+        sys.exit(f"claude-prune: unknown option {a}\n{__doc__}")
+
+NAMED = re.compile(r"""(?ix)(API[_-]?KEY|APIKEY|SECRET|TOKEN|PASSWORD|PASSWD|BEARER)
+                        \s*=\s*['"]?[A-Za-z0-9_\-./+=]{16,}""")
+CAND  = re.compile(r"[A-Za-z0-9_\-]{20,}")
+UUID  = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+
+def entropy(s):
+    return -sum((s.count(c)/len(s))*math.log2(s.count(c)/len(s)) for c in set(s))
+
+def secretish(tok):
+    """A bare high-entropy literal. Catches a key with no NAME= in front of it --
+    the form that a name-based scan misses, as `Bash(printf %s '<key>')` did."""
+    if UUID.match(tok) or tok.count("-") >= 4: return False
+    if not (re.search(r"[a-z]", tok) and re.search(r"[A-Z]", tok) and re.search(r"\d", tok)):
+        return False
+    return entropy(tok) > 3.9
+
+RULES = [
+ ("secret",      lambda e: bool(NAMED.search(e)) or any(secretish(t) for t in CAND.findall(e))),
+ ("literal-pid", lambda e: bool(re.search(r"\b(kill|pkill)\b[^)]*?\b\d{4,}\b", e))),
+ ("pid-echo",    lambda e: "$!" in e),
+ ("tmp-file",    lambda e: bool(re.search(r"/tmp/[^*)\s\"']*\.[A-Za-z0-9]{1,6}\b", e))
+                            or "/tmp/claude-1000/" in e),
+ ("tracked-var", lambda e: "__TRACKED_VAR__" in e),
+]
+
+def wildcard_prefixes(entries):
+    out = []
+    for e in entries:
+        m = re.match(r"^(\w+)\((.*)\)$", e)
+        if not m: continue
+        tool, arg = m.groups()
+        if arg.endswith(" *"):   out.append((tool, arg[:-1]))
+        elif arg.endswith(":*"): out.append((tool, arg[:-2]))
+    return out
+
+repos = sorted((CFG/"repos").rglob("settings.local.json")) if (CFG/"repos").is_dir() else []
+if not repos: sys.exit(f"claude-prune: no permission lists under {CFG/'repos'}")
+
+log, kept_tot, drop_tot = [], 0, 0
+for f in repos:
+    rel = f.relative_to(CFG/"repos").parent.as_posix()
+    try: doc = json.loads(f.read_text())
+    except Exception as exc:
+        print(f"  {rel}: unreadable ({exc}) — skipped"); continue
+    ents = (doc.get("permissions") or {}).get("allow") or []
+    pfx = wildcard_prefixes(ents)
+    keep, drop = [], []
+    for e in ents:
+        why = next((n for n, fn in RULES if fn(e)), None)
+        if not why:
+            m = re.match(r"^(\w+)\((.*)\)$", e)
+            if m and not m.group(2).endswith("*"):
+                tool, arg = m.groups()
+                if any(t == tool and arg.startswith(p) for t, p in pfx): why = "subsumed"
+        (drop.append((e, why)) if why else keep.append(e))
+    kept_tot += len(keep); drop_tot += len(drop)
+    if drop:
+        tally = {}
+        for _, w in drop: tally[w] = tally.get(w, 0) + 1
+        print(f"  {rel:<44} keep {len(keep):4d}  drop {len(drop):4d}  "
+              + ", ".join(f"{k}:{v}" for k, v in sorted(tally.items())))
+        log.append(f"\n### {rel}  ({len(drop)} dropped)\n")
+        for e, w in sorted(drop, key=lambda x: (x[1], x[0])):
+            safe = re.sub(r"[A-Za-z0-9_-]{20,}", "<REDACTED>", e) if w == "secret" else e
+            log.append(f"  [{w}] {safe}")
+    if APPLY and drop:
+        doc.setdefault("permissions", {})["allow"] = sorted(keep)
+        f.write_text(json.dumps(doc, indent=2) + "\n")
+
+print(f"\n  {'pruned' if APPLY else 'would prune'}: {drop_tot} of {kept_tot+drop_tot}"
+      f"  ({kept_tot} kept across {len(repos)} repos)")
+if APPLY and log:
+    p = CFG/"PRUNED.txt"
+    head = "" if p.exists() else "Permission entries removed by claude-prune.\n\n"
+    p.write_text((p.read_text() if p.exists() else "") + head
+                 + f"\n===== run: {os.uname().nodename} =====\n" + "\n".join(log) + "\n")
+    print(f"  appended to {p}")
+elif not APPLY and drop_tot:
+    print("  nothing written — re-run with --apply")
+sys.exit(1 if drop_tot else 0)

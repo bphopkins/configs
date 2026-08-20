@@ -1,0 +1,304 @@
+#!/usr/bin/env bash
+#
+# claude-link — point this machine's Claude Code configuration at the shared,
+# private copy in org/claude-config, so both machines run the same ecosystem.
+#
+#   claude-link              dry run: say what would change, change nothing
+#   claude-link --apply      create the symlinks
+#   claude-link --adopt      absorb this machine's existing files into
+#                            org/claude-config first (needed the first time on
+#                            a machine that already has memory/permissions)
+#   claude-link --unlink     reverse it: replace every symlink with a real copy
+#   claude-link --auto      silent, safe subset; run from the SessionEnd hook
+#
+# Exit: 0 nothing to do · 1 changes pending or made · 2 conflicts / errors
+#
+# This is a script, not a bash function, deliberately: a pull can never leave a
+# stale copy loaded in a running shell the way `60-stow.sh`'s arrays can.
+#
+# What it links (all derived from org/claude-config, nothing hardcoded):
+#   <cfg>/CLAUDE.md, settings.json, plans/, agents/, commands/, skills/,
+#   hooks/, output-styles/, rules/, workflows/  ->  ~/.claude/<same>
+#   <cfg>/memory/<scope>/                       ->  ~/.claude/projects/<scope>/memory
+#   <cfg>/repos/<path>/settings.local.json      ->  ~/Desktop/<path>/.claude/
+#   <cfg>/repos/<path>/CLAUDE.local.md          ->  ~/Desktop/<path>/
+#
+# It never deletes unique data. Adoption moves a file into org/claude-config or
+# backs it up; anything ambiguous is reported and skipped.
+
+set -uo pipefail
+
+CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
+CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
+DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
+STAMP=$(date +%Y%m%d-%H%M%S)
+BACKUP="$CC/link-backups/$STAMP"
+
+APPLY=0 ADOPT=0 UNLINK=0 AUTO=0
+for a in "$@"; do
+  case "$a" in
+    --apply)  APPLY=1 ;;
+    --adopt)  ADOPT=1; APPLY=1 ;;
+    --unlink) UNLINK=1; APPLY=1 ;;
+    --auto)   AUTO=1; APPLY=1 ;;
+    -h|--help) sed -n '2,28p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
+    *) echo "claude-link: unknown option $a (try --help)" >&2; exit 2 ;;
+  esac
+done
+
+if [ -t 1 ]; then
+  R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[34m'; D=$'\033[2m'; Z=$'\033[0m'
+else R= G= Y= B= D= Z=; fi
+ok()   { printf '  %s[ OK ]%s %s\n'  "$G" "$Z" "$*"; }
+lnk()  { printf '  %s[LINK]%s %s\n'  "$B" "$Z" "$*"; }
+adp()  { printf '  %s[ADPT]%s %s\n'  "$Y" "$Z" "$*"; }
+skp()  { printf '  %s[SKIP]%s %s\n'  "$D" "$Z" "$*"; }
+wrn()  { printf '  %s[WARN]%s %s\n'  "$Y" "$Z" "$*"; }
+err()  { printf '  %s[FAIL]%s %s\n'  "$R" "$Z" "$*"; }
+
+n_ok=0 n_link=0 n_adopt=0 n_skip=0 n_warn=0 n_fail=0
+
+# --------------------------------------------------------------- preflight --
+[ -d "$CFG" ] || { echo "claude-link: $CFG not found." >&2
+  echo "  Clone the org repo first, or set CLAUDE_LINK_CFG." >&2; exit 2; }
+[ -d "$CC" ]  || { echo "claude-link: $CC not found." >&2
+  echo "  Run 'claude' once so it creates the directory, then re-run." >&2; exit 2; }
+
+case "$CFG" in "$CC"/*) echo "claude-link: refusing — config dir is inside $CC" >&2; exit 2 ;; esac
+
+# --auto is for the SessionEnd hook: it must be silent, must only do what
+# cannot possibly need a decision, and must never write into a repo that is
+# mid-operation. Everything it does goes to a log instead of stdout.
+git_busy() {
+  local g="$1/.git"
+  [ -e "$g/rebase-merge" ] || [ -e "$g/rebase-apply" ] || [ -e "$g/MERGE_HEAD" ] \
+    || [ -e "$g/CHERRY_PICK_HEAD" ] || [ -e "$g/REVERT_HEAD" ] || [ -e "$g/BISECT_LOG" ]
+}
+if [ $AUTO = 1 ]; then
+  repo_root=$(cd "$CFG" && git rev-parse --show-toplevel 2>/dev/null) || repo_root=""
+  if [ -n "$repo_root" ] && git_busy "$repo_root"; then exit 0; fi
+  LOG="$CC/claude-link-auto.log"
+  exec >>"$LOG" 2>&1
+  R= G= Y= B= D= Z=
+  echo "--- $(date '+%Y-%m-%d %H:%M:%S') $(hostname -s) auto ---"
+fi
+echo "claude-link — $(hostname -s) — $([ $AUTO = 1 ] && echo AUTO || { [ $APPLY = 1 ] && echo APPLY || echo 'dry run'; })"
+echo "  config : $CFG"
+echo "  target : $CC"
+echo
+
+backup() {  # backup <file-or-dir>  — preserve before we touch it
+  local src=$1 rel=${1#"$HOME"/}
+  mkdir -p "$BACKUP/$(dirname "$rel")" 2>/dev/null
+  cp -a "$src" "$BACKUP/$rel" 2>/dev/null
+}
+
+# union_json_perms <into> <from>  — merge permission allowlists, sorted, unique
+union_json_perms() {
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+into, frm = sys.argv[1], sys.argv[2]
+def load(p):
+    try: return (json.load(open(p)).get("permissions") or {}).get("allow") or []
+    except Exception: return []
+a = load(into); b = load(frm)
+merged = sorted(set(a) | set(b))
+try: doc = json.load(open(into))
+except Exception: doc = {}
+doc.setdefault("permissions", {})["allow"] = merged
+json.dump(doc, open(into, "w"), indent=2); open(into, "a").write("\n")
+print(len(merged) - len(set(a)))
+PY
+}
+
+# union_index <into> <from>  — merge two MEMORY.md indexes by link target
+union_index() {
+  python3 - "$1" "$2" <<'PY'
+import re, sys, pathlib
+into, frm = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+def parse(p):
+    return p.read_text().splitlines() if p.exists() else []
+seen, out, added = set(), [], 0
+for line in parse(into) + parse(frm):
+    if line.startswith("- ["):
+        m = re.search(r"\]\(([^)]+)\)", line); k = m.group(1) if m else line
+        if k in seen: continue
+        seen.add(k); out.append(line)
+    elif line.strip() and line not in out:
+        out.append(line)
+before = len([l for l in parse(into) if l.startswith("- [")])
+into.write_text("\n".join(out) + "\n")
+print(len([l for l in out if l.startswith("- [")]) - before)
+PY
+}
+
+# link_one <src> <dst> <mode>   mode: file | dir | memdir | perms
+link_one() {
+  local src=$1 dst=$2 mode=$3 rel; rel=${dst/#$HOME/\~}
+
+  if [ $UNLINK = 1 ]; then
+    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+      rm "$dst" && cp -a "$src" "$dst" && { ok "unlinked, now a real copy: $rel"; n_ok=$((n_ok+1)); } \
+        || { err "could not unlink $rel"; n_fail=$((n_fail+1)); }
+    else skp "not our symlink: $rel"; n_skip=$((n_skip+1)); fi
+    return
+  fi
+
+  # already correct?
+  if [ -L "$dst" ]; then
+    if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+      n_ok=$((n_ok+1)); return
+    fi
+    wrn "symlink points elsewhere, leaving alone: $rel -> $(readlink "$dst")"
+    n_warn=$((n_warn+1)); return
+  fi
+
+  # nothing there: plain link
+  if [ ! -e "$dst" ]; then
+    if [ $APPLY = 1 ]; then
+      mkdir -p "$(dirname "$dst")" 2>/dev/null
+      ln -s "$src" "$dst" && { lnk "$rel"; n_link=$((n_link+1)); } \
+        || { err "could not link $rel"; n_fail=$((n_fail+1)); }
+    else lnk "would link $rel"; n_link=$((n_link+1)); fi
+    return
+  fi
+
+  # something real is in the way — adoption territory
+  if [ $ADOPT = 0 ]; then
+    wrn "exists and is not a link: $rel   (re-run with --adopt)"
+    n_warn=$((n_warn+1)); return
+  fi
+
+  backup "$dst"
+  case "$mode" in
+    perms)
+      local added; added=$(union_json_perms "$src" "$dst" 2>/dev/null || echo "?")
+      rm -f "$dst" && ln -s "$src" "$dst" \
+        && { adp "$rel  (+$added new permissions merged in)"; n_adopt=$((n_adopt+1)); } \
+        || { err "adopt failed: $rel"; n_fail=$((n_fail+1)); } ;;
+    memdir)
+      local moved=0 conflict=0 idx=0 f base
+      for f in "$dst"/*; do
+        [ -e "$f" ] || continue
+        base=$(basename "$f")
+        if [ "$base" = "MEMORY.md" ]; then
+          idx=$(union_index "$src/MEMORY.md" "$f" 2>/dev/null || echo 0); continue
+        fi
+        if [ -e "$src/$base" ]; then
+          cmp -s "$f" "$src/$base" || { cp -a "$f" "$src/$base.$(hostname -s)"; conflict=$((conflict+1)); }
+        else cp -a "$f" "$src/$base"; moved=$((moved+1)); fi
+      done
+      rm -rf "$dst" && ln -s "$src" "$dst" \
+        && { adp "$rel  (+$moved memories, +$idx index entries$([ $conflict -gt 0 ] && echo ", $conflict kept side-by-side"))"
+             n_adopt=$((n_adopt+1)); } \
+        || { err "adopt failed: $rel"; n_fail=$((n_fail+1)); } ;;
+    *)
+      if cmp -s "$dst" "$src"; then
+        rm -f "$dst" && ln -s "$src" "$dst" && { adp "$rel  (identical, replaced)"; n_adopt=$((n_adopt+1)); }
+      else
+        wrn "differs from the shared copy, backed up and skipped: $rel"
+        wrn "   yours: $BACKUP/${dst#"$HOME"/}"
+        n_warn=$((n_warn+1))
+      fi ;;
+  esac
+}
+
+# ------------------------------------------------------ 1. user-level config --
+echo "== ~/.claude =="
+for e in CLAUDE.md settings.json keybindings.json plans agents commands skills \
+         hooks output-styles rules workflows; do
+  [ -e "$CFG/$e" ] || continue
+  # directories union on adopt (memdir); MEMORY.md handling simply never fires
+  [ -d "$CFG/$e" ] && m=memdir || m=file
+  link_one "$CFG/$e" "$CC/$e" "$m"
+done
+echo
+
+# ------------------------------------------------------------- 2. memory ----
+# ---------------------------------------------------------------- harvest --
+# The link passes below are driven by what org/claude-config already contains,
+# so a scope this machine invented today would never be considered. Harvest
+# runs the other way: anything real here with NO counterpart in the shared copy
+# is moved in and linked back. That case cannot conflict, which is why --auto
+# is allowed to do it unattended. Anything that DOES have a counterpart is left
+# alone for a deliberate --adopt.
+harvest_one() {  # harvest_one <local-path> <shared-path> <label>
+  local here=$1 there=$2 label=$3
+  [ -e "$here" ] || return 0
+  [ -L "$here" ] && return 0
+  [ -e "$there" ] && return 0
+  if [ $APPLY = 0 ]; then adp "would harvest new $label"; n_adopt=$((n_adopt+1)); return 0; fi
+  mkdir -p "$(dirname "$there")" 2>/dev/null
+  if cp -a "$here" "$there" 2>/dev/null && rm -rf "$here" && ln -s "$there" "$here"; then
+    adp "harvested new $label -> shared"; n_adopt=$((n_adopt+1))
+  else
+    err "harvest failed: $label"; n_fail=$((n_fail+1))
+  fi
+}
+
+echo "== harvest =="
+for md in "$CC"/projects/*/memory; do
+  [ -e "$md" ] || continue
+  scope=$(basename "$(dirname "$md")")
+  harvest_one "$md" "$CFG/memory/$scope" "memory scope $scope"
+done
+while IFS= read -r -d '' f; do
+  d=$(dirname "$f"); repo_dir=$(dirname "$d")
+  rel=${repo_dir#"$DESK"/}; [ "$rel" = "$repo_dir" ] && rel=_desktop-root
+  harvest_one "$f" "$CFG/repos/$rel/settings.local.json" "permissions for $rel"
+done < <(find "$DESK" -maxdepth 7 \
+           \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
+              -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
+           -type f -path '*/.claude/settings.local.json' -print0 2>/dev/null)
+echo
+
+echo "== memory =="
+if [ -d "$CFG/memory" ]; then
+  for scope_dir in "$CFG"/memory/*/; do
+    [ -d "$scope_dir" ] || continue
+    scope=$(basename "$scope_dir")
+    # Pre-create the scope directory. link_one would do this too (it mkdir -p's
+    # the parent), so this is belt-and-braces -- verified by mutation: removing
+    # it changes no test outcome. What actually prevents the stow-style folding
+    # hazard is structural: the link target is always <scope>/memory, never
+    # <scope> itself, so a transcript directory can never become a symlink into
+    # the repo. Point it one level up and 7 checks in tests/claude/run.sh fail.
+    [ $APPLY = 1 ] && mkdir -p "$CC/projects/$scope"
+    link_one "$CFG/memory/$scope" "$CC/projects/$scope/memory" memdir
+  done
+fi
+echo
+
+# -------------------------------------------------------- 3. repo-level ----
+echo "== repos =="
+if [ -d "$CFG/repos" ]; then
+  while IFS= read -r -d '' f; do
+    rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel"); base=$(basename "$rel")
+    [ "$repo" = "_desktop-root" ] && target_dir="$DESK" || target_dir="$DESK/$repo"
+    if [ ! -d "$target_dir" ]; then
+      skp "$repo — not on this machine"; n_skip=$((n_skip+1)); continue
+    fi
+    case "$base" in
+      settings.local.json) link_one "$f" "$target_dir/.claude/$base" perms ;;
+      CLAUDE.local.md)     link_one "$f" "$target_dir/$base" file ;;
+    esac
+  done < <(find "$CFG/repos" -type f \( -name settings.local.json -o -name CLAUDE.local.md \) -print0 | sort -z)
+fi
+echo
+
+# ---------------------------------------------------------------- summary ----
+echo "== summary =="
+printf "  already correct : %d\n" "$n_ok"
+[ $n_link  -gt 0 ] && printf "  %s\n" "$([ $APPLY = 1 ] && echo "linked          : $n_link" || echo "would link      : $n_link")"
+[ $n_adopt -gt 0 ] && printf "  adopted         : %d\n" "$n_adopt"
+[ $n_skip  -gt 0 ] && printf "  skipped         : %d\n" "$n_skip"
+[ $n_warn  -gt 0 ] && printf "  %swarnings        : %d%s\n" "$Y" "$n_warn" "$Z"
+[ $n_fail  -gt 0 ] && printf "  %sfailures        : %d%s\n" "$R" "$n_fail" "$Z"
+[ -d "$BACKUP" ] && echo "  backups         : $BACKUP"
+if [ $APPLY = 0 ] && [ $AUTO = 0 ] && [ $n_link -gt 0 -o $n_warn -gt 0 ]; then
+  echo; echo "  Nothing was changed. Re-run with --apply (or --adopt if this machine"
+  echo "  already has memory or permission files of its own)."
+fi
+[ $n_fail -gt 0 ] && exit 2
+[ $n_link -gt 0 ] || [ $n_adopt -gt 0 ] && exit 1
+exit 0

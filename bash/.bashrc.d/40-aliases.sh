@@ -348,5 +348,8 @@ alias dissertate='cd ~/Desktop/dissertation && nvim'
 alias homepage='cd ~/Desktop/bphopkins.net && nvim'
 alias teach='cd ~/Desktop/teaching && nvim'
 alias nousowl='cd ~/Desktop/nousowl.net && nvim'
-alias cc='claude --model opus --effort max'
-alias ccf='claude --model fable --effort max'
+alias cc='claude --model "opus[1m]" --effort max'
+# 'fable' alone resolves to claude-fable-5 (standard context); the bracketed
+# form is the 1M-context variant, and is what settings.json already selects
+# for a bare `claude`. Quoted because [1m] is a glob pattern.
+alias ccf='claude --model "fable[1m]" --effort max'
