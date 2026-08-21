@@ -371,13 +371,33 @@ exit. Skip this step and the results invert: the single most-matched rule in the
 2026-08-20 pass was one auto mode had already stripped, so it never fired at all.
 
 **Count a rule as fired** if its content matches a command. Parse `Bash(<content>)`;
-content ending `:*`, ` *` or `*` is a prefix match, anything else an exact match. Test
-it against the whole command and against each sub-command after splitting on `&&`,
-`||`, `;` and `|`, since Claude Code requires every sub-command to be covered. Match
+content ending `:*`, ` *` or `*` is a prefix match, anything else an exact match. Match
 `Read(<glob>)` against the path with `fnmatch`. Two numbers are worth having: what
-fraction of *commands* a rule covered, and what fraction of *rules* ever fired. They
-diverge — in that pass rules covered 9.3% of commands while only 3.9% of rules had
-ever fired, because a handful of broad prefixes did all the work.
+fraction of *commands* a rule covered, and what fraction of *rules* ever fired — in
+that pass 3.9% of rules had ever fired, because a handful of broad prefixes did all
+the work.
+
+**Two things will inflate the coverage number if you skip them, and together they
+inflated it tenfold.** Split each command on `&&`, `||`, `;` and `|` and require
+**every** sub-command to be covered, not any one of them — Claude Code allows a
+pipeline only when all of it is allowed. Then net out the built-in read-only command
+list, which is auto-allowed in every permission mode and owes nothing to the
+allowlist:
+
+```
+ls cat head tail wc stat grep egrep fgrep diff du df echo strings hexdump od nl
+cut column tr tac rev cmp basename dirname realpath readlink sha256sum sha1sum
+md5sum cd
+```
+
+Measured loosely, the 2026-08-20 pass showed rules covering 9.3% of commands. Measured
+strictly and net of the built-ins: 10.2% of commands were entirely built-in and free
+regardless, **zero** were covered by allow rules alone, 11.1% ran without the
+classifier via built-ins and rules together — so the allowlist's marginal contribution
+was **0.9%**. Two of the three rules that appeared to do all the work, `Bash(grep:*)`
+and `Bash(cd *)`, are on the built-in list and were never doing anything. The built-in
+list is also why a shell-prefix allowlist for read-only utilities is not worth
+writing: almost everything a sane one would contain is already there.
 
 **Read rules need one extra step**: reads inside the session's own project root never
 need a rule, so compare each path against the scope's root first and count only the
@@ -390,8 +410,8 @@ sessions only, so it says nothing about how a list would behave if the mode chan
 back. Transcripts are per-machine, so a rule granted on the other box looks unused
 here — run it on both before deciding, or treat a zero as "unused on this machine".
 And the matcher above is an approximation of Claude Code's real prefix extractor,
-which parses command trees and resolves sub-commands; it will over-count matches
-slightly, never under-count them.
+which parses command trees and resolves sub-commands; it over-counts matches, never
+under-counts them — by a wide margin if the two corrections above are skipped.
 
 ### It maintains itself
 
@@ -469,6 +489,64 @@ Together these close both directions: local work is harvested up, and a scope pu
 from the other machine is linked down at the next session start. The steady state is
 `gpullall` … work … `gpushall`, with no Claude-specific command at all.
 
+### The lists are frozen once linked — measured, not inferred
+
+A repo's `.claude/settings.local.json`, once it is a symlink into `org/claude-config`,
+**can no longer be written**. Claude Code's settings writer opens with `O_NOFOLLOW`
+unless `allowSymlink` is set, and that flag is set only for `~/.claude/settings.json` —
+never for a repo's local file. So "Yes, and don't ask again" silently fails to persist
+in any linked repo.
+
+Verified 2026-08-20 by controlled experiment, after three earlier attempts failed on
+test design rather than on the mechanism:
+
+| repo | symlinked | same command, same prompt choice | grant persisted |
+|---|---|---|---|
+| `LogiKEy` | no | `curl …` → "don't ask again for: curl *" | **yes** |
+| `opuscula` | yes | identical | **no** |
+
+Both transcripts show the command running, so approval happened in both cases; only
+the write differed. The control is what makes it a result — an earlier run without one
+produced "no grant" for the mundane reason that the wrong prompt option had been
+chosen.
+
+Three traps that made this hard to test, each worth knowing on its own:
+
+- **A built-in read-only command list is auto-allowed in every permission mode.** The
+  list, and what it does to the coverage figures, is in "Measuring which entries still
+  earn their place" above — kept in one place because two copies would drift.
+- **A command with no side effect at all runs freely** regardless of mode — `uname -a`
+  is not on that list and still never prompts.
+- **Not every prompt yields a rule.** `touch /tmp/x` offers "grant access to /tmp",
+  which is a session-scoped sandbox grant and persists nowhere. Only a command-shaped
+  prompt — "Yes, and don't ask again for: `curl *`" — writes to `permissions.allow`.
+  Note that Claude Code proposes the **wildcard** itself, which is how broad grants
+  like `Bash(git *)` and `Bash(scp *)` accumulated.
+
+Consequence: the seven repos whose permission file was deleted in the 2026-08-20
+curation are the only ones where a grant can still land — and each stops accepting
+them the moment `SessionEnd` harvests the first one and links it.
+
+### The deny block, and what it does not reach
+
+`settings.json` carries `permissions.deny: ["Bash(git commit:*)", "Bash(git push:*)"]`.
+Only those two, deliberately: auto mode's own `Git Destructive` soft-deny already
+covers force-push, branch deletion and history rewrite, and its `Git Push Destination`
+**allow** rule is why an ordinary push needed denying — the classifier permits what
+CLAUDE.md forbids, and an instruction is not a machine guard.
+
+Verified live 2026-08-20: `git status --short` runs unprompted, `git commit --dry-run`
+and `git push --dry-run` are both refused as *"blocked by the permission layer"*, and
+the assistant declined in both cases to reshape the command to dodge the matcher —
+the classifier is separately told to catch exactly that circumvention.
+
+Two limits worth knowing. It is a **hard block, not a prompt**: asking for a commit
+explicitly does not get one, and the escape hatch in `CLAUDE.md` is therefore
+aspirational — undo is deleting the two lines. And matching is **prefix-based**, so
+`git -C <path> commit` does not match `Bash(git commit:*)`. Denying `Bash(git -C:*)`
+would fix that but would also block `git -C … status`, which is explicitly allowed, so
+the gap is left open and `CLAUDE.md` remains the backstop for intent.
+
 ### Two gitignore rules carry weight
 
 `~/.config/git/ignore` (machine-local, so it is *not* in this repo — keep both machines
@@ -484,7 +562,7 @@ in step by hand):
 
 ### Regression suite
 
-`tests/claude/run.sh` (89 checks, ~15 s, sandboxed under `$TMPDIR` with a fake `HOME`,
+`tests/claude/run.sh` (92 checks, ~15 s, sandboxed under `$TMPDIR` with a fake `HOME`,
 fake `org/claude-config` and fake `~/Desktop`; no network). Covers preflight refusals,
 dry-run inertness, linking, idempotency, adoption (union not overwrite; differing files
 backed up and skipped; conflicting memories kept side by side), harvest, `--auto`'s

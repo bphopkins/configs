@@ -239,6 +239,18 @@ else
   no "session-start.sh not found at $HOOKS"
 fi
 
+echo "== the hook ignores ephemeral scopes but not real ones =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  mkdir -p "$w/home/.claude/projects/-tmp-junk/memory"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "an unlinked /tmp scope does not warn"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  mkdir -p "$w/home/.claude/projects/-home-bph-Desktop-real/memory"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "  but a real unlinked scope does"      'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  yes_ "  and counts only the real one"        '[[ "$j" == *"1 memory scope"* ]]'
+fi
+
 echo "== SessionEnd hook =="
 if [ -x "$HOOKS/session-end.sh" ]; then
   w=$(mkworld)
