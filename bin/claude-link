@@ -222,6 +222,18 @@ echo
 # is moved in and linked back. That case cannot conflict, which is why --auto
 # is allowed to do it unattended. Anything that DOES have a counterpart is left
 # alone for a deliberate --adopt.
+# Scopes for ephemeral directories must never be harvested or linked. Claude
+# creates a project scope for whatever cwd a session runs in, including the
+# per-session scratchpad under /tmp -- and --auto would then move that empty
+# scope into the repo, permanently, once per temp session. Found 2026-08-20:
+# one had already appeared and been cleaned up by hand, and recurred the same day.
+ephemeral_scope() {
+  case "$1" in
+    -tmp-*|-var-tmp-*|-run-*|-dev-shm-*|-private-tmp-*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 harvest_one() {  # harvest_one <local-path> <shared-path> <label>
   local here=$1 there=$2 label=$3
   [ -e "$here" ] || return 0
@@ -240,6 +252,7 @@ echo "== harvest =="
 for md in "$CC"/projects/*/memory; do
   [ -e "$md" ] || continue
   scope=$(basename "$(dirname "$md")")
+  ephemeral_scope "$scope" && continue
   harvest_one "$md" "$CFG/memory/$scope" "memory scope $scope"
 done
 while IFS= read -r -d '' f; do
@@ -257,6 +270,7 @@ if [ -d "$CFG/memory" ]; then
   for scope_dir in "$CFG"/memory/*/; do
     [ -d "$scope_dir" ] || continue
     scope=$(basename "$scope_dir")
+    ephemeral_scope "$scope" && { skp "$scope — ephemeral directory, not linked"; n_skip=$((n_skip+1)); continue; }
     # Pre-create the scope directory. link_one would do this too (it mkdir -p's
     # the parent), so this is belt-and-braces -- verified by mutation: removing
     # it changes no test outcome. What actually prevents the stow-style folding

@@ -252,8 +252,8 @@ _gsync_vet_new_files() {
 # Parsed NUL-delimited: core.quotePath (default on) C-quotes non-ASCII names
 # in plain output, which would defeat the path matching below.
 _gsync_pull_hints() {
-  local name="$1" repo="$2" old="$3" st p q i bash_hit=0
-  [[ "$name" == configs ]] || return 0
+  local name="$1" repo="$2" old="$3" st p q i bash_hit=0 claude_hit=0
+  [[ "$name" == configs || "$name" == org ]] || return 0
   local toks=()
   while IFS= read -r -d '' p; do toks+=("$p"); done \
     < <(git -C "$repo" diff --name-status -z "$old" HEAD 2>/dev/null)
@@ -281,6 +281,10 @@ _gsync_pull_hints() {
         A* | C* | D | R* | T) ;;
         *) continue ;;
       esac
+      # A pulled-in memory scope or repo permission file has nothing linking it
+      # to ~/.claude yet. Structural changes only: an edited memory file needs
+      # no relink, a new scope does.
+      [[ "$name" == org && "$p" == claude-config/* ]] && claude_hit=1
       [[ "$p" == */* ]] || continue
       [[ -n "${is_pkg[${p%%/*}]:-}" ]] && pkg_hit[${p%%/*}]=1
     done
@@ -290,6 +294,17 @@ _gsync_pull_hints() {
   fi
   if ((${#pkg_hit[@]})); then
     _gsync_say HINT "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all (re-source first)"
+  fi
+  # claude-link --auto is narrow (it only acts where nothing can conflict) and
+  # idempotent, so running it here is safe. `|| true` is load-bearing: it exits
+  # 1 when it made changes, which under `set -e` would abort the pull.
+  if ((claude_hit)); then
+    if command -v claude-link >/dev/null 2>&1; then
+      claude-link --auto >/dev/null 2>&1 || true
+      _gsync_say HINT "org: claude-config changed — ran claude-link --auto (log: ~/.claude/claude-link-auto.log)"
+    else
+      _gsync_say HINT "org: claude-config changed — run: claude-link"
+    fi
   fi
 }
 

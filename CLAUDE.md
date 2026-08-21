@@ -211,6 +211,7 @@ Everything in `bin/` is stowed to `~/bin` and is on PATH via `20-path.sh`. This 
 - `tl-newyear` + `tl-{roots,check,compare,visdiff}.sh` — TeX Live release migration. See "TeX Live release upgrades" below.
 - `okular-forward` / `okular-inverse` — SyncTeX bridge between VimTeX and Okular. See below.
 - `claude-link` — links this machine's Claude Code configuration to the shared copy in `org/claude-config`. See "Claude Code configuration" below.
+- `claude-prune` — drops dead weight from the shared per-repo permission lists. Run it after `claude-link --adopt`; see the same section for why that ordering is not optional.
 - `claude-collect.sh` — one-shot inventory/collector, written to a flash drive during the 2026-08-20 two-machine merge. Kept because it is the tool for auditing what a machine holds that is *not* synced; re-runnable read-only on either box.
 - `sysinfo.sh` — root-run hardware/OS summary generator (`sudo ~/bin/sysinfo.sh`); writes an HTML fragment to a hard-bound `/home/bph/Desktop/sysinfo.html` for pasting into a website, and deliberately omits security-sensitive identifiers (serials, MAC addresses) — keep that property when editing. Moved here from the retired `scripts` repo 2026-08-04.
 
@@ -293,14 +294,16 @@ had no global `CLAUDE.md` at all.
 
 ### What is linked
 
-62 symlinks, all pointing into `org/claude-config`, all created by `claude-link`:
+Around sixty symlinks — the exact count moves as repos come and go, so ask
+`claude-link` rather than trusting a number written here. All point into
+`org/claude-config`; all are created by `claude-link`:
 
 | what | where it lands |
 |---|---|
 | `CLAUDE.md`, `settings.json`, `plans/` | `~/.claude/` |
 | `agents/ commands/ skills/ hooks/ output-styles/ rules/ workflows/` | `~/.claude/` |
-| `memory/<scope>/` (18) | `~/.claude/projects/<scope>/memory/` |
-| `repos/<path>/settings.local.json` (34) | `<repo>/.claude/` |
+| `memory/<scope>/`, one per project scope | `~/.claude/projects/<scope>/memory/` |
+| `repos/<path>/settings.local.json`, one per repo | `<repo>/.claude/` |
 
 Everything else in `~/.claude` — transcripts, `history.jsonl`, `file-history/`,
 `sessions/`, caches, `plugins/`, `.credentials.json`, about 62MB — stays machine-local
@@ -317,11 +320,78 @@ claude-link              # dry run — says what would change, changes nothing
 claude-link --apply      # create the links
 claude-link --adopt      # first run on a machine that already has its own memory
 claude-link --unlink     # reverse it; keeps the merged content
+
+claude-prune             # dry run over the shared permission lists
+claude-prune --apply     # drop the dead weight, logging each drop to PRUNED.txt
 ```
+
+**`claude-prune` must follow the first `--adopt` on each machine, and this is not
+optional.** Adoption is deliberately *lossless*: it unions the machine's own permission
+list into the shared one and cannot know which entries were previously dropped on
+purpose, so the first adopt re-admits every one of them — **including a secret**. Both
+live runs proved it: bigfed went 1637 → 1878 on adopt and back to 1637 on prune, fedxps
+1637 → 1811 → 1637. Landing on the same number from two different directions is the
+evidence that both passes are deterministic. Afterwards there is nothing local left to
+re-admit, and `claude-prune` reports `0 of N` forever.
+
+Prune rules: `secret` (a `NAME=value` credential, **or a bare high-entropy literal** —
+that second rule exists because a name-based scan missed `Bash(printf %s '<key>')`),
+`literal-pid`, `pid-echo`, `tmp-file`, `tracked-var`, and `subsumed` (an exact command
+already covered by a wildcard in the same list). Every drop is appended to `PRUNED.txt`
+with its rule; re-approving one in a session simply adds it back.
 
 It is a script rather than a bash function on purpose: a pull can never leave a stale
 copy loaded in a running shell, which is the trap `stow-all` has with `60-stow.sh`.
 `stow-all` covers this repo only and does not touch Claude configuration.
+
+### Measuring which entries still earn their place
+
+`claude-prune` only catches what is mechanically dead. Deciding whether a *live* entry
+is still worth carrying is a measurement, and the transcripts hold the evidence. This
+is the procedure used on 2026-08-20 to take 1628 entries to 92; repeat it when the
+list has drifted again.
+
+**The corpus** is `~/.claude/projects/<scope>/*.jsonl` — one directory per project
+scope, machine-local and untracked, so each machine holds only its own history. Each
+line is a JSON message; tool calls appear as `tool_use` blocks inside `message.content`.
+Take `input.command` from the ones named `Bash`, and `input.file_path` from `Read`.
+
+**Split the sessions by permission mode**, because the answer differs sharply either
+side of the line. Scan each transcript for a `permissionMode` field at any depth and
+count the session as auto mode if any occurrence is `auto`. Auto became the default
+here on 2026-08-10; before that the modes were `default` and `acceptEdits`, where an
+allowlist genuinely does suppress prompts. Only the auto-mode sessions answer the
+question being asked.
+
+**Drop the rules auto mode strips before computing anything.** On entering auto mode,
+Claude Code removes "classifier-bypassing" allow rules — `Bash(*)` and any rule whose
+prefix is an interpreter or shell (`python`, `node`, `bash`, `sh`, `ssh`, `perl`,
+`eval`, `exec`, `env`, `xargs`, `sudo`, `npx`, `npm run` …) — and restores them on
+exit. Skip this step and the results invert: the single most-matched rule in the
+2026-08-20 pass was one auto mode had already stripped, so it never fired at all.
+
+**Count a rule as fired** if its content matches a command. Parse `Bash(<content>)`;
+content ending `:*`, ` *` or `*` is a prefix match, anything else an exact match. Test
+it against the whole command and against each sub-command after splitting on `&&`,
+`||`, `;` and `|`, since Claude Code requires every sub-command to be covered. Match
+`Read(<glob>)` against the path with `fnmatch`. Two numbers are worth having: what
+fraction of *commands* a rule covered, and what fraction of *rules* ever fired. They
+diverge — in that pass rules covered 9.3% of commands while only 3.9% of rules had
+ever fired, because a handful of broad prefixes did all the work.
+
+**Read rules need one extra step**: reads inside the session's own project root never
+need a rule, so compare each path against the scope's root first and count only the
+out-of-root ones. Two thirds of reads were in-root, and the whole `/dev`, `/proc`,
+`/sys`, `/etc`, `/usr`, `/var` group turned out never to have been touched by the Read
+tool at all — those trees are reached through Bash, which Read rules do not govern.
+
+**Three caveats, all of which understate what should be cut.** It sees auto-mode
+sessions only, so it says nothing about how a list would behave if the mode changed
+back. Transcripts are per-machine, so a rule granted on the other box looks unused
+here — run it on both before deciding, or treat a zero as "unused on this machine".
+And the matcher above is an approximation of Claude Code's real prefix extractor,
+which parses command trees and resolves sub-commands; it will over-count matches
+slightly, never under-count them.
 
 ### It maintains itself
 
@@ -338,6 +408,54 @@ Two hooks in `settings.json`, both living in `org/claude-config/hooks/`:
   `settings.json` has stopped resolving into `org/claude-config`, or if memory scopes
   remain unadopted. No `python3` dependency, sets its own `PATH`, escapes its output,
   15 ms.
+
+  **The two output channels are not interchangeable, and getting this wrong makes the
+  check useless.** `additionalContext` is documented in the binary as *"Text injected
+  into model context"* — the user never sees it. `systemMessage` is *"Display a message
+  to the user"*. The health check emitted only `additionalContext` until 2026-08-20, so
+  a broken link warned the assistant and nobody else. Warnings now go to both.
+
+**Ephemeral scopes are excluded, and this was a real bug.** Claude creates a project
+scope for whatever cwd a session runs in — including the per-session scratchpad under
+`/tmp/claude-1000/…`. `--auto` harvested one into the repo on 2026-08-20, and after it
+was cleaned up by hand it recurred the same day. `claude-link` now skips any scope whose
+mangled name begins `-tmp-`, `-var-tmp-`, `-run-`, `-dev-shm-` or `-private-tmp-`, in
+both the harvest and the link pass. Without the guard, six checks in `tests/claude`
+fail.
+
+**Conditional rules key on `paths:`, not `globs:`** — and getting it wrong fails
+*silently*. `globs` is only the internal field name; a rule file that uses it loads
+unconditionally with no error at all. Verified live against 2.1.238: with `paths:`, a
+`.txt` read leaves a LaTeX rule out and a `.tex` read pulls it in, deterministically
+across four runs. Patterns are gitignore-style, matched against the path relative to the
+project root. One consequence worth designing around: a conditional rule fires on **file
+access**, so a session that runs `latexmk` without first reading a `.tex` never loads it
+— anything that must always bind belongs in an unconditional rule file regardless.
+
+**Verifying the hooks actually fire is not obvious, because a healthy run is
+indistinguishable from no run at all** — `SessionEnd` is silent by contract and
+`SessionStart` emits nothing when everything resolves. Both were confirmed live on
+2026-08-20, and these are the two checks to repeat if a Claude update ever makes them
+look inert:
+
+- **`SessionEnd`**: open a session, close it, and check that
+  `~/.claude/claude-link-auto.log` gained a `--- <timestamp> <host> auto ---` entry.
+  Three quick open/close cycles produced exactly three entries.
+- **`SessionStart`**: break one link on purpose — `rm ~/.claude/CLAUDE.md` and put a
+  plain file there — then open a session. The `systemMessage` should appear in the UI,
+  not merely in the model's context. Restore with `claude-link --apply`. Do **not**
+  infer this one from `SessionEnd` working: they are separate entries, and a healthy
+  `SessionStart` is silent, so a malformed one fails invisibly.
+
+A third trigger lives outside Claude entirely: **`_gsync_pull_hints` in
+`50-git-sync.sh` runs `claude-link --auto` when a pull or rebase changes
+`claude-config/`**, and says so on the same `[HINT]` channel as the `configs:` hints.
+It fires for `gpullall`, `gpull org`, `gpushall` and `gpush org` alike, because both
+per-repo helpers call it. This closes an edge case the SessionEnd hook cannot: a memory
+scope pulled from the other machine had nothing linking it until some session happened
+to end, so working in that scope first would create a real directory and a conflict.
+The `|| true` on that call is load-bearing — `claude-link` exits 1 when it makes
+changes, which under `set -e` would abort the pull.
 
 Together these close both directions: local work is harvested up, and a scope pulled
 from the other machine is linked down at the next session start. The steady state is
@@ -358,12 +476,14 @@ in step by hand):
 
 ### Regression suite
 
-`tests/claude/run.sh` (65 checks, ~10 s, sandboxed under `$TMPDIR` with a fake `HOME`,
+`tests/claude/run.sh` (84 checks, ~15 s, sandboxed under `$TMPDIR` with a fake `HOME`,
 fake `org/claude-config` and fake `~/Desktop`; no network). Covers preflight refusals,
 dry-run inertness, linking, idempotency, adoption (union not overwrite; differing files
 backed up and skipped; conflicting memories kept side by side), harvest, `--auto`'s
 narrowness and silence, the busy-repo guard across all five in-progress git states,
-`--unlink`, foreign symlinks, and both hooks including hostile-hostname JSON escaping.
+`--unlink`, foreign symlinks, both hooks including hostile-hostname JSON escaping and the
+`systemMessage`/`additionalContext` split, and that the gsync hint fires on a new scope
+but not on a mere edit.
 
 Mutation-verified. Note one honest result: removing the explicit scope-directory
 `mkdir` changes **no** test outcome, because `link_one` creates the parent itself. The

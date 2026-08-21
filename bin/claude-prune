@@ -33,7 +33,13 @@ def entropy(s):
 
 def secretish(tok):
     """A bare high-entropy literal. Catches a key with no NAME= in front of it --
-    the form that a name-based scan misses, as `Bash(printf %s '<key>')` did."""
+    the form that a name-based scan misses, as `Bash(printf %s '<key>')` did.
+
+    Expect false positives: on the 2026-08-20 merge this flagged 4 entries, of
+    which 1 was the real key and 3 were a nix store hash, a zip filename and an
+    ffmpeg argument. That was acceptable because all three were dead one-off
+    commands, but a run that flags something you still want is not a bug in the
+    entry -- check PRUNED.txt and re-approve it in a session if so."""
     if UUID.match(tok) or tok.count("-") >= 4: return False
     if not (re.search(r"[a-z]", tok) and re.search(r"[A-Z]", tok) and re.search(r"\d", tok)):
         return False

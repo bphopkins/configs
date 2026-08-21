@@ -138,6 +138,22 @@ yes_ "  and linked back"                  '[ -L "$w/home/.claude/projects/-brand
 yes_ "new repo perms promoted"            '[ -f "$w/cfg/repos/newrepo/settings.local.json" ]'
 yes_ "  and linked back"                  '[ -L "$w/desk/newrepo/.claude/settings.local.json" ]'
 
+echo "== ephemeral scopes are never harvested or linked =="
+w=$(mkworld)
+for e in -tmp-scratch -var-tmp-x -run-user-1000-y; do
+  mkdir -p "$w/home/.claude/projects/$e/memory"; printf 'junk\n' > "$w/home/.claude/projects/$e/memory/j.md"
+done
+mkdir -p "$w/cfg/memory/-tmp-already-there"; printf 'x\n' > "$w/cfg/memory/-tmp-already-there/x.md"
+out=$(run "$w" --auto)
+not_ "/tmp scope not harvested"           '[ -e "$w/cfg/memory/-tmp-scratch" ]'
+not_ "/var/tmp scope not harvested"       '[ -e "$w/cfg/memory/-var-tmp-x" ]'
+not_ "/run/user scope not harvested"      '[ -e "$w/cfg/memory/-run-user-1000-y" ]'
+yes_ "  the local copies are left alone"  '[ -f "$w/home/.claude/projects/-tmp-scratch/memory/j.md" ] && [ ! -L "$w/home/.claude/projects/-tmp-scratch/memory" ]'
+out=$(run "$w" --apply)
+not_ "an ephemeral scope in the shared tree is not linked either" '[ -L "$w/home/.claude/projects/-tmp-already-there/memory" ]'
+yes_ "  and it says why"                  '[[ "$out" == *"ephemeral directory"* ]]'
+yes_ "real scopes still link"             '[ -L "$w/home/.claude/projects/-shared/memory" ]'
+
 echo "== --auto is narrow and silent =="
 w=$(mkworld)
 mkdir -p "$w/home/.claude/projects/-brand-new/memory"; printf 'f\n' > "$w/home/.claude/projects/-brand-new/memory/n.md"
@@ -222,6 +238,43 @@ if [ -x "$HOOKS/session-end.sh" ]; then
   check "exits 0 with claude-link absent" "$rc" "0"
 else
   no "session-end.sh not found at $HOOKS"
+fi
+
+echo "== SessionStart speaks to the user, not just the model =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "healthy: no systemMessage"        'echo "$j" | python3 -c "import json,sys;sys.exit(0 if \"systemMessage\" not in json.load(sys.stdin) else 1)"'
+  rm "$w/home/.claude/CLAUDE.md"; printf 'stray\n' > "$w/home/.claude/CLAUDE.md"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "broken: systemMessage present"    'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  yes_ "  and still valid JSON"           'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
+  yes_ "  model context kept too"         'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin)[\"hookSpecificOutput\"][\"additionalContext\"] else 1)"'
+fi
+
+echo "== gpullall wires up what it pulls =="
+GS="$REPO/bash/.bashrc.d/50-git-sync.sh"
+if [ -f "$GS" ]; then
+  # shellcheck disable=SC1090
+  ( set +u; . "$GS" ) >/dev/null 2>&1
+  set +u; . "$GS" >/dev/null 2>&1; set -u
+  r=$(mktemp -d "$WORK/gs.XXXXXX"); git -C "$r" init -q
+  git -C "$r" config user.email t@t; git -C "$r" config user.name t
+  mkdir -p "$r/claude-config/memory/-x"; printf 'a\n' > "$r/claude-config/memory/-x/a.md"
+  git -C "$r" add -A; git -C "$r" commit -qm one; old=$(git -C "$r" rev-parse HEAD)
+  mkdir -p "$r/claude-config/memory/-y"; printf 'b\n' > "$r/claude-config/memory/-y/b.md"
+  git -C "$r" add -A; git -C "$r" commit -qm two
+  out=$(PATH=/nonexistent:/usr/bin:/bin _gsync_pull_hints org "$r" "$old" 2>&1)
+  yes_ "new scope fires the hint"         '[[ "$out" == *"claude-config changed"* ]]'
+  out=$(_gsync_pull_hints configs "$r" "$old" 2>&1)
+  not_ "does not fire for other repos"    '[[ "$out" == *"claude-config changed"* ]]'
+  printf 'a2\n' > "$r/claude-config/memory/-x/a.md"
+  git -C "$r" add -A; git -C "$r" commit -qm three; mid=$(git -C "$r" rev-parse HEAD~1)
+  out=$(_gsync_pull_hints org "$r" "$mid" 2>&1)
+  not_ "a mere edit does not fire it"     '[[ "$out" == *"claude-config changed"* ]]'
+  yes_ "the || true guard is present"     'grep -q "claude-link --auto >/dev/null 2>&1 || true" "$GS"'
+else
+  no "50-git-sync.sh not found"
 fi
 
 echo
