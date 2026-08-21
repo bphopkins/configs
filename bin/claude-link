@@ -215,6 +215,35 @@ done
 echo
 
 # ------------------------------------------------------------- 2. memory ----
+# ------------------------------------------------------------------ sweep --
+# Links whose target was deleted in the shared tree. The passes below iterate
+# org/claude-config, so a link pointing at something that no longer exists there
+# is never visited by them -- it just sits broken. That happens whenever a
+# permission file is deliberately removed on one machine: the other machine keeps
+# a dangling link, which also defeats the point of the removal, since a dangling
+# path still fails an O_NOFOLLOW write and so still blocks "don't ask again".
+# Only ever removes links that point INTO the shared config: foreign symlinks are
+# left alone.
+echo "== sweep =="
+swept=0
+while IFS= read -r -d '' f; do
+  [ -L "$f" ] || continue
+  [ -e "$f" ] && continue                      # target exists: fine
+  case "$(readlink "$f")" in "$CFG"/*) ;; *) continue ;; esac
+  rel=${f/#$HOME/\~}
+  if [ $APPLY = 1 ]; then
+    rm -f "$f" && { adp "removed dangling link (target deleted): $rel"; swept=$((swept+1)); } \
+      || { err "could not remove $rel"; n_fail=$((n_fail+1)); }
+  else
+    adp "would remove dangling link: $rel"; swept=$((swept+1))
+  fi
+done < <(find "$DESK" -maxdepth 7 \
+           \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
+              -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
+           \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null)
+[ "$swept" -gt 0 ] && n_adopt=$((n_adopt+swept))
+echo
+
 # ---------------------------------------------------------------- harvest --
 # The link passes below are driven by what org/claude-config already contains,
 # so a scope this machine invented today would never be considered. Harvest

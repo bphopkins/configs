@@ -415,6 +415,14 @@ Two hooks in `settings.json`, both living in `org/claude-config/hooks/`:
   to the user"*. The health check emitted only `additionalContext` until 2026-08-20, so
   a broken link warned the assistant and nobody else. Warnings now go to both.
 
+**A deleted shared file leaves a dangling link on the other machine, and the link
+passes cannot see it** — they iterate `org/claude-config`, so a link whose target is
+gone is never visited. It matters beyond untidiness: a dangling path still fails an
+`O_NOFOLLOW` write, so it keeps blocking "don't ask again" even though the file it
+pointed at was deliberately removed. `claude-link` sweeps these, but only links that
+point *into* the shared config — foreign symlinks are never touched. Hit on 2026-08-20
+when a curation pass deleted seven emptied permission files on one machine.
+
 **Ephemeral scopes are excluded, and this was a real bug.** Claude creates a project
 scope for whatever cwd a session runs in — including the per-session scratchpad under
 `/tmp/claude-1000/…`. `--auto` harvested one into the repo on 2026-08-20, and after it
@@ -476,7 +484,7 @@ in step by hand):
 
 ### Regression suite
 
-`tests/claude/run.sh` (84 checks, ~15 s, sandboxed under `$TMPDIR` with a fake `HOME`,
+`tests/claude/run.sh` (89 checks, ~15 s, sandboxed under `$TMPDIR` with a fake `HOME`,
 fake `org/claude-config` and fake `~/Desktop`; no network). Covers preflight refusals,
 dry-run inertness, linking, idempotency, adoption (union not overwrite; differing files
 backed up and skipped; conflicting memories kept side by side), harvest, `--auto`'s

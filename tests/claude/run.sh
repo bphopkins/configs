@@ -138,6 +138,19 @@ yes_ "  and linked back"                  '[ -L "$w/home/.claude/projects/-brand
 yes_ "new repo perms promoted"            '[ -f "$w/cfg/repos/newrepo/settings.local.json" ]'
 yes_ "  and linked back"                  '[ -L "$w/desk/newrepo/.claude/settings.local.json" ]'
 
+echo "== dangling links from deleted shared files are swept =="
+w=$(mkworld); run "$w" --apply >/dev/null
+rm "$w/cfg/repos/rep/settings.local.json"           # deleted on the other machine
+yes_ "link is dangling before the sweep"  '[ -L "$w/desk/rep/.claude/settings.local.json" ] && [ ! -e "$w/desk/rep/.claude/settings.local.json" ]'
+# a dangling link the tool must NOT touch: right filename, target outside the shared config
+ln -s "$w/elsewhere/gone.md" "$w/desk/rep/CLAUDE.local.md" 2>/dev/null
+out=$(run "$w" --apply)
+not_ "dangling link removed"              '[ -L "$w/desk/rep/.claude/settings.local.json" ]'
+yes_ "  and it says so"                   '[[ "$out" == *"dangling"* ]]'
+yes_ "foreign dangling link untouched"    '[ -L "$w/desk/rep/CLAUDE.local.md" ]'
+out=$(run "$w")
+not_ "dry run does not sweep"             '[[ "$out" == *"removed dangling"* ]]'
+
 echo "== ephemeral scopes are never harvested or linked =="
 w=$(mkworld)
 for e in -tmp-scratch -var-tmp-x -run-user-1000-y; do
