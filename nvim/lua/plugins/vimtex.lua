@@ -41,6 +41,46 @@ return {
     vim.g.tex_flavor = "latex"
 
     --------------------------------------------------------------------
+    -- MATCHPAREN: NORMAL MODE ONLY
+    --
+    -- VimTeX's matchparen hooks CursorMovedI, and its highlight() does a
+    -- vimtex#syntax#in_comment() synstack probe plus a delimiter search —
+    -- both of which scale with the length of the *logical* line.  On a
+    -- paragraph-per-line document that is the dominant per-keystroke cost:
+    -- measured 62 ms of a 212 ms keystroke at the end of an 1860-char
+    -- paragraph (fedxps, 2026-08-22).
+    --
+    -- Neovim's own matchparen is left alone and costs ~0 here — it returns
+    -- immediately unless the cursor sits on a bracket, which at the end of
+    -- a prose line it does not.
+    --
+    -- Toggled through VimTeX's public API rather than by clearing its
+    -- autocmds, so nothing depends on its internal augroup naming.  You
+    -- keep $…$, \begin/\end and \left/\right matching in normal mode,
+    -- where you are actually looking at delimiters.
+    --------------------------------------------------------------------
+    vim.api.nvim_create_autocmd({ "InsertEnter", "InsertLeave" }, {
+      group = vim.api.nvim_create_augroup("VimtexMatchparenInsertOff", { clear = true }),
+      pattern = { "*.tex", "*.latex", "*.sty", "*.cls" },
+      callback = function(ev)
+        -- VimTeX creates its per-buffer matchparen augroup only when the
+        -- feature is enabled, and disable() clears that group by name — so
+        -- calling it when the feature is off raises E216 on *every*
+        -- InsertEnter, which is loud and baffling.  Guard on the option, and
+        -- pcall as a backstop for any other buffer VimTeX never claimed.
+        if vim.g.vimtex_matchparen_enabled == 0 then
+          return
+        end
+        if vim.fn.exists("*vimtex#matchparen#disable") == 0 then
+          return
+        end
+        local fn = ev.event == "InsertEnter" and "vimtex#matchparen#disable"
+          or "vimtex#matchparen#enable"
+        pcall(vim.fn[fn])
+      end,
+    })
+
+    --------------------------------------------------------------------
     -- CUSTOM SYNTAX COMMANDS
     --
     -- Registers french-logic.sty macros into semantic highlight groups.

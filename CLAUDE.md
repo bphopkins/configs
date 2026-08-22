@@ -196,6 +196,59 @@ stylua (config in `nvim/stylua.toml`: 2-space indent, 100 columns). **It is load
 
 Note for headless testing: format-on-save — and everything else LazyVim registers in its `User VeryLazy` callback — is inert under `nvim --headless`, because VeryLazy hangs off the UI attaching. A headless probe that needs those behaviors must fire it manually (`vim.api.nvim_exec_autocmds("User", {pattern="VeryLazy"})`); otherwise "works headless" and "works interactively" can genuinely differ.
 
+### Insert-mode latency (measured and fixed 2026-08-22)
+
+Typing in the dissertation's long paragraph lines on `fedxps` had become slow enough to notice. Two *separate* faults, which is why no single explanation accounted for both symptoms.
+
+**Fault 1 — a per-keystroke tax.** Measured on `dissertation/completeness/completeness.tex`, cursor at the end of its 1860-char paragraph line, against a `nvim -u NONE` floor of **3.6 ms** on the same line:
+
+| component | ms/keystroke |
+|---|---|
+| VimTeX's own matchparen | 62 |
+| blink `snippets` source (1063 tex snippets reachable) | 33 |
+| blink `vimtex` source via blink.compat | 26 |
+| the 250 custom syntax cmd rules | 29 |
+| base VimTeX syntax (946 match rules, 97 packages) | 20 |
+| **total** | **212** |
+
+Two findings worth keeping. **Neovim's built-in matchparen costs ~0 here** — it returns immediately unless the cursor sits on a bracket, which at the end of a prose line it does not; it was VimTeX's own that was expensive, and only that one is touched. And the cost is driven by **logical line length**, which in these files means paragraph length: 585ch→44 ms, 1001ch→82, 1417ch→262, 1860ch→218. Below roughly 1000 characters the config was never the problem.
+
+Fixed in two places, both commented in situ. `vimtex.lua` switches VimTeX's matchparen off during insert via its own `vimtex#matchparen#{disable,enable}` — so `$…$`, `\begin/\end` and `\left/\right` matching survive in normal mode, where you are actually looking at delimiters. `completions.lua` gates blink's `snippets` and `vimtex` providers on `in_latex_context()`: part-way through a `\command`, or inside the braces that follow one. Result at those four line lengths: **13 / 23 / 84 / 54 ms**, a 3–4× improvement, with completion after `\command`, `\cite{` and `\ref{` unchanged and the menu no longer firing over running prose.
+
+⚠ **The matchparen toggle must be guarded on `g:vimtex_matchparen_enabled`.** VimTeX creates its per-buffer augroup only when the feature is on, and `disable()` clears that group *by name* — so calling it with the feature off raises `E216: No such group` on **every** `InsertEnter`. This was a real bug in the first version of the fix, caught only by testing the off case; the guard plus a `pcall` backstop is pinned by a regression check.
+
+The 250 custom syntax rules were left alone: 29 ms is the smallest of the four levers and cutting it costs semantic colour. Note this **corrects** the older standing belief that syntax complexity was the cost driver — it is about 14% of the bill.
+
+**Fault 2 — the cold-cache stall.** Separate, one-shot, and much larger: **22.8 s on a single `\` keystroke**, reproduced live. See below.
+
+### The cold-cache stall
+
+VimTeX resolves every `\usepackage`'d package by spawning `kpsewhich`, then reads the `.sty` it finds, caching both under `~/.cache/vimtex` (`kpsewhich.json`, `pkgcomplete.json`). The completeness chapter's article root pulls in **97 packages**, and on `fedxps` one `kpsewhich` spawn costs ~190 ms — which is *process startup*, not the lookup: `kpsewhich --var-value TEXMFHOME`, which looks nothing up, costs the same. 190 ms × 97 ≈ 18.4 s.
+
+Measured: **18,676 ms for the first `\command` completion with a cold cache, against 235 ms warm**; live on the real chapter it was 22.8 s. It is paid synchronously on the **first backslash you type in a session**, which is why it reads as "I typed `\textit` and waited several seconds" and why it is invisible to any benchmark run after the first.
+
+The cache is plain JSON **on disk**, so it survives logout and reboot, and `vimtex#kpsewhich#find` returns a cached hit **unconditionally — it never re-validates the stored path**. So the cost is per package, per machine, *once*. It recurs only on genuinely new packages, a new machine, or `:VimtexClearCache`.
+
+Two things that sound like they would invalidate it and **do not**: a TeX Live release upgrade leaves the cached absolute paths resolving (and `tl-newyear switch` keeps the old tree deliberately), so the risk there is *staleness*, not slowness — if an old tree is ever deleted, `getftime` returns `-1`, which is not greater than the stored ftime, so VimTeX keeps serving the old definitions rather than rescanning. And editing `french-logic.sty` costs one `.sty` re-read, not a `kpsewhich` spawn.
+
+Remedy: `bin/vimtex-warm`. Reproduce the cold case deliberately with `nvim --cmd "let g:vimtex_cache_root='/tmp/cold'" chapter.tex`. **`bigfed` has never paid this** — run `vimtex-warm -a` there once.
+
+### The auto-save autocmd — both events are load-bearing
+
+`lua/config/autocmds.lua` saves on **both** `InsertLeavePre` and `TextChanged`, and that pair is the minimum that yields the intended invariant, *"whenever I am in normal mode, the work is saved"*. Measured, per editing loop (one insert session plus three normal-mode edits):
+
+| policy | writes | what it misses |
+|---|---|---|
+| **both events** | **4** | **nothing** |
+| `InsertLeavePre` only | 1 | normal-mode edits — `x`, `dd`, `p`, `u` leave the file dirty |
+| `TextChanged` only | 3 | leaving insert mode — it does **not** fire on Esc |
+
+So neither event is redundant, and **neither may be "cleaned up"**. The whole auto-save costs ~252 ms of a ~3550 ms editing loop (7%) — second-order next to the two faults above, and not worth trading the invariant for. `latexmk -pvc` does not multiply it: `$sleep_time` is **2** seconds (verified in the script and `latexmk(1)`), so writes inside a poll window coalesce into one recompile.
+
+Note it is **not** insert-mode-only, which is easy to misremember: `TextChanged` fires in *normal* mode, so `x`, `dd`, `p` and `u` each write too. Two things considered and **declined**: switching `write` → `update` (which writes only when modified — verified that `:write` rewrites unconditionally and `:update` does not) changed nothing measurable, because with a save on every change the buffer is genuinely modified whenever `TextChanged` fires; and debouncing, which would break the invariant during the debounce window. The autocmds are in the `bph_autosave` augroup purely so a re-source cannot register a second copy and silently double every write.
+
+**Regression suite:** `tests/nvim-latency/run.sh` (26 checks, ~40 s, hermetic — self-contained fixture, edits on a `$TMPDIR` copy, persistence disarmed, no repo touched; needs `pynvim`). It asserts no milliseconds, because timings move with the machine and make a poor gate; it asserts the *structure* the speed-up rests on and the behaviour it must not have broken. Mutation-verified against a pre-fix tree via `NVIM_LATENCY_CONFIG`, where exactly the seven expected checks fail. `bench.py` beside it is the measurement tool (`--ablate`, `--file`, `--config`), and `stallwatch.lua` catches stalls in a live session. Read `tests/nvim-latency/README.md` before changing any of it — it records which checks were once vacuous and why.
+
 ## LaTeX Packages
 
 Custom `.sty` and `.cls` files in `latex/` are stowed into `~/texmf/tex/latex`. Key package:
@@ -213,6 +266,7 @@ Everything in `bin/` is stowed to `~/bin` and is on PATH via `20-path.sh`. This 
 - `claude-link` — links this machine's Claude Code configuration to the shared copy in `org/claude-config`. See "Claude Code configuration" below.
 - `claude-prune` — drops dead weight from the shared per-repo permission lists. Run it after `claude-link --adopt`; see the same section for why that ordering is not optional.
 - `claude-collect.sh` — one-shot inventory/collector, written to a flash drive during the 2026-08-20 two-machine merge. Kept because it is the tool for auditing what a machine holds that is *not* synced; re-runnable read-only on either box.
+- `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose instead of mid-sentence. See "The cold-cache stall" under Neovim Configuration for why that cost exists. `-d` warms the dissertation chapters; `-a` warms a greedy covering set of documents for every package used under `~/Desktop` (38 documents for 109 packages, ~90 s); bare arguments warm named files. Read-only with respect to documents: it disarms `bph_autosave`, sets `nomodifiable`, and parks the cursor on a `\command` already in the text rather than typing one — verified across 614 `.tex` files that it modifies none.
 - `sysinfo.sh` — root-run hardware/OS summary generator (`sudo ~/bin/sysinfo.sh`); writes an HTML fragment to a hard-bound `/home/bph/Desktop/sysinfo.html` for pasting into a website, and deliberately omits security-sensitive identifiers (serials, MAC addresses) — keep that property when editing. Moved here from the retired `scripts` repo 2026-08-04.
 - `battlog` / `battreport` / `battcal-restore` — battery instrumentation from the 2026-08-11 fedxps pack swap (effectively fedxps-only: all three hardcode `BAT0`, and bigfed has no battery). `battreport` writes a one-shot snapshot — sysfs dump, computed Wh and health, upower, SMBIOS type 22 (wants sudo) — to `~/Desktop/battery-<ts>.txt`; `battlog` is the companion curve, sampling once a minute into a daily CSV until killed; `battcal-restore` undoes a calibration run's temporary settings (`--check` is a read-only audit). Worth knowing from its header: stock `CriticalPowerAction=Auto` resolves to **Sleep** on fedxps, where zram-only swap means no hibernation — so at critical battery the stock setting suspends, then drains to the pack's hard protection cutoff. `--keep-poweroff` keeps the kinder `PowerOff`, and the daemon's actual intent is read with `GetCriticalAction`, never the config file alone.
 

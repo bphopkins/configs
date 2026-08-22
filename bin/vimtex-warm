@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# vimtex-warm — pay VimTeX's per-package resolution cost once, deliberately.
+#
+# VimTeX resolves every \usepackage'd package by spawning kpsewhich and then
+# reading the .sty it finds, caching the result under ~/.cache/vimtex.  On this
+# machine kpsewhich costs ~190 ms per spawn (that is process startup, not the
+# lookup: `kpsewhich --var-value TEXMFHOME`, which looks nothing up, costs the
+# same).  For a document with ~100 packages that is ~19 s, and it is paid
+# synchronously on the FIRST backslash you type in a session with a cold cache.
+#
+# Run this after anything that invalidates the cache — a TeX Live release
+# upgrade, a new machine, `:VimtexClearCache` — or just once for a new document
+# whose preamble you have not opened before.
+#
+# Usage:
+#   vimtex-warm FILE.tex...            warm these documents
+#   vimtex-warm -d                     warm every chapter article in ~/Desktop/dissertation
+#   VIMTEX_CACHE=/some/dir vimtex-warm ...   use a different cache root (testing)
+#
+# It only ever writes to VimTeX's cache directory.
+
+set -uo pipefail
+
+CACHE="${VIMTEX_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/vimtex}"
+DISS="$HOME/Desktop/dissertation"
+
+files=()
+case "${1:-}" in
+  -d)
+    shift
+    while IFS= read -r f; do files+=("$f"); done < <(
+      find "$DISS" -path '*/article/*-article.tex' -not -path '*/.old/*' | sort
+    )
+    [[ -f "$DISS/dissertation.tex" ]] && files+=("$DISS/dissertation.tex")
+    ;;
+  -a)
+    # Every package used anywhere under ~/Desktop, but WITHOUT opening every
+    # document: Neovim startup (~1.5 s) dominates the per-package cost, so
+    # opening all ~300 roots would take minutes to buy ~15 s of resolution.
+    # Instead pick a small covering set -- greedily, the document adding the
+    # most not-yet-seen packages, until every package is covered.
+    while IFS= read -r f; do files+=("$f"); done < <(python3 - <<'PY'
+import glob, os, re
+roots = {}
+for base in ("dissertation", "dissertation-template", "opuscula", "n-cube",
+             "teaching", "teach-logic", "bphopkins.net"):
+    d = os.path.expanduser(f"~/Desktop/{base}")
+    if not os.path.isdir(d):
+        continue
+    for f in glob.glob(d + "/**/*.tex", recursive=True):
+        if "/.git/" in f or "/.old/" in f:
+            continue
+        try:
+            txt = open(f, errors="ignore").read()
+        except OSError:
+            continue
+        if "\\documentclass" not in txt[:4000]:
+            continue
+        pk = set()
+        for m in re.finditer(r"\\usepackage(?:\[[^\]]*\])?\{([^}]+)\}", txt):
+            pk |= {p.strip() for p in m.group(1).split(",") if p.strip()}
+        for m in re.finditer(r"\\documentclass(?:\[[^\]]*\])?\{([^}]+)\}", txt):
+            pk.add("class-" + m.group(1).strip())
+        if pk:
+            roots[f] = pk
+
+uncovered = set().union(*roots.values()) if roots else set()
+while uncovered:
+    best = max(roots, key=lambda f: len(roots[f] & uncovered))
+    gain = roots[best] & uncovered
+    if not gain:
+        break
+    print(best)
+    uncovered -= gain
+    del roots[best]
+PY
+    )
+    ;;
+  -h|--help|"")
+    cat >&2 <<'USAGE'
+usage: vimtex-warm FILE.tex...   warm these documents
+       vimtex-warm -d            every chapter article in ~/Desktop/dissertation
+       vimtex-warm -a            a covering set for every package under ~/Desktop
+USAGE
+    exit 2
+    ;;
+  *)
+    files=("$@")
+    ;;
+esac
+
+if [[ ${#files[@]} -eq 0 ]]; then
+  echo "vimtex-warm: nothing to do" >&2
+  exit 2
+fi
+
+entries() {
+  python3 - "$CACHE" <<'PY' 2>/dev/null || echo 0
+import json, sys, glob, os
+n = 0
+for p in glob.glob(os.path.join(sys.argv[1], "kpsewhich.json")) + \
+         glob.glob(os.path.join(sys.argv[1], "pkgcomplete.json")):
+    try:
+        n += len(json.load(open(p)))
+    except Exception:
+        pass
+print(n)
+PY
+}
+
+before=$(entries)
+printf 'cache: %s  (%s entries)\n\n' "$CACHE" "$before"
+
+t_all=$SECONDS
+for f in "${files[@]}"; do
+  [[ -f "$f" ]] || { printf '  %-46s SKIP (not found)\n' "$(basename "$f")"; continue; }
+  t0=$SECONDS
+  # The buffer is never modified: we park the cursor on the end of a
+  # \command that is already in the document, which is what makes
+  # findstart=1 select the command completer.  findstart=0 then forces the
+  # per-package kpsewhich + .sty reads that populate the cache.
+  #
+  # The auto-save autocmd is disarmed first regardless, so that no future
+  # edit to this script can put a write on a real chapter file.
+  out=$(NVIM_NOSESSION=1 nvim --headless \
+    --cmd "let g:vimtex_cache_root='$CACHE'" \
+    -c 'silent! autocmd! bph_autosave' \
+    -c 'setlocal nomodifiable' \
+    -c 'silent! call search("\\\\[a-zA-Z]\\+", "w")' \
+    -c 'silent! normal! e' \
+    -c 'silent! call vimtex#complete#omnifunc(1, "")' \
+    -c 'silent! call vimtex#complete#omnifunc(0, "")' \
+    -c 'echomsg "vimtex=" . exists("b:vimtex") . " pkgs=" . (exists("b:vimtex") ? len(b:vimtex.packages) : 0)' \
+    -c 'qa!' "$f" 2>&1 | tr -d '\r' | tail -1)
+  printf '  %-46s %4ds   %s\n' "$(basename "$f")" "$((SECONDS - t0))" "$out"
+done
+
+after=$(entries)
+printf '\nwarmed in %ds; cache went %s -> %s entries\n' \
+  "$((SECONDS - t_all))" "$before" "$after"

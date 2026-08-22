@@ -298,6 +298,35 @@ tree with no further step. All are clean today.
 
 ## Done
 
+- [x] **Diagnosed and fixed Neovim's LaTeX editing latency on `fedxps`.** Two separate
+  faults, which is why no single explanation fitted both symptoms. (1) A per-keystroke
+  tax of **212 ms** at the end of an 1860-char paragraph line, against a `nvim -u NONE`
+  floor of 3.6 ms on the same line — attributed by ablation to VimTeX's own matchparen
+  (62 ms), blink's `snippets` (33) and `vimtex` (26) sources, the custom syntax cmds
+  (29) and base VimTeX syntax (20). Fixed by switching VimTeX's matchparen off *during
+  insert only* (its public API, so normal-mode `$…$`/`\begin`/`\left` matching survives)
+  and gating blink's two heavy sources on being part-way through a `\command` or inside
+  its braces → **13/23/84/54 ms** at 585/1001/1417/1860 chars, a 3–4× improvement.
+  (2) A one-shot **22.8-second stall on the first backslash of a session**, reproduced
+  live: VimTeX spawns `kpsewhich` once per `\usepackage`'d package (97 of them) and one
+  spawn costs ~190 ms here — which is process *startup*, not the lookup. Remedied with
+  `bin/vimtex-warm`, which pays it deliberately (`-a`: 38 documents covering all 109
+  packages under `~/Desktop`, 90 s, once per machine).
+  **Corrections to prior beliefs, all measured:** syntax complexity was *not* the cost
+  driver (~14% of the bill, not the bulk); Neovim's built-in matchparen costs ~0 here;
+  a TeX Live upgrade does *not* invalidate the kpsewhich cache (risk there is staleness,
+  not slowness); and latexmk continuous does not multiply write cost (`$sleep_time` is 2 s,
+  so writes coalesce). **Declined:** trimming the custom syntax rules (smallest lever,
+  costs semantic colour); changing the `tuned` `powersave` profile, which is deliberate
+  despite a measured 2.4× cold-clock penalty on post-pause keystrokes; and any change to
+  the auto-save, whose two events turn out to be the *minimum* pair yielding "in normal
+  mode ⟹ saved" — `TextChanged` does not fire on Esc, `InsertLeavePre` does not fire on
+  normal-mode edits, so neither is redundant (`write`→`update` and debouncing were both
+  measured/considered and rejected). New suite `tests/nvim-latency/run.sh` (26 checks,
+  hermetic, mutation-verified); one bug in the first version of the fix — `E216` on every
+  `InsertEnter` when `vimtex_matchparen_enabled=0` — was found by testing the off case and
+  is now pinned by its own check. @done(2026-08-22)
+
 - [x] **Tier 1 of item 5: lock before suspend** (`swaylock` + `swayidle`), plus a `mako`
   notification config — both new stow packages, both verified in a live Sway session.
   **The lock is `before-sleep` only**, with no `timeout` clause, so the no-idle-timers

@@ -51,6 +51,41 @@ return {
       opts.snippets.preset = "luasnip"
 
       ------------------------------------------------------------------
+      -- Where the LaTeX sources are allowed to run
+      --
+      -- blink queries every enabled provider on every keystroke.  In a TeX
+      -- buffer the two heavy ones are "snippets" (1063 snippets reachable
+      -- from tex) and "vimtex" (an nvim-cmp source proxied through
+      -- blink.compat, which calls VimTeX's own completer).  Measured on
+      -- fedxps, 2026-08-22, at the end of an 1860-char paragraph line:
+      -- ~33 ms and ~26 ms per keystroke respectively — paid on every
+      -- character of running prose, where neither can offer anything.
+      --
+      -- So gate them on being somewhere a LaTeX completion makes sense:
+      -- part-way through a \command, or inside the braces that follow one.
+      -- Verified that \cnec, \cite{che and \ref{sec all still complete,
+      -- and that non-TeX filetypes are untouched.
+      ------------------------------------------------------------------
+      local function in_latex_context()
+        local ft = vim.bo.filetype
+        if ft ~= "tex" and ft ~= "latex" and ft ~= "plaintex" then
+          return true -- every other filetype keeps stock behaviour
+        end
+        local col = vim.api.nvim_win_get_cursor(0)[2]
+        -- Bounded look-behind: never scan the whole paragraph.
+        local before = vim.api.nvim_get_current_line():sub(math.max(1, col - 60), col)
+        -- typing a command:            \cn|      \begin|
+        if before:match("\\%a*$") then
+          return true
+        end
+        -- inside a command's argument: \cite{che|    \ref{sec:|
+        if before:match("\\%a+%*?%b[]{[^{}]*$") or before:match("\\%a+%*?{[^{}]*$") then
+          return true
+        end
+        return false
+      end
+
+      ------------------------------------------------------------------
       -- VimTeX provider via blink.compat
       --
       -- This is the blink.cmp "provider" that proxies the nvim-cmp
@@ -70,10 +105,16 @@ return {
           score_offset = 5,
 
           -- Only enable this provider in TeX-ish filetypes so it
-          -- never runs in e.g. Lua/Markdown buffers.
+          -- never runs in e.g. Lua/Markdown buffers — and, within those,
+          -- only where a LaTeX completion is plausible (see above).
           enabled = function()
             local ft = vim.bo.filetype
-            return ft == "tex" or ft == "plaintex" or ft == "latex" or ft == "bib" or ft == "bibtex"
+            local texish = ft == "tex"
+              or ft == "plaintex"
+              or ft == "latex"
+              or ft == "bib"
+              or ft == "bibtex"
+            return texish and in_latex_context()
           end,
         })
 
@@ -87,6 +128,9 @@ return {
         vim.tbl_deep_extend("force", opts.sources.providers.snippets or {}, {
           -- Higher than vimtex (5) so snippet items float to the top.
           score_offset = 10,
+          -- In TeX, only where a LaTeX completion is plausible; elsewhere
+          -- in_latex_context() returns true, so nothing else changes.
+          enabled = in_latex_context,
         })
 
       ------------------------------------------------------------------
