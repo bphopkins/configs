@@ -58,7 +58,9 @@ mid-presentation.
 
 **Tier 2 — `focus parent`. DONE 2026-08-13.** `$mod+p` walks up the tree, `$mod+Shift+p`
 (`focus child`) comes back down; the pair is bound because parent alone leaves you
-steering back with direction keys. `$mod+v` remains deliberately free.
+steering back with direction keys. `$mod+v` remains deliberately free. *(Superseded
+2026-08-22: the pair — and the splits — were dropped with the whole container tier;
+see item 6.)*
 
 **Tier 3 — screenshots. DONE 2026-08-13.** `Print` full-screen->file, `Shift+Print`
 region->clipboard, `$mod+Print` region->file.
@@ -140,60 +142,71 @@ place. Run it after touching sway, waybar, swaylock, mako or wofi.
 
 ---
 
-## 6. Impose an explicit logic on the sway keybindings
+## 6. Impose an explicit logic on the sway keybindings — COMPLETE 2026-08-22
 
-- [ ] Investigate the implicit logic already present in the bindings, propose an explicit
-  one to follow going forward, and rewrite the grammar header in `sway/config` to state
-  it. Optimise for *conceptualising the action-space cleanly* and remembering bindings —
-  not for tidiness. Explicit exceptions for workflow are expected and fine.
+- [x] Grammar adopted, header rewritten to state it, config brought into line, both
+  gates green. @done(2026-08-22)
 
-Raised 2026-08-13 after the config work of that day. The complaint, in the user's words:
-there is no visible logic to the difference between `$mod+Shift` and `$mod+Ctrl`, which
-makes it hard to keep in his head where a binding lives.
+Kept with full notes because the reasoning is the deliverable here: the law, the one
+move it cost, the tier it deleted, and the reversals a future session would otherwise
+re-litigate. The 2026-08-13 measurements the item opened with (plain `$mod` 32 /
+`$mod+Shift` 24 / `$mod+Ctrl` 3 / `$mod+$alt` 8; Shift already ~79% "take the window
+with you"; Ctrl definitionally incoherent) were the basis and held up.
 
-**Measurements already taken — do not re-derive.** Counts as of 2026-08-13: plain `$mod`
-32 bindings, `$mod+Shift` 24, `$mod+Ctrl` 3, `$mod+$alt` 8.
+**The law: the modifier names what the action acts on.** `$mod` = you — attention,
+instruments, summoning (focus, workspaces, launchers, menu, scratchpad show, bar and
+touchpad toggles). `$mod+Shift` = the focused window — move, send, stash, toggle
+state. `$mod+Ctrl` = the session — `l` lock, `c` reload. `$mod+$alt` = the workspace
+row — walk it; +Shift carries the window, so Shift's meaning composes. Two clauses
+complete it: **key families override the table on their own key** (Escape = leaving,
+graded by weight — the session, then the machine; Print = capture; XF86 = hardware;
+the clause is forced by Print regardless, so the endorsed Escape gradient became
+lawful in place), and **promotions are a stated, closed list** (`q` kill and `r`
+resize: window verbs one tier light for daily frequency; a new window verb defaults
+to Shift). The header now states all of this; its self-contradictory "heavier
+variant" rule is gone.
 
-- **A logic is already ~79% present.** 19 of the 24 `$mod+Shift` bindings are one idea:
-  *take the focused window with you* — move directionally (8), send to workspace (10),
-  stash in scratchpad (1). The `$mod+$alt+Shift` pair (carry window across workspaces)
-  reinforces it.
-- **Two of the five exceptions probably are not exceptions.** `Shift+f` (fullscreen) and
-  `Shift+space` (floating toggle) fit if the rule is widened from "move the window" to
-  "act on the focused window" — state counts as much as position.
-- **Three are genuine.** `Shift+c` (reload) and `Shift+Escape` (poweroff) act on the
-  session, not a window. `Shift+p` (focus child) is focus navigation — and was added on
-  2026-08-13 *by an assistant who did not notice it broke the pattern*, because there was
-  no stated rule to check against. That is the ongoing cost, and the best argument for
-  doing this at all.
-- **`$mod+Ctrl` is the real problem, and it is definitional.** Only 3 bindings, spanning
-  two unrelated concepts: `Ctrl+h`/`Ctrl+v` (container structure) and `Ctrl+l` (lock,
-  session). The lock landed there in 2026-08-13 purely because `$mod+l` was taken by
-  `focus right` — key availability driving semantics, which is how drift starts. Decide
-  **what Ctrl means** first; placements follow.
+**Moves: exactly one.** reload `$mod+Shift+c` → `$mod+Ctrl+c` (same letter, c =
+config). Untouched: every launcher, `$mod+q` kill, `$mod+Escape` exit,
+`$mod+Shift+Escape` poweroff — whose nag gained a **Reboot** button (machine actions
+share the nag rather than claiming chords; the parked `#$mod+Shift+r` comment went
+with it) — vim/arrow parity, `$mod+v` free.
 
-**Starting hypothesis, not a conclusion:** *Shift acts on the focused window; Ctrl acts on
-the environment around it.* Splits shape the container, lock/reload/power act on the
-session — all "not the window". Under that rule the required changes are **two bindings**
-(`reload` -> `$mod+Ctrl+c`, `poweroff` -> `$mod+Ctrl+Escape`), both rarely pressed, plus
-rehoming or explicitly excusing `focus child`. Test the hypothesis; do not assume it.
+**Dropped: the whole container tier**, user decision after its use-cases were laid
+out — `splith`/`splitv` (`$mod+Ctrl+h/v`) and `focus parent`/`child`
+(`$mod+p`/`$mod+Shift+p`). Splits had never been pressed intentionally, parent/child
+never at all: with one or two windows per workspace, the group a parent would select
+coincides with the workspace itself, and workspaces-as-the-grouping-unit is a
+first-class way to run a tiling WM, not a deficiency. **This supersedes the "preserve
+splits on Ctrl+h/v" constraint this item originally recorded** (item 5's Tier 2 note
+is flagged too). Nothing is stranded — measured in a nested headless sway the same
+day: an orthogonal `$mod+Shift+j/k` move still builds stacked layouts implicitly (two
+640x720 columns → two full-width 1280x360 rows on one `move down`), which is also
+where accidental vertical splits always came from. Revival chords are recorded in the
+config's Layout section — plausibly relevant if a big-screen sway ever lands on
+bigfed, where three-plus windows per workspace would make the tree earn its keep.
 
-**Constraints, from the user directly:**
+**Declined** (asked and answered, do not re-propose):
 
-- He is *happy with the bindings* and does not want to deviate much — the value is the
-  stated rule, not the moves. If the rule ever demands relocating something pressed daily,
-  the rule bends, not the binding.
-- Deliberate upstream divergences to preserve: `$mod+q` kill (not `$mod+Shift+q`),
-  `$mod+Escape` exit (moved off `$mod+Shift+l` on 2025-11-10 because `l` is `$right`),
-  splits on `$mod+Ctrl+h`/`v` (because `$mod+b`/`$mod+v` are launchers). `$mod+v` is
-  deliberately free. Every motion is bound for **both** vim keys and arrows — keep that.
-- Tabbed/stacking layouts are declined (see item 5), so the layout tier stays small.
+- *Re-grading the Escape column* (lock as its lightest ring, exit/poweroff one
+  heavier) — the existing gradient was explicitly endorsed mid-design; the family
+  clause covers it with zero moves.
+- *`poweroff` → `$mod+Ctrl+Escape`* (this item's own starting hypothesis) — same
+  reason: the override clause makes it lawful where it sits.
+- *Rehoming `focus child`* to `$mod+i`, an out/in pair on `o`/`i`, or scope brackets —
+  mooted by dropping the tier; the `o`/`i` out/in pair is the idiom-pure shape if the
+  pair ever returns on letters.
+- *A standalone reboot chord* — the nag button plus `reboot` in a terminal cover it.
+- *A `tests/desktop` check pinning `sway/README.md` to the config's binding set* —
+  declined 2026-08-22, same day the quick-reference card was added: the README is a
+  best-effort courtesy that may be hand-edited or deleted at will, and a suite check
+  would turn a stale doc into a failing gate, making the card an obligation on every
+  binding change rather than a convenience.
 
-**Also fix as part of this:** the "Binding grammar" header at the top of `sway/config` is
-self-contradictory — it asserts both `$mod+Shift+hjkl = move the window` *and*
-`$mod+Shift+<key> = the heavier variant of the unshifted action`. Two rules for one
-modifier, the second vague enough to justify anything. It documents the mess rather than
-resolving it, and is part of why the scheme still reads murky.
+Verification: `sway --validate` clean; `tests/desktop/run.sh` 24/24 (the suite adapts
+to the binding set, so the dropped and moved chords needed no test edits); the
+stacking claim measured, not assumed. GNOME was the live compositor, so no running
+session was touched — the next sway login picks the grammar up.
 
 ---
 
@@ -293,6 +306,155 @@ hand-curated library file in `lua/snippets/` plus one name in `snippets.lua`'s
 audit). Note that duplicate triggers across libraries do **not** shadow each
 other — both appear in the menu — so a shadowing scheme needs actual design,
 not just a second file.
+
+---
+
+## 9. Simplify the live-server root wrapper — COMPLETE 2026-08-22
+
+- [x] Replaced the buffer-juggling in `nvim/lua/plugins/live-server.lua` with
+  explicit directories at both ends plus one remembered string. @done(2026-08-22)
+
+Kept rather than folded into Done because the upstream-bug record below is
+referenced by the wrapper's own header comment, and the declined shapes are the
+ones a future session would re-propose.
+
+**History.** Raised 2026-08-22, off the notification "``require("live-server").setup()``
+was removed in v0.2.0", seen on the first `<localleader>hh` of a session: the
+plugin was rewritten under us (pin `v0.1.7-7` → `v0.3.0-3` on **2026-06-03**,
+`nvim/lazy-lock.json`) and had been erroring on first use ever since — it only
+surfaced then because the plugin is lazy-loaded on the command. The dead
+`setup()` call and the npm `build` step were removed the same day
+(`~/.local/npm-global/bin/live-server` left in place, harmless and usable
+standalone). The simplification was first deferred for lack of verification,
+then landed the same day after a 52-check measured comparison — old wrapper,
+plain form, adopted variant, each against fixture repos, plus a read-only round
+trip against the real `bphopkins.net` (fedxps, plugin pin `f1a2def`).
+
+**Why a wrapper exists at all — confirmed, not assumed.** From a body file
+under `bphopkins.net/src/`, the bare command serves `src/`, which has no
+`index.html`, so the plugin falls through to its directory-listing branch:
+
+| | served | `<title>` |
+|---|---|---|
+| bare `start()` from a body file | `src/` | `Index of /` |
+| `start(root)` | repo root | `Brandon Hopkins' Homepage` |
+
+**The upstream bug the design works around** (recorded here per the standing
+rule; **not to be filed**). `start(dir)` keys the instance on the resolved
+directory, which for a directory ends in a trailing slash (`:p`); the stop
+path's upward walk strips components with `:h`, which never reproduces a
+trailing slash — so a *bare* stop finds an instance only when its starting
+point resolves to the stored key verbatim. Consequences, each pinned by a
+suite canary: bare start serves the buffer's directory; bare stop from
+elsewhere in the project silently misses an explicitly-started instance; and a
+miss says nothing (`M.stop` has no else branch). The explicit form is immune —
+equal input strings resolve to byte-identical keys, and the lookup probes the
+exact key before walking — and it is the plugin's *documented* usage
+(`:h live-server-api`), where the old wrapper leaned on the undocumented fact
+that bare resolution reads the buffer's path.
+
+**What the full investigation added: the plain 4-liner
+(`stop(project_root())`) is NOT lossless.** Two losses, measured:
+
+- *Cross-project stop.* The old wrapper stopped the server from any buffer by
+  teleporting through a remembered `index.html` buffer; the plain form
+  resolves wherever you are *now* — start in `bphopkins.net`, wander into
+  `nousowl.net` (the stylesheet flows between exactly those repos), stop, and
+  nothing happens, silently.
+- *The index-less-root fallback.* Serving the root there renders a bare
+  listing **and** — the Linux watch being non-recursive on the served root —
+  never live-reloads anything in a subdirectory: the tool inert precisely
+  where it runs. Serving the buffer's directory renders the page beside the
+  buffer and keeps reload alive for its siblings. Affects no current repo
+  (both sites have a root `index.html`); the old notes had marked this
+  behaviour change an improvement, which the reload angle overturns.
+
+**The adopted shape** closes both: explicit dir at both ends, `last_root` — a
+string — remembered at start and used by stop, and the fallback branch serving
+the buffer's directory when the root has no `index.html`. Measured
+lossless-or-better against the old wrapper in every scenario, and strictly
+better in three: the old buffer memory died on `:bwipeout` (silent stop-miss
+that also loaded the *wrong project's* `index.html`; plain `:bdelete` it
+survived — the handle stays valid, only a wipe kills it); the old `:edit`
+errored outright in a `winfixbuf` window, so no server started; and the old
+fallback's `lcd` permanently changed the window's cwd while every start loaded
+the generated root `index.html` into the buffer list.
+
+**Declined:**
+
+- *Tracking the root via the `LiveServerStarted` event* instead of assigning
+  `last_root` at the call site: the event's `data.root` is the realpath, the
+  instance key is the `:p`-expanded path — the exact mismatch class that
+  created the original bug.
+- *The plain 4-liner* — the losses above, for ~10 saved lines.
+- *Filing upstream* (standing rule: local record only, here and in the
+  wrapper's header).
+
+**Regression suite:** `tests/live-server/run.sh` — 27 checks, ~10 s, hermetic
+(fixtures and XDG state under `mktemp -d`, loopback only on a runtime-free
+port, `browser=false`, real repos untouched). W checks pin the wrapper
+contract; D checks the no-repo directory semantics (next paragraph); U checks
+pin the upstream behaviours above **as canaries** — a U failure after a plugin
+update means the ground moved (perhaps upstream fixed its bug), not that
+something broke. Mutation-verified in three directions with disjoint
+fingerprints: old wrapper → W3 W8 W11 W13 W13b W13c; `last_root` dropped from
+stop → W7 W8 W12b; fallback branch dropped → W10 W12 D2. Its README records
+the two harness rules the mutation runs forced (pcall every wrapper call so
+the summary line always prints; force-stop per section so a leaked server
+cannot smear a fingerprint). Run it after editing the wrapper or after any
+live-server.nvim update.
+
+**Directory semantics, measured 2026-08-22** (same day, off the planned
+`nousowl.net` → `nousowl/` move). `project_root()` resolves in order: nearest
+`.git` upward from the *buffer* (`vim.fs.root`), then `git rev-parse
+--show-toplevel` in *nvim's cwd*, then `getcwd()` — so outside any repo the
+cwd acts as the declared root. Every leg measured, with the wrapper's branch
+on top: a site subdirectory inside a repo whose root has no `index.html` (the
+nousowl-move shape; fixture `projC` pins the mechanism, and a depth-2
+`opsrepo/www/site/` case was measured besides) serves the *site* directory
+with live-reload firing on its `index.html`; a git-less directory with
+`index.html` at the cwd serves the cwd even from a subdir buffer (D1); a
+git-less directory without one serves the buffer's directory (D2); an unnamed
+buffer degrades to serving the cwd, because `expand('%:p:h')` on an unnamed
+buffer is the cwd — measured, not `''` (D3). One inherited corner,
+deliberately recorded rather than pinned: a buffer *outside* any repo while
+the cwd sits *inside* a site-shaped repo serves the cwd's repo — the
+`git rev-parse` leg asks about the cwd, not the buffer. Identical under the
+old wrapper (same `project_root()`, same branch), and rare enough to leave.
+
+**Interactively verified the same day** (live session, `bphopkins.net`):
+`<localleader>hh` opened the browser on the served homepage and
+`<localleader>hk` stopped it, including under deliberate buffer-hopping
+stress — so the one path headless testing cannot reach (`vim.ui.open`) is
+confirmed too, and nothing about this item remains unverified. Two adjacent
+facts settled from source the same day: a stale server after a crash is structurally impossible (the server runs
+in-process on `vim.uv` and dies with Neovim; `VimLeavePre` also stops all
+instances), and serving *two* projects at once is broken upstream regardless
+of wrapper — the second bind fails silently (`server.lua` checks neither
+`bind` nor `listen`), the plugin still notifies "started", and the port keeps
+serving the first project.
+
+**Do not rediscover this and panic:** on Linux the rewritten server cannot
+watch subdirectories at all (`server.lua`: `local recursive = jit.os ~= 'Linux'`;
+libuv's `uv_fs_event` has no recursive mode on inotify; upstream documents it,
+`:h live-server-limitations`), so only files directly in the served root
+trigger a reload — `css/style.css` never will. Settled 2026-08-22 as **not a
+problem here**: `make` in `bphopkins.net` always runs the phony `smarten`
+target, whose script unconditionally `mv`s a rewritten temp over root
+`index.html`, which fires the watcher and forces a full reload (not a CSS
+injection — the changed name doesn't match `%.css$`). *Corrected 2026-08-22:*
+this note previously said responses carry `Cache-Control: no-cache`; that was
+the npm-era server. Measured on v0.3.0, file responses carry **no** caching
+headers at all — no `Cache-Control`, no `Last-Modified`, no `ETag` — so
+nothing marks the stylesheet cacheable across the reload (and CSS-only
+injections bust with a `?_lr=` query regardless). Reload there is make-driven
+rather than save-driven, and structurally has to be: everything hand-edited in
+that repo lives in `src/`, `templates/` or `css/`, and the generated root
+`index.html` is the only watched file in the tree. `nousowl.net` is the easy
+case — hand-edited `index.html` at root, stylesheet a build artifact never
+touched there. Noted in passing: upstream development moved to Forgejo
+(`git.barrettruth.com`); GitHub is now a mirror, the pin still fetches fine —
+relevant only if the mirror ever lags.
 
 ---
 

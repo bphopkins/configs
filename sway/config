@@ -1,15 +1,42 @@
 # Sway config -- stow-managed from ~/Desktop/configs/sway/config.
 # Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
-# Apply changes with `swaymsg reload` or $mod+Shift+c.
+# Apply changes with `swaymsg reload` or $mod+Ctrl+c.
 #
-# Binding grammar, so it doesn't have to be inferred from the list below:
+# Binding grammar (adopted 2026-08-22, TODO.md item 6). The modifier names
+# what the action acts on -- to place or recall a binding, ask what it acts on:
 #
-#   $mod+<letter>          launch or invoke a thing (mnemonic)
-#   $mod+hjkl  / arrows    move focus
-#   $mod+Shift+hjkl        move the focused window
-#   $mod+$alt+left|right   walk workspaces   (+Shift carries the window along)
-#   $mod+Ctrl+<key>        structural: container splits
-#   $mod+Shift+<key>       the heavier variant of the unshifted action
+#   $mod          you: your attention and your instruments. Move focus
+#                 (hjkl/arrows), visit workspaces (1-0, Tab), summon things
+#                 (launchers, menu, scratchpad show), toggle your equipment
+#                 (w bar, m touchpad).
+#   $mod+Shift    the focused window: move it (hjkl/arrows), send it (1-0),
+#                 stash it (minus), toggle its state (f fullscreen,
+#                 space floating).
+#   $mod+Ctrl     the session: l lock, c reload.
+#   $mod+$alt     the workspace row: walk it (left/right); +Shift carries the
+#                 focused window along, so Shift keeps its meaning composed.
+#
+# Two clauses complete the law:
+#
+#   * Key families override the table on their own key. Escape means LEAVING,
+#     graded by weight: $mod+Escape ends the session, +Shift reaches the
+#     machine (poweroff/reboot nag). Print means capture; XF86* means
+#     hardware. The clause is forced by Print regardless (Shift+Print is a
+#     capture variant, no window involved), so Escape's gradient rides it for
+#     free.
+#
+#   * Promotions are a stated, closed list: q kill and r resize are window
+#     verbs sitting one tier light because they are pressed all day. The
+#     default home for a new window verb is Shift; promotion is earned by
+#     daily frequency and recorded here.
+#
+# Placing a new binding: an app -> $mod+mnemonic letter ($mod+v is
+# deliberately free). A window verb -> $mod+Shift+letter. A session op ->
+# $mod+Ctrl+letter. A machine action -> a button on the $mod+Shift+Escape nag
+# before it ever claims a chord. Hardware with no XF86 key -> a bare-tier
+# toggle letter (m, the touchpad, is the precedent). The container tier
+# (splits, focus parent/child, layouts) is deliberately absent -- see the
+# Layout section.
 #
 # Both vim keys and arrow keys are bound for every motion, on purpose -- the
 # parity is maintained deliberately, so add arrow variants to any new motion.
@@ -65,7 +92,11 @@ input type:touchpad {
 #
 # Session, power, and the bar
 #
-    bindsym $mod+Shift+c reload
+    # Reload re-reads this config: a session op, so Ctrl tier, c = config. It
+    # sat on $mod+Shift+c (upstream's default) until 2026-08-22; only the
+    # modifier moved, so that Shift could mean the focused window and nothing
+    # else.
+    bindsym $mod+Ctrl+c reload
 
     # swaynag gotcha: only -z/-Z buttons dismiss the nag; -b/-B run their action
     # and leave the bar on screen. The dismiss button is built in -- `-s` only
@@ -76,15 +107,18 @@ input type:touchpad {
         -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' \
         -B 'Yes, exit sway' 'swaymsg exit'
 
+    # Machine actions share this one nag rather than each claiming a chord
+    # (Escape family: leaving, graded -- the session on $mod+Escape, the
+    # machine one key heavier). Reboot joined as a second button 2026-08-22,
+    # settling a parked $mod+Shift+r idea that predated the nag.
     bindsym $mod+Shift+Escape exec swaynag -t warning -s 'Cancel' \
-        -m 'Shut down?' \
-        -B 'Poweroff' 'systemctl poweroff'
+        -m 'Shut down or reboot?' \
+        -B 'Poweroff' 'systemctl poweroff' \
+        -B 'Reboot' 'systemctl reboot'
 
-    #bindsym $mod+Shift+r exec systemctl reboot
-
-    # Lock on demand. Not $mod+l: that is `focus right` ($right = l) -- the same
-    # collision that moved the exit binding off $mod+Shift+l on 2025-11-10. The
-    # Ctrl tier is otherwise only the two split bindings, so `l` stays mnemonic.
+    # Lock on demand: a session op, so Ctrl tier, l = lock. (Not $mod+l: that
+    # is `focus right` ($right = l) -- the same collision that moved the exit
+    # binding off $mod+Shift+l on 2025-11-10.)
     # Appearance is in the swaylock package, not inline -- see swaylock/config.
     bindsym $mod+Ctrl+l exec swaylock -f
 
@@ -138,16 +172,9 @@ input type:touchpad {
     bindsym $mod+Up     focus up
     bindsym $mod+Right  focus right
 
-    # Select the parent container, so a whole column/row can be moved, resized,
-    # floated or fullscreened as a unit rather than one window at a time. Press
-    # $mod+p repeatedly to walk further up the tree. Rehomed to p (mnemonic, and
-    # free) because upstream's $mod+a is the launcher here.
-    #
-    # focus child is the inverse and is bound because the pair is what makes
-    # this usable: after going up, it returns to the window you came from,
-    # rather than having to steer back down with the direction keys.
-    bindsym $mod+p       focus parent
-    bindsym $mod+Shift+p focus child
+    # focus parent / focus child are deliberately unbound: the container tier
+    # went unused and was dropped 2026-08-22. The reasoning and the revival
+    # chords are recorded in the Layout section below.
 
 #
 # Moving windows
@@ -211,22 +238,40 @@ input type:touchpad {
     bindsym $mod+Shift+0 move container to workspace number 10
 
 #
-# Layout
+# Layout -- deliberately empty: the container tier is unbound
 #
-    # Split the focused container. (Upstream's defaults were $mod+b / $mod+v;
-    # those keys are launchers here, so splits moved to $mod+Ctrl+h / $mod+Ctrl+v.)
-    bindsym $mod+Ctrl+h splith
-    bindsym $mod+Ctrl+v splitv
-
-    # Tabbed and stacking container layouts are deliberately unbound, not
-    # forgotten: the keybindings were clunky and the feature goes unused, since
-    # every application that needs tabs here brings its own (WezTerm, browsers,
-    # Okular). Note this is a separate choice from `workspace_layout default`
-    # below, which only governs how *new* workspaces start -- restoring these
-    # bindings would not put a tab bar on anything by default.
-    #bindsym $mod+s layout stacking
-    # bindsym $mod+Shift+t layout tabbed
-    # bindsym $mod+Shift+s layout toggle split
+    # Sway's middle tier -- the containers between window and workspace -- goes
+    # unused in this workflow, and its bindings are absent on purpose, not
+    # forgotten. Two dated decisions:
+    #
+    # * Tabbed/stacking layouts, unbound 2026-08-13: the keybindings were
+    #   clunky and the feature went unused, since every application that needs
+    #   tabs here brings its own (WezTerm, browsers, Okular). Separate from
+    #   `workspace_layout default` below, which only governs how *new*
+    #   workspaces start.
+    #
+    # * splith/splitv ($mod+Ctrl+h/v) and focus parent/child ($mod+p,
+    #   $mod+Shift+p), dropped 2026-08-22 once their use-cases were laid out:
+    #   splits had never been pressed intentionally, parent/child never at
+    #   all. With one or two windows per workspace -- the norm on this
+    #   laptop's 13" panel -- a workspace stays a flat row of leaves, and the
+    #   group that focus parent would select coincides with the workspace
+    #   itself. Supersedes the 2026-08-13 decision that kept the split pair
+    #   on Ctrl+h/v.
+    #
+    # What stays reachable without any of it, measured in a nested sway
+    # 2026-08-22: new windows tile side by side on their own, and an
+    # orthogonal $mod+Shift+j/k move still builds stacked layouts implicitly
+    # -- two 640x720 columns became two full-width 1280x360 rows on one `move
+    # down`. (Also where the occasional accidental vertical split always came
+    # from.)
+    #
+    # If tree work ever becomes real -- plausibly a big-screen sway on bigfed,
+    # where three-plus windows per workspace and deliberate arrangements would
+    # be the norm -- revive the tier as: splits back on $mod+Ctrl+h/v, focus
+    # parent/child on the bare (attention) tier, layout ops on Ctrl letters.
+    # $mod+Ctrl then widens from "the session" to "the enclosures: the
+    # container around the window and the session around everything".
 
 #
 # Scratchpad

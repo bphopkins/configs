@@ -289,13 +289,15 @@ if [ -f "$GS" ]; then
   git -C "$r" add -A; git -C "$r" commit -qm one; old=$(git -C "$r" rev-parse HEAD)
   mkdir -p "$r/claude-config/memory/-y"; printf 'b\n' > "$r/claude-config/memory/-y/b.md"
   git -C "$r" add -A; git -C "$r" commit -qm two
-  out=$(PATH=/nonexistent:/usr/bin:/bin _gsync_pull_hints org "$r" "$old" 2>&1)
+  # hints are queued now; the flush is what prints them (same subshell, so the
+  # queue survives between the two calls).
+  out=$(PATH=/nonexistent:/usr/bin:/bin _gsync_pull_hints org "$r" "$old" 2>&1; _gsync_flush_hints 2>&1)
   yes_ "new scope fires the hint"         '[[ "$out" == *"claude-config changed"* ]]'
-  out=$(_gsync_pull_hints configs "$r" "$old" 2>&1)
+  out=$(_gsync_pull_hints configs "$r" "$old" 2>&1; _gsync_flush_hints 2>&1)
   not_ "does not fire for other repos"    '[[ "$out" == *"claude-config changed"* ]]'
   printf 'a2\n' > "$r/claude-config/memory/-x/a.md"
   git -C "$r" add -A; git -C "$r" commit -qm three; mid=$(git -C "$r" rev-parse HEAD~1)
-  out=$(_gsync_pull_hints org "$r" "$mid" 2>&1)
+  out=$(_gsync_pull_hints org "$r" "$mid" 2>&1; _gsync_flush_hints 2>&1)
   not_ "a mere edit does not fire it"     '[[ "$out" == *"claude-config changed"* ]]'
   yes_ "the || true guard is present"     'grep -q "claude-link --auto >/dev/null 2>&1 || true" "$GS"'
 else

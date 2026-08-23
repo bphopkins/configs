@@ -184,7 +184,11 @@ mkdir -p cfg2/bash/.bashrc.d cfg2/nvim
 echo b > "cfg2/bash/.bashrc.d/95-café.sh"     # unicode: defeats quotePath-blind parsing
 echo c > cfg2/nvim/new.lua
 must git -C cfg2 add -A; must git -C cfg2 commit -qm c2; must git -C cfg2 push -q
-out="$(_gsync_push_repo configs "$SB/configs" m)"; rc=$?
+# The helper queues hints; the flush is what prints them, so drive both inside
+# one subshell (the queue would not survive a second). `exit $rc` keeps rc the
+# PUSH's status -- the flush always returns 0, which would make the check below
+# vacuous.
+out="$(_gsync_push_repo configs "$SB/configs" m; rc=$?; _gsync_flush_hints; exit "$rc")"; rc=$?
 check "behind push: rc=0"             [ "$rc" -eq 0 ]
 check "behind push: reported PULL"    contains "$out" "integrated changes from origin"
 check "behind push: no up-to-date lie" lacks "$out" "up to date"
@@ -227,6 +231,42 @@ out1="$(_gsync_push_repo r14 "$SB/r14" m)"
 out2="$(_gsync_push_repo r14 "$SB/r14" m)"; rc=$?
 check "re-flag: warned both runs"     bash -c "contains() { [[ \"\$1\" == *\"\$2\"* ]]; }; contains '$out1' \"secrets pattern\" && contains '$out2' \"secrets pattern\""
 check "re-flag: second run rc=0"      [ "$rc" -eq 0 ]
+
+# --- H1: hints are consolidated at the end, after the summary (2026-08-22).
+# Interleaved through a fourteen-repo run they were easy to scroll past, and a
+# hint is by definition the thing still left to do. The ORDERING is the feature:
+# against the pre-change code the hint lands before the later repos' lines.
+_gsync_online() { return 0; }
+must git init -q --bare -b main "$SB/origin-e2e.git"
+must git clone -q "$SB/origin-e2e.git" "$SB/e2e/configs"      # basename must be 'configs'
+mkdir -p "$SB/e2e/configs/bash/.bashrc.d"
+echo a > "$SB/e2e/configs/README.md"
+must git -C "$SB/e2e/configs" add -A
+must git -C "$SB/e2e/configs" commit -qm c1
+must git -C "$SB/e2e/configs" push -qu origin main
+must git clone -q "$SB/origin-e2e.git" "$SB/e2e/other-machine"
+mkdir -p "$SB/e2e/other-machine/bash/.bashrc.d"
+echo b > "$SB/e2e/other-machine/bash/.bashrc.d/95-added.sh"   # fires re-source + stow hints
+must git -C "$SB/e2e/other-machine" add -A
+must git -C "$SB/e2e/other-machine" commit -qm c2
+must git -C "$SB/e2e/other-machine" push -q
+mkpair e2eplain
+REPOS_DESKTOP=("$SB/e2e/configs" "$SB/e2eplain")              # configs FIRST
+out="$(gpullall)"; rc=$?
+check "consolidated: gpullall rc=0"      [ "$rc" -eq 0 ]
+check "consolidated: hint survives"      contains "$out" "source ~/.bashrc"
+check "consolidated: stow hint survives" contains "$out" "stow-all"
+ln_of() { printf '%s\n' "$2" | grep -n "$1" | head -1 | cut -d: -f1; }
+hint_ln="$(ln_of 'source ~/.bashrc' "$out")"
+plain_ln="$(ln_of 'e2eplain:' "$out")"
+sum_ln="$(ln_of 'Pull complete' "$out")"
+check "consolidated: after later repos"  [ "${hint_ln:-0}" -gt "${plain_ln:-0}" ]
+check "consolidated: after the summary"  [ "${hint_ln:-0}" -gt "${sum_ln:-0}" ]
+check "consolidated: printed once"       [ "$(printf '%s\n' "$out" | grep -c 'source ~/.bashrc')" -eq 1 ]
+# The queue is local to the command, so it cannot survive into the next run.
+out="$(gpullall)"; rc=$?
+check "consolidated: rc=0 second run"    [ "$rc" -eq 0 ]
+check "consolidated: no leak next run"   lacks "$out" "source ~/.bashrc"
 
 echo
 echo "passed: $pass  failed: $fail"

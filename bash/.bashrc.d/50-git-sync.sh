@@ -17,6 +17,10 @@
 # again on the next run. Committed new files are listed in the output so
 # nothing enters a repo invisibly.
 #
+# Follow-up hints (re-source, restow, :Lazy restore, claude-link) are collected
+# during the run and printed as one block at the very end, after the summary --
+# see _gsync_hint / _gsync_flush_hints below.
+#
 # Scope, deliberately: the vet matches FILENAMES, and only paths new to the
 # repo (--diff-filter=AT below). A secret pasted into an already-tracked file
 # is not checked, and adding M to that filter would not help -- a modified
@@ -71,6 +75,37 @@ _gsync_say() { # $1 = tag, rest = message; tag colorized on a tty
 
 _gsync_detail() { # indent captured git output under its status line
   printf '%s\n' "$1" | sed 's/^/    /'
+}
+
+# Follow-up hints are queued, not printed where they arise: interleaved with
+# fourteen repos' worth of per-repo lines they are easy to scroll past, and the
+# whole point of a hint is that it is the thing still left to do. Each command
+# declares _GSYNC_HINTS local, so the queue cannot outlive the run that filled
+# it, and _gsync_flush_hints prints them as one block just before the command
+# returns. Actions (claude-link --auto) stay where they arise -- only the
+# message defers.
+#
+# Array idioms here are `set -u`-safe deliberately: bash 5.3 errors on
+# ${#arr[@]} for an unset array but expands "${arr[@]}" to nothing, so the
+# emptiness test is the loop itself. tests/claude/run.sh sources this file
+# under `set -u`.
+_gsync_hint() { # queue a follow-up (deduped; first-seen order kept)
+  local h
+  for h in "${_GSYNC_HINTS[@]}"; do
+    [[ "$h" == "$1" ]] && return 0
+  done
+  _GSYNC_HINTS+=("$1")
+  return 0
+}
+
+_gsync_flush_hints() { # print the queued follow-ups as one block, then clear
+  local h had=0
+  for h in "${_GSYNC_HINTS[@]}"; do
+    ((had)) || echo
+    had=1
+    _gsync_say HINT "$h"
+  done
+  _GSYNC_HINTS=()
 }
 
 _gsync_in_progress() { # print the operation under way, if any; else return 1
@@ -293,13 +328,13 @@ _gsync_pull_hints() {
     done
   done
   if ((bash_hit)); then
-    _gsync_say HINT "configs: bash files changed — run: source ~/.bashrc"
+    _gsync_hint "configs: bash files changed — run: source ~/.bashrc"
   fi
   if ((lock_hit)); then
-    _gsync_say HINT 'configs: plugin lockfile changed — run: nvim --headless "+Lazy! restore" +qa'
+    _gsync_hint 'configs: plugin lockfile changed — run: nvim --headless "+Lazy! restore" +qa'
   fi
   if ((${#pkg_hit[@]})); then
-    _gsync_say HINT "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all (re-source first)"
+    _gsync_hint "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all (re-source first)"
   fi
   # claude-link --auto is narrow (it only acts where nothing can conflict) and
   # idempotent, so running it here is safe. `|| true` is load-bearing: it exits
@@ -307,9 +342,9 @@ _gsync_pull_hints() {
   if ((claude_hit)); then
     if command -v claude-link >/dev/null 2>&1; then
       claude-link --auto >/dev/null 2>&1 || true
-      _gsync_say HINT "org: claude-config changed — ran claude-link --auto (log: ~/.claude/claude-link-auto.log)"
+      _gsync_hint "org: claude-config changed — ran claude-link --auto (log: ~/.claude/claude-link-auto.log)"
     else
-      _gsync_say HINT "org: claude-config changed — run: claude-link"
+      _gsync_hint "org: claude-config changed — run: claude-link"
     fi
   fi
 }
@@ -483,7 +518,7 @@ _gsync_push_repo() {
 
 gpull() {
   local name failed=0
-  local _GSYNC_ONLINE_CACHE=""
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
   if (($# == 0)); then
     echo "Usage: gpull NAME...   (repos under ~/Desktop)"
     return 1
@@ -491,12 +526,14 @@ gpull() {
   for name in "$@"; do
     _gsync_pull_repo "$name" "$HOME/Desktop/$name" || ((failed += 1))
   done
+  # Before the status expression, so the return value stays the loop's verdict.
+  _gsync_flush_hints
   ((failed == 0))
 }
 
 gpush() {
   local msg="" names=() name rc failed=0
-  local _GSYNC_ONLINE_CACHE=""
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
   while (($#)); do
     case "$1" in
       -m)
@@ -523,13 +560,14 @@ gpush() {
     # offline push (3) is the one benign nonzero outcome.
     ((rc != 0 && rc != 3)) && ((failed += 1))
   done
+  _gsync_flush_hints
   ((failed == 0))
 }
 
 gpullall() {
   local repo name ok=0 skipped=0 failed=0
   local fail_list=() skip_list=()
-  local _GSYNC_ONLINE_CACHE=""
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
   if ! _gsync_online; then
     _gsync_say WARN "offline — nothing pulled"
     return 1
@@ -554,13 +592,14 @@ gpullall() {
   echo "Pull complete. ok: $ok  skipped: $skipped  failed: $failed"
   ((${#skip_list[@]})) && _gsync_say SKIP "skipped: ${skip_list[*]}"
   ((${#fail_list[@]})) && _gsync_say FAIL "needs attention: ${fail_list[*]}"
+  _gsync_flush_hints
   ((failed == 0))
 }
 
 gpushall() {
   local msg="" repo name ok=0 skipped=0 failed=0 pending=0
   local fail_list=() skip_list=() pend_list=()
-  local _GSYNC_ONLINE_CACHE=""
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
   if [[ "${1:-}" == "-m" ]]; then
     if [[ -z "${2:-}" ]]; then
       echo "Usage: gpushall [-m MSG]"
@@ -601,6 +640,7 @@ gpushall() {
   ((${#skip_list[@]})) && _gsync_say SKIP "skipped: ${skip_list[*]}"
   ((${#pend_list[@]})) && _gsync_say PEND "push pending (offline): ${pend_list[*]} — re-run gpushall when online"
   ((${#fail_list[@]})) && _gsync_say FAIL "needs attention: ${fail_list[*]}"
+  _gsync_flush_hints
   ((failed == 0))
 }
 

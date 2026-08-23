@@ -13,6 +13,8 @@ config.hide_tab_bar_if_only_one_tab = true
 config.font_size = 12
 config.font = wezterm.font("Source Code Pro")
 config.color_scheme = "tokyonight_night" -- alts: tokyonight, tokyonight_night, tokyonight_storm, Wez
+config.check_for_updates = false -- RPM-managed; the built-in updater is noise
+config.scrollback_lines = 20000 -- default is 3500; the tests/ suites overrun it
 
 -- Finally, return the configuration to wezterm:
 return config

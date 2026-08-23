@@ -21,7 +21,8 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
 
 - `test-gsync.sh` — core per-repo behaviors: commit shapes (new / modified-only /
   deleted), size and secrets vetting, rebase-conflict auto-abort, merge-in-progress
-  guard, offline pend, non-main warning, hints, argument parsing, completion.
+  guard, offline pend, non-main warning, hints and the queue/flush contract
+  behind them, argument parsing, completion.
 - `test-two-machine.sh` — the two-machine workflow end to end: repo A ahead on
   machine 1, repo B ahead on machine 2, dashboards, convergence, non-conflicting
   and conflicting divergence, composed `gstatall` verdicts.
@@ -31,7 +32,10 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   unborn-branch skip, `:(literal)` unstaging, rename/typechange vetting, embedded
   repos, secret directory components, `GSYNC_MAX_MB` validation, `gpushall` parser,
   offline entry points, diverged-pull remedy, integrated-changes reporting, moved
-  tags, detached HEAD, listing truncation, re-flagging.
+  tags, detached HEAD, listing truncation, re-flagging. Also carries one later
+  behavioral change rather than an audit finding: the 2026-08-22 hint
+  consolidation, whose end-to-end section asserts a hint lands *after* both the
+  later repos' lines and the summary.
 
 Harness conventions — keep these when adding tests:
 

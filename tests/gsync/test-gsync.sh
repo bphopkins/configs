@@ -124,6 +124,8 @@ check "branch: initial push shown"  contains "$out" "initial push to origin/expe
 git -C cloneA checkout -q main
 
 # --- 9. hints (repo must be named 'configs'; STOW_ORDER from 60-stow.sh)
+# _gsync_pull_hints QUEUES into _GSYNC_HINTS; _gsync_flush_hints prints. Each
+# capture below is its own subshell, so the queue starts empty every time.
 source "$CFG_ROOT/bash/.bashrc.d/60-stow.sh"
 mkdir -p "$SANDBOX/hintrepo"
 git -C "$SANDBOX/hintrepo" init -qb main
@@ -134,18 +136,18 @@ old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
 echo b > "$SANDBOX/hintrepo/bash/.bashrc.d/95-new.sh"   # added file in bash pkg
 echo c > "$SANDBOX/hintrepo/nvim/init.lua"              # added file in nvim pkg
 git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c2
-out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: re-source hint"       contains "$out" "source ~/.bashrc"
 check "hints: stow-all hint"        contains "$out" "stow-all"
 check "hints: names bash pkg"       contains "$out" "bash"
 check "hints: names nvim pkg"       contains "$out" "nvim"
-out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old")"
+out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: only for configs"     [ -z "$out" ]
 # modification-only commit: no stow hint, yes bash hint if bash file modified
 old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
 echo mod >> "$SANDBOX/hintrepo/nvim/init.lua"
 git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c3
-out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: mod-only => no hints" [ -z "$out" ]
 # plugin lockfile: unlike other nvim files, a plain modification must hint
 # (:Lazy restore is what makes a pulled lock take effect), with no stow hint
@@ -154,11 +156,30 @@ git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c4
 old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
 echo ' ' >> "$SANDBOX/hintrepo/nvim/lazy-lock.json"          # the real case: M
 git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c5
-out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: lockfile mod => Lazy restore" contains "$out" 'Lazy! restore'
 check "hints: lockfile mod => no stow hint" [ "${out//stow-all/}" = "$out" ]
-out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old")"
+out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: lockfile only for configs"    [ -z "$out" ]
+# the queue/flush contract: nothing prints until the flush, the flush empties
+# the queue, and an identical hint queued twice prints once.
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
+check "hints: queued, not printed"          [ -z "$out" ]
+out="$(
+  _gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"
+  _gsync_flush_hints >/dev/null   # the first flush consumes the queue...
+  _gsync_flush_hints              # ...so the second must print nothing
+)"
+check "hints: flush empties the queue"      [ -z "$out" ]
+out="$(
+  _GSYNC_HINTS=()
+  _gsync_hint "same follow-up"
+  _gsync_hint "same follow-up"
+  _gsync_hint "other follow-up"
+  _gsync_flush_hints
+)"
+check "hints: deduped"                      [ "$(printf '%s\n' "$out" | grep -c 'same follow-up')" -eq 1 ]
+check "hints: order kept"                   bash -c "[ \"\$(printf '%s\\n' \"\$1\" | grep -n 'same follow-up' | cut -d: -f1)\" -lt \"\$(printf '%s\\n' \"\$1\" | grep -n 'other follow-up' | cut -d: -f1)\" ]" _ "$out"
 
 # --- 10. arg parsing
 out="$(gpush 2>&1)"; rc=$?

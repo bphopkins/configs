@@ -1,10 +1,29 @@
 -- lua/plugins/live-server.lua
--- Minimal live-server config with root-aware start/stop.
--- Uses the plugin's own LiveServerStart/LiveServerStop commands.
+-- Root-aware start/stop for live-server.nvim.
+--
+-- Design (settled 2026-08-22, TODO.md item 9): pass the directory explicitly
+-- at BOTH ends. The plugin normalizes an explicit argument through the same
+-- resolver at start and stop, so identical strings yield identical instance
+-- keys and stop reliably finds the server. Bare start/stop resolve from the
+-- current buffer instead: from a body file under src/ a bare start serves the
+-- wrong directory, and a bare stop misses the instance key outright — the key
+-- is stored with a trailing slash the upward walk never reproduces. Upstream
+-- bug, recorded in TODO.md item 9; deliberately not filed.
+--
+-- last_root remembers the directory we started, so the stop works from any
+-- buffer in any project. It is a plain string – unlike the buffer handle this
+-- file used to juggle for the same purpose – so :bwipeout cannot invalidate
+-- it, and its lifetime matches the server's exactly (the server runs in-process
+-- on vim.uv and dies with Neovim).
+--
+-- Regression suite: tests/live-server/run.sh — run it after any edit here or
+-- any plugin update (the v0.1.7 → v0.3.0 rewrite broke this file silently).
 
+-- No build step: since v0.2.0 the server runs entirely in Lua on vim.uv, so the
+-- npm `live-server` package it used to wrap is no longer a dependency
+-- (`:checkhealth live-server` says so if the npm one is still installed).
 return {
   "barrett-ruth/live-server.nvim",
-  build = "npm install -g live-server",
 
   -- Lazy-load on the base commands or our root helpers
   cmd = {
@@ -14,9 +33,9 @@ return {
     "LiveServerStopRoot",
   },
 
-  -- Two keybindings, as requested:
-  --   <localleader>hh -> start from project root
-  --   <localleader>hk -> stop (root-aware)
+  -- Two keybindings:
+  --   <localleader>hh -> start, serving the project root
+  --   <localleader>hk -> stop the server hh started, from anywhere
   keys = {
     {
       "<localleader>hh",
@@ -26,13 +45,14 @@ return {
     {
       "<localleader>hk",
       "<cmd>LiveServerStopRoot<CR>",
-      desc = "Live Server stop (project root)",
+      desc = "Live Server stop",
     },
   },
 
   config = function()
-    -- Use plugin defaults
-    require("live-server").setup()
+    -- No setup() call: it was removed in v0.2.0 and now only logs an error.
+    -- Configuration would go in `vim.g.live_server` (see :h live-server-config);
+    -- the defaults are what we want, so there is nothing to set.
 
     ------------------------------------------------------------------
     -- Project root: prefer .git, fall back to cwd
@@ -69,87 +89,29 @@ return {
     ------------------------------------------------------------------
     -- Root-aware start/stop
     ------------------------------------------------------------------
-    local live_server_root_buf = nil
+    local last_root = nil
 
-    local function live_server_start_root()
+    vim.api.nvim_create_user_command("LiveServerStartRoot", function()
       local root = project_root()
-      if not root then
-        vim.notify("live-server.nvim: could not determine project root", vim.log.levels.WARN)
-        return
+      local dir = root
+      if vim.fn.filereadable(root .. "/index.html") ~= 1 then
+        -- No index.html at the root: serve the buffer's directory instead.
+        -- Serving the root there would render a bare listing and – the watch
+        -- being non-recursive on Linux – never live-reload anything in a
+        -- subdirectory; the buffer's directory renders whatever page sits
+        -- beside the buffer and keeps the reload alive for its siblings.
+        dir = vim.fn.expand("%:p:h")
       end
+      last_root = dir
+      require("live-server").start(dir)
+    end, {})
 
-      -- Prefer <root>/index.html if it exists
-      local index
-      if vim.fs and vim.fs.joinpath then
-        index = vim.fs.joinpath(root, "index.html")
-      else
-        index = root .. "/index.html"
-      end
-
-      local cur_win = vim.api.nvim_get_current_win()
-      local cur_buf = vim.api.nvim_get_current_buf()
-
-      if index and vim.fn.filereadable(index) == 1 then
-        -- Temporarily visit the root index.html buffer
-        vim.cmd("edit " .. vim.fn.fnameescape(index))
-      else
-        -- Fallback: at least set cwd to the project root
-        vim.cmd("lcd " .. vim.fn.fnameescape(root))
-      end
-
-      -- Remember which buffer owns this server (for stopping later)
-      live_server_root_buf = vim.api.nvim_get_current_buf()
-
-      -- Start the actual server using the plugin's command
-      vim.cmd("LiveServerStart")
-
-      -- Go back to whatever you were editing
-      if vim.api.nvim_buf_is_valid(cur_buf) then
-        vim.api.nvim_set_current_win(cur_win)
-        vim.api.nvim_set_current_buf(cur_buf)
-      end
-    end
-
-    local function live_server_stop_root()
-      local cur_win = vim.api.nvim_get_current_win()
-      local cur_buf = vim.api.nvim_get_current_buf()
-
-      -- If we still know the "owner" buffer, switch to it
-      if live_server_root_buf and vim.api.nvim_buf_is_valid(live_server_root_buf) then
-        vim.api.nvim_set_current_buf(live_server_root_buf)
-      else
-        -- Fallback: reconstruct the root buffer context
-        local root = project_root()
-        local index
-        if vim.fs and vim.fs.joinpath then
-          index = vim.fs.joinpath(root, "index.html")
-        else
-          index = root .. "/index.html"
-        end
-
-        if index and vim.fn.filereadable(index) == 1 then
-          vim.cmd("edit " .. vim.fn.fnameescape(index))
-        else
-          vim.cmd("lcd " .. vim.fn.fnameescape(root))
-        end
-      end
-
-      -- Now we're in the same context we started from; use the plugin's stop
-      vim.cmd("silent! LiveServerStop")
-
-      live_server_root_buf = nil
-
-      -- Restore previous buffer/window
-      if vim.api.nvim_buf_is_valid(cur_buf) then
-        vim.api.nvim_set_current_win(cur_win)
-        vim.api.nvim_set_current_buf(cur_buf)
-      end
-    end
-
-    ------------------------------------------------------------------
-    -- User commands
-    ------------------------------------------------------------------
-    vim.api.nvim_create_user_command("LiveServerStartRoot", live_server_start_root, {})
-    vim.api.nvim_create_user_command("LiveServerStopRoot", live_server_stop_root, {})
+    vim.api.nvim_create_user_command("LiveServerStopRoot", function()
+      -- Stop with the same string start() was given — the only form
+      -- guaranteed to match the plugin's instance key. (The LiveServerStarted
+      -- event's data.root is the realpath, not the key; don't switch to it.)
+      require("live-server").stop(last_root or project_root())
+      last_root = nil
+    end, {})
   end,
 }
