@@ -147,6 +147,18 @@ echo mod >> "$SANDBOX/hintrepo/nvim/init.lua"
 git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c3
 out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
 check "hints: mod-only => no hints" [ -z "$out" ]
+# plugin lockfile: unlike other nvim files, a plain modification must hint
+# (:Lazy restore is what makes a pulled lock take effect), with no stow hint
+echo '{}' > "$SANDBOX/hintrepo/nvim/lazy-lock.json"          # setup: create
+git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c4
+old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
+echo ' ' >> "$SANDBOX/hintrepo/nvim/lazy-lock.json"          # the real case: M
+git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c5
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"
+check "hints: lockfile mod => Lazy restore" contains "$out" 'Lazy! restore'
+check "hints: lockfile mod => no stow hint" [ "${out//stow-all/}" = "$out" ]
+out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old")"
+check "hints: lockfile only for configs"    [ -z "$out" ]
 
 # --- 10. arg parsing
 out="$(gpush 2>&1)"; rc=$?

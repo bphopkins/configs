@@ -20,7 +20,7 @@ syntax evaluation and no redraw, and every timing would be meaningless.
 | file | what it is |
 |---|---|
 | `run.sh` | the regression gate — run this |
-| `verify.py` | its 23 checks |
+| `verify.py` | its 37 checks |
 | `bench.py` | the measurement tool (no pass/fail) |
 | `stallwatch.lua` | in-session diagnostic for stalls you can't reproduce |
 | `harness.py` | shared Neovim harness |
@@ -45,19 +45,46 @@ broken:
   where they used to be queried on every character;
 - a Lua buffer still auto-completes, i.e. non-TeX filetypes are untouched;
 - the auto-save autocmds live in the `bph_autosave` group, none is left
-  ungrouped, and re-sourcing `autocmds.lua` does not duplicate them.
+  ungrouped, and re-sourcing `autocmds.lua` does not duplicate them;
+- the gate's look-behind survives *long* arguments: sources stay enabled deep
+  in a 75-char `\cite` key list and after a long optional argument (at the
+  original 60-char window both went dead mid-argument — found 2026-08-22,
+  while the short arguments above had been passing all along);
+- auto-save failures are loud exactly once: a readonly buffer is skipped
+  silently, a disk-level failure notifies once per buffer with repeats quiet,
+  and recovery saves and notes once (`silent! write` used to swallow all of
+  it — and the replacement needed a confirm-guard, because under LazyVim's
+  `'confirm'` a failing `:write` pops a modal dialog instead of erroring);
+- markdown `<CR>` serves both masters: blink's enter-accept (blink applies
+  its own buffer-local mapping and snapshots ours as its fallback —
+  undocumented upstream behaviour) and checkbox-list continuation.
 
 Run it after a VimTeX or blink.cmp update, after editing
 `lua/plugins/{vimtex,completions}.lua` or `lua/config/autocmds.lua`, or whenever
 typing in a long LaTeX paragraph starts feeling heavy again.
 
-**Mutation-verified.** Point it at a pre-fix config tree and exactly the checks
-that should fail, do:
+**Mutation-verified**, in three directions (2026-08-22, each run and checked
+against its exact failure set):
 
 ```bash
-NVIM_LATENCY_CONFIG=/path/to/prefix-config python3 verify.py
-# 16 passed, 7 failed — one matchparen, three prose-gating, three auto-save
+NVIM_LATENCY_CONFIG=/path/to/mutated-tree python3 verify.py
 ```
+
+- *Pre-fix `autocmds.lua` + `completions.lua`* (60-char window, `silent!
+  write`): exactly the two long-argument checks and three auto-save-loudness
+  checks fail — plus the two markdown-menu checks as **cascade**: the old
+  `silent!` code under `'confirm'` leaves a modal dialog pending, which eats
+  the markdown block's keystrokes.  Non-local, but itself a demonstration of
+  the bug being guarded.
+- *`lua/plugins/markdown_tasks.lua` removed*: exactly the buffer-local `<CR>`
+  mapping check and the checkbox-continuation check fail.
+- *The confirm-guard deleted from the auto-save callback*: the four
+  disk-failure/recovery checks fail (the dialog is back, so no notification
+  ever fires), plus the same two-check cascade — which is what pins the
+  guard.
+
+(Historical, against the original pre-2026-08-22 tree of the then-23 checks:
+`16 passed, 7 failed — one matchparen, three prose-gating, three auto-save`.)
 
 That environment variable exists for this purpose. One honest note about how it
 was built: the idempotency check originally counted only *grouped* autocmds,

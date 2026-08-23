@@ -260,6 +260,42 @@ tree with no further step. All are clean today.
 
 ---
 
+## 8. Gradually perfect the generated snippet libraries
+
+- [ ] Fix bulk-generation oddities in the two snippet libraries as they surface
+  in real use — no sweep, just capture-and-correct when noticed.
+
+Raised 2026-08-22. The libraries were generated in bulk and small mistakes got
+internalized; they function well, but as the permanent snippet source they are
+worth perfecting over time ("if these end up being my source for the rest of
+time, then it's worth gradually perfecting them from here").
+
+**The one rule that makes fix-as-noticed work — the two files are opposites:**
+
+- `latex-workshop.lua` is a one-time conversion with no generator behind it:
+  **hand-edit it freely**; edits are durable (`.styluaignore`d too, so nothing
+  reflows them).
+- `french-logic.lua` is **regenerated wholesale** whenever `french-logic.sty`
+  changes (sha-stamp check at every Neovim start) — **a hand edit there is
+  silently obliterated by the next `.sty` change.** Durable fixes go into the
+  generator (`sty-lua-snippets.py`) when the oddity is systematic, or into the
+  `.sty` itself when the snippet faithfully mirrors a package quirk. Precedent
+  for the generator route: the 2026-07-26 env-optional-default refinement
+  (`\proof~` dropped its redundant `[\proofname]`) — exactly the shape of
+  change this item expects more of.
+
+If a one-off divergence from generator output is ever genuinely needed (not
+systematic, not a `.sty` matter), there is **no override mechanism yet** —
+designing one is part of this item. Candidates: an exceptions table in the
+generator (precedent: `KNOWN_UNREGISTERED` for `--coverage`), or a third
+hand-curated library file in `lua/snippets/` plus one name in `snippets.lua`'s
+`filetype_extend` (the growth path already noted in `CLAUDE.md`'s 2026-08-22
+audit). Note that duplicate triggers across libraries do **not** shadow each
+other — both appear in the menu — so a shadowing scheme needs actual design,
+not just a second file.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,

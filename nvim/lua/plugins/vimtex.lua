@@ -1,7 +1,10 @@
 return {
   "lervag/vimtex",
+  -- Eager on purpose: VimTeX's own docs say not to lazy-load it (it manages
+  -- filetype detection itself).  An `ft = {...}` key used to sit here too —
+  -- inert, since an explicit lazy=false wins over any trigger, so it only
+  -- misled readers into thinking the plugin was filetype-gated.
   lazy = false,
-  ft = { "tex", "plaintex", "latex" },
 
   init = function()
     -- Throws if another instance already owns the socket (inverse search

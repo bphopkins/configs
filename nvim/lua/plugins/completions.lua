@@ -5,6 +5,14 @@ return {
   --   - blink.compat lets blink.cmp consume that nvim-cmp source
   --   - blink.cmp merges it with LuaSnip snippets, with snippets ranked higher
 
+  -- friendly-snippets ships as a blink.cmp dependency, but with
+  -- snippets.preset = "luasnip" below and no vscode loader anywhere in this
+  -- config, nothing ever reads it — the tex menu is entirely the two
+  -- generated libraries in lua/snippets (verified 2026-08-22).  Disabled so
+  -- it is not cloned, checked, or updated for nothing; delete this line to
+  -- re-enable.
+  { "rafamadriz/friendly-snippets", enabled = false },
+
   -- 0) blink.compat: bridge between blink.cmp and nvim-cmp sources (like cmp-vimtex)
   {
     "saghen/blink.compat",
@@ -72,8 +80,15 @@ return {
           return true -- every other filetype keeps stock behaviour
         end
         local col = vim.api.nvim_win_get_cursor(0)[2]
-        -- Bounded look-behind: never scan the whole paragraph.
-        local before = vim.api.nvim_get_current_line():sub(math.max(1, col - 60), col)
+        -- Bounded look-behind: never scan the whole paragraph.  The bound
+        -- must comfortably exceed a real *argument*, not just a command
+        -- name: at the original 60, \cite{ fell out of the window once a
+        -- key list or prenote ran past ~60 chars, and both sources went
+        -- dead mid-argument (found by direct probe 2026-08-22 — the short
+        -- arguments in the test suite never noticed).  300 still costs
+        -- microseconds; it was the sources that were expensive, never this
+        -- scan.
+        local before = vim.api.nvim_get_current_line():sub(math.max(1, col - 300), col)
         -- typing a command:            \cn|      \begin|
         if before:match("\\%a*$") then
           return true
@@ -108,12 +123,11 @@ return {
           -- never runs in e.g. Lua/Markdown buffers — and, within those,
           -- only where a LaTeX completion is plausible (see above).
           enabled = function()
+            -- bib/bibtex used to be listed here too, but the source is not
+            -- offered in those filetypes any more (see the per-filetype
+            -- lists below), so the gate matches: tex-proper only.
             local ft = vim.bo.filetype
-            local texish = ft == "tex"
-              or ft == "plaintex"
-              or ft == "latex"
-              or ft == "bib"
-              or ft == "bibtex"
+            local texish = ft == "tex" or ft == "plaintex" or ft == "latex"
             return texish and in_latex_context()
           end,
         })
@@ -152,12 +166,25 @@ return {
         "path",
       }
 
-      -- Apply the same source set to all TeX-ish filetypes.
+      -- bib gets snippets (the latex-workshop entry templates) and path,
+      -- but not the vimtex source: cmp-vimtex completes citations, labels
+      -- and commands *for tex buffers* and has nothing to offer while
+      -- authoring entries — and in a bib-only session the plugin (ft-gated
+      -- to tex) was never even loaded, leaving the provider half-wired
+      -- (2026-08-22).  in_latex_context() doesn't gate non-tex filetypes,
+      -- so snippets stay available everywhere in a bib file, which is what
+      -- entry templates want.
+      local bib_sources = {
+        inherit_defaults = false,
+        "snippets",
+        "path",
+      }
+
       opts.sources.per_filetype.tex = tex_sources
       opts.sources.per_filetype.latex = tex_sources
       opts.sources.per_filetype.plaintex = tex_sources
-      opts.sources.per_filetype.bib = tex_sources
-      opts.sources.per_filetype.bibtex = tex_sources
+      opts.sources.per_filetype.bib = bib_sources
+      opts.sources.per_filetype.bibtex = bib_sources
 
       return opts
     end,

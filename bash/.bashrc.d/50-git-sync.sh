@@ -252,7 +252,7 @@ _gsync_vet_new_files() {
 # Parsed NUL-delimited: core.quotePath (default on) C-quotes non-ASCII names
 # in plain output, which would defeat the path matching below.
 _gsync_pull_hints() {
-  local name="$1" repo="$2" old="$3" st p q i bash_hit=0 claude_hit=0
+  local name="$1" repo="$2" old="$3" st p q i bash_hit=0 claude_hit=0 lock_hit=0
   [[ "$name" == configs || "$name" == org ]] || return 0
   local toks=()
   while IFS= read -r -d '' p; do toks+=("$p"); done \
@@ -276,6 +276,9 @@ _gsync_pull_hints() {
     for p in "$p" "$q"; do
       [[ -n "$p" ]] || continue
       [[ "$p" == bash/* ]] && bash_hit=1 # any change to bash/ needs a re-source
+      # A pulled plugin lockfile changes nothing until nvim re-pins to it, so
+      # unlike the stow hints this fires on plain modifications too.
+      [[ "$p" == nvim/lazy-lock.json ]] && lock_hit=1
       # adds/deletes/renames/typechanges inside a stow package need a restow
       case "$st" in
         A* | C* | D | R* | T) ;;
@@ -291,6 +294,9 @@ _gsync_pull_hints() {
   done
   if ((bash_hit)); then
     _gsync_say HINT "configs: bash files changed — run: source ~/.bashrc"
+  fi
+  if ((lock_hit)); then
+    _gsync_say HINT 'configs: plugin lockfile changed — run: nvim --headless "+Lazy! restore" +qa'
   fi
   if ((${#pkg_hit[@]})); then
     _gsync_say HINT "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all (re-source first)"
