@@ -2,7 +2,7 @@
 # Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
 # Apply changes with `swaymsg reload` or $mod+Ctrl+c.
 #
-# Binding grammar (adopted 2026-08-22, TODO.md item 6). The modifier names
+# Binding grammar (adopted 2026-08-22, DECISIONS.md item 6). The modifier names
 # what the action acts on -- to place or recall a binding, ask what it acts on:
 #
 #   $mod          you: your attention and your instruments. Move focus

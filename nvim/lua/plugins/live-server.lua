@@ -1,14 +1,14 @@
 -- lua/plugins/live-server.lua
 -- Root-aware start/stop for live-server.nvim.
 --
--- Design (settled 2026-08-22, TODO.md item 9): pass the directory explicitly
+-- Design (settled 2026-08-22, DECISIONS.md item 9): pass the directory explicitly
 -- at BOTH ends. The plugin normalizes an explicit argument through the same
 -- resolver at start and stop, so identical strings yield identical instance
 -- keys and stop reliably finds the server. Bare start/stop resolve from the
 -- current buffer instead: from a body file under src/ a bare start serves the
 -- wrong directory, and a bare stop misses the instance key outright — the key
 -- is stored with a trailing slash the upward walk never reproduces. Upstream
--- bug, recorded in TODO.md item 9; deliberately not filed.
+-- bug, recorded in DECISIONS.md item 9; deliberately not filed.
 --
 -- last_root remembers the directory we started, so the stop works from any
 -- buffer in any project. It is a plain string – unlike the buffer handle this

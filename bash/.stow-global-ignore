@@ -1,0 +1,43 @@
+# Stow's global ignore list. stow(8) reads this from ~/.stow-global-ignore;
+# the bash package stows it there — upstream designed the file to be managed
+# by stow itself (see the note in Stow.pm's get_ignore_regexps()).
+#
+# When this file exists it REPLACES stow's built-in defaults, so those
+# defaults are reproduced verbatim below (extracted from stow 2.4.1,
+# /usr/share/perl5/vendor_perl/Stow.pm, __DATA__ block) ahead of our
+# additions.
+#
+# Semantics, from the same source: each pattern is a Perl regex. A pattern
+# containing a slash is matched against the path relative to the package top
+# (prefixed with "/"), anchored at segment boundaries; a pattern without a
+# slash is matched fully anchored against the basename, at any depth. Note a
+# .stow-local-ignore inside a package would REPLACE this file for that
+# package — don't add one without reproducing these patterns.
+
+RCS
+.+,v
+
+CVS
+\.\#.+       # CVS conflict files / emacs lock files
+\.cvsignore
+
+\.svn
+_darcs
+\.hg
+
+\.git
+\.gitignore
+\.gitmodules
+
+.+~          # emacs backup files
+\#.*\#       # emacs autosave files
+
+^/README.*
+^/LICENSE.*
+^/COPYING
+
+# --- Additions (2026-08-26, context-policy Stage 2) --------------------------
+# Per-package charters are agent documentation, never to be symlinked into
+# live config dirs — a stray ~/CLAUDE.md stowed from the bash package would
+# load into every Claude session under $HOME.
+CLAUDE\.md

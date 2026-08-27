@@ -15,7 +15,7 @@
 # directory does not matter. It does matter *how Okular was launched*: started by
 # VimTeX it inherits the shell PATH and finds this; started from the desktop it gets
 # the session PATH (/usr/local/bin:/usr/bin) and will not. That is a property of the
-# launch, not of this file's location -- see CLAUDE.md, "The `bin` package".
+# launch, not of this file's location -- see bin/CLAUDE.md, "The Okular SyncTeX bridge".
 #
 # Two wrinkles this handles:
 #   1. Okular passes %f percent-encoded, so a path with spaces or accents arrives as

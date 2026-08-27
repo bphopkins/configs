@@ -40,7 +40,7 @@ nothing can outlive the run.
   vs. the upward walk), and the Linux watch is non-recursive on the served
   root. **A U failure after a plugin update is not necessarily a breakage**:
   it means the ground moved (perhaps upstream fixed its bug), so re-read the
-  wrapper's header comment and `TODO.md` item 9 before changing either.
+  wrapper's header comment and `DECISIONS.md` item 9 before changing either.
 - **D0–D3** pin the directory semantics *outside* git repos (added
   2026-08-22, off the planned `nousowl.net` → `nousowl/` move): with no
   `.git` anywhere above the buffer, `project_root()` lands on the cwd, so a

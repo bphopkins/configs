@@ -6,7 +6,7 @@
 --   U* — upstream-behavior canaries: plugin facts the wrapper's design rests
 --        on. A U failure after a plugin update means the ground moved, not
 --        necessarily that anything is broken — re-read the wrapper's header
---        comment and TODO.md item 9 before "fixing" either.
+--        comment and DECISIONS.md item 9 before "fixing" either.
 --
 -- Everything is hermetic: fixture repos in the sandbox, loopback only, a
 -- free port picked at runtime, browser=false, no real repo touched.
