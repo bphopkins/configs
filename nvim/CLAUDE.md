@@ -26,13 +26,19 @@ every vimtex setting (this actually happened). The socket path is shared with
 `bin/okular-inverse` — change one, change the other. Treesitter highlighting
 is disabled for LaTeX: VimTeX's syntax engine is the sole highlighter.
 
-Custom syntax in `vimtex.lua`: 219 literal command names + 31 regex patterns
-across 7 semantic groups, coloured in `after/ftplugin/tex.lua`;
-`after/syntax/tex.lua` colours environment *names* by family. 504 of the
+Custom syntax in `vimtex.lua`: 219 literal command names + 33 regex patterns
+registered into the register-taxonomy groups, coloured in
+`after/ftplugin/tex.lua`; `after/syntax/tex.lua` colours environment *names*
+by family. The scheme's semantics — the tower, the channel contract, the
+species table, the geometric law, the closure rule — are the living contract
+`docs/latex-register-taxonomy.md`. Redesigned 2026-08-28, adopted and held:
+he rates it an improvement and a crude approximation of a scheme he cannot
+yet articulate; change it only from instances he brings, exhibited on the
+bench (the doc's Status section) before touching the config. 504 of the
 `.sty`'s 509 commands are covered; the 5 exclusions are deliberate and listed
 in the `vimtex.lua` header comment.
 
-Three VimTeX API traps, each of which had silently bitten this config:
+Five VimTeX/Vim API traps, each of which had silently bitten this config:
 
 - Every `vimtex_syntax_custom_cmds` entry **requires `name`** (it derives the
   syntax-group names); `cmdre` only overrides the match pattern. A nameless
@@ -44,6 +50,15 @@ Three VimTeX API traps, each of which had silently bitten this config:
   Argument colouring goes through the `arglink()` helper, whose recorded
   links `after/ftplugin/tex.lua` applies after the colorscheme (so they
   survive its `:hi clear`).
+- Vim highlight-group names are **case-insensitive**: two registration slugs
+  differing only by case merge into one group and the first `hi def link`
+  wins — the cm/cc frame-condition families rendered as Axiom gold for
+  months (found 2026-08-28; pinned by the `\cmr` suite check).
+- VimTeX's default argument machinery emits a zero-width match after every
+  command that **blocks a custom command directly after another**
+  (`\M\nmodels` lost its colour on the second token). Symbol entries must
+  declare `opt = false, arg = false`; only arg-taking entries keep the
+  machinery (pinned by the adjacency checks).
 
 Testing note: custom cmds are applied by VimTeX's `init_custom()`, which runs
 only once at least one package's syntax loads — headless tests need a
@@ -215,10 +230,15 @@ auto-running restore inside the pull, were considered and **declined**
 
 ## Regression suites
 
-- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — env-name families,
-  one command per registered family, pattern anchoring, argument links. Run
-  after a VimTeX update or whenever logic highlighting looks wrong; exit 0
-  means the syntax layer is intact.
+- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — 45 checks:
+  env-name families, one command per registered family, pattern anchoring,
+  argument links, the case-collision and adjacency pins, and that every
+  pinned group carries a defined colour (a registration/ftplugin desync
+  passes name pins invisibly without that). Run after a VimTeX update or
+  whenever logic highlighting looks wrong; exit 0 means the syntax layer is
+  intact. `perf.sh <file.tex>` beside it prices the whole custom layer
+  (read-only; bigfed 2026-08-28: 0.47 ms/line on completeness.tex; under
+  ~2 ms/line is imperceptible per keystroke).
 - `tests/nvim-latency/run.sh` (37 checks, ~40 s, hermetic, needs `pynvim`) —
   asserts the *structure* the latency fixes rest on and the behaviour they
   must not have broken; no millisecond assertions (timings move with the

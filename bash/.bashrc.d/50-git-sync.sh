@@ -128,9 +128,23 @@ _gsync_in_progress() { # print the operation under way, if any; else return 1
 
 # Every remote is SSH to github.com, so one TCP probe of github.com:22 answers
 # "can we fetch/push at all". Cached for the duration of the calling command.
+#
+# The name is resolved IPv4-only, deliberately. Letting bash resolve it inside
+# /dev/tcp issues an AF_UNSPEC (A+AAAA) lookup, and on a cold resolver cache
+# that path stalls for ~5.1-5.2s on bigfed about a quarter of the time -- past
+# the 4s budget, so a machine that is plainly online reports "offline", and the
+# immediate re-run then succeeds off the warm cache. Either family queried
+# alone returns in ~35ms and systemd-resolved answers both correctly, so the
+# stall is in the NSS chain, not in DNS or the link. github.com publishes no
+# AAAA record at all, which makes the v6 half pure cost. Measured 2026-08-27:
+# 7/30 cold dual-stack lookups over 5s, 0/40 for ahostsv4, 0/25 for the probe
+# as written below. Connecting to the literal address also keeps bash from
+# resolving the name a second time.
 _gsync_online() {
   if [[ -z "${_GSYNC_ONLINE_CACHE:-}" ]]; then
-    if timeout 4 bash -c 'exec 3<>/dev/tcp/github.com/22' 2>/dev/null; then
+    local ip
+    ip="$(timeout 4 getent ahostsv4 github.com 2>/dev/null | awk 'NR==1 {print $1; exit}')"
+    if [[ -n "$ip" ]] && timeout 4 bash -c "exec 3<>/dev/tcp/$ip/22" 2>/dev/null; then
       _GSYNC_ONLINE_CACHE=1
     else
       _GSYNC_ONLINE_CACHE=0

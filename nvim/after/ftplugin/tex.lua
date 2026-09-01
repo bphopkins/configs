@@ -9,6 +9,23 @@
 --   3. Custom commands registered via g:vimtex_syntax_custom_cmds (vimtex.lua)
 --   4. Environment-name matches from after/syntax/tex.lua (groups 23)
 --   5. TokyoNight "night" active
+--
+-- DESIGN — the register taxonomy.  Full theory, per-species table,
+-- channel contract, borderline ledger, and revisit dials live in
+-- docs/latex-register-taxonomy.md (living contract — edit that file,
+-- not ad-hoc comments here).  The short of it:
+--   HUE = genus and side: warm gold = proof theory + object language,
+--     cool blue = semantics + metasemantics, warm-tan = the material,
+--     gray = the level-neutral mathematical medium, green = the entire
+--     document dimension AS A SPECTRUM (landmarks > loaded envs >
+--     containers > scaffolding, with deixis the same family), magenta =
+--     register boundaries ($, qed), red = preamble machinery.
+--   SATURATION = markedness (unmarked workhorses desaturate to gray),
+--   LIGHTNESS = salience (relations > objects > names),
+--   BOLD = names and anchors,  ITALIC = material and arguments.
+--   Loadedness is a RUNG of the document spectrum, not a borrowed
+--   side-colour (borrowing tried and retired 2026-08-28: hilbertlist
+--   in the warm name colour failed the glance test).
 
 local hl = function(group, opts)
   vim.api.nvim_set_hl(0, group, opts)
@@ -25,26 +42,40 @@ local C = {
   blue = "#7aa2f7",
   cyan = "#7dcfff",
   teal = "#1abc9c",
-  green = "#9ece6a",
+  green = "#9ece6a", -- document landmarks (bold) and deixis (regular)
+  green_loaded = "#4fd6b0", -- loaded-structure rung of the document spectrum
   magenta = "#bb9af7",
-  orange = "#ff9e64",
   red = "#f7768e",
   yellow = "#e0af68",
   comment = "#565f89",
   dark5 = "#737aa2",
   -- Extended palette
-  blue5 = "#89ddff", -- aqua
-  green1 = "#73daca", -- teal-green
-  purple = "#9d7cd8", -- tokyonight purple
+  blue5 = "#89ddff", -- aqua: semantic relations ⊨ ⊩
   -- Derived tones
-  math_fg = "#c3c1f5", -- violet tint for math body
-  math_cmd = "#89b4fa", -- periwinkle for math commands/symbols
-  arg_fg = "#9aa5ce", -- muted foreground for arguments
+  -- The material: warm tan, the "exactly in between α and β" verdict
+  -- on formula unity (2026-08-28).  Letters remain material — light,
+  -- italic, no per-letter sort convention — but the material leans
+  -- toward what it mostly composes, the object language, so formulas
+  -- cohere as warm wholes and cool machinery visibly crosses INTO
+  -- them.  dE00 vs prose 28.7 (the boundary problem is gone for
+  -- good), vs each warm token family 11.7–12.3, vs azure 34.8.
+  -- Escalation if formulas still fragment: the β sort convention
+  -- (sentence letters full warm, worlds/sets cool) — ledgered in
+  -- docs/latex-register-taxonomy.md, deliberately not built.
+  math_fg = "#c6ab90", -- warm-tan material: math body, variables, formula
+  -- args — and, in roman, the object-language connectives (the warm bank)
+  -- Semantic objects sit on a clean azure, pushed off the violet
+  -- material (dE00 13.8 -> 15.8) after the periwinkle read as a
+  -- "warm blue" clashing inside formulas (2026-08-28).  Next notch
+  -- away from violet: #6ea6f2 (costs distance to the condition names).
+  blue_obj = "#74acf5", -- azure: semantic objects
+  blue_dim = "#7396c2", -- muted blue: names of semantic objects
+  gold_bright = "#eec584", -- ⊢ family: derivability relations
+  gold_mid = "#d9aa5e", -- intensional operators of the object language
+  gold_dim = "#bd9750", -- syntactic objects + their names (bold)
+  steel = "#8f99c9", -- metalanguage glue; also stock math commands
+  arg_fg = "#9aa5ce", -- muted foreground for generic arguments
   delim = "#545c7e", -- subtle brace/bracket colour
-  -- Custom group tones
-  gold = "#ffc777", -- bright warm gold for axiom labels
-  gold_dim = "#c9a048", -- muted amber for frame conditions
-  rose = "#d4879c", -- soft rose for semantic notation
 }
 
 ------------------------------------------------------------------------
@@ -56,14 +87,17 @@ hl("texCmdType", { fg = C.blue })
 ------------------------------------------------------------------------
 -- 2. SECTIONING
 ------------------------------------------------------------------------
-hl("texCmdPart", { fg = C.orange, bold = true })
-hl("texPartArgTitle", { fg = C.orange, bold = true })
+hl("texCmdPart", { fg = C.green, bold = true })
+hl("texPartArgTitle", { fg = C.green, bold = true })
 
 ------------------------------------------------------------------------
 -- 3. ENVIRONMENT DELIMITERS
 ------------------------------------------------------------------------
 hl("texCmdEnv", { fg = C.teal })
-hl("texEnvArgName", { fg = C.cyan, bold = true })
+-- Default env names join the scaffold teal: the whole structural
+-- register (lists, tables, generic envs) is one green family, so
+-- math never shares a hue with list machinery.
+hl("texEnvArgName", { fg = C.teal, bold = true })
 
 ------------------------------------------------------------------------
 -- 4. MATH  —  delimiters, body, commands, and symbols
@@ -79,11 +113,13 @@ hl("texMathZoneEnv", { fg = C.math_fg, italic = true })
 hl("texMathZoneTi", { fg = C.math_fg, italic = true })
 hl("texMathZoneTd", { fg = C.math_fg, italic = true })
 
--- Math commands — periwinkle, distinct from generic texCmd blue
-hl("texMathCmd", { fg = C.math_cmd })
+-- Stock math commands sit on the glue-and-terms rung: \in, \subseteq,
+-- \neg, \land, \cap ... share one tone with the .sty's \to, \union, \M,
+-- so a connective's colour never depends on which file defined it.
+hl("texMathCmd", { fg = C.steel })
 
 hl("texMathSuperSub", { fg = C.dark5 })
-hl("texMathOper", { fg = C.fg_dim })
+hl("texMathOper", { fg = C.steel })
 
 ------------------------------------------------------------------------
 -- 5. CITATIONS AND REFERENCES
@@ -101,9 +137,11 @@ hl("texFileOpt", { fg = C.dark5 })
 
 ------------------------------------------------------------------------
 -- 7. MACRO DEFINITIONS
+-- Red keyword (preamble machinery, like packages); the macro NAME being
+-- defined is a syntax-side name, so it takes the name-family gold.
 ------------------------------------------------------------------------
-hl("texCmdDef", { fg = C.yellow, bold = true })
-hl("texDefArgName", { fg = C.yellow })
+hl("texCmdDef", { fg = C.red, bold = true })
+hl("texDefArgName", { fg = C.gold_dim })
 
 ------------------------------------------------------------------------
 -- 8. INPUT / INCLUDE
@@ -118,8 +156,8 @@ hl("texCmdFootnote", { fg = C.dark5, italic = true })
 ------------------------------------------------------------------------
 -- 10. TITLE / AUTHOR
 ------------------------------------------------------------------------
-hl("texCmdTitle", { fg = C.orange, bold = true })
-hl("texCmdAuthor", { fg = C.orange })
+hl("texCmdTitle", { fg = C.green, bold = true })
+hl("texCmdAuthor", { fg = C.green })
 
 ------------------------------------------------------------------------
 -- 11. ARGUMENTS AND DELIMITERS
@@ -136,8 +174,10 @@ hl("texComment", { fg = C.comment, italic = true })
 
 ------------------------------------------------------------------------
 -- 13. TEXT STYLE COMMANDS
+-- The \emph/\textit tokens themselves are plumbing — muted like other
+-- supporting material; the STYLED CONTENT keeps full body weight.
 ------------------------------------------------------------------------
-hl("texCmdStyle", { fg = C.blue, italic = true })
+hl("texCmdStyle", { fg = C.arg_fg, italic = true })
 hl("texStyleItal", { fg = C.fg, italic = true })
 hl("texStyleBold", { fg = C.fg, bold = true })
 
@@ -155,39 +195,82 @@ hl("texCmdHyperref", { fg = C.cyan, underline = true })
 -- CUSTOM GROUPS  —  populated by g:vimtex_syntax_custom_cmds
 ------------------------------------------------------------------------
 
--- 15. AXIOM SCHEMA LABELS  (CMr, CCl, CNr, kax, dax, etc.)
-hl("texCmdAxiom", { fg = C.gold, bold = true })
+-- 15. SEMANTIC RELATIONS  (\trues, \models, negations, \bisim)
+-- Satisfaction: the bright pole of the cool side.
+hl("texCmdTurnstileSem", { fg = C.blue5 })
 
--- 16. FRAME CONDITIONS  (cmr, ccl, cnr, cth, etc.)
-hl("texCmdFrameCond", { fg = C.gold_dim })
+-- 16. DERIVABILITY RELATIONS  (\proves family, \seq, signed forces)
+-- The bright pole of the warm side — ⊢ against ⊨, correspondence as
+-- temperature.
+hl("texCmdTurnstileSyn", { fg = C.gold_bright })
 
--- 17. LOGIC SYSTEM NAMES  (CE, CK, K, S4, SDL, etc.)
-hl("texCmdLogicSys", { fg = C.fg, bold = true })
+-- 17. INTENSIONAL OPERATORS  (\ought, \cobs, \cnecs, \nec, stit, ...)
+-- Object-language operators are warm: the logics themselves are the
+-- far pole of the formality gradient.
+hl("texCmdIntension", { fg = C.gold_mid })
 
--- 18. SEMANTIC NOTATION  (truthsetm, proofsetl, eclassl, trues, models)
-hl("texCmdSemantic", { fg = C.rose })
-hl("texArgSemantic", { fg = C.rose, italic = true })
+-- 18. SEMANTIC OBJECTS  (\M, \flog, \truthset, valuations, STIT
+-- structures, truth values) — the interpreting machinery, cool blue;
+-- arguments read as part of the construction.
+hl("texCmdSemObj", { fg = C.blue_obj })
+hl("texArgSemObj", { fg = C.blue_obj, italic = true })
 
--- 19. MODAL / CONDITIONAL OPERATORS  (cnecs, cposs, nec, poss, ought...)
-hl("texCmdModalOp", { fg = C.blue5 })
+-- 19. SYNTACTIC OBJECTS  (\proofsetl, \eclassl, \cn, \logic, languages,
+-- mcs, I/O out(·)) — proof-theoretic material, warm; so
+-- \flog(\proofsetl{A}) shows a blue function on warm arguments.
+hl("texCmdSynObj", { fg = C.gold_dim })
+hl("texArgSynObj", { fg = C.gold_dim, italic = true })
 
--- 20. DERIVATION RULES  (mprule, rerule, nrule, krule, etc.)
--- Purple rather than the old dark5: brighter against the bg, and hue-tied
--- to the magenta proof-environment names (both are "proof machinery").
-hl("texCmdRule", { fg = C.purple, italic = true })
+-- 20a. OBJECT-LANGUAGE CONNECTIVES  (\to, \iff, \land, \neg, \top…)
+-- The saddle's warm bank (2026-08-28): boolean glue of the object
+-- language wears the material tan in roman — connective vs variable
+-- carried by style, and formulas cohere as warm wholes.  The steel
+-- read as cool-side ("as if they live on the semantics side").
+hl("texCmdConnective", { fg = C.math_fg })
 
--- 21. SET-THEORETIC / GENERAL NOTATION  (set, oset, power, defby, etc.)
-hl("texCmdNotation", { fg = C.green1 })
-hl("texArgNotation", { fg = C.green1, italic = true })
+-- 20b. METALANGUAGE GLUE  (\set, \intersect, \in via texMathCmd,
+-- ml-connectives, \defby) — the saddle's cool bank, where prose
+-- shades into the formal metalanguage; same tone as stock texMathCmd,
+-- so an unregistered macro lands here.
+hl("texCmdGround", { fg = C.steel })
 
--- 22. MATH SYMBOLS  (\omega, \subseteq, \forall, etc. in math mode)
-hl("texMathSymbol", { fg = C.math_cmd })
+-- 21. VARIABLES  (Greek letters, atoms p0..p3)
+-- The shared material of every register — body-toned violet.
+hl("texCmdVariable", { fg = C.math_fg, italic = true })
 
--- 23. ENVIRONMENT NAME FAMILIES  (matches defined in after/syntax/tex.lua)
--- Theorem-family statements: structural landmarks, like sectioning
-hl("texEnvArgNameThm", { fg = C.orange, bold = true })
--- Proof/derivation environments
-hl("texEnvArgNameProof", { fg = C.magenta, bold = true })
+-- 22. NAMES OF SYNTACTIC OBJECTS  (CMr, kax, K, S4, CE, IO, RE, MP...)
+-- Mentions, not uses: the dim rung of the warm side, bold for
+-- scanning, well under the landmark orange.
+hl("texCmdNameSyn", { fg = C.gold_dim, bold = true })
+
+-- 23. NAMES OF SEMANTIC OBJECTS  (cmr, ccl, cnr, cth, Rup, Ldown...)
+-- The dim rung of the cool side — every CMr↔cmr pair is a visible
+-- warm↔cool correspondence.
+hl("texCmdNameSem", { fg = C.blue_dim })
+
+-- 24. SCAFFOLDING  (\hypo, \infr, \by, \close, booktabs rules)
+-- Proof-tree and table furniture joins the \begin/\end/\item teal.
+hl("texCmdScaffold", { fg = C.teal })
+
+-- 25. END-OF-PROOF MARKERS  (\qed)
+hl("texCmdQed", { fg = C.magenta })
+
+-- 26. MATH SYMBOLS  (\omega, \subseteq, \forall, etc. in math mode)
+hl("texMathSymbol", { fg = C.steel })
+
+-- 27. ARGUMENT CONTENT GROUPS  (targets of the arglink mechanism)
+-- Formula-valued arguments read as math body; name-valued arguments
+-- (\parent{\CMl}, \by{MP, 1, 2}, IO-family indices) read as names.
+hl("texArgFormula", { fg = C.math_fg, italic = true })
+hl("texArgName", { fg = C.gold_dim })
+
+-- 28. ENVIRONMENT NAME FAMILIES  (matches defined in after/syntax/tex.lua)
+-- The document spectrum's top rungs.  Theorem-family heads are
+-- side-neutral loaded structure: landmarks, with sectioning.
+hl("texEnvArgNameThm", { fg = C.green, bold = true })
+-- Loaded structure (proof envs, gentzen, hilbertlist): the mint rung
+-- between landmarks and plain containers
+hl("texEnvArgNameLoaded", { fg = C.green_loaded, bold = true })
 
 ------------------------------------------------------------------------
 -- ARGUMENT-GROUP LINKS  —  computed in lua/plugins/vimtex.lua

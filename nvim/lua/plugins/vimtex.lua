@@ -86,14 +86,39 @@ return {
     --------------------------------------------------------------------
     -- CUSTOM SYNTAX COMMANDS
     --
-    -- Registers french-logic.sty macros into semantic highlight groups.
-    -- Uses `cmdre` (Vim regex on the command name, no backslash) to
-    -- collapse repetitive families.  Corresponding hl() definitions
-    -- are in after/ftplugin/tex.lua.
+    -- Registers french-logic.sty macros (plus a few stock families) into
+    -- semantic highlight groups.  Uses `cmdre` (Vim regex on the command
+    -- name, no backslash) to collapse repetitive families.  Corresponding
+    -- hl() definitions are in after/ftplugin/tex.lua.
     --
-    -- Standard math symbols (\omega, \subseteq, etc.) are NOT
-    -- registered here.  They are already caught by VimTeX's built-in
-    -- texMathCmd group, which the ftplugin restyles to periwinkle.
+    -- The scheme is a scope/type ladder (2026-08-28 redesign):
+    --   texCmdTurnstile  metalinguistic relations: ⊢ ⊩ ⊨ ⩴, sequent
+    --                    arrows, signed-formula forces — widest scope,
+    --                    brightest cool
+    --   texCmdIntension  intensional operators, monadic and dyadic:
+    --                    O, P, □, ◇, □→, O(·/·), stit, K, B, G, H
+    --   texCmdSemObj     semantic objects: models, frames, functions,
+    --                    truth/proof sets, languages, theories — the
+    --                    coloured family the eye tracks (teal-green)
+    --   texCmdGround     object-language glue: connectives and
+    --                    set-theoretic plumbing — same tone as stock
+    --                    texMathCmd, so \to matches \land and origin
+    --                    (.sty vs kernel) never shows
+    --   texCmdVariable   Greek letters — variables are body-toned like
+    --                    their roman siblings (A, w), not command-toned
+    --   texCmdNameSyn    names of syntactic objects: axiom schemata,
+    --                    systems, rules, frameworks (warm, bold)
+    --   texCmdNameSem    names of semantic objects: frame and order
+    --                    conditions (warm, plain — correspondence rung)
+    --   texCmdScaffold   proof-tree and table scaffolding
+    --   texCmdQed        end-of-proof markers (proof-family magenta)
+    --
+    -- Standard math symbols (\in, \subseteq, \neg, ...) are NOT
+    -- registered here: texMathCmd itself is restyled to the Ground tone,
+    -- so an unregistered macro lands in the plumbing colour.  A new
+    -- SEMANTIC-OBJECT macro therefore needs a SemObj line to take its
+    -- teal — the coverage cross-check flags it.  Greek letters are
+    -- lifted OUT of the plumbing tone by the greekfam pattern below.
     --
     -- Deliberately unregistered (not oversights): \versal, \sketchqed,
     -- \remarkqed (internal helpers, unused outside the .sty) and
@@ -103,16 +128,27 @@ return {
     -- (very magic) syntax match with NO implicit trailing ">", so
     -- write an explicit ">" when a pattern must not match longer
     -- command names (e.g. the de-family must not catch \defby).
+    -- Later entries take priority over earlier ones (used below to
+    -- carve \ccred out of ccmfam and booktabs rules out of rulefam).
     --------------------------------------------------------------------
 
     local G = {
-      ax = "texCmdAxiom",
-      fc = "texCmdFrameCond",
-      ls = "texCmdLogicSys",
-      sem = "texCmdSemantic",
-      mo = "texCmdModalOp",
-      ru = "texCmdRule",
-      nt = "texCmdNotation",
+      tse = "texCmdTurnstileSem",
+      tsy = "texCmdTurnstileSyn",
+      op = "texCmdIntension",
+      gr = "texCmdGround",
+      cn = "texCmdConnective",
+      so = "texCmdSemObj",
+      syo = "texCmdSynObj",
+      var = "texCmdVariable",
+      nsy = "texCmdNameSyn",
+      nse = "texCmdNameSem",
+      sc = "texCmdScaffold",
+      qed = "texCmdQed",
+      argf = "texArgFormula",
+      argn = "texArgName",
+      argso = "texArgSemObj",
+      argsyo = "texArgSynObj",
     }
 
     -- Helpers
@@ -136,382 +172,458 @@ return {
       arg_links[pre .. cname .. "ArgChar"] = group
     end
 
+    -- Symbol entries (cmd/re/mcmd/mre) declare opt=false, arg=false:
+    -- VimTeX's default argument machinery emits a zero-width ArgSpace
+    -- match after every command, which BLOCKS the next match when two
+    -- commands are directly adjacent (\M\nmodels lost its colour on
+    -- the second command under the old scheme).  Only the arg-taking
+    -- entries (acmd/macmd/mare) keep the machinery — there a brace
+    -- always intervenes, so adjacency never bites.
     local function cmd(name, hlgroup)
-      return { name = name, hlgroup = hlgroup }
+      return { name = name, hlgroup = hlgroup, opt = false, arg = false }
     end
     local function re(name, pattern, hlgroup)
-      return { name = name, cmdre = pattern, hlgroup = hlgroup }
+      return { name = name, cmdre = pattern, hlgroup = hlgroup, opt = false, arg = false }
     end
     local function mcmd(name, hlgroup)
-      return { name = name, mathmode = true, hlgroup = hlgroup }
+      return { name = name, mathmode = true, hlgroup = hlgroup, opt = false, arg = false }
     end
     local function mre(name, pattern, hlgroup)
-      return { name = name, cmdre = pattern, mathmode = true, hlgroup = hlgroup }
+      return {
+        name = name,
+        cmdre = pattern,
+        mathmode = true,
+        hlgroup = hlgroup,
+        opt = false,
+        arg = false,
+      }
     end
     local function acmd(name, hlgroup, arggroup)
       arglink(name, false, arggroup)
-      return { name = name, hlgroup = hlgroup }
+      return { name = name, hlgroup = hlgroup, opt = false }
     end
     local function macmd(name, hlgroup, arggroup)
       arglink(name, true, arggroup)
-      return { name = name, mathmode = true, hlgroup = hlgroup }
+      return { name = name, mathmode = true, hlgroup = hlgroup, opt = false }
     end
     local function mare(name, pattern, hlgroup, arggroup)
       arglink(name, true, arggroup)
-      return { name = name, cmdre = pattern, mathmode = true, hlgroup = hlgroup }
+      return { name = name, cmdre = pattern, mathmode = true, hlgroup = hlgroup, opt = false }
     end
 
     vim.g.vimtex_syntax_custom_cmds = {
 
       ----------------------------------------------------------------
-      -- AXIOM SCHEMA LABELS  (texCmdAxiom)
+      -- NAMES OF SYNTACTIC OBJECTS  (texCmdNameSyn)
+      -- axiom schemata, logic systems, rule names, framework names —
+      -- one warm bold identity; system-vs-axiom ambiguity never shows
       ----------------------------------------------------------------
-      -- CM_R, CM_L, CC_R, CC_L families (40 commands → 1 pattern)
-      re("CCMfam", "C[CM][rl]\\w*", G.ax),
-      -- CN family
-      re("CNfam", "CN[rl]\\w*", G.ax),
-      -- Other axiom labels
-      cmd("cdax", G.ax),
-      cmd("CP", G.ax),
-      cmd("CPs", G.ax),
-      cmd("CTh", G.ax),
-      cmd("cduax", G.ax),
+      -- CM_R, CM_L, CC_R, CC_L schema families (40 commands → 1 pattern)
+      re("CCMfam", "C[CM][rl]\\w*", G.nsy),
+      -- CN schema family
+      re("CNfam", "CN[rl]\\w*", G.nsy),
+      -- Other conditional-axiom labels
+      cmd("cdax", G.nsy),
+      cmd("CP", G.nsy),
+      cmd("CPs", G.nsy),
+      cmd("CTh", G.nsy),
+      cmd("cduax", G.nsy),
       -- Classical modal axiom labels + parenthesized + converse
       -- Base: Xax, Xaxpar, Xaxc (where X ∈ {c,k,d,t,u,p,w,n})
-      re("axfam", "[ckdtupwn]ax\\w*", G.ax),
+      re("axfam", "[ckdtupwn]ax\\w*", G.nsy),
       -- ds/ps/po/pos variants
-      cmd("dsax", G.ax),
-      cmd("psax", G.ax),
-      cmd("poax", G.ax),
-      cmd("posax", G.ax),
-      cmd("woax", G.ax),
-      cmd("wocax", G.ax),
+      cmd("dsax", G.nsy),
+      cmd("psax", G.nsy),
+      cmd("poax", G.nsy),
+      cmd("posax", G.nsy),
+      cmd("woax", G.nsy),
+      cmd("wocax", G.nsy),
       -- maxi family
-      re("maxifam", "maxi\\w*", G.ax),
+      re("maxifam", "maxi\\w*", G.nsy),
       -- duax family
-      re("duaxfam", "duax\\w*", G.ax),
+      re("duaxfam", "duax\\w*", G.nsy),
       -- Compound axiom labels: ccax, cnax, cmaxi
-      cmd("ccax", G.ax),
-      cmd("cnax", G.ax),
-      cmd("cmaxi", G.ax),
+      cmd("ccax", G.nsy),
+      cmd("cnax", G.nsy),
+      cmd("cmaxi", G.nsy),
       -- I/O logic constraints
-      cmd("TOP", G.ax),
-      cmd("SI", G.ax),
-      cmd("WO", G.ax),
-      cmd("AND", G.ax),
-      cmd("OR", G.ax),
-      cmd("CT", G.ax),
-      cmd("Ts", G.ax),
-      cmd("SIs", G.ax),
-      cmd("WOs", G.ax),
-      cmd("ANDs", G.ax),
-      cmd("ORs", G.ax),
-      cmd("CTs", G.ax),
+      cmd("TOP", G.nsy),
+      cmd("SI", G.nsy),
+      cmd("WO", G.nsy),
+      cmd("AND", G.nsy),
+      cmd("OR", G.nsy),
+      cmd("CT", G.nsy),
+      cmd("Ts", G.nsy),
+      cmd("SIs", G.nsy),
+      cmd("WOs", G.nsy),
+      cmd("ANDs", G.nsy),
+      cmd("ORs", G.nsy),
+      cmd("CTs", G.nsy),
+      -- CE-family conditional logics (CE, CEM, CEMD, CEMP, ...)
+      re("CEfam", "CE\\w*", G.nsy),
+      -- CK-family
+      re("CKfam", "CK\\w*", G.nsy),
+      -- Other conditional systems
+      cmd("VW", G.nsy),
+      cmd("Slog", G.nsy),
+      -- Classical modal: K, D, T, B compound systems
+      -- (single-letter ones need individual entries to avoid clashing)
+      cmd("K", G.nsy),
+      cmd("D", G.nsy),
+      cmd("T", G.nsy),
+      cmd("B", G.nsy),
+      cmd("four", G.nsy),
+      cmd("five", G.nsy),
+      re("Kfam", "K[DTBDUW]\\w*", G.nsy),
+      -- Kfour, Kfive, Kfourfive; Kfam also covers the KD*ought systems
+      re("Kffam", "Kf\\w*", G.nsy),
+      cmd("Sfour", G.nsy),
+      cmd("Sfive", G.nsy),
+      -- Non-normal: E-family
+      cmd("E", G.nsy),
+      re("Efam", "E[MCN][DNPC]*", G.nsy),
+      -- Deontic systems
+      re("SDLfam", "SDL\\w*", G.nsy),
+      cmd("COc", G.nsy),
+      acmd("COvf", G.nsy, G.argn),
+      -- I/O logics
+      cmd("IO", G.nsy),
+      acmd("IOn", G.nsy, G.argn),
+      acmd("IOh", G.nsy, G.argn),
+      acmd("IOhn", G.nsy, G.argn),
+      cmd("IOs", G.nsy),
+      acmd("IOsn", G.nsy, G.argn),
+      acmd("IOfn", G.nsy, G.argn),
+      -- Detachment-principle names
+      cmd("FDio", G.nsy),
+      cmd("DDio", G.nsy),
+      -- Rule names + parenthesized variants (32 commands → 1 pattern;
+      -- booktabs \toprule etc. are carved back out by booktabsfam below)
+      re("rulefam", "\\w*rule\\w*", G.nsy),
+      -- Possibility-rule names: rmposs, reposs, rposs + par variants
+      re("rpossfam", "r[me]?poss\\w*", G.nsy),
+      -- Consequence-framework names (Set-Set, Set-Fmla, ...)
+      cmd("setset", G.nsy),
+      cmd("setfmla", G.nsy),
+      cmd("fmlaset", G.nsy),
+      cmd("fmlafmla", G.nsy),
 
       ----------------------------------------------------------------
-      -- FRAME CONDITION LABELS  (texCmdFrameCond)
+      -- NAMES OF SEMANTIC OBJECTS  (texCmdNameSem)
+      -- frame conditions and order conditions — the correspondence rung
       ----------------------------------------------------------------
       -- cm_r, cm_l, cc_r, cc_l families (40 commands → 1 pattern)
       -- (\ccred is also matched, but its own later entry wins priority)
-      re("ccmfam", "c[cm][rl]\\w*", G.fc),
+      -- Slug must NOT be "ccmfam": Vim group names are case-INsensitive,
+      -- so it would merge with CCMfam's group and inherit the schema
+      -- colour — the old scheme had exactly that bug, which is why
+      -- \cmr rendered gold-bold instead of amber.
+      re("ccmcond", "c[cm][rl]\\w*", G.nse),
       -- cn, ct families
-      cmd("cnr", G.fc),
-      cmd("cnl", G.fc),
-      cmd("cnlr", G.fc),
-      re("cthfam", "cth\\w*", G.fc),
+      cmd("cnr", G.nse),
+      cmd("cnl", G.nse),
+      cmd("cnlr", G.nse),
+      re("cthfam", "cth\\w*", G.nse),
       -- Order conditions on frames: Rup, Rdown, Lup, Ldown
-      re("orderfam", "[RL]%(up|down)>", G.fc),
+      re("orderfam", "[RL]%(up|down)>", G.nse),
 
       ----------------------------------------------------------------
-      -- LOGIC SYSTEM NAMES  (texCmdLogicSys)
+      -- SEMANTIC RELATIONS  (texCmdTurnstileSem)
+      -- satisfaction and validity — the bright pole of the cool side
       ----------------------------------------------------------------
-      -- CE-family conditional logics (CE, CEM, CEMD, CEMP, ...)
-      re("CEfam", "CE\\w*", G.ls),
-      -- CK-family
-      re("CKfam", "CK\\w*", G.ls),
-      -- Other conditional
-      cmd("VW", G.ls),
-      cmd("Slog", G.ls),
-      -- Classical modal: K, D, T, B compound systems
-      -- (single-letter ones need individual entries to avoid clashing)
-      cmd("K", G.ls),
-      cmd("D", G.ls),
-      cmd("T", G.ls),
-      cmd("B", G.ls),
-      cmd("four", G.ls),
-      cmd("five", G.ls),
-      re("Kfam", "K[DTBDUW]\\w*", G.ls),
-      -- Kfour, Kfive, Kfourfive
-      re("Kffam", "Kf\\w*", G.ls),
-      cmd("Sfour", G.ls),
-      cmd("Sfive", G.ls),
-      -- Non-normal: E-family
-      cmd("E", G.ls),
-      re("Efam", "E[MCN][DNPC]*", G.ls),
-      -- Deontic
-      re("SDLfam", "SDL\\w*", G.ls),
-      re("Koughtfam", "K[DUW]\\+ought", G.ls),
-      cmd("COc", G.ls),
-      acmd("COvf", G.ls, G.ls),
-      -- I/O logics
-      cmd("IO", G.ls),
-      acmd("IOn", G.ls, G.ls),
-      acmd("IOh", G.ls, G.ls),
-      acmd("IOhn", G.ls, G.ls),
-      cmd("IOs", G.ls),
-      acmd("IOsn", G.ls, G.ls),
-      acmd("IOfn", G.ls, G.ls),
-      -- Consequence style labels
-      cmd("FDio", G.ls),
-      cmd("DDio", G.ls),
+      mcmd("trues", G.tse),
+      mcmd("ntrues", G.tse),
+      mcmd("models", G.tse),
+      mcmd("nmodels", G.tse),
+      mcmd("mmodels", G.tse),
+      mcmd("mnmodels", G.tse),
+      macmd("mtruesat", G.tse, G.argf),
+      macmd("mntruesat", G.tse, G.argf),
+      macmd("modelsrel", G.tse, G.gr),
+      -- Natural-language entailment and bisimulation: semantic side
+      mcmd("natent", G.tse),
+      mcmd("nnatent", G.tse),
+      mcmd("bisim", G.tse),
 
       ----------------------------------------------------------------
-      -- SEMANTIC NOTATION  (texCmdSemantic)
+      -- DERIVABILITY RELATIONS  (texCmdTurnstileSyn)
+      -- ⊢ and its kin — the bright pole of the warm side
       ----------------------------------------------------------------
-      -- Truth sets ⟦A⟧  (truthset, truthsetm, truthsetml, etc.)
-      mare("truthsetfam", "truthset\\w*", G.sem, "texArgSemantic"),
-      macmd("emptytruthset", G.sem, "texArgSemantic"),
-      -- Double-bar truth sets ‖A‖
-      mare("ctruthsetfam", "ctruthset\\w*", G.sem, "texArgSemantic"),
-      -- Proof sets [A]
-      mare("proofsetfam", "proofset\\w*", G.sem, "texArgSemantic"),
-      -- Equivalence classes |A|
-      macmd("eclass", G.sem, "texArgSemantic"),
-      macmd("eclassl", G.sem, "texArgSemantic"),
-      -- Satisfaction and validity relations
-      mcmd("trues", G.sem),
-      mcmd("ntrues", G.sem),
-      mcmd("models", G.sem),
-      mcmd("nmodels", G.sem),
-      mcmd("mmodels", G.sem),
-      mcmd("mnmodels", G.sem),
-      macmd("mtruesat", G.sem, "texArgSemantic"),
-      macmd("mntruesat", G.sem, "texArgSemantic"),
-      -- Entailment
-      mcmd("natent", G.sem),
-      mcmd("nnatent", G.sem),
-      mcmd("ent", G.sem),
-      -- Model-theoretic structure letters
-      mcmd("M", G.sem),
-      mcmd("F", G.sem),
-      mcmd("A", G.sem),
-      mcmd("C", G.sem),
-      mcmd("R", G.sem),
-      -- Canonical model notation (Mlog, Wlog, Rlog, flog, Vlog)
-      mre("logfam", "[MWfVR]log", G.sem),
-      -- Frame variants: FR*, FN*, MRel, MN*
-      mre("Ffam", "F[RN]\\w*", G.sem),
-      mre("Mfam", "M[NR]\\w*", G.sem),
-      -- Sigma-variants
-      mre("sigfam", "[MWRV]sig", G.sem),
-      -- Closure/supplementation arrow variants
-      mre("arrowfam", "[Mf][nesw][ew]", G.sem),
-      mre("lrfam", "[Mf]lr", G.sem),
-      -- Named functions on frames: fn, fm, fd, fs, fr, fsub, fnof, fsof
-      macmd("fn", G.sem, "texArgSemantic"),
-      macmd("fm", G.sem, "texArgSemantic"),
-      macmd("fd", G.sem, "texArgSemantic"),
-      macmd("fs", G.sem, "texArgSemantic"),
-      macmd("fr", G.sem, "texArgSemantic"),
-      macmd("fsub", G.sem, "texArgSemantic"),
-      macmd("fnof", G.sem, "texArgSemantic"),
-      macmd("fsof", G.sem, "texArgSemantic"),
-      -- Valuation
-      macmd("val", G.sem, "texArgSemantic"),
-      macmd("vw", G.sem, "texArgSemantic"),
-      macmd("Val", G.sem, "texArgSemantic"),
-      -- Propositional variables
-      mcmd("props", G.sem),
-      mcmd("pzero", G.sem),
-      mcmd("pone", G.sem),
-      mcmd("ptwo", G.sem),
-      mcmd("pthree", G.sem),
-      -- Truth values
-      cmd("true", G.sem),
-      cmd("false", G.sem),
-      cmd("ind", G.sem),
-      -- Language symbols
-      mre("langfam", "lang\\w*", G.sem),
-      mcmd("Lc", G.sem),
-      mcmd("logic", G.sem),
-      mcmd("logicp", G.sem),
-      mcmd("metalogic", G.sem),
-      -- Term algebra / atoms
-      mcmd("Fm", G.sem),
-      mcmd("atoms", G.sem),
-      -- Bisimulation
-      mcmd("bisim", G.sem),
-      -- Maximal consistent set notation
-      cmd("mcslog", G.sem),
-      macmd("mcseti", G.sem, "texArgSemantic"),
-      -- Metalanguage connectives (mland, mlor, mlto, mlnot, mlforall,
-      -- mlexists + the six *solo variants)
-      mre("mlfam", "ml\\w*", G.sem),
-      -- Consequence / theory
-      macmd("cn", G.sem, "texArgSemantic"),
-      macmd("theory", G.sem, "texArgSemantic"),
-      -- I/O functions
-      macmd("iput", G.sem, "texArgSemantic"),
-      macmd("oput", G.sem, "texArgSemantic"),
-      macmd("oputi", G.sem, "texArgSemantic"),
-      macmd("deriv", G.sem, "texArgSemantic"),
-      macmd("derivi", G.sem, "texArgSemantic"),
-      -- Probability / credence
-      macmd("cprob", G.sem, "texArgSemantic"),
-      macmd("cred", G.sem, "texArgSemantic"),
-      macmd("ccred", G.sem, "texArgSemantic"),
-      -- Order notation
-      mcmd("topg", G.sem),
-      mcmd("botg", G.sem),
-      mcmd("topt", G.sem),
-      mcmd("bott", G.sem),
-      mcmd("filter", G.sem),
+      mcmd("proves", G.tsy),
+      mcmd("nproves", G.tsy),
+      mcmd("gives", G.tsy),
+      mcmd("asserts", G.tsy),
+      mcmd("derives", G.tsy),
+      mre("provesfam", "proves\\w*", G.tsy),
+      macmd("provesrel", G.tsy, G.gr),
+      -- Sequent arrows
+      mcmd("seq", G.tsy),
+      mcmd("tseq", G.tsy),
 
       ----------------------------------------------------------------
-      -- MODAL / CONDITIONAL OPERATORS  (texCmdModalOp)
+      -- INTENSIONAL OPERATORS  (texCmdIntension)
+      -- monadic and dyadic modalities — the subject matter
       ----------------------------------------------------------------
       -- Dyadic conditional connectives
-      mcmd("cnecs", G.mo),
-      mcmd("cposs", G.mo),
-      mcmd("cnecsolo", G.mo),
-      mcmd("cpossolo", G.mo),
+      mcmd("cnecs", G.op),
+      mcmd("cposs", G.op),
+      mcmd("cnecsolo", G.op),
+      mcmd("cpossolo", G.op),
       -- Deontic conditional connectives
-      mcmd("cobs", G.mo),
-      mcmd("cperms", G.mo),
-      mcmd("cobsolo", G.mo),
-      acmd("condop", G.mo, G.mo),
-      acmd("condopsolo", G.mo, G.mo),
+      mcmd("cobs", G.op),
+      mcmd("cperms", G.op),
+      mcmd("cobsolo", G.op),
+      acmd("condop", G.op, G.op),
+      acmd("condopsolo", G.op, G.op),
       -- Monadic modal operators
-      mcmd("nec", G.mo),
-      mcmd("poss", G.mo),
-      mcmd("neced", G.mo),
-      mcmd("unneced", G.mo),
-      mcmd("possed", G.mo),
-      mcmd("unpossed", G.mo),
+      mcmd("nec", G.op),
+      mcmd("poss", G.op),
+      mcmd("neced", G.op),
+      mcmd("unneced", G.op),
+      mcmd("possed", G.op),
+      mcmd("unpossed", G.op),
       -- Counterfactual / strict
-      mcmd("cfact", G.mo),
-      mcmd("sphere", G.mo),
-      mcmd("strictif", G.mo),
+      mcmd("cfact", G.op),
+      mcmd("sphere", G.op),
+      mcmd("strictif", G.op),
       -- Deontic operators
-      mcmd("ought", G.mo),
-      mcmd("may", G.mo),
-      mcmd("obligatory", G.mo),
-      mcmd("permissible", G.mo),
-      mcmd("forbidden", G.mo),
-      mcmd("gratuitous", G.mo),
-      mcmd("optional", G.mo),
-      macmd("cought", G.mo, G.mo),
-      macmd("better", G.mo, G.mo),
-      macmd("samevas", G.mo, G.mo),
+      mcmd("ought", G.op),
+      mcmd("may", G.op),
+      mcmd("obligatory", G.op),
+      mcmd("permissible", G.op),
+      mcmd("forbidden", G.op),
+      mcmd("gratuitous", G.op),
+      mcmd("optional", G.op),
+      macmd("cought", G.op, G.argf),
+      macmd("better", G.op, G.argf),
+      macmd("samevas", G.op, G.argf),
       -- Epistemic operators
-      mcmd("know", G.mo),
-      mcmd("believe", G.mo),
-      mcmd("cknow", G.mo),
-      mcmd("cbelieve", G.mo),
-      macmd("knows", G.mo, G.mo),
-      macmd("believes", G.mo, G.mo),
-      macmd("cknows", G.mo, G.mo),
-      macmd("cbelieves", G.mo, G.mo),
+      mcmd("know", G.op),
+      mcmd("believe", G.op),
+      mcmd("cknow", G.op),
+      mcmd("cbelieve", G.op),
+      macmd("knows", G.op, G.argf),
+      macmd("believes", G.op, G.argf),
+      macmd("cknows", G.op, G.argf),
+      macmd("cbelieves", G.op, G.argf),
       -- Temporal operators
-      mcmd("hitherto", G.mo),
-      mcmd("henceforth", G.mo),
-      mcmd("was", G.mo),
-      mcmd("willbe", G.mo),
-      mcmd("precedes", G.mo),
-      -- Affirm/deny (signed-formula) connectives: af, aff, affirm,
+      mcmd("hitherto", G.op),
+      mcmd("henceforth", G.op),
+      mcmd("was", G.op),
+      mcmd("willbe", G.op),
+      -- Affirm/deny (signed-formula) forces: af, aff, affirm,
       -- afland, aflor, afneg, afto + the matching de family
-      mre("affam", "af\\w*", G.mo),
-      mre("defam", "de%(land|lor|neg|to|ny|n)?>", G.mo),
-      -- I/O-style connectives
-      mcmd("ecu", G.mo),
-      mcmd("ito", G.mo),
-      mcmd("cto", G.mo),
-      mcmd("ilor", G.mo),
-      mcmd("clor", G.mo),
+      mre("affam", "af\\w*", G.op),
+      mre("defam", "de%(land|lor|neg|to|ny|n)?>", G.op),
+      -- I/O-style conditional
+      mcmd("ecu", G.op),
       -- STIT operators
-      mcmd("stit", G.mo),
-      mcmd("cstito", G.mo),
-      mcmd("dstito", G.mo),
-      macmd("cstit", G.mo, G.mo),
-      macmd("dstit", G.mo, G.mo),
-      -- STIT model components
-      cmd("tree", G.mo),
-      cmd("agent", G.mo),
-      cmd("choice", G.mo),
-      cmd("stitought", G.mo),
-      cmd("stitval", G.mo),
-      mcmd("choicema", G.mo),
+      mcmd("stit", G.op),
+      mcmd("cstito", G.op),
+      mcmd("dstito", G.op),
+      mcmd("stitought", G.op),
+      macmd("cstit", G.op, G.argf),
+      macmd("dstit", G.op, G.argf),
       -- Triggers / necessitates
-      mcmd("necessitates", G.mo),
-      mcmd("triggers", G.mo),
+      mcmd("necessitates", G.op),
+      mcmd("triggers", G.op),
 
       ----------------------------------------------------------------
-      -- DERIVATION / PROOF RULES  (texCmdRule)
+      -- SEMANTIC OBJECTS  (texCmdSemObj) — cool blue
+      -- the interpreting machinery: models, frames, neighborhood
+      -- functions, truth sets, valuations, truth values, STIT
+      -- structures.  The canonical-model family (\Mlog, \flog, ...)
+      -- is semantic IN KIND though built from syntax — that is the
+      -- point of it.
       ----------------------------------------------------------------
-      -- All rule names + parenthesized variants (32 commands → 1 pattern)
-      re("rulefam", "\\w*rule\\w*", G.ru),
-      -- Possibility-rule names: rmposs, reposs, rposs + par variants
-      re("rpossfam", "r[me]?poss\\w*", G.ru),
-      -- Proof relation symbols
-      mcmd("proves", G.ru),
-      mcmd("nproves", G.ru),
-      mcmd("gives", G.ru),
-      mcmd("asserts", G.ru),
-      mcmd("derives", G.ru),
-      mre("provesfam", "proves\\w*", G.ru),
-      macmd("provesrel", G.ru, G.ru),
-      macmd("modelsrel", G.ru, G.ru),
-      -- Sequent notation
-      mcmd("seq", G.ru),
-      mcmd("tseq", G.ru),
-      cmd("setset", G.ru),
-      cmd("setfmla", G.ru),
-      cmd("fmlaset", G.ru),
-      cmd("fmlafmla", G.ru),
-      -- Proof-tree / proof-listing helpers
-      acmd("hyp", G.ru, G.ru),
-      acmd("by", G.ru, G.ru),
-      cmd("close", G.ru),
-      cmd("infr", G.ru),
-      cmd("hyphantom", G.ru),
-      cmd("qed", G.ru),
-      mcmd("incomp", G.ru),
+      -- Truth sets ⟦A⟧  (truthset, truthsetm, truthsetml, etc.)
+      mare("truthsetfam", "truthset\\w*", G.so, G.argso),
+      macmd("emptytruthset", G.so, G.argso),
+      -- Double-bar truth sets ‖A‖
+      mare("ctruthsetfam", "ctruthset\\w*", G.so, G.argso),
+      -- Model-theoretic structure letters
+      mcmd("M", G.so),
+      mcmd("F", G.so),
+      mcmd("A", G.so),
+      mcmd("C", G.so),
+      mcmd("R", G.so),
+      -- Canonical model notation (Mlog, Wlog, Rlog, flog, Vlog)
+      mre("logfam", "[MWfVR]log", G.so),
+      -- Frame variants: FR*, FN*, MRel, MN*
+      mre("Ffam", "F[RN]\\w*", G.so),
+      mre("Mfam", "M[NR]\\w*", G.so),
+      -- Sigma-variants
+      mre("sigfam", "[MWRV]sig", G.so),
+      -- Closure/supplementation arrow variants
+      mre("arrowfam", "[Mf][nesw][ew]", G.so),
+      mre("lrfam", "[Mf]lr", G.so),
+      -- Named functions on frames: fn, fm, fd, fs, fr, fsub, fnof, fsof
+      macmd("fn", G.so, G.argso),
+      macmd("fm", G.so, G.argso),
+      macmd("fd", G.so, G.argso),
+      macmd("fs", G.so, G.argso),
+      macmd("fr", G.so, G.argso),
+      macmd("fsub", G.so, G.argso),
+      macmd("fnof", G.so, G.argso),
+      macmd("fsof", G.so, G.argso),
+      -- Valuation
+      macmd("val", G.so, G.argso),
+      macmd("vw", G.so, G.argso),
+      macmd("Val", G.so, G.argso),
+      -- Distinguished truth values
+      cmd("true", G.so),
+      cmd("false", G.so),
+      cmd("ind", G.so),
+      -- Probability / credence (ccred wins back over ccmfam by order)
+      macmd("cprob", G.so, G.argso),
+      macmd("cred", G.so, G.argso),
+      macmd("ccred", G.so, G.argso),
 
       ----------------------------------------------------------------
-      -- SET-THEORETIC / GENERAL NOTATION  (texCmdNotation)
+      -- SYNTACTIC OBJECTS  (texCmdSynObj) — warm
+      -- proof-theoretic material: proof sets, equivalence classes of
+      -- formulas, languages, logics, the formula algebra, maximal
+      -- consistent sets, consequence, I/O out(·)
       ----------------------------------------------------------------
-      macmd("set", G.nt, "texArgNotation"),
-      macmd("oset", G.nt, "texArgNotation"),
-      macmd("tuple", G.nt, "texArgNotation"),
-      macmd("power", G.nt, "texArgNotation"),
-      macmd("Cl", G.nt, "texArgNotation"),
-      -- Set operations
-      mcmd("intersect", G.nt),
-      mcmd("union", G.nt),
-      mcmd("emptyset", G.nt),
-      mcmd("inclin", G.nt),
-      -- Definition symbols
-      mcmd("defby", G.nt),
-      mcmd("defbyvar", G.nt),
-      -- Connective redefinitions
-      mcmd("iff", G.nt),
-      mcmd("onlyif", G.nt),
-      mcmd("then", G.nt),
-      mcmd("to", G.nt),
-      -- Misc notation
-      mcmd("suchthat", G.nt),
-      cmd("st", G.nt),
-      mcmd("minus", G.nt),
-      mcmd("dvbar", G.nt),
-      macmd("parent", G.nt, "texArgNotation"),
-      mcmd("wedgeset", G.nt),
-      mcmd("tightwedge", G.nt),
+      -- Proof sets [A] and equivalence classes |A|
+      mare("proofsetfam", "proofset\\w*", G.syo, G.argsyo),
+      macmd("eclass", G.syo, G.argsyo),
+      macmd("eclassl", G.syo, G.argsyo),
+      -- Language symbols — explicit alternation, NOT lang\w*: that
+      -- pattern also captured stock \langle (splitting it from \rangle),
+      -- and an explicit list keeps the coverage cross-check exact
+      mre("langfam", "lang%(p|m|d|md)?>", G.syo),
+      mcmd("Lc", G.syo),
+      mcmd("logic", G.syo),
+      mcmd("logicp", G.syo),
+      -- Term algebra / atoms-of-the-language
+      mcmd("Fm", G.syo),
+      mcmd("atoms", G.syo),
+      mcmd("props", G.syo),
+      -- Maximal consistent set notation
+      cmd("mcslog", G.syo),
+      macmd("mcseti", G.syo, G.argsyo),
+      -- Consequence / theory
+      macmd("cn", G.syo, G.argsyo),
+      macmd("theory", G.syo, G.argsyo),
+      -- I/O functions
+      macmd("iput", G.syo, G.argsyo),
+      macmd("oput", G.syo, G.argsyo),
+      macmd("oputi", G.syo, G.argsyo),
+      macmd("deriv", G.syo, G.argsyo),
+      macmd("derivi", G.syo, G.argsyo),
       -- Short model-definition macros
-      cmd("mwrv", G.nt),
-      cmd("mwrp", G.nt),
-      cmd("mwnv", G.nt),
-      cmd("mwnp", G.nt),
-      mcmd("hk", G.nt),
+      cmd("mwrv", G.so),
+      cmd("mwrp", G.so),
+      cmd("mwnv", G.so),
+      cmd("mwnp", G.so),
+      -- STIT model components (Tree, Agent, Choice, Value)
+      cmd("tree", G.so),
+      cmd("agent", G.so),
+      cmd("choice", G.so),
+      cmd("stitval", G.so),
+      mcmd("choicema", G.so),
+
+      ----------------------------------------------------------------
+      -- OBJECT-LANGUAGE CONNECTIVES  (texCmdConnective)
+      -- The gray saddle has two banks (2026-08-28): boolean glue of the
+      -- OBJECT language takes the material's warm bank — tan, roman —
+      -- so formulas cohere warm; metalanguage/set glue keeps the cool
+      -- steel below.  One pattern registers the stock booleans (a
+      -- literal "top" entry would collide case-insensitively with the
+      -- \TOP axiom's group — hence cmdre, with explicit >).
+      ----------------------------------------------------------------
+      mcmd("iff", G.cn),
+      mcmd("onlyif", G.cn),
+      mcmd("then", G.cn),
+      mcmd("to", G.cn),
+      mcmd("minus", G.cn),
+      mcmd("hk", G.cn),
+      -- Typed connective variants (intuitionist/classical)
+      mcmd("ito", G.cn),
+      mcmd("cto", G.cn),
+      mcmd("ilor", G.cn),
+      mcmd("clor", G.cn),
+      -- Stock booleans and logical constants join the same bank
+      mre("stockbool", "%(land|lor|neg|lnot|top|bot|equiv|wedge|vee)>", G.cn),
+
+      ----------------------------------------------------------------
+      -- METALANGUAGE GLUE  (texCmdGround)
+      -- set-theoretic plumbing and metalanguage idiom — the saddle's
+      -- cool bank, shared with stock texMathCmd
+      ----------------------------------------------------------------
+      -- Metalanguage connectives (mland, mlor, mlto, mlnot, mlforall,
+      -- mlexists + the six *solo variants)
+      mre("mlfam", "ml\\w*", G.gr),
+      -- The metalanguage named as a language of its own — the R2
+      -- borderline case; gray with its connectives
+      mcmd("metalogic", G.gr),
+      -- Order / lattice notation and the empty set: ambient set theory
+      mcmd("topg", G.gr),
+      mcmd("botg", G.gr),
+      mcmd("topt", G.gr),
+      mcmd("bott", G.gr),
+      mcmd("filter", G.gr),
+      mcmd("emptyset", G.gr),
+      -- Set-theoretic notation (braces and operations; contents are
+      -- formulas/terms, so args read as math body)
+      macmd("set", G.gr, G.argf),
+      macmd("oset", G.gr, G.argf),
+      macmd("tuple", G.gr, G.argf),
+      macmd("power", G.gr, G.argf),
+      macmd("Cl", G.gr, G.argf),
+      mcmd("intersect", G.gr),
+      mcmd("union", G.gr),
+      mcmd("inclin", G.gr),
+      -- Definition signs and the ⊢/⊨ interface glyph: metalanguage
+      -- interface material, gray like the rest of the glue
+      mcmd("defby", G.gr),
+      mcmd("defbyvar", G.gr),
+      mcmd("ent", G.gr),
+      -- Misc notation
+      mcmd("suchthat", G.gr),
+      cmd("st", G.gr),
+      mcmd("dvbar", G.gr),
+      acmd("parent", G.gr, G.argn),
+      mcmd("wedgeset", G.gr),
+      mcmd("tightwedge", G.gr),
+      mcmd("precedes", G.gr),
+
+      ----------------------------------------------------------------
+      -- VARIABLES  (texCmdVariable)
+      -- Greek letters are variables like their roman siblings — body
+      -- tone, not command tone (explicit > so nothing prefix-matches)
+      ----------------------------------------------------------------
+      mre(
+        "greekfam",
+        "%(alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta"
+          .. "|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma"
+          .. "|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda"
+          .. "|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega|ell)>",
+        G.var
+      ),
+      -- Propositional atoms p0..p3 are object-language variables too
+      mcmd("pzero", G.var),
+      mcmd("pone", G.var),
+      mcmd("ptwo", G.var),
+      mcmd("pthree", G.var),
+
+      ----------------------------------------------------------------
+      -- SCAFFOLDING AND MARKERS
+      ----------------------------------------------------------------
+      -- Proof-tree helpers (gentzen)
+      acmd("hyp", G.sc, G.argf),
+      cmd("hyphantom", G.sc),
+      cmd("infr", G.sc),
+      cmd("close", G.sc),
+      mcmd("incomp", G.sc),
+      -- Right-margin justifications: \by{(\CMla)}, \by{MP, 1, 2}
+      acmd("by", G.sc, G.argn),
+      -- booktabs rules are table scaffolding, not derivation rules
+      -- (later entry wins over rulefam)
+      re("booktabsfam", "%(top|mid|bottom|cmid)rule>", G.sc),
+      -- End-of-proof markers (kin to the proof-environment family)
+      cmd("qed", G.qed),
     }
 
     -- Argument-group links accumulated by acmd/macmd/mare above;
