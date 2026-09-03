@@ -1,0 +1,154 @@
+# Ghostty configuration — a transcription of ~/.wezterm.lua, kept deliberately
+# in step with it so the two terminals can be compared like for like.
+#
+# Written 2026-09-03. Almost every setting here exists because .wezterm.lua
+# sets its counterpart, and nothing has been added for its own sake: a knob
+# turned on one side and not the other is exactly the confound the comparison
+# is trying to avoid. The exception is the window chrome, which WezTerm strips
+# as a side effect of a setting nominally about tabs — there, matching the
+# appearance means stating outright what WezTerm arrives at obliquely.
+# Change one file, change the other.
+#
+# Two of WezTerm's settings have no Ghostty counterpart at all. They are
+# recorded in place below rather than dropped, so the gaps stay visible.
+#
+# ⚠ Ghostty reads BOTH `config` and `config.ghostty` from this directory, and
+# applies `config.ghostty` second — a stray file under that name silently
+# overrides everything here. Confirmed 2026-09-03. This is the stowed `config`.
+#
+# Checking, in rough order of usefulness:
+#   ghostty +validate-config          — catches unknown keys; see the font note
+#   ghostty +show-config              — prints what actually resolved
+#   ghostty +show-face --style=bold --cp=0x41
+#   ghostty +list-fonts / +list-themes
+# WezTerm's side of the same questions is `wezterm ls-fonts`.
+
+
+# --- Font -------------------------------------------------------------------
+
+# Faces are pinned rather than inferred, for the reason .wezterm.lua records at
+# length: left unstated the pick belongs to upstream, and upstream moved it
+# once already.
+#
+# Two traps, both unlike WezTerm's.
+#
+# First, `font-style` wants the style string the *font* advertises, not a
+# weight name. WezTerm wants its own weight names, and the two disagree at 600
+# — WezTerm calls it "DemiBold", the face calls itself "Semibold". Here the
+# face wins. `fc-list : family style | grep 'Source Code Pro'` prints the exact
+# strings: ExtraLight, Light, Regular, Medium, Semibold, Bold, Black, each also
+# with " Italic".
+#
+# Second, and worse: a misspelling here is accepted in silence. WezTerm treats
+# a bad weight name as a hard config error and keeps the last good config
+# running, which is loud and safe. Ghostty passes `+validate-config` clean with
+# `font-style-bold = NoSuchStyleXYZ` and just renders the regular face, and an
+# unresolvable `font-family` falls through to Noto Sans Mono the same way. Both
+# confirmed 2026-09-03. `+validate-config` catches an unknown *key* and exits
+# 1; it does not check that a value resolves to a face. Verify a change with
+# `+show-face`, don't assume it took.
+#
+# `font-style-*` is consulted only when the matching `font-family-*` is also
+# set, which is why the family is repeated on every line.
+font-family = Source Code Pro
+font-style = Regular
+font-family-bold = Source Code Pro
+font-style-bold = Bold
+font-family-italic = Source Code Pro
+font-style-italic = Italic
+font-family-bold-italic = Source Code Pro
+font-style-bold-italic = Bold Italic
+
+# Points, as in WezTerm, and 12 is also Ghostty's own default. Held explicit so
+# the comparison does not rest on two defaults happening to agree.
+font-size = 12
+
+# NO COUNTERPART (1/2) — faint text.
+#
+# WezTerm chooses a face per (intensity, italic) pair, so its font_rules pin
+# Intensity=Half to Source Code Pro Light 300: faint text gets a lighter
+# *stroke*, at full strength. Ghostty has no Half face and no per-intensity
+# rule. It draws faint text in the ordinary Regular face and blends the
+# foreground toward the background by the fraction below — lighter *ink*.
+#
+# These are different renderings and no setting reconciles them; it is the one
+# place the two terminals are doing different things by construction. 0.5 is
+# Ghostty's default, left alone so this line records the divergence without
+# introducing a second one.
+faint-opacity = 0.5
+
+
+# --- Colour -----------------------------------------------------------------
+
+# Verified identical to WezTerm's built-in `tokyonight_night` on 2026-09-03:
+# all sixteen palette entries, background, foreground, cursor, cursor text and
+# both selection colours agree byte for byte, the two having descended from the
+# same upstream. Compared by dumping wezterm.color.get_builtin_schemes()
+# against /usr/share/ghostty/themes/'TokyoNight Night'. `+list-themes` also
+# carries TokyoNight, Day, Moon and Storm, covering .wezterm.lua's alternates.
+theme = TokyoNight Night
+
+# bold_brightens_ansi_colors = false. Ghostty's counterpart is `bold-color`,
+# and leaving it unset already *is* the false case: bold is a weight change and
+# nothing else, colour stays under manual control. `bold-color = bright` would
+# be the true case. Spelled `bold-is-bright` before Ghostty 1.2 and deprecated
+# since — don't reach for the old name.
+# bold-color =
+
+
+# --- Window -----------------------------------------------------------------
+
+# default_cwd. Written tilde-relative so the one file suits both machines.
+working-directory = ~/Desktop
+
+# No titlebar, no borders, no shadow — the bare terminal, which is the point of
+# the WezTerm setup this transcribes.
+#
+# .wezterm.lua never says so, because there it is a side effect: WezTerm's
+# fancy tab bar *is* its titlebar, so hide_tab_bar_if_only_one_tab strips the
+# chrome along with the tabs whenever a window holds a single tab. Ghostty
+# keeps the two apart, and on GNOME its default `auto` draws a full libadwaita
+# headerbar, so the same appearance has to be asked for outright.
+#
+# `gtk-titlebar = false` is the wrong knob and deliberately absent — Ghostty
+# documents it as doing nothing once window-decoration is none.
+#
+# Two consequences. On a floating desktop this leaves no titlebar to drag, so
+# moving and resizing fall to the compositor's own gestures; under sway, which
+# tiles, the question doesn't arise. And it makes the window sizing below exact.
+window-decoration = none
+
+# `raised`, the default, casts a shadow from the tab bar down onto the terminal
+# area; `flat` sits level with it. Visible only from two tabs up, where there
+# is a tab bar at all — but a shadow is chrome.
+gtk-toolbar-style = flat
+
+# initial_cols / initial_rows, in grid cells on both sides, and exact here.
+# Ghostty mis-sizes the first window on GTK by failing to subtract the window
+# decorations, but documents that disabling them — as above — makes the grid
+# land true. WezTerm's initial_cols/initial_rows are exact unconditionally.
+window-width = 100
+window-height = 40
+
+# enable_tab_bar = true together with hide_tab_bar_if_only_one_tab = true.
+# `auto` is exactly that pair: shown from two tabs, hidden at one. What appears
+# at two tabs still differs — WezTerm merges the tabs into the titlebar it is
+# already drawing, Ghostty has no titlebar left to merge them into and gives
+# them a bar of their own.
+window-show-tab-bar = auto
+
+# scrollback_lines = 20000, in a different unit. Ghostty budgets scrollback in
+# bytes rather than lines and publishes no conversion factor, so this is an
+# over-provision against a floor, not an equivalence: 32 MiB for 20000 x 100
+# cells. Ghostty allocates the buffer lazily, so the unused headroom costs
+# nothing until it is filled. Ghostty's own default, 10 MB, sits close enough
+# to the floor to be worth clearing.
+#
+# To confirm the floor is met, in a Ghostty window:
+#   printf 'line %05d\n' $(seq 1 20000)
+# then scroll to the top and check that `line 00001` survived.
+scrollback-limit = 33554432
+
+# NO COUNTERPART (2/2) — check_for_updates = false.
+# Ghostty's `auto-update` is Sparkle, which is macOS-only; the Linux build
+# ships no updater to silence. The RPM handles updates on both machines.

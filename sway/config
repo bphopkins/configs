@@ -59,7 +59,12 @@ set $down j
 set $up k
 set $right l
 
-set $term wezterm
+# Two terminals, deliberately, for the Ghostty/WezTerm comparison begun
+# 2026-09-03: $term is the one under daily test, $term2 the other, one keystroke
+# away. Sway runs only on fedxps, so this file's choice does not bind bigfed
+# even though it syncs there. Findings in docs/ghostty-vs-wezterm-2026-09-03.md.
+set $term ghostty
+set $term2 wezterm
 set $menu wofi --show drun
 
 
@@ -133,6 +138,8 @@ input type:touchpad {
 #
     bindsym $mod+Return exec $term
     bindsym $mod+t      exec $term
+    bindsym $mod+Shift+Return exec $term2
+    bindsym $mod+Shift+t      exec $term2
     bindsym $mod+a      exec $menu
     bindsym $mod+b      exec brave-browser
     bindsym $mod+c      exec google-chrome-stable

@@ -52,5 +52,34 @@ config.bold_brightens_ansi_colors = false
 config.check_for_updates = false -- RPM-managed; the built-in updater is noise
 config.scrollback_lines = 20000 -- default is 3500; the tests/ suites overrun it
 
+-- WezTerm delays escape-sequence processing to batch a TUI's redraw into one
+-- frame, so that a program which never says where its frame ends does not tear.
+-- The default is 3ms and it is charged to every reply: a CSI 6n round trip
+-- costs 3588us with it and 137us without, measured 2026-09-03. That single
+-- default was the whole of the 37x latency gap against Ghostty; the throughput
+-- gap is separate and is real work. Full chain of evidence in
+-- configs/docs/ghostty-vs-wezterm-2026-09-03.md.
+--
+-- Zero is safe here because the batching is a fallback for programs that do
+-- not negotiate synchronized output (DEC mode 2026), and the ones that matter
+-- do: nvim probes with `CSI ? 2026 $ p`, and WezTerm answers `;2` — supported.
+-- A program that never asks loses the blanket and may flicker. If one ever
+-- does, 1 is the middle setting; don't go straight back to 3.
+--
+-- Why the blanket exists at all: WezTerm reports TERM=xterm-256color, whose
+-- terminfo carries no Sync capability, so anything that reads terminfo instead
+-- of asking cannot discover synchronized output here. WezTerm's own `wezterm`
+-- entry does carry it, but the Fedora RPM ships no terminfo at all, so
+-- `config.term = "wezterm"` would name an entry this machine does not have.
+config.mux_output_parser_coalesce_delay_ms = 0
+
+-- The parser's read buffer. Swept 2026-09-03 on an otherwise idle machine, two
+-- reps each, draining 200000 lines: 16K gave 1057ms, the default 970, 128K 946,
+-- 1M 844, 4M 878. So the default sits near 128K, 1M is the floor, and 4M is
+-- past it. 13% off the flood time for one line and a megabyte of RSS per pane.
+-- It does not close the gap to Ghostty (still ~2x on sparse text, which is
+-- compute), it just stops giving away the part that was configuration.
+config.mux_output_parser_buffer_size = 1048576
+
 -- Finally, return the configuration to wezterm:
 return config

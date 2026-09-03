@@ -2,6 +2,7 @@
 declare -A STOW_TARGETS=(
   [alacritty]="$HOME/.config/alacritty"
   [bash]="$HOME"
+  [ghostty]="$HOME/.config/ghostty"
   [bin]="$HOME/bin"
   [latex]="$HOME/texmf/tex/latex"
   [mako]="$HOME/.config/mako"
@@ -18,7 +19,7 @@ declare -A STOW_TARGETS=(
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash wezterm alacritty nvim sway swaylock waybar mako wofi latex bin okular)
+STOW_ORDER=(bash wezterm ghostty alacritty nvim sway swaylock waybar mako wofi latex bin okular)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 
