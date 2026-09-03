@@ -131,7 +131,13 @@ Guardrails, shared by the single- and all-repo variants:
   rebase that integrated remote changes — that changed `bash/` files,
   added/removed files in a stow package, or touched `nvim/lazy-lock.json`
   prints the required follow-up (`source ~/.bashrc`, `stow-all`,
-  `nvim --headless "+Lazy! restore" +qa`). The change list is parsed
+  `nvim --headless "+Lazy! restore" +qa`). ⚠ **The stow hint sees only
+  *existing* packages.** Its package list is built from `STOW_ORDER` as loaded
+  in the running shell, and a brand-new package is by definition not in it yet —
+  the pull that added it has only just rewritten `60-stow.sh` on disk. So the
+  one case where forgetting to restow fails silently is the one case the hint
+  cannot report. Observed 2026-09-03 when the `ghostty` package arrived on
+  bigfed; diagnosis and fix in `TODO.md` item 10. The change list is parsed
   NUL-delimited, so non-ASCII filenames can't silently defeat it. **Hints are
   consolidated (2026-08-22)**: queued during the run and printed as one block
   after the summary; the queue is `local` to each command, the flush sits

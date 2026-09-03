@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Same 60 visible characters per line, same 40000 lines; only the number of
+# SGR attribute changes per line varies. Rendering goes to the screen.
+set -uo pipefail
+HERE="${TERM_BENCH_CORPUS:-${TMPDIR:-/tmp}/term-bench-corpus}"
+mkdir -p "$HERE"
+OUT="${TERM_BENCH_OUT:-}"
+NLINES=40000
+TERM_NAME="unknown"; TERM_PID="unknown"
+p=$PPID
+while [[ -n $p && $p -gt 1 ]]; do
+  n=$(ps -o comm= -p "$p" 2>/dev/null | tr -d ' ') || break
+  case $n in wezterm-gui) TERM_NAME=WezTerm; TERM_PID=$p; break;;
+             ghostty) TERM_NAME=Ghostty; TERM_PID=$p; break;; esac
+  p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+done
+# Corpora, generated once and reused so every terminal sees identical bytes.
+# Deterministic: no randomness, no clock. The filler text is *varied* rather
+# than a repeated character — a single repeated glyph is a degenerate case that
+# measures the glyph cache instead of the terminal, and it produced a d=0 figure
+# that contradicted term-bench on the same terminals in the same session.
+_gen_corpora() {
+  python3 - "$HERE" <<'PYGEN'
+import os, sys
+base = sys.argv[1]
+DENS = [0, 4, 8, 16, 24, 32, 48, 64]; NL = 40000; VIS = 60
+COLORS = [31,32,33,34,35,36,91,92,93,94,95,96]
+FILLER = "the quick brown fox jumps over the lazy dog 0123456789 abcdefghijklmnopqrstuvwxyz"
+for d in DENS:
+    path = os.path.join(base, "sgr-d%d.txt" % d)
+    if os.path.exists(path):
+        continue
+    with open(path, "w") as f:
+        for i in range(NL):
+            text = (FILLER[i % len(FILLER):] + FILLER)[:VIS]
+            if d == 0:
+                f.write(text + "\n"); continue
+            per = max(1, VIS // d); parts = []; used = 0
+            for k in range(d):
+                parts.append("\033[%dm" % COLORS[(i + k) % len(COLORS)])
+                chunk = text[used:used + per]; used += len(chunk)
+                parts.append(chunk)
+            if used < VIS:
+                parts.append(text[used:VIS])
+            parts.append("\033[0m\n")
+            f.write("".join(parts))
+PYGEN
+}
+_gen_corpora
+
+CLK_TCK=$(getconf CLK_TCK 2>/dev/null || echo 100)
+sys_busy_ms(){ awk -v hz="$CLK_TCK" '/^cpu /{idle=$5+$6;tot=0;for(i=2;i<=NF;i++)tot+=$i;printf "%d",(tot-idle)*1000/hz;exit}' /proc/stat; }
+own_ms(){ [[ $TERM_PID =~ ^[0-9]+$ ]] || { echo 0; return; }
+  local r; r=$(sed 's/.*) //' "/proc/$TERM_PID/stat" 2>/dev/null) || { echo 0; return; }
+  awk -v hz="$CLK_TCK" '{printf "%d",($12+$13)*1000/hz}' <<<"$r"; }
+S0=$(sys_busy_ms); O0=$(own_ms); W0=$(date +%s%N)
+rows=""
+for d in 0 4 8 16 24 32 48 64; do
+  f="$HERE/sgr-d$d.txt"; best=99999999
+  for _ in 1 2 3; do
+    t0=$(date +%s%N); cat "$f"; t1=$(date +%s%N)
+    ms=$(( (t1-t0)/1000000 )); (( ms<best )) && best=$ms
+  done
+  us=$(( best*1000000/NLINES ))
+  rows+=$(printf '    d=%-3s %5s ms   %4s.%03s us/line\n' "$d" "$best" "$((us/1000))" "$(printf '%03d' $((us%1000)))")$'\n'
+done
+S1=$(sys_busy_ms); O1=$(own_ms); W1=$(date +%s%N)
+OTHER=$(( S1 - S0 - (O1 - O0) )); WALL=$(( (W1 - W0)/1000000 ))
+clear
+SUM=$(printf '  terminal: %s (pid %s)   grid %sx%s\n  SGR changes per line vs render cost, 40000 lines, 60 visible chars each:\n%s' \
+      "$TERM_NAME" "$TERM_PID" "$(tput cols)" "$(tput lines)" "$rows")
+SUM+=$(printf '  contention: %s ms of other-process cpu over %s ms wall' "$OTHER" "$WALL")
+printf '%s\n' "$SUM"
+[[ -n $OUT ]] && printf '%s\n' "$SUM" >> "$OUT"
+exit 0

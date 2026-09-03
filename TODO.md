@@ -141,6 +141,57 @@ hand-curated library file in `lua/snippets/` plus one name in `snippets.lua`'s
 other — both appear in the menu — so a shadowing scheme needs actual design,
 not just a second file.
 
+## 10. `gpullall`'s restow hint cannot see a *new* stow package
+
+- [ ] Build the package list for the post-pull hint from the repo's directories
+  on disk rather than from the in-memory `STOW_ORDER`, and add a regression test
+  that adds a new package directory and asserts the `stow-all` hint fires.
+
+Found 2026-09-03 by exercising the workflow end to end: a `configs` pull on
+bigfed that added the new `ghostty` package printed only
+`[HINT] configs: bash files changed — run: source ~/.bashrc`, and never
+mentioned `stow-all`.
+
+**The gap, precisely.** In the post-pull hint classification loop
+(`50-git-sync.sh`, around line 311):
+
+```
+local -A is_pkg=() pkg_hit=()
+if declare -p STOW_ORDER >/dev/null 2>&1; then
+  for p in "${STOW_ORDER[@]}"; do is_pkg[$p]=1; done
+fi
+...
+[[ -n "${is_pkg[${p%%/*}]:-}" ]] && pkg_hit[${p%%/*}]=1
+```
+
+`is_pkg` comes from `STOW_ORDER` **as loaded in the running shell**. A brand-new
+package is by definition absent from that array, because the pull that added it
+has only just updated `60-stow.sh` on disk. So `ghostty/config` classified as
+"not in a stow package", `pkg_hit` stayed empty, and the hint could not fire.
+
+This is the same in-memory-versus-disk trap `stow-all` itself has — documented
+in the root charter — reappearing one layer up, in the tool built to warn about
+it. And it misses **exactly** the case that matters: the hint is reliable for
+changes to *existing* packages and structurally blind to a *new* one, which is
+the only case where forgetting to restow fails silently.
+
+**Why it did not bite.** Adding a package requires editing `60-stow.sh`, which
+lives in `bash/`, so `bash_hit` fired and produced the re-source hint. That
+coupling is luck, not design, and the hint says `source ~/.bashrc` and stops —
+followed literally, the new package is never linked.
+
+**Why the suite did not catch it.** `test-gsync.sh:129` and `test-audit.sh:10`
+both `source` the current `60-stow.sh`, so `STOW_ORDER` is always fully
+populated, and every stow-hint assertion adds files to an *existing* package
+(`bash/.bashrc.d/95-added.sh`, `test-audit.sh:249`). No test has ever introduced
+a new package directory.
+
+**Proposed fix.** Populate `is_pkg` from the repo's top-level directories after
+the pull — every entry except the known non-packages (`docs`, `tests`,
+`wallpapers`, `.git`) — optionally unioned with `STOW_ORDER`. It degrades in the
+right direction: an unrecognised directory yields a spurious hint at worst,
+never a missing one. Run `tests/gsync/run-all.sh` after.
+
 ---
 
 ## Notes

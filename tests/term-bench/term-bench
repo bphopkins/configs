@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# term-bench — same corpus, same machine, one terminal at a time.
+#
+# Run it in a WezTerm window and again in a Ghostty window, each showing a bare
+# shell and nothing else. Compare the three numbers.
+#
+# It writes only inside its own scratchpad directory, starts no service, opens
+# no window, and needs no privilege. It puts the tty in raw mode for the last
+# test and restores it on every exit path, including Ctrl-C.
+
+set -uo pipefail
+HERE="${TERM_BENCH_CORPUS:-${TMPDIR:-/tmp}/term-bench-corpus}"
+mkdir -p "$HERE"
+PLAIN="$HERE/corpus-plain.txt"
+SGR="$HERE/corpus-sgr.txt"
+
+STTY_SAVED=""
+restore_tty() { [[ -n $STTY_SAVED ]] && stty "$STTY_SAVED" < /dev/tty 2>/dev/null; STTY_SAVED=""; }
+trap restore_tty EXIT INT TERM HUP
+
+# Fixed corpus, generated once and reused, so both terminals see identical
+# bytes. Deterministic — no randomness, no clock.
+[[ -f $PLAIN ]] || awk 'BEGIN{for(i=1;i<=200000;i++)printf "%06d  the quick brown fox jumps over the lazy dog 0123456789\n",i}' > "$PLAIN"
+[[ -f $SGR ]] || awk 'BEGIN{for(i=1;i<=60000;i++){c=31+(i%7);printf "\033[%dm%06d\033[0m \033[1mbold\033[0m \033[2mfaint\033[0m \033[3mitalic\033[0m ascii payload\n",c,i}}' > "$SGR"
+
+# Identity comes from the process tree, never the environment. Environment
+# variables are inherited by children: a WezTerm started from a Ghostty window
+# carries GHOSTTY_* and will happily mislabel itself. The tree does not lie.
+TERM_NAME="unknown"; TERM_PID="unknown"
+term_info() {
+  local p=$PPID name
+  while [[ -n $p && $p -gt 1 ]]; do
+    name=$(ps -o comm= -p "$p" 2>/dev/null | tr -d ' ') || break
+    case $name in
+      wezterm-gui) TERM_NAME=WezTerm;   TERM_PID=$p; return;;
+      ghostty)     TERM_NAME=Ghostty;   TERM_PID=$p; return;;
+      alacritty)   TERM_NAME=Alacritty; TERM_PID=$p; return;;
+    esac
+    p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+  done
+  TERM_NAME="${TERM_PROGRAM:-unknown} (env fallback, tree walk failed)"
+}
+
+# Which graphics stack the terminal actually loaded. A renderer setting that
+# silently failed to initialise looks identical to one that worked, unless you
+# check — this is what made the first WebGpu run uninterpretable.
+gfx() {
+  [[ $TERM_PID =~ ^[0-9]+$ ]] || { echo "unknown (no pid)"; return; }
+  [[ -r /proc/$TERM_PID/maps ]] || { echo "(maps unreadable)"; return; }
+  local libs
+  libs=$(grep -oE '/[^ ]*(libvulkan|libEGL|libGLX|libgallium)[^ ]*' "/proc/$TERM_PID/maps" 2>/dev/null \
+         | sed 's|.*/||; s|\.so.*||' | sort -u | tr '\n' ' ')
+  [[ -n $libs ]] && echo "$libs" || echo "(no graphics libs mapped yet)"
+}
+
+CLK_TCK=$(getconf CLK_TCK 2>/dev/null || echo 100)
+
+# Total non-idle CPU ms across every core. Subtracting the terminal's own CPU
+# leaves everything *else* the machine was doing — which is the thing that
+# silently corrupts a timing run. A run that does not report its own
+# contention cannot be trusted after the fact.
+sys_busy_ms() {
+  awk -v hz="$CLK_TCK" '/^cpu /{idle=$5+$6; tot=0; for(i=2;i<=NF;i++) tot+=$i; printf "%d",(tot-idle)*1000/hz; exit}' /proc/stat
+}
+cpu_ms() {   # cumulative CPU milliseconds burned by the terminal process
+  [[ $TERM_PID =~ ^[0-9]+$ ]] || { echo 0; return; }
+  local rest
+  rest=$(sed 's/.*) //' "/proc/$TERM_PID/stat" 2>/dev/null) || { echo 0; return; }
+  awk -v hz="$CLK_TCK" '{printf "%d", ($12+$13)*1000/hz}' <<<"$rest"
+}
+
+# Sets RESULT_MS. Output goes to the real stdout — the screen — because
+# rendering it is the thing being timed. Best of 3 to shed scheduler noise.
+RESULT_MS=0
+throughput() {
+  local file=$1 best=9999999 t0 t1 ms total=0
+  for _ in 1 2 3; do
+    t0=$(date +%s%N)
+    cat "$file"
+    t1=$(date +%s%N)
+    ms=$(( (t1 - t0) / 1000000 ))
+    (( ms < best )) && best=$ms
+    total=$(( total + ms ))
+  done
+  RESULT_MS=$best
+  RESULT_WALL=$total
+}
+
+# Cursor-position round trips: the terminal's parse-and-respond loop, which is
+# the path a keystroke also takes. Safe under command substitution — the
+# escapes go to /dev/tty, only the number reaches stdout.
+RESULT_US=""
+dsr() {
+  local n=300 t0 t1 i
+  if ! { : < /dev/tty; } 2>/dev/null || ! { : > /dev/tty; } 2>/dev/null; then
+    RESULT_US="n/a (no controlling tty)"; return 0
+  fi
+  STTY_SAVED=$(stty -g < /dev/tty 2>/dev/null) || { RESULT_US="n/a (no stty)"; return 0; }
+  stty -echo raw < /dev/tty 2>/dev/null || { RESULT_US="n/a (raw mode refused)"; return 0; }
+  t0=$(date +%s%N)
+  for ((i = 0; i < n; i++)); do
+    printf '\033[6n' > /dev/tty
+    if ! IFS= read -r -d R -t 2 _ < /dev/tty; then
+      restore_tty; RESULT_US="n/a (terminal did not answer CSI 6n)"; return 0
+    fi
+  done
+  t1=$(date +%s%N)
+  restore_tty
+  RESULT_US="$(( (t1 - t0) / n / 1000 )) us"
+}
+
+# Which process is actually drawing this window. Distinguishes a shared WezTerm
+# GUI instance from one started with --always-new-process.
+term_pid() {
+  local p=$PPID name
+  while [[ -n $p && $p -gt 1 ]]; do
+    name=$(ps -o comm= -p "$p" 2>/dev/null | tr -d ' ') || break
+    case $name in wezterm-gui|ghostty|alacritty) echo "$p ($name)"; return;; esac
+    p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+  done
+  echo unknown
+}
+
+term_info; cols=$(tput cols); rows=$(tput lines); gfx_early=$(gfx)
+s0=$(sys_busy_ms); c0=$(cpu_ms); throughput "$PLAIN"; plain_ms=$RESULT_MS; plain_wall=$RESULT_WALL
+c1=$(cpu_ms); s1=$(sys_busy_ms); plain_cpu=$(( c1 - c0 )); plain_other=$(( s1 - s0 - plain_cpu ))
+throughput "$SGR"; sgr_ms=$RESULT_MS; sgr_wall=$RESULT_WALL
+c2=$(cpu_ms); s2=$(sys_busy_ms); sgr_cpu=$(( c2 - c1 )); sgr_other=$(( s2 - s1 - sgr_cpu ))
+dsr_t0=$(date +%s%N); dsr; dsr_us=$RESULT_US; dsr_t1=$(date +%s%N)
+c3=$(cpu_ms); s3=$(sys_busy_ms); dsr_cpu=$(( c3 - c2 )); dsr_other=$(( s3 - s2 - dsr_cpu )); dsr_wall=$(( (dsr_t1 - dsr_t0) / 1000000 ))
+pct() { (( $2 > 0 )) && echo "$(( $1 * 100 / $2 ))%" || echo "n/a"; }
+gfx_late=$(gfx)
+clear
+read -r -d '' SUMMARY_TEXT <<SUMMARY
+
+
+  terminal          : $TERM_NAME
+  grid              : ${cols}x${rows}     (keep this equal across runs)
+  drawn by          : $TERM_PID
+  graphics at start : $gfx_early
+  graphics at end   : $gfx_late
+
+  plain 200k lines  : ${plain_ms} ms      best of 3, lower is faster
+  sgr    60k lines  : ${sgr_ms} ms      best of 3, colour + bold/faint/italic
+  cursor round-trip : ${dsr_us}      parse-and-respond, ~the keystroke path
+
+  terminal CPU burned vs wall clock, per phase:
+    plain : ${plain_cpu} ms cpu / ${plain_wall} ms wall  = $(pct $plain_cpu $plain_wall)
+    sgr   : ${sgr_cpu} ms cpu / ${sgr_wall} ms wall  = $(pct $sgr_cpu $sgr_wall)
+    dsr   : ${dsr_cpu} ms cpu / ${dsr_wall} ms wall  = $(pct $dsr_cpu $dsr_wall)
+
+  CONTENTION - cpu ms burned by everything OTHER than this terminal:
+    plain : ${plain_other} ms   over ${plain_wall} ms wall
+    sgr   : ${sgr_other} ms   over ${sgr_wall} ms wall
+    dsr   : ${dsr_other} ms   over ${dsr_wall} ms wall
+    (a quiet machine reads near zero; hundreds of ms means the run is suspect)
+
+  The two throughput figures measure how fast the terminal drains a flood.
+  The round-trip is the one that tracks what "feels" responsive when typing.
+
+SUMMARY
+
+printf '%s\n' "$SUMMARY_TEXT"
+[[ -n ${TERM_BENCH_OUT:-} ]] && printf '%s\n' "$SUMMARY_TEXT" >> "$TERM_BENCH_OUT"
+exit 0

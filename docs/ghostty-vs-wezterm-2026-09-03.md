@@ -296,7 +296,9 @@ understates the ratio rather than flattering it.
 
 ## Harness
 
-`term-bench`, written for this and left in the session scratchpad. Two bugs
+`term-bench` and `sgr-sweep`, kept in `tests/term-bench/` with a README
+naming every trap below; corpora regenerate on demand and are not committed.
+Two bugs
 were found in it before the numbers above were taken, both of which would have
 produced a confident wrong answer:
 

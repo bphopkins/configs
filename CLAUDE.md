@@ -39,8 +39,8 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | Package | Stow target | Charter covers |
 |---|---|---|
 | bash | `~` | module detail, git-sync guardrails + suite, reboot verdict, disk pair, the stow guard |
-| wezterm | `~` | *(no charter — font/theme only)* |
-| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the faint-text gap, the dual config-file trap)* |
+| wezterm | `~` | *(no charter — the config file carries its own: pinned font faces, and the two measured latency/throughput settings)* |
+| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap)* |
 | alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
@@ -87,7 +87,9 @@ in-progress guards, offline handling, hints — and their scope live in
 
 - `gpullall` — ff-only pull of every repo in `REPOS_DESKTOP` (which spans
   *all* the Desktop repos, not just this one), with follow-up hints when a
-  `configs` pull needs a re-source, restow, or lockfile restore
+  `configs` pull needs a re-source, restow, or lockfile restore — but the
+  restow hint is blind to a *newly added* package (`TODO.md` item 10), so a
+  pull that brings one still needs `stow-all` by hand
 - `gpushall [-m MSG]` — stages everything (`git add -A`, vetting newly added
   paths), commits as `{hostname}: {YYYY-MM-DD HH:MM:SS}`, rebases, pushes
 - `gpull <name>...` / `gpush [-m MSG] <name>...` — the same for named repos
@@ -95,6 +97,11 @@ in-progress guards, offline handling, hints — and their scope live in
   whenever the machines may be out of step
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
+
+`tests/term-bench/` holds the terminal-comparison harnesses (throughput,
+keystroke-path latency, SGR-density sweep) and a README naming the seven
+ways an apparently-fine terminal benchmark can measure nothing at all.
+Findings: `docs/ghostty-vs-wezterm-2026-09-03.md`.
 
 ## Bash Configuration
 

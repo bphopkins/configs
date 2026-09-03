@@ -35,7 +35,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p ~/Desktop/configs/{alacritty,bash,bin,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
+mkdir -p ~/Desktop/configs/{alacritty,bash,bin,ghostty,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
 ```
 
 
@@ -152,7 +152,7 @@ This simulates the action, reporting back if `stow` sees anything funny about cr
 cd ~/Desktop/configs
 
 # Ensure target directories exist
-mkdir -p ~/.config/{alacritty,mako,nvim,sway,swaylock,waybar,wofi} ~/texmf/tex/latex ~/bin
+mkdir -p ~/.config/{alacritty,ghostty,mako,nvim,sway,swaylock,waybar,wofi} ~/texmf/tex/latex ~/bin
 
 # Links to $HOME
 stow -nvt ~ bash
@@ -160,6 +160,7 @@ stow -nvt ~ wezterm
 
 # Links to ~/.config/<app>
 stow -nvt ~/.config/alacritty alacritty
+stow -nvt ~/.config/ghostty ghostty
 stow -nvt ~/.config/nvim nvim
 stow -nvt ~/.config/sway sway
 stow -nvt ~/.config/swaylock swaylock
@@ -191,9 +192,13 @@ stow -vt ~ wezterm
 
 # Links to ~/.config/<app>
 stow -vt ~/.config/alacritty alacritty
+stow -vt ~/.config/ghostty ghostty
 stow -vt ~/.config/nvim nvim
 stow -vt ~/.config/sway sway
+stow -vt ~/.config/swaylock swaylock
+stow -vt ~/.config/mako mako
 stow -vt ~/.config/waybar waybar
+stow -vt ~/.config/wofi wofi
 
 # Links to ~/texmf/tex/latex
 stow -vt ~/texmf/tex/latex latex
@@ -259,9 +264,13 @@ But honestly, why not just reboot?
   stow --adopt -vt ~ bash
   stow --adopt -vt ~ wezterm
   stow --adopt -vt ~/.config/alacritty alacritty
+  stow --adopt -vt ~/.config/ghostty ghostty
   stow --adopt -vt ~/.config/nvim nvim
   stow --adopt -vt ~/.config/sway sway
+  stow --adopt -vt ~/.config/swaylock swaylock
+  stow --adopt -vt ~/.config/mako mako
   stow --adopt -vt ~/.config/waybar waybar
+  stow --adopt -vt ~/.config/wofi wofi
   stow --adopt -vt ~/texmf/tex/latex latex
   stow --adopt -vt ~/bin bin
   stow --adopt -vt ~/.config okular
@@ -274,9 +283,13 @@ But honestly, why not just reboot?
   stow -Dvt ~ bash
   stow -Dvt ~ wezterm
   stow -Dvt ~/.config/alacritty alacritty
+  stow -Dvt ~/.config/ghostty ghostty
   stow -Dvt ~/.config/nvim nvim
   stow -Dvt ~/.config/sway sway
+  stow -Dvt ~/.config/swaylock swaylock
+  stow -Dvt ~/.config/mako mako
   stow -Dvt ~/.config/waybar waybar
+  stow -Dvt ~/.config/wofi wofi
   stow -Dvt ~/texmf/tex/latex latex
   stow -Dvt ~/bin bin
   stow -Dvt ~/.config okular
