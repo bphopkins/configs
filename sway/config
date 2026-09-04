@@ -63,7 +63,10 @@ set $right l
 # 2026-09-03: $term is the one under daily test, $term2 the other, one keystroke
 # away. Sway runs only on fedxps, so this file's choice does not bind bigfed
 # even though it syncs there. Findings in docs/ghostty-vs-wezterm-2026-09-03.md.
-set $term ghostty
+# --gtk-single-instance=false so each press spawns its own process and so
+# lands in working-directory; new windows/tabs/splits raised from inside one
+# still inherit. Reasoning in ghostty/config's Window section.
+set $term ghostty --gtk-single-instance=false
 set $term2 wezterm
 set $menu wofi --show drun
 

@@ -284,6 +284,85 @@ baseline per-line cost is about 2.5x lower. Heavily-coloured output is where
 the gap is narrowest; a workload of nothing but SGR churn is where WezTerm
 would come closest.
 
+## Where WezTerm wins outright: terminfo over ssh
+
+Added the same day but measured **from bigfed against nousowl**, not on fedxps,
+so none of the numbers above are affected. Not a performance finding — a
+capability one, and so far the only place where WezTerm is better as it ships.
+
+The `Sync` table above reads as an argument for naming your own terminfo entry:
+Ghostty advertises `xterm-ghostty` and gets `Sync` for free, WezTerm advertises
+`xterm-256color` and has to infer frame boundaries instead. Over ssh the same
+decision runs the other way, because `$TERM` travels and the terminfo database
+does not.
+
+Measured on `nousowl`, one binary, two names:
+
+| `$TERM` | `htop` |
+|---|---|
+| `xterm-ghostty` | `ncurses: cannot initialize terminal type ($TERM="xterm-ghostty"); exiting`, exit 1 |
+| `xterm-256color` | runs — exit 124, killed by a 2 s `timeout` |
+
+**The obvious repair does not work, for a reason worth recording.** The entry
+declares three names — `infocmp -1 xterm-ghostty` opens
+`xterm-ghostty|ghostty|Ghostty` — but no package ships more than one of them,
+and the two that ship it disagree about which:
+
+| package | terminfo file it installs | resolves |
+|---|---|---|
+| `ghostty` | `/usr/share/terminfo/x/xterm-ghostty` | `xterm-ghostty` only; `ghostty` is MISSING even on bigfed |
+| `ncurses-term` | `/usr/share/terminfo/g/ghostty` | `ghostty` only; one hit in a 2774-file list |
+
+So `dnf install ncurses-term` on nousowl would install the right entry under
+the wrong name, and `term = ghostty` in `ghostty/config` would fix the remote
+by breaking the local. Neither box can be made to work by choosing a name;
+something has to be installed.
+
+WezTerm never has the problem, and `.wezterm.lua` shows that is a decision
+rather than luck — `config.term = "wezterm"` is rejected there precisely
+because the Fedora RPM ships no terminfo, so WezTerm reports a name every host
+already knows. It buys remote compatibility with the local `Sync` capability,
+which is the same trade `mux_output_parser_coalesce_delay_ms` exists to paper
+over. One decision, two consequences, and the section above weighed only one.
+
+Ghostty's answer, which WezTerm has no counterpart to, is two
+`shell-integration-features`: `ssh-env` rewrites `TERM` to `xterm-256color` on
+ssh, and `ssh-terminfo` installs the real entry on the remote with `infocmp`
+and `tic`, cached per host. Both were off — the resolved list was
+`no-cursor,no-sudo,title,no-ssh-env,no-ssh-terminfo,path`. Enabled together
+they are not a compromise between each other: the man page specifies that
+Ghostty installs its terminfo and uses `xterm-ghostty`, falling back to
+`xterm-256color` only where the install failed. WezTerm's behaviour becomes the
+floor and full capability the ceiling, which makes `ssh-env` alone strictly
+dominated. `tic` and `infocmp` are both present on nousowl. Turned on in
+`ghostty/config`.
+
+**Verified the same day.** `GHOSTTY_SHELL_FEATURES` is read at shell startup,
+so the check needs a new window rather than a config reload. In one: `ssh
+nousowl`, `echo $TERM` answers `xterm-ghostty`, and `ghostty +ssh-cache` lists
+`bph@192.168.0.223` — the cache keys on the resolved address, not on the
+`~/.ssh/config` alias. What settles it is the contrast on one binary and one
+machine: `htop` under `TERM=xterm-ghostty` exited 1 on `cannot initialize
+terminal type` before, and after runs to the same 2 s `timeout` that killed it
+in the working case.
+
+`tic` then does what neither packager did — it installed **both** names:
+
+```
+3854  ~/.terminfo/x/xterm-ghostty
+3854  ~/.terminfo/g/ghostty        (hard link; 4.0K for the pair)
+```
+
+It writes one file per alias in the entry's name list, so the split in the
+table above is a choice each packager made and not a constraint terminfo
+imposes. The result inverts: **nousowl, which has no Ghostty installed, now
+resolves both `xterm-ghostty` and `ghostty`; bigfed, which does, still resolves
+only the first.**
+
+One consequence outside this repo. `/home/bph` on nousowl went 248K → 252K,
+and `nousowl/CLAUDE.md` describes it as holding "shell config and `.ssh`,
+nothing else" — there is now a `.terminfo` as well.
+
 ## What was not measured
 
 The round trip times the terminal's parse-and-respond loop, which shares

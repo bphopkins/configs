@@ -96,10 +96,101 @@ theme = TokyoNight Night
 # bold-color =
 
 
+# --- Cursor -----------------------------------------------------------------
+
+# `cursor-style = block` is Ghostty's own default and the theme supplies the
+# colours, so left to itself this section would be empty. It is not, because
+# the shell integration reaches past the setting.
+#
+# With the `cursor` feature on — on by default — Ghostty's bash integration
+# appends `\[\e[5 q\]` to PS1, redrawing the cursor as a blinking bar at every
+# prompt. `cursor-style` cannot win that argument, and the man page says so in
+# as many words: the bar appears "regardless of this configuration". The
+# mechanism is legible at
+# /usr/share/ghostty/shell-integration/bash/ghostty.bash:217.
+#
+# WezTerm puts nothing in PS1 and its default_cursor_style is SteadyBlock, so
+# the bar is Ghostty's own addition and switching it off is what holds the two
+# together.
+#
+# The feature list merges onto the defaults rather than replacing them: with
+# `no-cursor` alone here, `+show-config` resolved to
+# `no-cursor,no-sudo,title,no-ssh-env,no-ssh-terminfo,path`, so `title` and
+# `path` survived untouched. Confirmed 2026-09-03.
+#
+# The two `ssh-` entries were turned on later the same day, and they are the
+# one place WezTerm was better as it shipped. Ghostty sends `xterm-ghostty`,
+# and the ghostty RPM is the only thing that installs a terminfo file under
+# that name, so over ssh the name travels and the entry does not: on nousowl,
+# htop under `TERM=xterm-ghostty` exits 1 on `ncurses: cannot initialize
+# terminal type`, and runs under `xterm-256color`. `ssh-terminfo` installs the
+# real entry on the far host with infocmp and tic; `ssh-env` is the fallback
+# to `xterm-256color` where that fails, so the pair has WezTerm's behaviour as
+# its floor rather than as its answer. Measurement and reasoning:
+# configs/docs/ghostty-vs-wezterm-2026-09-03.md.
+#
+# It is read by the shell at startup, through GHOSTTY_SHELL_FEATURES, so a
+# config reload alone changes nothing already on screen — the next *shell* gets
+# it.
+shell-integration-features = no-cursor,ssh-env,ssh-terminfo
+
+# Both terminals arrive at a block by default. Stated outright on the same
+# principle as font-size: the comparison should not rest on two defaults
+# happening to agree.
+cursor-style = block
+
+# The one divergence chosen rather than inherited: `cursor-style-blink` is left
+# unset, which the man page defines as blinking, against WezTerm's SteadyBlock.
+# Deliberate — the blink is wanted here. Null also keeps Ghostty honouring DEC
+# Mode 12 (AT&T cursor blink); any explicit value makes it ignore Mode 12 while
+# still respecting DECSCUSR.
+#
+# None of this reaches Neovim's mode cursors. Neovim drives those itself over
+# DECSCUSR, through the `Ss` capability xterm-ghostty carries, and Ghostty
+# honours DECSCUSR whatever is set here. Captured under a pty on 2026-09-03,
+# driving real keystrokes: `\e[2 q` steady block in normal, `\e[6 q` steady bar
+# in insert, `\e[4 q` steady underline in replace. On quit Neovim sends
+# `\e[0 q` — a true reset, despite terminfo advertising `Se=\e[2 q` — so the two
+# lines above are also what returns at the prompt afterwards.
+#
+# One further consequence of no-cursor, past the bar itself: it drops the shell
+# integration's `PS0='\[\e[0 q\]'`, which re-asserted the cursor before every
+# command. Neovim resets itself, so nothing is lost there; a program that
+# changes the shape and exits without resetting will now leave it changed.
+
+
 # --- Window -----------------------------------------------------------------
 
 # default_cwd. Written tilde-relative so the one file suits both machines.
 working-directory = ~/Desktop
+
+# Which windows that governs is settled outside this file, by how the launcher
+# spawns Ghostty. The explanation belongs here even though the lever does not.
+#
+# The man page turns the whole question on four words. `working-directory`
+# applies when no window was previously focused, and "if a previous Ghostty
+# terminal exists in the same process, window-inherit-working-directory will
+# take precedence" — *in the same process*. Under single-instance a second
+# `ghostty` invocation starts no process at all: it asks the running one for
+# another window, which inherits wherever the last one was left, and this line
+# then governs only the first window of the session.
+#
+# So the launchers spawn standalone processes instead, passing
+# `--gtk-single-instance=false` — the GNOME custom shortcut on bigfed, $term in
+# sway/config on fedxps. A fresh process has no previously-focused window and
+# opens here; a window, tab or split raised from *inside* one does, and opens
+# where you are. All three inherit-* settings stay at their default true. The
+# division is drawn between processes, which is where the two intentions
+# actually differ.
+#
+# WezTerm reaches both behaviours the same way, by spawning a process per
+# window, so default_cwd covers the outside path while tabs and splits inherit.
+# Turning single-instance off is what puts Ghostty on that footing.
+#
+# Declined 2026-09-03: `window-inherit-working-directory = false`. It fixes the
+# hotkey, but the setting cannot see who asked — ctrl+shift+n inside a window
+# went to ~/Desktop with it, and no keybind can override, since new_window and
+# new_tab take no arguments (`+list-actions --docs`).
 
 # No titlebar, no borders, no shadow — the bare terminal, which is the point of
 # the WezTerm setup this transcribes.
