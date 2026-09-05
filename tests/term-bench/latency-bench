@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Parse-and-respond latency, idle AND under sustained output. The loaded case
+# is the one that tracks what "feels laggy": on 2026-09-05 the two terminals
+# were within 1.2x idle and 8.6x apart under load.
+#
+#   TERM_BENCH_OUT=/path/out.txt latency-bench
+#
+# Two different methods on purpose:
+#   idle  -- amortised over N trips, clock read only at the ends. Per-trip
+#            `date` forks cost ~1.25 ms, which would swamp a ~80 us signal.
+#   load  -- fixed wall-clock window, per-trip timing, timeouts counted
+#            SEPARATELY. A per-trip read timeout silently turns "no reply" into
+#            "slow reply": the first version of this reported 1.4 s for WezTerm
+#            purely because it was saturating a 2 s cap. Always report the
+#            timeout count alongside the median.
+set -uo pipefail
+OUT="${TERM_BENCH_OUT:-}"
+CORPUS="${TERM_BENCH_CORPUS:-${TMPDIR:-/tmp}/term-bench-corpus}"
+PLAIN="$CORPUS/corpus-plain.txt"
+[[ -f $PLAIN ]] || { echo "no $PLAIN -- run term-bench once to generate it" >&2; exit 1; }
+TERM_NAME=unknown; p=$PPID
+while [[ -n $p && $p -gt 1 ]]; do
+  n=$(ps -o comm= -p "$p" 2>/dev/null | tr -d ' ') || break
+  case $n in wezterm-gui) TERM_NAME=WezTerm; break;; ghostty) TERM_NAME=Ghostty; break;; esac
+  p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+done
+prev=""; stable=0
+for _ in $(seq 1 60); do cur="$(tput cols)x$(tput lines)"
+  [[ $cur == "$prev" ]] && stable=$((stable+1)) || stable=0
+  [[ $stable -ge 3 ]] && break; prev="$cur"; sleep 0.05; done
+
+# fd 3 on /dev/tty directly -- never infer a terminal from fd 1 (README trap 2)
+idle_us(){ local n=$1 t0 t1 old i
+  exec 3<>/dev/tty || { echo -1; return; }
+  old=$(stty -g <&3 2>/dev/null) || { echo -1; return; }
+  stty raw -echo <&3
+  t0=$(date +%s%N)
+  for ((i=0;i<n;i++)); do printf '\033[6n' >&3; IFS= read -r -d 'R' -t 2 _ <&3; done
+  t1=$(date +%s%N)
+  stty "$old" <&3; exec 3>&-
+  echo $(( (t1-t0)/1000/n )); }
+TMPF=$(mktemp); trap 'rm -f "$TMPF"' EXIT
+window(){ # $1=seconds $2=per-trip timeout -> "trips timeouts median p95"
+  local end n=0 to=0 a b old
+  : > "$TMPF"
+  exec 3<>/dev/tty || { echo "-1 -1 -1 -1"; return; }
+  old=$(stty -g <&3 2>/dev/null) || { echo "-1 -1 -1 -1"; return; }
+  stty raw -echo <&3
+  end=$(( $(date +%s%N) + $1*1000000000 ))
+  while (( $(date +%s%N) < end )); do
+    a=$(date +%s%N); printf '\033[6n' >&3
+    if IFS= read -r -d 'R' -t "$2" _ <&3; then
+      b=$(date +%s%N); echo $(( (b-a)/1000 )) >> "$TMPF"; n=$((n+1))
+    else to=$((to+1)); fi
+  done
+  stty "$old" <&3; exec 3>&-
+  local stats
+  stats=$(sort -n "$TMPF" | awk '{v[NR]=$1} END{ if(NR==0){print -1,-1; exit}
+      m=int((NR+1)/2); p=int(NR*0.95); if(p<1)p=1; print v[m], v[p] }')
+  echo "$n $to $stats"; }
+
+IDLE=$(idle_us 200)
+( end=$(( $(date +%s) + 9 )); while (( $(date +%s) < end )); do cat "$PLAIN"; done ) &
+FL=$!
+read -r NL TL ML PL <<<"$(window 6 0.5)"
+kill $FL 2>/dev/null; wait $FL 2>/dev/null
+printf '\033[0m'; clear
+SUM=$(printf '  terminal: %s   grid %s\n    idle (amortised, 200 trips) : %8s us\n    under load, 6s window       : %s trips, %s timeouts, median %s us, p95 %s us\n' \
+      "$TERM_NAME" "$cur" "$IDLE" "$NL" "$TL" "$ML" "$PL")
+printf '%s\n' "$SUM"
+[[ -n $OUT ]] && printf '%s\n' "$SUM" >> "$OUT"
+exit 0

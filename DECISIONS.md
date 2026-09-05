@@ -547,3 +547,61 @@ so nothing changes in `nvim/lua/plugins/live-server.lua`.
 - [x] Add an `okular` stow package for `okularpartrc`, excluding `okularrc` and `docdata/`; confirmed over two write cycles that Okular does not break the symlink @done(2026-07-26)
 - [x] Four-lens adversarial audit of the git-sync rewrite (independent reviewers: control flow, bash semantics, git semantics, test blind spots) after a return-status bug reached production. Fixed everything found: unborn-branch guard bypass (gpush could root-commit a fresh `git init`), fail-open vet listing (now fails closed), `:(literal)` unstaging with post-verify (leading-colon/glob filenames could dodge a decline), rename/typechange vet bypass (`git mv x .env` now vetted), embedded-git-repo detection, per-component secrets matching (`.env/` dirs), `REVERT_HEAD` in-progress guard, dropped `--tags` from pulls (force-moved tag wedged every sync), `gpushall` parser (`-f` no longer commits 13 repos with message `-f`; multi-word positional messages no longer truncate), offline no-upstream PEND, push-path integrated-changes reporting + hints (silent fast-forward fixed), rebase-abort verification, prompt context duplicated to stderr under capture, `GSYNC_MAX_MB` validation, exact-ref `ls-remote`. Regression suites grown to 153 checks in four files. @done(2026-07-26)
 - [x] Overhauled the git-sync commands (was item 1): collapsed the gpull/gpullall and gpush/gpushall duplication into shared `_gsync_pull_repo`/`_gsync_push_repo` helpers; added new-file vetting (size via `GSYNC_MAX_MB`, secrets globs, y/N prompts), listing of first-time-committed files, an in-progress rebase/merge guard, auto-abort on rebase conflict, offline-aware pushes (commit locally, mark pending), non-main-branch warnings, compact colorized output with named-repo summaries, multi-name `gpull`/`gpush` with `-m` and tab completion, a `gstatall [-f]` dashboard with per-repo sync verdicts (needs push / needs pull / DIVERGED), a post-pull ahead-of-origin warning, post-pull re-source/restow hints, and removal of the redundant pre-pull fetch (~half the network round-trips). Verified by a 37-check sandbox suite plus a live `gstatall`/`gpullall` run. @done(2026-07-26)
+
+---
+
+## 11. Per-window cgroup scopes after the Ghostty launcher change
+
+Opened 2026-09-03, closed 2026-09-05. **Verdict unchanged — `linux-cgroup =
+always` stays declined — but the reasoning the item gave for it was wrong and is
+corrected here.**
+
+**What was measured.** Under `--gtk-single-instance=true` a shell sat in
+`app-ghostty-surface-transient-13234.scope`, a per-surface scope Ghostty creates
+itself. Under the sway launcher's `--gtk-single-instance=false` the shell shares
+`app-com.mitchellh.ghostty-17355.scope` **with the GUI process itself** — the
+launcher's scope, named for the GUI's pid. So the item's expectation is
+confirmed: with one process per window, the window is the cgroup. (The item
+predicted the GNOME name `app-gnome-ghostty-<pid>.scope`; on sway it is
+`app-com.mitchellh.ghostty-<pid>.scope`. Same structure, different launcher.)
+
+**The correction.** The item argued the arrangement is fine because the window
+scope "is the unit `systemd-oomd` acts on". **`systemd-oomd` is inactive on
+fedxps.** Three readings settle what actually happens:
+
+| | value | consequence |
+|---|---|---|
+| `systemctl is-active systemd-oomd` | inactive | no pressure-based, cgroup-level killing |
+| `memory.oom.group` | `0` | an OOM kill takes one process, not the scope |
+| `MemoryMax` | `infinity` | no cgroup bound is in play at all |
+
+So a runaway is handled by the kernel OOM killer picking a single process
+system-wide, not by anything cgroup-aware. Per-surface scopes with no limit and
+no cgroup reaper are bookkeeping, and `linux-cgroup = always` would cost the
+man page's ~100 ms per window to buy nothing observable. The verdict survives;
+its justification changes from "the scope is what oomd acts on" to "nothing
+cgroup-aware is running to act on it".
+
+**The one variant with teeth is ruled out separately.**
+`linux-cgroup-memory-limit` would give each surface a hard `MemoryMax`. That
+contradicts an existing recorded policy: `n-cube/notes/isabelle-notes.md`
+records that `systemd-run --scope` breaks Isabelle's prover-subprocess spawning
+and `ulimit -v` breaks JVM startup, and settles on running **uncapped** with a
+process-RSS guardian at ~12 GB. A per-surface cap would be a third capping
+mechanism at the wrong layer, and below ~12 GB it would kill runs that policy
+intends to allow. Note this is about the *cap*, not scope membership: terminals
+already run inside a launcher-made scope (`Delegate=no`, `TasksMax=18924`) and
+Isabelle is fine there.
+
+**Premise revised.** The item recorded "one window per task through the WM
+rather than terminal tabs or splits (measured 2026-09-03)". He uses tabs
+occasionally (2026-09-05), so per-surface and per-window do not partition
+sessions quite identically — but the reaper findings above decide the question
+regardless.
+
+**Trigger for revisiting:** enabling `systemd-oomd`. Per-surface scopes stop
+being bookkeeping the moment something cgroup-aware is choosing victims; the
+memory limit still would not follow.
+
+Full context: `docs/ghostty-vs-wezterm-2026-09-03.md`, Addendum 1 "Open" and
+Addendum 2.

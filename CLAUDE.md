@@ -98,10 +98,19 @@ in-progress guards, offline handling, hints — and their scope live in
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
 
-`tests/term-bench/` holds the terminal-comparison harnesses (throughput,
-keystroke-path latency, SGR-density sweep) and a README naming the seven
-ways an apparently-fine terminal benchmark can measure nothing at all.
-Findings: `docs/ghostty-vs-wezterm-2026-09-03.md`.
+`tests/term-bench/` holds the terminal-comparison harnesses — flood throughput,
+SGR-density and SGR-encoding sweeps, a **repaint** bench replaying a recording of
+a real nvim session, and round-trip latency idle *and under load* — plus a README
+naming the twelve ways an apparently-fine terminal benchmark can measure nothing
+at all. Findings: `docs/ghostty-vs-wezterm-2026-09-03.md`, three addenda.
+
+**Settled 2026-09-05 on both machines — don't re-litigate.** Ghostty's advantage
+is in *repaints* (2.3x fedxps, 2.9x bigfed, 6.0x at a 300x60 grid) and in
+*responsiveness while output streams* (8.6x, 19.7x on bigfed). It is **not** raw
+flooding: warm, the two tie and WezTerm edges ahead — the old "2x on sparse text"
+was a cold-cache artefact. The gap is not configurable away; it follows from
+Ghostty's 8-byte packed cell against WezTerm's per-cell inline attributes.
+Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 
 ## Bash Configuration
 

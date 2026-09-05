@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Capture a REAL nvim session's byte stream and build a steady-state repaint
+# corpus from it. Run this INSIDE the terminal you want to capture from, at the
+# same grid `repaint-bench` will replay at (see README, "Controlling the grid").
+#
+#   capture-nvim FILE.tex [REPS]
+#
+# Why this exists: every other corpus here is *scroll*-shaped -- lines appended
+# and scrolled off. nvim is *repaint*-shaped: alternate screen, cursor
+# addressing, cells overwritten in place, frames wrapped in synchronized output
+# (DEC mode 2026). The two shapes gave opposite verdicts on 2026-09-05, so a
+# synthetic SGR density is not a substitute for the real thing.
+#
+# TERM is forced to xterm-256color so that both terminals later replay
+# byte-identical input; nvim's DECRQM probes still reach the real terminal
+# through ptytee.py and are answered there, so 2026 framing survives.
+set -uo pipefail
+FILE="${1:?usage: capture-nvim FILE [REPS]}"
+REPS="${2:-100}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+CORPUS="${TERM_BENCH_CORPUS:-${TMPDIR:-/tmp}/term-bench-corpus}"
+mkdir -p "$CORPUS"
+RAW="$CORPUS/nvim-capture.raw"
+
+# The grid is not stable at startup: under a tiling WM the terminal is resized
+# *after* the shell is spawned, so tput at t=0 reports the pre-resize size.
+prev=""; stable=0
+for _ in $(seq 1 60); do
+  cur="$(tput cols)x$(tput lines)"
+  [[ $cur == "$prev" ]] && stable=$((stable+1)) || stable=0
+  [[ $stable -ge 3 ]] && break
+  prev="$cur"; sleep 0.05
+done
+echo "$cur" > "$CORPUS/nvim-capture.grid"
+
+# nvim -S sources a file as Vimscript unless it ends in .lua -- the suffix is
+# load-bearing, not cosmetic.
+LUA=$(mktemp --suffix=.lua); trap 'rm -f "$LUA"' EXIT
+cat > "$LUA" <<'LUAEOF'
+vim.cmd('sleep 2500m')          -- let plugins and syntax attach
+for i = 1, 80 do
+  vim.cmd('normal! ' .. (i * 7) .. 'G')
+  vim.cmd('redraw')             -- force a real repaint, not a batched one
+end
+vim.cmd('sleep 300m')
+vim.cmd('qa!')
+LUAEOF
+TERM=xterm-256color python3 "$HERE/ptytee.py" "$RAW" nvim "$FILE" -S "$LUA"
+
+python3 - "$RAW" "$CORPUS/repaint.bin" "$REPS" <<'PY'
+import re, sys
+raw, out, reps = sys.argv[1], sys.argv[2], int(sys.argv[3])
+d = open(raw, 'rb').read()
+a = d.find(b'\x1b[?1049h'); b = d.rfind(b'\x1b[?1049l')
+if a < 0 or b < 0:
+    sys.exit("no alternate-screen transitions found; capture looks wrong")
+body = d[a + len(b'\x1b[?1049h'):b]
+open(out, 'wb').write(b'\x1b[?1049h' + body * reps + b'\x1b[?1049l\x1b[0m\n')
+frames = len(re.findall(rb'\x1b\[\?2026h', body)) * reps
+sgr = len(re.findall(rb'\x1b\[[0-9;:]*m', body))
+true = len(re.findall(rb'38;2;', body))
+print(f"body {len(body)}B  corpus {len(body)*reps/2**20:.0f}MiB  frames {frames}  "
+      f"sgr/body {sgr}  truecolor/body {true}")
+PY

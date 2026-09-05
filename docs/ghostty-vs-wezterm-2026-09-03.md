@@ -1,6 +1,8 @@
 # Ghostty against WezTerm — measured on fedxps, 2026-09-03
 
-Dated record. Prompted by an impression that Ghostty "feels slightly faster",
+Dated record; the title names the date the campaign opened, not the file's whole
+span — addenda are dated in place below. Prompted by an impression that Ghostty
+"feels slightly faster",
 taken after the Ghostty stow package was written as a deliberate transcription
 of `~/.wezterm.lua` (`ghostty/config`, which carries the settings themselves).
 
@@ -400,3 +402,439 @@ produced a confident wrong answer:
 
 Anything measuring a terminal must reach the terminal. A capture that makes the
 measurement quiet and plausible is the failure mode to watch for here.
+
+## Addendum, 2026-09-05: the configuration surface, and two corrections
+
+Same machine, **sway rather than GNOME** — everything above was taken under
+GNOME/Wayland and none of it is re-run here. This addendum is configuration
+only: no number above is revised and nothing below was timed.
+
+Prompted by a survey of what Ghostty exposes that the transcription never
+touches — 613 config keys, about 190 distinct options, against the 13 areas
+`ghostty/config` sets — read from `ghostty +show-config --default --docs` on
+1.3.1-4.fc44. The audit that followed asked the narrower question: is anything
+in `.wezterm.lua`, custom *or* default, missing on the Ghostty side.
+
+### Correction 1: WezTerm does not spawn a process per window
+
+`ghostty/config`'s Window section justifies `--gtk-single-instance=false` partly
+on the claim that "WezTerm reaches both behaviours the same way, by spawning a
+process per window". It does not:
+
+```
+$ wezterm start --help
+  --always-new-process
+      If enabled, don't try to ask an existing wezterm GUI instance to
+      start the command. ...
+```
+
+The flag exists to *opt out* of instance reuse, so reuse is the default. WezTerm
+locates the running GUI through a per-display socket symlink —
+`/run/user/1000/wezterm/wayland-wayland-1-org.wezfurlong.wezterm -> gui-sock-<pid>`
+— a unix socket where Ghostty uses a D-Bus name, the same architecture either
+way. And `sway/config` carried bare `set $term wezterm` from 2025-11-09 to
+2026-09-03, so that was the path in use throughout.
+
+**This file already knew.** The process-contention exclusion above opens
+"WezTerm runs every window in one GUI process", and the numbers table carries an
+`--always-new-process` row. The correct fact was recorded here on the day; the
+config comment written the same day contradicts it.
+
+What actually differs is cwd *resolution*, not process topology. WezTerm's
+documented order for a non-initial window is OSC 7 → process-group-leader cwd →
+`default_cwd` → home; Ghostty's `window-inherit-working-directory` consults the
+last-focused surface in the process, which an external invocation also sees, so
+`working-directory` never gets a turn after the first window. Whether a WezTerm
+window requested from *outside* has a "current pane" to resolve against is not
+addressed by its documentation and **was not tested**. The test: open a Ghostty
+window somewhere other than `~/Desktop`, launch `wezterm` from the sway binding,
+run `pwd`.
+
+The fix itself is unaffected — on Ghostty the flag demonstrably produces the
+wanted behaviour, and `busctl --user status com.mitchellh.ghostty` confirms the
+mechanism, the running process owning no well-known name so that a second
+invocation has nothing to hand off to. Note also that `gtk-single-instance`
+defaults to `detect`, which disables single-instance if *any* CLI argument is
+present: `--title=foo` would have worked by accident.
+
+### Correction 2: four settings without a counterpart, not two
+
+The header says two. `font_rules` Half and `check_for_updates` are named;
+`mux_output_parser_coalesce_delay_ms` and `mux_output_parser_buffer_size` appear
+nowhere in `ghostty/config`. The omission is defensible — those two are repairs
+to WezTerm defects rather than expressions of preference, and Ghostty has no
+defect to repair — but the count is wrong as written.
+
+### Unstated default divergences
+
+Neither file sets these and the two defaults disagree. WezTerm values are from
+wezterm.org and **were not measured here**; Ghostty values from
+`+show-config --default`.
+
+| | WezTerm | Ghostty | disposition |
+|---|---|---|---|
+| `window_padding` | `1cell` L/R, `0.5cell` T/B | 2 points | left; preferred as found |
+| `hide_mouse_cursor_when_typing` | `true` | `false` | **matched to WezTerm** |
+| `enable_scroll_bar` | `false` | `system` | left; see GTK below |
+| `automatically_reload_config` | `true` | none | unavailable |
+| `selection_word_boundary` | `` \t\n{}[]()"'` `` | adds `:;,<>$\|│` | left; Ghostty's judged better |
+| `audible_bell` | `SystemBeep` | `no-audio` | left; nominal only |
+| cursor blink rate | 800 ms | no knob | immaterial |
+
+The padding row is the largest visible divergence in a file that claims
+like-for-like, and it is the one row not verified locally — worth an eyeball
+before it is relied on. The bell row is nominal in both directions: WezTerm's
+own docs say `SystemBeep` produces no audio on Wayland, while Ghostty's
+`attention` default already decorates the sway window with the urgent border and
+`audio` with `bell-audio-path` has worked on GTK since 1.2.0. The word-boundary
+row was judged in Ghostty's favour for this workload: breaking at `:` means
+double-clicking `main.tex:412:` from latexmk or grep grabs the path alone.
+
+**Auto-reload is unavailable and upstream says so.** `man ghostty`: "We plan to
+auto-reload in the future, but Ghostty isn't capable of this yet." No
+signal-based reload is documented either — zero hits for `SIGUSR`/`SIGHUP` —
+which also rules out a file watcher, because a watcher would have nothing to
+call. `ctrl+shift+,` is the whole of it. Untested: whether a single-instance
+Ghostty exposes a reload action over `org.gtk.Actions` on its D-Bus name.
+
+### Where WezTerm wins outright, second entry: copy mode
+
+`ctrl+shift+x` enters a modal, vim-keyed scrollback navigation and selection
+mode. **Ghostty has no equivalent and one cannot be built.** The mechanism
+ships — `activate_key_table`, `adjust_selection`, the `scroll_*` family — but
+`+list-actions --docs` on `adjust_selection` reads "This does not create a new
+selection, and does nothing when there currently isn't one." No action begins a
+selection from the keyboard, so the key tables have nothing to act on.
+
+Also absent, comparing `wezterm --config-file /dev/null show-keys` against
+`ghostty +list-actions`: `QuickSelect` (hint labels over URLs and paths,
+`ctrl+shift+space`), `CharSelect` (Unicode picker, `ctrl+shift+u`), and Lua
+config with event hooks, which Ghostty declines by design. Search is covered on
+both sides, as are `clear_screen`, `move_tab`, `paste_from_selection` and link
+opening.
+
+Two substitutes, neither equivalent: `write_scrollback_file:paste` hands the
+buffer to Neovim, a larger toolset at the cost of leaving the terminal; and
+tmux's own copy-mode would restore the capability inside Ghostty, which is one
+argument for learning tmux directly.
+
+### Where Ghostty wins: the Nerd Font cut
+
+Neovim's tabline icons render better in Ghostty, and the tab bar has nothing to
+do with it — those glyphs are drawn by Neovim in ordinary cells. The two
+terminals fall back to **different cuts of the same font**:
+
+| | face for U+F00D | evidence |
+|---|---|---|
+| WezTerm | `Symbols Nerd Font Mono` | `ls-fonts`: `<built-in>`, `x_adv=12.5 cells=1` |
+| Ghostty | `Symbols Nerd Font` | `+show-face --cp=0xf00d` |
+
+Mono constrains every glyph to one monospace cell; the plain cut keeps natural
+proportions. Both are compiled into the binaries — neither RPM ships a font file
+and `fc-match "Symbols Nerd Font"` falls through to Noto Sans.
+
+Tunable by `adjust-icon-height` on the Ghostty side (Powerline and box-drawing
+glyphs excluded, since Ghostty draws those itself) and by `font_with_fallback`
+plus per-font `scale` on WezTerm's. **Not** interchangeable: each binary embeds
+only its own cut and no Nerd Font is installed system-wide, so a swap needs a
+package first. Checked and clear — waybar, wofi and mako use no private-use-area
+glyphs, so nothing outside a terminal depends on the gap.
+
+### Where WezTerm wins on aesthetics, accepted deliberately
+
+One design decision, two visible consequences. **WezTerm draws its own tab
+bar** — hence `use_fancy_tab_bar`, and a retro mode one terminal row tall in the
+configured font. **Ghostty delegates to GTK**: `gtk-wide-tabs`,
+`gtk-tabs-location`, `gtk-toolbar-style`, and `gtk-custom-css` to style the
+result. The tab bar is a libadwaita widget sized by GTK metrics rather than by
+the 12pt cell, and `scrollbar = system` defers to the GTK setting outright.
+
+So "the GTK stuff interferes with the aesthetics" is a single observation about
+one decision, surfacing in the two places that decision is visible. The ceiling
+is structural: CSS can shrink the bar, nothing can make it grid-aligned.
+
+Levers identified and not taken: `gtk-wide-tabs = false`,
+`window-show-tab-bar = never`, `scrollbar = never`, `gtk-custom-css` (node names
+via `env GTK_DEBUG=interactive ghostty`). `gtk-titlebar-style = tabs` is moot
+under `window-decoration = none`, the same trap `ghostty/config` already records
+for `gtk-titlebar`. **Left as shipped, deliberately**: tabs are used
+occasionally and the scrollbar is wanted, so the GTK integration is kept as part
+of the experiment rather than styled away.
+
+### Changed in the repo
+
+- `ghostty/config` — new `# --- Mouse ---` section carrying
+  `mouse-hide-while-typing = true`, the first setting here whose WezTerm
+  counterpart is a default rather than a `.wezterm.lua` line.
+- `bash/.bashrc.d/30-prompt.sh` — `PROMPT_HIGHLIGHT=1`. Not a terminal finding,
+  but it surfaced here: Fedora's `bash-color-prompt` gates bold on
+  `[ "$DESKTOP_SESSION" = "gnome" ]`, so the prompt came out bold under GNOME on
+  bigfed and plain under sway on fedxps from a package default rather than a
+  choice. The module carries the mechanism.
+
+### Open
+
+- **Whether `linux-cgroup = always` is worth ~100 ms per window.** Measured:
+  under `--gtk-single-instance=true` the shell sat in
+  `app-ghostty-surface-transient-13234.scope`, a per-surface scope Ghostty
+  creates; under the sway launcher's `=false` it shares
+  `app-com.mitchellh.ghostty-17355.scope` with the GUI process itself, because
+  `linux-cgroup` defaults to `single-instance` and so stops applying. Whether
+  that matters, given one surface per window already in its own process and
+  scope, is unsettled.
+- The WezTerm cwd test named under Correction 1.
+- Ghostty's notification volume under GNOME. `app-notifications` is the lever;
+  a machine-local layer would need `config-file = ?config.local`, since
+  `ghostty/config` is synced and only bigfed runs GNOME.
+
+## Addendum 2, 2026-09-05: the real workload, and what it overturns
+
+Ghostty 1.3.1-4.fc44 unchanged; **WezTerm now 20260905_153129_092dcf70**, not the
+20260901 build the numbers at the top were taken against. fedxps, sway. Every
+figure below is a fresh measurement; none of the originals are adjusted in place.
+
+Two conclusions from the original campaign do not survive, and one prediction
+made in Addendum 1 was tested and failed.
+
+### The grid is finally controlled
+
+The instruction "keep this equal across runs" was never actually met: sway sizes
+the window and the two terminals derive different cell counts from the same
+pixels, so a term-bench pass had Ghostty at 63x52 against WezTerm at 100x40 —
+WezTerm drawing 22% more cells, the confound running the *opposite* way to the
+original campaign's. Both are now pinned to **1200x700 px = 100x40 cells** with
+live sway float rules; the procedure is in `tests/term-bench/README.md`.
+
+Getting there exposed a measurement bug worth naming: the grid is not stable
+when the shell starts, because the WM resizes the window afterwards. Every grid
+figure read at t=0 — including some above — was read at the wrong moment. The
+harnesses now wait for three consecutive identical readings. Trap 8.
+
+Trap 1 also bit a second time, in the new `repaint-bench`, where `rows=$(run …)`
+put `cat` down a pipe and swallowed 1.6 GB of corpus into a shell variable. The
+timing helpers now set a global.
+
+### Every measurement above is scroll-shaped. The real workload is not.
+
+`cat`-ing a corpus appends lines and scrolls them off. nvim does none of that:
+alternate screen, cursor addressing, cells overwritten in place, frames wrapped
+in DEC mode 2026. So a real session was **recorded** rather than simulated —
+nvim over a 572-line chapter, 80 forced repaints, captured through a pty tee
+that forwards stdin so the DECRQM probes still reach the terminal and are
+answered. The capture is representative: **75676 SGR sequences, 24040
+truecolour, zero palette, 174 synchronized-output markers.** Replayed as a
+115 MiB alternate-screen corpus of 8700 frames, three rounds interleaved:
+
+| | wall | terminal CPU | per frame |
+|---|---|---|---|
+| **Ghostty** | **3841 ms** | **5200 ms** | **0.44 ms** |
+| WezTerm | 8953 ms | 10100 ms | 1.03 ms |
+
+**2.33x wall, 1.94x CPU**, spread under 1.5% across rounds.
+
+**This inverts the synthetic result.** `color-sweep` says Ghostty costs 1.34–1.50x
+*more* CPU at 64 SGR changes per line. Real nvim — denser than that, and fully
+truecolour — has it costing half. A synthetic attribute density does not predict
+repaint-shaped work, and the crossover table above should not be read as
+describing nvim, which is the workload it was invoked to explain.
+
+### The sparse-text headline is a cold-cache figure
+
+| plain 12.6 MiB, 100x40 | Ghostty | WezTerm |
+|---|---|---|
+| cold, first rep ever | 520 ms | 858 ms |
+| best of 3, still early | 416 ms | 878 ms |
+| best of 3, after the 115 MiB repaint corpus | **376 ms** | **334 ms** |
+
+Warm, **WezTerm is slightly ahead**. The 2.0–2.6x at the top of this file is a
+cold-start measurement. Three reps of the plain corpus do not warm WezTerm —
+only the large varied workload does, which points at allocator free-list warmth
+rather than a glyph cache. Trap 9.
+
+Alternate-screen versus normal-screen flooding barely differs for either
+terminal, so scrollback storage is not a significant cost for either.
+
+### Latency under load: the best explanation yet for "feels faster"
+
+Every round-trip figure above was taken on an idle terminal. Under sustained
+output, measured over a fixed window with timeouts counted separately:
+
+| | idle | under load | trips serviced in 6 s |
+|---|---|---|---|
+| Ghostty | 76 us | **~25 ms** | 217 |
+| WezTerm | 91 us | **~211 ms** | 30 |
+
+**1.2x idle, 8.6x under load.** A fifth of a second to answer while output is
+streaming is squarely the difference between "laggy" and "fine", and it matches
+the impression that prompted this whole investigation far better than any
+throughput number does. A first attempt reported 1.4 s for WezTerm and was
+discarded: it was saturating its own 2 s read timeout, conflating "no reply"
+with "slow reply". Trap 11.
+
+### Configurability: closed empirically
+
+All five LRU cache knobs at 16x their defaults (`shape_cache_size`,
+`line_state_cache_size`, `line_quad_cache_size`, `line_to_ele_shape_cache_size`
+at 1024; `glyph_cache_image_cache_size` at 256), on the repaint workload:
+
+| WezTerm | repaint wall | repaint CPU | RSS after |
+|---|---|---|---|
+| default | 8953 ms | 10100 ms | 143 MB |
+| caches 16x | 8713 ms | 9865 ms | **594 MB** |
+
+**+2.7% for 450 MB of RAM.** The caches are not the bottleneck. Together with
+the config enumeration in Addendum 1, WezTerm cannot be configured out of the
+repaint gap — now measured rather than inferred.
+
+### Memory, with scrollback eliminated
+
+The repaint corpus runs entirely in the alternate screen, so nothing accumulates
+in scrollback and the two capping policies stop confounding the comparison:
+
+- Ghostty grows **+2–4 MB**
+- WezTerm grows **+38–48 MB**
+
+Tenfold, on identical input, with storage policy ruled out.
+
+### The Addendum 1 truecolour prediction, withdrawn
+
+Addendum 1 predicted from source that truecolour would cost WezTerm
+disproportionately, because `SmallColor` is only `{Default, PaletteIndex}` and
+truecolour must spill to `Box<FatAttributes>`. The `idx`-versus-`true` arms of
+`color-sweep` hold attribute-change count constant at 2.56M and test exactly
+that:
+
+- WezTerm 1005 → 1510 ms = **+505 ms**
+- Ghostty 1510 → 2025 ms = **+515 ms**
+
+Indistinguishable. The extra cost of truecolour is the longer escape sequence on
+both sides, not the allocation. The spill is real in the source and undetectable
+at this resolution; the prediction is **withdrawn**. What the source reading did
+get right was the *shape* of the scroll-shaped curve and the fact that it
+crosses — which then turned out not to describe the real workload anyway.
+
+### Where the comparison actually stands
+
+Ghostty is substantially the better fit here, but for reasons this campaign had
+not identified until now. The advantage is **repaints** (2.3x) and
+**responsiveness while output streams** (8.6x). It is *not* raw flooding, where
+the two are equal once warm, and it is not the crossover story.
+
+New instruments in `tests/term-bench/`: `capture-nvim`, `ptytee.py`,
+`repaint-bench`, `latency-bench`, `color-sweep`, `gen-color-corpora.py`.
+
+## Addendum 3, 2026-09-05: bigfed, and two predictions refuted
+
+The scope line at the top said "one machine, one session; not re-run on bigfed."
+It has now been re-run on bigfed, driven over ssh from fedxps into the live
+GNOME session. **Nothing was written outside `/tmp` on bigfed and all its repos
+were verified clean before and after.**
+
+What is controlled: **identical software** — Ghostty 1.3.1-4.fc44 and WezTerm
+20260905_153129_092dcf70 on both, neovim 0.12.5 on both, `configs` at the same
+HEAD (`bfc7647`, clean). **Identical input** — `completeness.tex` md5
+`82896f20…` on both; the two nvim captures agree within 0.5% on bytes, SGR
+count, truecolour count and cursor positionings. **Identical grid** — 100x40.
+
+| | fedxps | bigfed |
+|---|---|---|
+| CPU | i7-7700HQ, 4C/8T, **6 MiB L3** | Ryzen 7 3800X, 8C/16T, **32 MiB L3** |
+| GPU | Intel HD 630 | Radeon RX 5700 XT (Navi 10) |
+| RAM | 15 GiB | 31 GiB |
+| Session | sway / wlroots | GNOME / Mutter |
+
+**The confound to keep in view: hardware and desktop environment are perfectly
+correlated here.** Nothing below separates "Zen 2 with a discrete GPU" from
+"Mutter rather than wlroots". Doing so would need sway on bigfed or GNOME on
+fedxps, and neither was attempted.
+
+One incidental relief: the grid control that had to be engineered with
+`swaymsg` float rules on fedxps is **free on GNOME**. With no tiling WM
+overriding them, both terminals simply open at the size their configs request,
+and both landed on 100x40 unprompted.
+
+### The results
+
+Repaint corpus, 8800 frames, three rounds interleaved, medians:
+
+| | fedxps wall | bigfed wall | fedxps CPU | bigfed CPU |
+|---|---|---|---|---|
+| Ghostty | 3841 ms | 1983 ms | 5200 ms | 3050 ms |
+| WezTerm | 8953 ms | 5651 ms | 10100 ms | 6360 ms |
+| **ratio** | **2.33x** | **2.85x** | **1.94x** | **2.09x** |
+
+Latency, two rounds:
+
+| | fedxps | bigfed |
+|---|---|---|
+| idle, Ghostty / WezTerm | 76 / 91 us | 47 / 46 us |
+| under load, Ghostty / WezTerm | 25 / 211 ms | **7.4 / 145 ms** |
+| **ratio under load** | **8.6x** | **19.7x** |
+| trips serviced in 6 s | 217 / 30 | 662 / 44 |
+
+### Refuted: the L3 hypothesis
+
+Addendum 2 identified the mechanism as a memory-footprint difference — 8-byte
+packed cells against `TeenyString` plus inline `CellAttributes` — and it was
+predicted here that bigfed's much larger L3 might blunt it, since a working set
+that thrashes 6 MiB may fit in 32 MiB.
+
+**It does not.** The gap is *wider* on bigfed, in both wall (2.33x → 2.85x) and
+CPU (1.94x → 2.09x). Whatever WezTerm's extra cost consists of, a 5.3x larger
+last-level cache does not absorb it. The prediction is withdrawn.
+
+### Refuted, and backwards: the grid-size hypothesis
+
+It was also predicted that a much larger grid would *dilute* Ghostty's lead,
+on the reasoning that per-frame render work scales with cells while per-byte
+parse work does not, so the GPU side would come to dominate. Both terminals
+honour explicit cell counts, so this was tested directly at **300x60 = 18000
+cells, 4.5x the 4000 above**, with a corpus re-captured at that grid:
+
+| per frame | 4000 cells | 18000 cells | growth |
+|---|---|---|---|
+| Ghostty | 0.225 ms | 0.312 ms | **1.39x** |
+| WezTerm | 0.642 ms | 1.874 ms | **2.92x** |
+
+At the large grid the ratio is **6.0x wall and 4.2x CPU**, against 2.85x and
+2.09x at the small one. The prediction was not merely wrong but inverted:
+**Ghostty absorbs 4.5x the cells for 1.39x the cost, WezTerm needs 2.92x.**
+Render cost never takes over, because the cost was never on the GPU — it is
+per-cell work in the terminal, which is exactly where the cell representation
+decides the outcome. On a large display with large windows, Ghostty's advantage
+grows.
+
+### WezTerm does not use the extra cores
+
+CPU-versus-wall during the plain flood, from `term-bench`:
+
+| | fedxps | bigfed |
+|---|---|---|
+| Ghostty | 167% | **189%** |
+| WezTerm | 131% | **129%** |
+
+Ghostty spreads further when given twice the cores; WezTerm does not move. That
+is most of why the wall-clock ratio widens more than the CPU ratio does.
+
+### What held on both machines
+
+- **Repaints favour Ghostty substantially** — the Addendum 2 headline, confirmed
+  on different hardware and a different compositor.
+- **Warm plain throughput is a tie, tilting to WezTerm**: 376 vs 334 ms on
+  fedxps, 225 vs 190 ms on bigfed.
+- **The cold/warm effect is real and larger on bigfed.** WezTerm improves
+  2.6x → 3.4x between its first flood and one after the repaint corpus; Ghostty
+  1.4x → 1.03x. A single cold flood measures warm-up, not steady state,
+  and it measures it worse on the faster machine.
+- **The memory ratio.** Through the repaint corpus alone, with scrollback
+  eliminated: Ghostty +5.7 MB against WezTerm +50 MB at 100x40, and +40 MB
+  against +92 MB at 300x60.
+
+### Verdict
+
+The comparison is portable, and every difference between the machines moved in
+the same direction: **on the faster, wider, more parallel machine Ghostty's
+advantage is larger, not smaller** — 2.85x rather than 2.33x on repaints, 6.0x
+at a full-size window, 19.7x rather than 8.6x on latency under load. The two
+mechanisms proposed for why bigfed might narrow it were both tested and both
+failed.

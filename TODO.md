@@ -192,36 +192,6 @@ the pull — every entry except the known non-packages (`docs`, `tests`,
 right direction: an unrecognised directory yields a spurious hint at worst,
 never a missing one. Run `tests/gsync/run-all.sh` after.
 
-## 11. Confirm per-window cgroup scopes after the Ghostty launcher change
-
-- [ ] After the standalone-Ghostty switch has settled, check that each window
-  gets its own scope — `systemd-cgls --user-unit user@1000.service | grep
-  ghostty`, or `ls -d /sys/fs/cgroup/.../app-gnome-ghostty-*.scope` — then close
-  this item. Only revisit `linux-cgroup = always` if the check fails, or if the
-  tab/split habit changes.
-
-Opened 2026-09-03 after the Super+T change (`--gtk-single-instance=false`, both
-launchers; reasoning in `ghostty/config`'s Window section). `linux-cgroup`
-defaults to `single-instance`, so standalone processes stop getting Ghostty's
-per-surface `app-ghostty-surface-transient-*.scope` cgroups.
-
-Why that is probably fine rather than a loss. GNOME already wraps each launched
-process in its own `app-gnome-ghostty-<pid>.scope` — visible in the journal as
-"Application launched by gsd-media-keys" — so with one process per window, the
-window *is* the cgroup, which is the unit `systemd-oomd` acts on. And he runs
-one window per task through the WM rather than terminal tabs or splits
-(measured 2026-09-03), so per-surface and per-window partition his sessions
-identically. `linux-cgroup = always` would buy back a distinction he does not
-create.
-
-Corrected 2026-09-03, same day: an earlier version of this item deferred the
-setting to avoid biasing `docs/ghostty-vs-wezterm-2026-09-03.md` with the man
-page's "hundred milliseconds or so" of cgroup setup. That reasoning was wrong —
-that document measures throughput and the parse-and-respond round trip, and
-does not time window launch at all. The usage argument above is what carries
-the decision.
-
----
 
 ## Notes
 
@@ -278,6 +248,11 @@ are in `DECISIONS.md` under the same item numbers.
 - **9. live-server root wrapper** — explicit directories at both ends plus
   `last_root`; simpler shapes measured lossy. Closed 2026-08-22 → `DECISIONS.md`
   item 9.
+- **11. Per-window cgroup scopes after the Ghostty launcher change** — confirmed:
+  one process per window means the window *is* the cgroup, so `linux-cgroup =
+  always` stays declined. The item's *reasoning* needed correcting — `systemd-oomd`
+  is inactive here, so the cgroup-level reaper it assumed is not running; the
+  verdict survives on other grounds. Closed 2026-09-05 → `DECISIONS.md` item 11.
 - Unnumbered closed work (the 2026-08-22 latency fix, lock/notifications, the sway
   restructure, the `scripts` repo retirement, the 2026-07-26 staleness sweeps,
   earlier setup) → `DECISIONS.md`, Done ledger.

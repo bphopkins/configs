@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Report the settled grid to a file: probe OUTFILE
+# The settle loop is load-bearing -- under a tiling WM the window is resized
+# after the shell is spawned, so tput at t=0 reports the pre-resize size and a
+# search over window geometries returns the same answer for every input.
+prev=""; stable=0
+for _ in $(seq 1 60); do
+  cur="$(tput cols)x$(tput lines)"
+  [[ $cur == "$prev" ]] && stable=$((stable+1)) || stable=0
+  [[ $stable -ge 3 ]] && break
+  prev="$cur"; sleep 0.05
+done
+printf '%s\n' "$cur" > "$1"

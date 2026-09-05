@@ -22,6 +22,21 @@
 #   ghostty +show-face --style=bold --cp=0x41
 #   ghostty +list-fonts / +list-themes
 # WezTerm's side of the same questions is `wezterm ls-fonts`.
+#
+# VERDICT, 2026-09-05, measured on both machines — the comparison this
+# transcription exists to make is settled. Ghostty wins on *repaints* (2.3x
+# fedxps, 2.9x bigfed, 6.0x at a 300x60 grid) and on *responsiveness while
+# output streams* (8.6x, 19.7x on bigfed). It does NOT win on raw flooding:
+# warm, the two tie and WezTerm edges ahead, and the earlier "2x on sparse
+# text" was a cold-cache artefact. The cause is structural and not
+# configurable — Ghostty's 8-byte packed cell against WezTerm's per-cell
+# inline attributes — so larger grids and more cores widen the gap rather
+# than closing it. Full chain: docs/ghostty-vs-wezterm-2026-09-03.md, three
+# addenda; instruments in tests/term-bench/.
+#
+# What WezTerm still wins: copy mode (ctrl+shift+x, structurally absent here),
+# QuickSelect, CharSelect, Lua config with event hooks, and chrome that is
+# drawn rather than delegated to GTK.
 
 
 # --- Font -------------------------------------------------------------------
@@ -157,6 +172,24 @@ cursor-style = block
 # integration's `PS0='\[\e[0 q\]'`, which re-asserted the cursor before every
 # command. Neovim resets itself, so nothing is lost there; a program that
 # changes the shape and exits without resetting will now leave it changed.
+
+
+# --- Mouse ------------------------------------------------------------------
+
+# The first setting here whose WezTerm counterpart is a *default* rather than a
+# line in .wezterm.lua, so the header's "almost every setting exists because
+# .wezterm.lua sets its counterpart" wants reading one notch wider from here on.
+#
+# hide_mouse_cursor_when_typing is true upstream and mouse-hide-while-typing is
+# false here, which the transcription carried silently because neither file
+# mentions a setting neither file sets. The pointer disappears on any keypress
+# that produces data for the program and returns on the first mouse movement,
+# so click-and-drag selection is untouched — the only thing that changes is
+# that the pointer stops sitting over the text while typing.
+#
+# Matched 2026-09-05, on the evidence that WezTerm did exactly this for the ten
+# months to 2026-09-03 without the behaviour ever becoming noticeable.
+mouse-hide-while-typing = true
 
 
 # --- Window -----------------------------------------------------------------

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# The SAME twelve colours in three SGR encodings, swept over eight densities.
+#
+#   pal   \e[31m           short form; WezTerm stores it inline (SmallColor)
+#   idx   \e[38;5;1m       long form, still inline -- an encoding-length control
+#   true  \e[38;2;r;g;bm   long form; WezTerm cannot store it inline and spills
+#                          to Box<FatAttributes>
+#
+# idx-vs-true was built to isolate that heap spill. It did not find one: on
+# 2026-09-05 the idx->true step cost +505 ms on WezTerm and +515 ms on Ghostty
+# for the same 2.56M attribute changes, i.e. the extra cost is the longer
+# escape sequence on both sides, not the allocation. Kept as the instrument
+# that settled the question.
+#
+# ! This sweep is SCROLL-shaped and does not predict repaint-shaped work. It
+# says Ghostty costs ~1.4x more CPU at d=64; real nvim, far denser, has it
+# costing half. Use repaint-bench for practical questions.
+set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+CORPUS="${TERM_BENCH_CORPUS:-${TMPDIR:-/tmp}/term-bench-corpus}"
+BASE="$CORPUS/color"
+OUT="${TERM_BENCH_OUT:-}"
+[[ -d $BASE ]] || python3 "$HERE/gen-color-corpora.py" "$BASE"
+TERM_NAME=unknown; TERM_PID=unknown; p=$PPID
+while [[ -n $p && $p -gt 1 ]]; do
+  n=$(ps -o comm= -p "$p" 2>/dev/null | tr -d ' ') || break
+  case $n in wezterm-gui) TERM_NAME=WezTerm; TERM_PID=$p; break;;
+             ghostty) TERM_NAME=Ghostty; TERM_PID=$p; break;; esac
+  p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+done
+prev=""; stable=0
+for _ in $(seq 1 60); do cur="$(tput cols)x$(tput lines)"
+  [[ $cur == "$prev" ]] && stable=$((stable+1)) || stable=0
+  [[ $stable -ge 3 ]] && break; prev="$cur"; sleep 0.05; done
+CLK=$(getconf CLK_TCK 2>/dev/null || echo 100)
+own(){ [[ $TERM_PID =~ ^[0-9]+$ ]] || { echo 0; return; }
+  local r; r=$(sed 's/.*) //' "/proc/$TERM_PID/stat" 2>/dev/null) || { echo 0; return; }
+  awk -v hz="$CLK" '{printf "%d",($12+$13)*1000/hz}' <<<"$r"; }
+rows=""
+for mode in pal idx true; do
+  rows+="  [$mode]"$'\n'
+  for d in 0 4 8 16 24 32 48 64; do
+    f="$BASE/$mode/sgr-d$d.txt"; [[ -f $f ]] || continue
+    best=99999999; bcpu=0
+    for _ in 1 2 3; do
+      c0=$(own); t0=$(date +%s%N); cat "$f"; t1=$(date +%s%N); c1=$(own)
+      ms=$(( (t1-t0)/1000000 )); (( ms<best )) && { best=$ms; bcpu=$(( c1-c0 )); }
+    done
+    rows+=$(printf '    d=%-3s wall %6s ms   termcpu %6s ms   %4s MiB\n' \
+            "$d" "$best" "$bcpu" "$(( $(stat -c %s "$f")/1048576 ))")$'\n'
+  done
+done
+clear
+SUM=$(printf '  terminal: %s   grid %s\n  three SGR encodings, same 12 colours, 40000 lines x 60 visible chars:\n%s' \
+      "$TERM_NAME" "$cur" "$rows")
+printf '%s\n' "$SUM"
+[[ -n $OUT ]] && printf '%s\n' "$SUM" >> "$OUT"
+exit 0
