@@ -196,7 +196,9 @@ directory served instead (the Linux watch is non-recursive on the served
 root, so serving an ops-repo root would kill live-reload below it). Bare
 start/stop resolve from the current buffer and silently miss
 explicitly-started instances — an upstream bug, recorded and deliberately not
-filed. Full record, measured losses of simpler shapes, and declined
+filed. A page that hangs after about five loads in one tab is the
+plugin's SSE stream meeting Chromium's six-connection cap, released after
+about a minute; not the site (2026-09-04 addendum to item 9). Full record, measured losses of simpler shapes, and declined
 alternatives: `DECISIONS.md` item 9. Suite: `tests/live-server/run.sh` — W
 checks pin the wrapper contract, D the directory semantics, U the upstream
 behaviours *as canaries* (a U failure after a plugin update means the ground

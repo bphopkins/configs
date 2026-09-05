@@ -327,6 +327,33 @@ relevant only if the mirror ever lags.
 
 ---
 
+**Addendum 2026-09-04 — the page-load stall (upstream; recorded, not
+filed).** Clicking around a site under the plugin's server, a page load
+sometimes hangs for about a minute. Reproduced headlessly against
+`bphopkins.net` with Chrome 152 and Brave 152 driven over the DevTools
+protocol, and explained by the server's design: every response is
+`Connection: close`, and every page that has the site loaded holds one
+never-ending Server-Sent-Events connection (`/__live/events`). Chromium's
+back/forward cache keeps the pages just left alive, streams included, and
+Chromium allows six connections per host — so in one tab loads 1–5 each leave
+a stream behind and load 6 has no connection to use until Chromium evicts a
+cached page on its own (50 s in Chrome, 58 s in Brave, measured). Every other
+tab open on the dev server holds a stream too, so tabs bring the limit
+closer (three tabs: the stall arrives on load 3); a suspended or blocked
+Neovim stalls the server outright with nothing to release it. With the
+back/forward cache disabled the connection count stays at one and nothing
+stalls; a plain static server never stalls even with six tabs open on it. The
+site is not involved: production is HTTP/2 with no long-lived connections.
+
+The proper fix is two lines in the plugin's injected client (`CLIENT_JS` in
+`lua/live-server/server.lua`): close the `EventSource` on `pagehide` and
+recreate it on `pageshow`, so a cached page holds no connection. Workarounds
+until then: `brave://flags/#back-forward-cache` → Disabled (global, removes
+the stall entirely); or, when it happens, wait about a minute or close that
+tab and open a fresh one, which drops all its cached pages at once. Opening
+pages in new tabs makes it worse. The wrapper cannot reach the client script,
+so nothing changes in `nvim/lua/plugins/live-server.lua`.
+
 ## Done ledger (moved verbatim from TODO.md, 2026-08-26)
 
 - [x] **Diagnosed and fixed Neovim's LaTeX editing latency on `fedxps`.** Two separate
