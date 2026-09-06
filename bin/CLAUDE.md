@@ -69,7 +69,9 @@ The procedure, in order — each step earned its place:
    *not* regressions (glyph-to-Unicode fixes); confirm with `visdiff`'s
    pixel compare, never the text hash alone.
 5. **Switch** (`tlmgr path remove` old, `path add` new). `20-path.sh` picks
-   up the new year automatically. Keep the old tree until confident.
+   up the new year automatically; `fontconfig/` cannot, so `switch` checks
+   its pinned year and prints the `sed` to bump it. Keep the old tree until
+   confident.
 
 State, fingerprints, and ~130MB of build artifacts live in
 `~/.cache/tl-newyear` — machine-local, deliberately unsynced. Builds always

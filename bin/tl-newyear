@@ -277,6 +277,18 @@ EOF
 
   info "switched to TeX Live $year"
   info "20-path.sh auto-detects the newest release, so new shells follow along"
+
+  # fontconfig is the one consumer that cannot discover the year: <dir> takes
+  # no globs, and listing several years at once would expose two releases'
+  # fonts at the same time. Silent failure, so say so here.
+  local fcfile="$HOME/Desktop/configs/fontconfig/conf.d/09-texlive-fonts.conf"
+  if [[ -f "$fcfile" ]] && grep -q "texlive/$old/" "$fcfile"; then
+    warn "fontconfig still points at $old; TeX Live fonts will vanish from"
+    warn "application menus once $old is deleted. Fix with:"
+    printf '    sed -i %s %s && fc-cache -f\n' \
+           "'s|texlive/$old/|texlive/$year/|g'" "$fcfile" >&2
+  fi
+
   info "keep $old until you are confident, then: sudo rm -rf $TL_ROOT/$old"
 }
 

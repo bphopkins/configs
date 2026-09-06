@@ -51,6 +51,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
+| fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the two rejectfont blocks |
 
 ## Stow Deployment
 
