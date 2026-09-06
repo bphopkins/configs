@@ -66,7 +66,9 @@ def strip_comments(text: str) -> str:
 
 CMD_PATTERN = re.compile(
     r"\\(?:(?:re)?newcommand|providecommand)\s*\*?\s*{\\(?P<name>[A-Za-z@]+?)}"
-    r"\s*(?:\[(?P<count>\d+)\])?\s*(?:\[(?P<default>[^\]]+)\])?",
+    # [^\]]* not [^\]]+ : an empty optional default, \newcommand{\x}[2][]{...},
+    # is still an optional argument.  Matches ENV_PATTERN below.
+    r"\s*(?:\[(?P<count>\d+)\])?\s*(?:\[(?P<default>[^\]]*)\])?",
     re.MULTILINE,
 )
 
@@ -268,8 +270,18 @@ def collect_snippets(text: str) -> List[SnippetDef]:
 # ---------- Highlight-registration coverage ----------
 
 # Deliberately unregistered commands; mirrors the header comment in
-# lua/plugins/vimtex.lua.
-KNOWN_UNREGISTERED = {"versal", "sketchqed", "remarkqed", "inf", "infer"}
+# lua/plugins/vimtex.lua.  tcite/pcite are citation commands, coloured by
+# VimTeX's texCmdRef machinery in after/syntax/tex.lua, not by a custom-cmd
+# entry -- see the note there.
+KNOWN_UNREGISTERED = {
+    "versal",
+    "sketchqed",
+    "remarkqed",
+    "inf",
+    "infer",
+    "tcite",
+    "pcite",
+}
 
 REG_NAME_PATTERN = re.compile(r'\bm?a?cmd\("([A-Za-z]+)"')
 REG_CMDRE_PATTERN = re.compile(r'\bm?a?re\("[A-Za-z]+",\s*"((?:[^"\\]|\\.)*)"')

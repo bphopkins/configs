@@ -102,6 +102,14 @@ is worse than no check.
 ./bench.py --config /path/to/other-config
 ```
 
+`--file` measures a throwaway **copy** of the document, never the document
+itself. `measure()` types characters into the buffer and undoes them, but the
+undo does not reach disk — the auto-save autocmd has already written on
+`InsertLeavePre` — so pointed at a real file it used to leave its filler
+string on every long line it visited, and an interrupted run left it with no
+undo at all. The damage is invisible in the tool's own output, which prints
+timings either way; `verify.py` now pins byte-identity of the target.
+
 The cost is driven by **logical line length**, and these files are one
 paragraph per line. Measured on the real completeness chapter (median ms per
 keystroke, `fedxps`, tuned `powersave`):

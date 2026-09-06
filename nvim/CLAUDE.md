@@ -121,8 +121,10 @@ python3 nvim/lua/snippets/sty-lua-snippets.py -i latex/french-logic/french-logic
 ```
 
 `--coverage` cross-references the `.sty` against `vimtex.lua`'s registrations
-(the 5 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring
-the `vimtex.lua` header); the auto-regen hook runs it whenever the `.sty`
+(the 7 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring
+the `vimtex.lua` header — `\tcite`/`\pcite` are there because citation
+commands are coloured by VimTeX's own `texCmdRef` machinery in
+`after/syntax/tex.lua`, not by a custom-cmd registration); the auto-regen hook runs it whenever the `.sty`
 changed and raises a notification — informational, a newly added macro just
 renders in the default colour until registered by hand.
 

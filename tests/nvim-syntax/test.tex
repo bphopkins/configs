@@ -21,4 +21,8 @@ Arg test $\truthset{ZZ}$ and $\proofsetl{YY}$ and \hyp{QQ} and \parent{PP}.
 \begin{proofsketch}
   Sketchy.
 \end{proofsketch}
+% citation commands: \tcite/\pcite must colour exactly as \cite,
+% locator or not (after/syntax/tex.lua routes them through texCmdRef).
+\cite{ckA} \cite[p.~5]{ckB} \tcite{ckC} \tcite[p.~7]{ckD}
+\pcite{ckE} \pcite[\S2]{ckF} \textcite{ckG} \poscite{ckH}
 \end{document}

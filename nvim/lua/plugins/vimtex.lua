@@ -123,6 +123,12 @@ return {
     -- Deliberately unregistered (not oversights): \versal, \sketchqed,
     -- \remarkqed (internal helpers, unused outside the .sty) and
     -- \inf/\infer (renames of TeX built-ins, retired with gentzen).
+    -- Also \tcite/\pcite: they are citation commands, and are hooked
+    -- into VimTeX's own texCmdRef machinery in after/syntax/tex.lua so
+    -- they colour identically to \cite.  Registering them here instead
+    -- gave the command texCmdScaffold and the key texArgName, and the
+    -- opt=false in acmd() dropped the key to texGroup whenever a
+    -- locator was present (\tcite[p.~7]{key}).
     --
     -- Note on cmdre: patterns are embedded verbatim into a "\v"
     -- (very magic) syntax match with NO implicit trailing ">", so

@@ -7,7 +7,7 @@ is the directory's GitHub-viewport document — a public how-to in Brandon's
 own voice, written a decade ago and deliberately preserved as a historical
 artifact (prune declined 2026-08-26); not a charter — leave it alone.
 
-- **french-logic** — 509 commands and 25 environments for modal/deontic
+- **french-logic** — 511 commands and 25 environments for modal/deontic
   logic; a single `\usepackage{french-logic}` replaces a 100+ line preamble;
   `deon` option for DEON conference submissions. ⚠ **Shared, snippet-coupled
   dependency**: `dissertation/`, `teaching/live-lecture/`, and parts of

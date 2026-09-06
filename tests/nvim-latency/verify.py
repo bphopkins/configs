@@ -10,13 +10,18 @@ rests on, plus the behaviour it must not have broken:
   * blink stays quiet in running prose, where it used to fire on every char
   * non-TeX filetypes are untouched
   * the auto-save autocmd is in an augroup, so re-sourcing cannot duplicate it
+  * bench.py leaves the document it measures byte-identical
 
 Each is a thing that silently regresses: nothing errors if the gate stops
 working, you just quietly pay 130 ms a keystroke again.
 """
 
+import hashlib
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -293,5 +298,28 @@ try:
             len(got) >= 2 and got[1].strip() == "- [ ]", True)
 finally:
     v.close()
+
+# ---- bench.py must not write to the document it measures -----------------
+# measure() types characters in and undoes them, but the undo never reaches
+# disk: the auto-save autocmd has already written on InsertLeavePre.  Pointed
+# at a real file, the old code left its filler string on every long line it
+# visited, and an interrupted run left it with no undo at all.  --file now
+# measures a throwaway copy; this pins that, because the damage is invisible
+# in the tool's own output — it prints timings either way.
+HERE = os.path.dirname(os.path.abspath(__file__))
+with tempfile.TemporaryDirectory(prefix="nvim-latency-selftest-") as _td:
+    _target = os.path.join(_td, "fixture.tex")
+    shutil.copyfile(os.path.join(HERE, "fixture.tex"), _target)
+    _before = hashlib.sha256(open(_target, "rb").read()).hexdigest()
+    try:
+        subprocess.run(
+            [sys.executable, os.path.join(HERE, "bench.py"),
+             "--file", _target, "-n", "2", "--gap", "0.02"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=240,
+        )
+        _after = hashlib.sha256(open(_target, "rb").read()).hexdigest()
+    except subprocess.TimeoutExpired:
+        _after = "bench.py timed out"
+c.check("bench.py --file leaves the target byte-identical", _after, _before)
 
 sys.exit(c.report())

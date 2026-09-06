@@ -103,6 +103,20 @@ local checks = {
   { [[QQ]], "texArgFormula", "\\hyp arg link" },
   { [[PP]], "texArgName", "\\parent arg link" },
   { [[RR]], "texArgName", "\\by arg link" },
+  -- citation commands: \tcite/\pcite/\textcite/\poscite go through
+  -- VimTeX's texCmdRef machinery (after/syntax/tex.lua), so they must
+  -- match \cite exactly -- command AND key, with and without a locator.
+  -- Registering them as custom cmds instead gave texCmdScaffold/texArgName,
+  -- and dropped the key to texGroup once a locator was present.
+  { [[\\cite{]], "texCmdRef", "\\cite command (baseline)" },
+  { [[\\cite{\zsckA]], "texRefArg", "\\cite key (baseline)" },
+  { [[\\tcite{]], "texCmdRef", "\\tcite command" },
+  { [[\\tcite{\zsckC]], "texRefArg", "\\tcite key" },
+  { [[\\tcite\[p\.\~7\]{\zsckD]], "texRefArg", "\\tcite key past a locator" },
+  { [[\\pcite{]], "texCmdRef", "\\pcite command" },
+  { [[\\pcite\[\\S2\]{\zsckF]], "texRefArg", "\\pcite key past a locator" },
+  { [[\\textcite{\zsckG]], "texRefArg", "\\textcite key (biblatex module never loads)" },
+  { [[\\poscite{\zsckH]], "texRefArg", "\\poscite key" },
 }
 
 local fails = 0

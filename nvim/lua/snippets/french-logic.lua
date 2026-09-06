@@ -1,6 +1,6 @@
 -- Auto-generated from french-logic.sty
 -- Regenerate via sty-lua-snippets.py
--- sty-sha256: 67d295689eace0583e55d94e8f8475f7aa741be0a88f29e0593ea134363eb698
+-- sty-sha256: 276e881b66831b2610ca8209acd0f1006631d91047041d3d2143e134b24a633a
 
 local ls = require("luasnip")
 local s  = ls.snippet
@@ -441,6 +441,7 @@ local snippets = {
   s({ trig = "\\ought~", wordTrig = true }, { t("\\ought") }),
   s({ trig = "\\parent~", wordTrig = true }, { t("\\parent{"), i(1), t("}") }),
   s({ trig = "\\pax~", wordTrig = true }, { t("\\pax") }),
+  s({ trig = "\\pcite~", wordTrig = true }, { t("\\pcite["), i(1), t("]{"), i(2), t("}") }),
   s({ trig = "\\permissible~", wordTrig = true }, { t("\\permissible") }),
   s({ trig = "\\plrulepar~", wordTrig = true }, { t("\\plrulepar") }),
   s({ trig = "\\plrule~", wordTrig = true }, { t("\\plrule") }),
@@ -508,6 +509,7 @@ local snippets = {
   s({ trig = "\\taxc~", wordTrig = true }, { t("\\taxc") }),
   s({ trig = "\\taxpar~", wordTrig = true }, { t("\\taxpar") }),
   s({ trig = "\\tax~", wordTrig = true }, { t("\\tax") }),
+  s({ trig = "\\tcite~", wordTrig = true }, { t("\\tcite["), i(1), t("]{"), i(2), t("}") }),
   s({ trig = "\\then~", wordTrig = true }, { t("\\then") }),
   s({ trig = "\\theorem~", wordTrig = true }, { t({ "\\begin{theorem}", "\t" }), i(1), t({ "", "\\end{theorem}" }) }),
   s({ trig = "\\theory~", wordTrig = true }, { t("\\theory{"), i(1), t("}") }),

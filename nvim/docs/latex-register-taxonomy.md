@@ -127,9 +127,10 @@ Background `#1a1b26`; contrast is WCAG vs that background.
 | material | Greek letters, `p₀`–`p₃`; math body; formula args | `texCmdVariable`, zones, `texArgFormula` | `#c6ab90` | italic | 7.8 |
 | landmarks | `\chapter` `\section`, titles; theorem-family env names | sectioning groups, `texEnvArgNameThm` | `#9ece6a` | bold | 9.4 |
 | loaded structure | env names: proof, proofsketch, gentzen, axiomproof, **hilbertlist** | `texEnvArgNameLoaded` | `#4fd6b0` | bold | 9.4 |
-| pure structure | `\begin`/`\end`, `\item`, default env names, booktabs rules, proof-tree scaffolding (`\hypo` `\infr` `\by` `\close`) | `texCmdEnv/Item/Scaffold`, `texEnvArgName` | `#1abc9c` | names bold | 7.1 |
-| deixis | `\cref` `\ref` `\label` `\cite` | ref groups | `#9ece6a` | — | 9.4 |
-| prose inflection | `\emph` `\textit` `\textbf` tokens (content keeps body tone), `\footnote` | `texCmdStyle` etc. | `#9aa5ce` | italic | 7.0 |
+| pure structure | `\begin`/`\end`, `\item`, default env names, booktabs rules, proof-tree scaffolding (`\hypo` `\infr` `\by` `\close`), `\footnote` | `texCmdEnv/Item/Scaffold/Footnote`, `texEnvArgName` | `#1abc9c` | names bold | 7.1 |
+| deixis | `\cref` `\ref` `\label` `\cite` `\tcite` `\pcite` | `texCmdRef` | `#9ece6a` | — | 9.4 |
+| deixis, the key | the `{...}` of a ref/cite | `texRefArg` | `#8fb665` | italic | 7.4 |
+| prose inflection | `\emph` `\textit` `\textbf` tokens (content keeps body tone) | `texCmdStyle` etc. | `#9aa5ce` | italic | 7.0 |
 | boundaries | `$` and math delimiters; `\qed` family | math delim groups, `texCmdQed` | `#bb9af7` | — | 7.4 |
 | stage crew | preamble, packages, `\input`, `\newcommand` (defined name takes `#bd9750`) | package/def groups | `#f7768e` | def bold | 6.5 |
 
@@ -143,7 +144,14 @@ mathematical status) > plain containers (`#1abc9c` bold env names) >
 scaffolding (`#1abc9c` regular — `\begin`/`\end`, `\item`, proof-tree
 helpers, booktabs). Deixis (`\cref`, `\cite`, `#9ece6a` regular) is
 the same family at the landmark hue: pointing shares colour with what
-is pointed at. Prose inflections (`\emph`, `\textit`) are the voice
+is pointed at. The *key* inside a ref or cite dims one rung to
+`#8fb665` — lightness encodes salience within a family, and a key is a
+name, so it sits below the deictic act exactly as `blue_dim` names sit
+below the `blue_obj` they name. Derived, not chosen: the house dim step
+(mean of `blue_obj`→`blue_dim` and `gold_mid`→`gold_dim`, dL −8.0 /
+dC −9.4 in LCh) puts it dE00 6.5 from `#9ece6a`, inside the house band,
+and 18.6 / 19.0 clear of the loaded and container rungs so it cannot
+impersonate them. Prose inflections (`\emph`, `\textit`) are the voice
 modulating itself: firmly prose-side, muted command tokens, body-toned
 content.
 

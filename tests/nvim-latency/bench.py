@@ -37,8 +37,10 @@ against that, not against zero.
 
 import argparse
 import os
+import shutil
 import statistics
 import sys
+import tempfile
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -88,13 +90,33 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ablate", action="store_true",
                     help="attribute the cost subsystem by subsystem")
-    ap.add_argument("--file", help="measure this document instead of the fixture")
+    ap.add_argument("--file",
+                    help="measure this document instead of the fixture "
+                         "(a throwaway copy of it — the original is never opened)")
     ap.add_argument("--config", help="a different Neovim config tree (XDG_CONFIG_HOME)")
     ap.add_argument("-n", type=int, default=14, help="keystrokes per sample")
     ap.add_argument("--gap", type=float, default=0.4,
                     help="seconds between keystrokes (0.4 ~ thoughtful prose)")
     args = ap.parse_args()
 
+    # Measure a COPY, never the file itself.  measure() types characters into
+    # the buffer and undoes them afterwards, but the undo does not reach disk:
+    # an auto-save on InsertLeavePre has already written the typed text, so a
+    # run against a real document leaves the filler string on every long line
+    # it visits — and an interrupted run leaves it with no undo at all.  The
+    # copy keeps the content, the line lengths and the .tex filetype, so the
+    # numbers are unchanged, while nothing can reach the original.
+    if args.file:
+        src = os.path.abspath(args.file)
+        with tempfile.TemporaryDirectory(prefix="nvim-latency-") as td:
+            dst = os.path.join(td, os.path.basename(src))
+            shutil.copyfile(src, dst)
+            args.file = dst
+            return _run(args)
+    return _run(args)
+
+
+def _run(args):
     if args.ablate:
         v = open_target(args)
         lnum = v.para_lines()[-1][0]

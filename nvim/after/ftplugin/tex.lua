@@ -44,6 +44,16 @@ local C = {
   teal = "#1abc9c",
   green = "#9ece6a", -- document landmarks (bold) and deixis (regular)
   green_loaded = "#4fd6b0", -- loaded-structure rung of the document spectrum
+  -- Deixis dims one rung for the KEY, as names do throughout the scheme
+  -- (blue_obj -> blue_dim for names of semantic objects).  The \cite
+  -- command is the deictic act and keeps the landmark hue; the key is the
+  -- name of the work pointed at.  Derived, not chosen: the house dim step
+  -- is dL -8.0 / dC -9.4 in LCh (mean of blue_obj->blue_dim and
+  -- gold_mid->gold_dim), giving dE00 6.5 from green -- inside the house
+  -- band (gold 6.5, blue 8.2).  Clear of the other green rungs by 18.6
+  -- (green_loaded) and 19.0 (teal), so it cannot impersonate them;
+  -- contrast 7.4 on bg.
+  green_dim = "#8fb665", -- deixis: the key, one rung below the command
   magenta = "#bb9af7",
   red = "#f7768e",
   yellow = "#e0af68",
@@ -125,7 +135,7 @@ hl("texMathOper", { fg = C.steel })
 -- 5. CITATIONS AND REFERENCES
 ------------------------------------------------------------------------
 hl("texCmdRef", { fg = C.green })
-hl("texRefArg", { fg = C.green, italic = true })
+hl("texRefArg", { fg = C.green_dim, italic = true })
 
 ------------------------------------------------------------------------
 -- 6. PREAMBLE / PACKAGES
@@ -151,7 +161,15 @@ hl("texCmdInput", { fg = C.red })
 ------------------------------------------------------------------------
 -- 9. FOOTNOTES
 ------------------------------------------------------------------------
-hl("texCmdFootnote", { fg = C.dark5, italic = true })
+-- A footnote opens a subordinate document space, so it belongs to the
+-- document spectrum at the container/scaffolding rung, beside \begin,
+-- \item and the proof-tree helpers -- not to prose inflection, which is
+-- the voice modulating itself inside a sentence (\emph, \textit).
+-- The old gray sat dE00 10.6 from `comment` at contrast 4.1, so footnotes
+-- read as commented-out text; teal is 41.8 from comment at contrast 7.1,
+-- and 21.2 / 19.0 clear of texCmdRef / texRefArg, which share the line
+-- constantly. Not italic: that channel is material and argument content.
+hl("texCmdFootnote", { fg = C.teal })
 
 ------------------------------------------------------------------------
 -- 10. TITLE / AUTHOR
