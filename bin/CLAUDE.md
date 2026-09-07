@@ -38,20 +38,32 @@ the next `stow -R bin` would fail with a conflict.
   repo: a dconf shortcut on bigfed, `bindsym $mod+x` in `sway/config` on
   fedxps.
 
-- `screens-off` — locks the session and powers the displays down immediately,
-  bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never suspends:
-  it must answer SSH over the LAN and the tailnet whenever it is left alone, so
-  the displays are the only thing that may turn off, and this reaches that state
-  on the way out of the chair instead of 15 minutes later. Wayland has no
-  `xset dpms force off`; the lever is Mutter's readwrite `PowerSaveMode`
-  property (3 = off), and Mutter resets it to 0 on the next input event — which
-  is what makes a keypress wake the screens, and why the lock happens first.
-  Two provisions make it work over SSH from fedxps as well as locally: it
-  defaults `DBUS_SESSION_BUS_ADDRESS`, and it locks an explicitly looked-up
-  graphical session, since bare `loginctl lock-session` would lock the SSH
-  session instead. GNOME only. As with `tabula`, the *binding* is per-machine
-  dconf and outside this repo; the placement follows `sway/config`'s law, a
-  session op at `$mod+Ctrl+letter`, beside `$mod+Ctrl+l` for lock.
+- `screens-off` — locks the session and lets GNOME power the displays down,
+  bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never
+  suspends: it must answer SSH over the LAN and the tailnet whenever it is
+  left alone, so the displays are the only thing that may turn off, and this
+  reaches that state on the way out of the chair instead of 15 minutes later.
+  It **never writes** Mutter's `PowerSaveMode` itself, and that restraint is
+  the whole design. Forcing the property straight to mutter, behind
+  gnome-settings-daemon's back, hard-wedged KMS on 2026-09-06: the chord
+  release reverted gsd's own blank, gsd went back to normal and unaware, and
+  the forced-off monitors had nothing left watching to wake them — no input
+  recovered it, only a VT round-trip from another machine did (memory
+  `bigfed-mutter-kms-wedge`). So it just locks. Locking makes the screensaver
+  active, and gnome-settings-daemon blanks the monitors ~0.3 s later (a real
+  DPMS power-down) and wakes them at the next seat input — the same path GNOME
+  uses for its own idle blank, where the component that blanks is the one
+  waiting to wake. The lone subtlety is the `IdleMonitor.GetIdletime` wait: it
+  lets the seat fall quiet *before* locking, so the launching keypress or the
+  chord release cannot revert GNOME's blank. Two provisions make it work over
+  SSH from fedxps as well as locally: it defaults `DBUS_SESSION_BUS_ADDRESS`,
+  and it locks an explicitly looked-up graphical session, since bare `loginctl
+  lock-session` would lock the SSH session instead. GNOME only. As with
+  `tabula`, the *binding* is per-machine dconf and outside this repo; the
+  placement follows `sway/config`'s law, a session op at `$mod+Ctrl+letter`,
+  beside `$mod+Ctrl+l` for lock. Verified end to end 2026-09-06: typed, chord,
+  and SSH-from-fedxps invocations all blanked, held dark, stayed locked, and
+  woke to the lock screen on a Bluetooth key.
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC

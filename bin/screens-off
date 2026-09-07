@@ -1,48 +1,56 @@
 #!/usr/bin/env bash
-# screens-off — lock the session and power down the displays, now.
+# screens-off — lock the session and let GNOME power the displays down, on the
+# way out of the chair. The machine stays awake and reachable over SSH (LAN and
+# tailnet) until an input device touches it; the displays are the only thing
+# that turns off. Bound to <Super><Ctrl>b on bigfed by a GNOME custom shortcut.
 #
-# Bound to <Super><Ctrl>b on bigfed by a GNOME custom shortcut. That is the
-# session-op tier, one letter over from lock: sway/config's placement law
-# files a session op at $mod+Ctrl+letter, and this is $mod+Ctrl+l plus one
-# further step. The Escape family was considered and is wrong for it — Escape
-# means LEAVING, graded by weight, and both of its rungs are terminal and sit
-# behind a confirmation nag. On bigfed both Escape chords are taken anyway, by
-# Mutter's restore-shortcuts and cancel-input-capture. As with tabula, the
-# *binding* is per-machine dconf and lives outside this repo.
+# WHY IT EXISTS. bigfed must answer SSH whenever it is left alone, so it never
+# suspends: `sleep-inactive-ac-type` is 'nothing' and the power button is inert.
+# No sleep state can serve sshd (S3 unpowers the NIC; s2idle freezes
+# userspace), so the displays are the only thing that may turn off. GNOME
+# reaches that state on its own after `idle-delay` (15 min); this reaches the
+# same state deliberately, at once.
 #
-# WHY IT EXISTS. bigfed must stay reachable over SSH — LAN and tailnet alike —
-# whenever it is left alone, so it never suspends: `sleep-inactive-ac-type` is
-# 'nothing' and the power button is inert. No sleep state can serve sshd (S3
-# unpowers the NIC; s2idle freezes userspace), so the displays are the only
-# thing that may turn off. GNOME reaches that state on its own after
-# `idle-delay`, 15 min. This reaches the same state deliberately, on the way
-# out of the chair.
+# HOW IT WORKS — AND WHAT IT DELIBERATELY DOES NOT DO. It locks the session and
+# stops. Locking makes GNOME's screensaver active, and gnome-settings-daemon
+# powers the monitors off about 0.3 s later (a real DPMS power-down, not a black
+# screen) and arms a watch that powers them back on at the next seat input. That
+# is the same path GNOME uses for its own idle blank; the component that turns
+# the screen off is the same one waiting to turn it back on, so it cannot strand
+# the display. A Bluetooth key or mouse event wakes it exactly as from a normal
+# idle blank, whether or not the device had itself gone to sleep.
 #
-# HOW IT WORKS. Wayland has no `xset dpms force off`. Mutter exposes the DPMS
-# level as a readwrite D-Bus property — org.gnome.Mutter.DisplayConfig
-# PowerSaveMode, 0 on / 1 standby / 2 suspend / 3 off. Setting 3 is a real
-# monitor power-down, not a black screen.
+# It does NOT write org.gnome.Mutter.DisplayConfig PowerSaveMode itself. Earlier
+# versions did, and on 2026-09-06 that hard-wedged the machine. Writing
+# PowerSaveMode=3 goes straight to mutter, behind gnome-settings-daemon's back;
+# if the keypress that launched the command — most reliably the RELEASE of the
+# <Super><Ctrl>b chord — had just reverted gsd's own blank, gsd was back in its
+# NORMAL state and unaware, so the forced-off monitors had nothing watching to
+# wake them, and mutter looped failing hardware-cursor commits against the
+# disabled CRTC (`drmModeAtomicCommit: Invalid argument`). No keyboard or mouse
+# input recovered it; it took a VT round-trip from another machine
+# (`ssh -t bigfed-vpn 'sudo sh -c "chvt 1; sleep 2; chvt 2"'`) to force a fresh
+# modeset. The lesson: never drive the DPMS state around gsd — trigger GNOME's
+# own blank by locking, and let it own the whole blank/wake lifecycle. See the
+# memory `bigfed-mutter-kms-wedge`.
 #
-# Mutter restores the property to 0 on the next input event. That is precisely
-# what lets a Bluetooth keypress light the screens again, and it is also why
-# the lock comes first: the key release from the chord itself can re-light
-# them, and it should land on the lock screen rather than on the desktop.
+# THE WAIT. The one hazard left is that the very input launching the command can
+# revert GNOME's blank in the ~0.3 s after the lock, which would only delay the
+# blank to gsd's 30 s screensaver-blank fallback — never wedge, since nothing
+# here forces the property. To keep the blank prompt it waits for the seat to
+# fall quiet BEFORE locking (QUIET_MS), then locks. A typed command blanks when
+# you stop typing; the chord blanks when you let the keys go; over SSH the seat
+# is already idle, so it locks at once.
 #
-# It works over SSH as well as locally, so the screens can be blanked from
-# fedxps if they were left lit. Two things are needed for that and both are
-# below: the session bus address, which a non-graphical login does not carry,
-# and an explicit session id for the lock — bare `loginctl lock-session` locks
-# the *calling* session, which over SSH is the wrong one.
+# SSH. Two things make it work from fedxps or nousowl as well as locally: the
+# session bus address, which a non-graphical login does not carry, and an
+# explicit graphical session id for the lock — bare `loginctl lock-session`
+# locks the *calling* session, which over SSH is the wrong one.
 #
-# GNOME only, which includes fedxps: it runs GNOME on Wayland, and sway is a
-# session it can be logged into rather than the one it uses. Under sway the
-# levers are different (`swaymsg 'output * power off'`, `swaylock -f`) and idle
-# blanking is a standing decline there (sway/CLAUDE.md).
-#
-# ⚠ Running this on fedxps blanks and locks, but does not leave it reachable
-# the way bigfed is. fedxps is a laptop configured to suspend, and the
-# reachable-while-dark state comes from `sleep-inactive-ac-type` being
-# 'nothing' underneath the blank.
+# GNOME only. As with tabula, the *binding* is per-machine dconf, outside this
+# repo. ⚠ On fedxps this blanks and locks but does not leave the box reachable:
+# fedxps is a laptop configured to suspend, and bigfed's reachable-while-dark
+# state comes from `sleep-inactive-ac-type` being 'nothing' underneath.
 
 set -euo pipefail
 
@@ -51,8 +59,8 @@ export DBUS_SESSION_BUS_ADDRESS
 
 die() { printf 'screens-off: %s\n' "$1" >&2; exit 1; }
 
-# The graphical session, found by type rather than by $XDG_SESSION_ID, which
-# is absent over SSH and in a service-spawned shell.
+# The graphical session, found by type rather than by $XDG_SESSION_ID, which is
+# absent over SSH and in a service-spawned shell.
 graphical_session() {
   local s
   while read -r s _; do
@@ -63,16 +71,39 @@ graphical_session() {
   return 1
 }
 
-# Check the compositor is reachable BEFORE locking, so a non-GNOME session
-# fails outright instead of locking and then failing to blank.
+idletime() {
+  gdbus call --session --dest org.gnome.Mutter.IdleMonitor \
+    --object-path /org/gnome/Mutter/IdleMonitor/Core \
+    --method org.gnome.Mutter.IdleMonitor.GetIdletime 2>/dev/null |
+    sed -nE 's/^\(uint64 ([0-9]+),\)$/\1/p'
+}
+
+# Fail before locking if this is not a live GNOME session, so a non-GNOME
+# session exits non-zero rather than locking with no way to blank.
 gdbus introspect --session --dest org.gnome.Mutter.DisplayConfig \
   --object-path /org/gnome/Mutter/DisplayConfig >/dev/null 2>&1 \
   || die "org.gnome.Mutter.DisplayConfig is not on the session bus"
 
 session=$(graphical_session) || die "no graphical session found"
 
+# Wait for the seat to fall quiet BEFORE locking, so the launching keypress (or
+# the chord release) does not revert GNOME's blank. Never hang: past
+# WAIT_MAX_MS, lock anyway. Over SSH the idle time is already large, so this
+# returns on the first read.
+QUIET_MS=500
+WAIT_MAX_MS=15000
+POLL_MS=120
+
+waited=0
+while :; do
+  idle=$(idletime) || idle=""   # pipefail: sed matching nothing must not abort
+  [ -n "$idle" ] || break          # no idle monitor: do not spin, just lock
+  [ "$idle" -ge "$QUIET_MS" ] && break
+  [ "$waited" -ge "$WAIT_MAX_MS" ] && break
+  sleep 0.12
+  waited=$(( waited + POLL_MS ))
+done
+
+# Lock, and stop. GNOME blanks the monitors ~0.3 s later and wakes them on the
+# next input. We deliberately never touch PowerSaveMode.
 loginctl lock-session "$session"
-gdbus call --session --dest org.gnome.Mutter.DisplayConfig \
-  --object-path /org/gnome/Mutter/DisplayConfig \
-  --method org.freedesktop.DBus.Properties.Set \
-  org.gnome.Mutter.DisplayConfig PowerSaveMode '<3>' >/dev/null
