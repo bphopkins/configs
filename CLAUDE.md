@@ -52,6 +52,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the two rejectfont blocks |
+| git | `~/.config/git` | *(no charter — the config file carries its own: the XDG single home, the private identity include, `useConfigOnly`, and how `git config --global` writes through the link)* |
 
 ## Stow Deployment
 
@@ -150,6 +151,12 @@ languages — see `sway/CLAUDE.md` before changing it.
   instead, or pass `sed --follow-symlinks`. (KConfig/Okular is the one
   exception that resolves the link and rewrites the repo copy —
   `okular/CLAUDE.md`.)
+- **`git config --global` is the second write-through** (measured 2026-09-07):
+  it resolves the `git` package's symlink and edits the repo copy, so a
+  setting made that way is published by the next `gpushall`. Edit `git/config`
+  here instead, and never set `user.*` at all — identity lives in the private
+  include `org/claude-config/git/identity`, and `useConfigOnly` makes its
+  absence a refusal to commit rather than a guessed address.
 - **Public repo + `gpushall` runs `git add -A`.** Anything no ignore rule
   refuses is committed and pushed to a public remote. `.gitignore` carries
   hygiene groups (its comments record the reasoning) but matches whole files

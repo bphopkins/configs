@@ -35,7 +35,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p ~/Desktop/configs/{alacritty,bash,bin,ghostty,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
+mkdir -p ~/Desktop/configs/{alacritty,bash,bin,fontconfig,ghostty,git,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
 ```
 
 
@@ -106,21 +106,16 @@ fi
 
 # BIN: move personal scripts from ~/bin to ~/Desktop/configs/bin
 #
-# Only scripts you wrote belong in the repo. ~/bin is also where some installers
-# drop generated launchers -- `isabelle install ~/bin` writes isabelle and
-# isabelle_java, hardcoding an absolute path to a machine-local Isabelle tree.
-# Those must stay untracked (see §8), so they are excluded here; re-running that
-# one command regenerates them on any machine. Review what landed before §3.
+# Only scripts you wrote belong in the repo, and by convention (2026-09-07)
+# ~/bin holds nothing else: launchers for locally installed tools (Isabelle, the
+# provers) are symlinks in ~/.local/bin pointing into ~/opt/<Tool> or
+# ~/src/<tool>, so nothing in ~/bin ever needs excluding. Review what landed
+# before §3.
 if [ -d "$HOME/bin" ]; then
-  rsync -a --exclude='.git' --exclude='isabelle' --exclude='isabelle_java' \
-        -- "$HOME/bin/" "$CFG/bin/"
+  rsync -a --exclude='.git' -- "$HOME/bin/" "$CFG/bin/"
   mv "$HOME/bin" "$HOME/bin.backup.$ts"
   mkdir -p "$HOME/bin"
-  # Put the excluded launchers back where they belong: outside the repo.
-  for g in isabelle isabelle_java; do
-    [ -f "$HOME/bin.backup.$ts/$g" ] && cp -p "$HOME/bin.backup.$ts/$g" "$HOME/bin/$g"
-  done
-  echo "IMPORTED: ~/bin -> $CFG/bin (installer-generated launchers left untracked)"
+  echo "IMPORTED: ~/bin -> $CFG/bin"
 else
   echo "MISSING: ~/bin (nothing to import)"
 fi
@@ -317,11 +312,12 @@ But honestly, why not just reboot?
   `~/.local/bin` comes *before* `~/bin` on PATH, so if you move a script, delete the
   original rather than leaving a copy behind — the old one would keep winning.
 
-  The same applies to launchers other installers generate: `~/bin/isabelle` and
-  `~/bin/isabelle_java` are written by `isabelle install ~/bin` (which is also what
-  created `~/bin` in the first place). Leave them untracked — that command regenerates
-  them, and because it does `rm -f` on its targets, a tracked file of the same name
-  would get its stow symlink silently replaced, breaking the next `stow -R bin`.
+  Launchers for locally installed tools follow the same rule from the other side:
+  they are symlinks in `~/.local/bin` (on bigfed, `~/.local/bin/isabelle` →
+  `~/opt/Isabelle2025-2/bin/isabelle`), never files in `~/bin`, which holds only what
+  stow puts there. Don't point `isabelle install` at `~/bin`: it does `rm -f` on its
+  targets, so a tracked file of the same name would get its stow symlink silently
+  replaced, breaking the next `stow -R bin`.
 
 - **Adding a new stow package?** Update *both* the `STOW_TARGETS` map and the
   `STOW_ORDER` array in `bash/.bashrc.d/60-stow.sh`, and remember that on the *other*
@@ -339,6 +335,8 @@ But honestly, why not just reboot?
 ## (2) Syncing from Another Machine
 
 It's really as simple as cloning the repo on your Desktop, clearing your dotfiles and emptying your configuration directories in `~/.config`, creating empty directories for your configurations to `stow` to, and creating the symlinks.
+
+One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. Clone `org` before the first commit; until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts.
 
 It's also worth noting, that every time you update `.bashrc` or `.bash_profile`, you should run:
 ```bash

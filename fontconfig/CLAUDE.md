@@ -30,7 +30,16 @@ nothing disappears.
   packages — Latin Modern, Noto, DejaVu, Montserrat, JetBrains Mono, Source
   Code Pro, Cantarell, Font Awesome, STIX and others. Without them each family
   is listed twice and may resolve to the TeX Live copy, which is same-version
-  or older; Fedora's DejaVu is the newer of the two. Note that `texlive-lm` and
+  or older; Fedora's DejaVu is the newer of the two. The premise is that those
+  Fedora packages stay installed: on fedxps `dejavu-sans-fonts` had arrived only
+  as a Thunderbird dependency and left with it on 2026-09-07, leaving no DejaVu
+  at all until it was reinstalled by name — a family in this list must be
+  user-installed (`dnf mark user`), never a dependency. Measured 2026-09-07: the
+  premise already fails for part of several directories on both machines —
+  DejaVu Sans Mono and Serif, Montserrat Alternates, Open Sans Condensed, STIX
+  Math and the RIT set have no other source anywhere, and on fedxps neither do
+  Latin Modern Math and MnSymbol. `TODO.md` item 12 has the family list and
+  the options. Note that `texlive-lm` and
   `mnsymbol` are *Fedora* packages installing to `/usr/share/fonts/` — the
   RPM TeX Live tree at `/usr/share/texlive/` is otherwise inert, since
   kpathsea's search path never mentions it.

@@ -5,12 +5,25 @@ return {
     opts = {
       style = "night", -- <- pick the "night" variant
       on_highlights = function(hl, _)
-        -- Subtle cursorline: the theme's #292e42 (1.27:1 against the bg)
-        -- is loud enough to distort colour judgements of the LaTeX
-        -- highlight scheme (2026-08-28).  1.08:1 is a whisper — present
-        -- when sought, invisible when reading.  Dials: #212439 (1.12:1)
-        -- for a bit more, #1d1e2c (1.04:1) for barely-there.
-        hl.CursorLine = { bg = "#1f2132" }
+-- Cursorline settled 2026-09-07.  The theme's #292e42 bar (1.27:1
+        -- against the bg #1a1b26) distorted colour judgements of the LaTeX
+        -- highlight scheme (2026-08-28); a 1.08:1 whisper replaced it, then
+        -- darker-than-bg beat lighter, then no bar at all beat both.  The
+        -- bar is off in config/options.lua; this value survives because it
+        -- still paints the *unfocused* snacks picker list (list.lua:544)
+        -- and is the settled value should the bar ever come back.
+        -- Darker dials: #16161e (1.05:1), #0f1019 (1.12:1).
+        hl.CursorLine = { bg = "#121320" }
+
+        -- CursorLineNr is the surviving cue: with cursorlineopt = "number"
+        -- it marks the current line without a bar.  The theme's bold
+        -- #ff9e64 is 4.83:1 against LineNr (#3b4261) plus a hue shift —
+        -- too poppy for a feature used deliberately, not scanned for.
+        -- #737aa2 (dark5) is 2.35:1: a clear step out of the gutter family
+        -- without leaving it.  Dials, all vs LineNr: #a9b1d6 (4.65:1, as
+        -- findable as the orange but by brightness alone), #565f89
+        -- (comment, 1.59:1), #545c7e (dark3, 1.50:1).
+        hl.CursorLineNr = { fg = "#737aa2", bold = false }
       end,
     },
   },

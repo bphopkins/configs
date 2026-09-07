@@ -36,7 +36,7 @@ top.
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]`
   items from markdown files.
 - `80-clamav.sh` — `clam {update,home,full}` (logs to `~/clam-scan-*.log`;
-  requires `clamav` + `clamav-update`). Its PUA detection flags benign
+  requires `clamav` + `clamav-freshclam`). Its PUA detection flags benign
   browser/dev content — read hits skeptically.
 - `85-disk.sh` — `disk-check` / `disk-fix`. See "Disk maintenance pair" below.
 - `90-nix.sh` — nix profile loader, guarded on nix being installed.

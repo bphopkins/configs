@@ -6,7 +6,7 @@
 #   clam full      Sudo system scan from /; log to ~/clam-scan-full-<ts>.log.
 #                  Excludes /sys, /proc, /dev, /run, /var/lib/clamav. Hours-long.
 #
-# Setup (one-time): sudo dnf install -y clamav clamav-update
+# Setup (one-time): sudo dnf install -y clamav clamav-freshclam
 
 clam() {
   local cmd="$1"
@@ -42,7 +42,7 @@ Usage:
                  Excludes virtual filesystems and the signature DB itself.
                  Expect 1-3 hours.
 
-Setup once: sudo dnf install -y clamav clamav-update
+Setup once: sudo dnf install -y clamav clamav-freshclam
 Run `clam update` before scanning if signatures may be stale.
 EOF
       ;;

@@ -1,0 +1,11 @@
+# Claude Code, machine-local. See ~/Desktop/org/claude-config/README.md.
+#
+# settings.local.json is a per-repo permission cache. It is symlinked into
+# org/claude-config by `claude-link`, so it must never be committed to the repo
+# it sits in -- several of which are public.
+**/.claude/settings.local.json
+
+# A superseded memory location. Claude wrote memories to <repo>/.claude/projects/
+# in early 2026 (Carnap/ still has a set from 2026-03-30). Nothing stops it
+# happening again, and in a public repo `git add -A` would publish them.
+**/.claude/projects/

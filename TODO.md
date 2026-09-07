@@ -193,6 +193,47 @@ right direction: an unrecognised directory yields a spurious hint at worst,
 never a missing one. Run `tests/gsync/run-all.sh` after.
 
 
+## 12. The fontconfig duplicate-rejection over-rejects
+
+Found 2026-09-07 in the home-directory audit, after `dejavu-sans-fonts` left
+fedxps as a Thunderbird dependency and took the only visible DejaVu Sans with
+it. `fontconfig/conf.d/09-texlive-fonts.conf` block (1) rejects whole TeX Live
+directories on the premise that Fedora packages the same families. Measured at
+the family level on both machines (`fc-scan` of each rejected directory, then
+`fc-list ":family=…"` for every family it yields), the premise fails for part
+of several directories:
+
+- **Invisible on both machines:** DejaVu Sans Mono and DejaVu Serif (Fedora
+  splits DejaVu into three packages and only `dejavu-sans-fonts` is installed),
+  Montserrat Alternates, Open Sans Condensed and Condensed Light, STIX Math
+  (the `stix` directory is STIX 1; Fedora's `stix-fonts` is STIX Two), and
+  fifteen RIT Malayalam families (Fedora has only Meera New and Rachana).
+- **Invisible on fedxps only:** Latin Modern Math and MnSymbol (bigfed has the
+  `texlive-lm-math` and `texlive-mnsymbol` rpms; fedxps has Latin Modern
+  *text* from a user font dir, `~/.local/share/fonts/latinmodern`, and nothing
+  for math), Courier 10 Pitch, and FontAwesome 4 (bigfed has
+  `fontawesome4-fonts`).
+
+Three ways out, not decided:
+
+1. **Narrow the globs to the files whose families Fedora provides** — reject
+   `DejaVuSans*.ttf` but not Mono/Serif, `Montserrat-*` but not the Alternates,
+   and drop `stix`, `courierten` and `rit-fonts` from the list. Keeps the
+   package machine-independent; the snapshot needs re-measuring after each TeX
+   Live release.
+2. **Install the Fedora packages the premise assumes, on both machines** —
+   `dejavu-sans-mono-fonts`, `dejavu-serif-fonts`, `texlive-lm-math`,
+   `texlive-mnsymbol`, each `dnf mark user`. Makes the premise true and settles
+   the Latin Modern two-mechanisms question in the rpm direction (the user font
+   dir on fedxps then goes). STIX 1, Open Sans Condensed, Montserrat Alternates
+   and the RIT set have no Fedora package, so those globs still need option 1.
+3. **Accept** the missing families as unused. DejaVu Sans Mono argues against
+   this: it is a common monospace fallback.
+
+The measurement is one loop; rerun it on both machines before and after any
+change, and after each TeX Live release. Cross-listed in
+`org/machines/machines.md` under the Latin Modern item.
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,

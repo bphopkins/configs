@@ -1,14 +1,15 @@
 # CLAUDE.md — bin package
 
 Charter for `bin/`, stowed to `~/bin` (on PATH via `20-path.sh`). This is the
-home for homegrown executables; **pip/npm-installed console scripts stay in
-`~/.local/bin`** — their package managers rewrite them on upgrade. `~/bin`
-also holds untracked files that belong to no repo: `isabelle` /
-`isabelle_java` are written by `isabelle install ~/bin`, hardcode the release
-path, and are correctly machine-local — leave them untracked. The trap runs
-the other way too: `isabelle install` does `rm -f` on its targets, so a
-same-named *tracked* file would have its stow symlink silently replaced, and
-the next `stow -R bin` would fail with a conflict.
+home for homegrown executables, and since 2026-09-07 `~/bin` holds nothing
+else: **pip/npm-installed console scripts stay in `~/.local/bin`** — their
+package managers rewrite them on upgrade — and launchers for locally installed
+tools (Isabelle, the provers) are symlinks in `~/.local/bin` as well, pointing
+into `~/opt/<Tool>` or `~/src/<tool>` (the tool-homes convention; inventory in
+`org/machines/bigfed/provers-2026-06/`). Never point `isabelle install` at
+`~/bin`: it does `rm -f` on its targets, so a same-named *tracked* file would
+have its stow symlink silently replaced, and the next `stow -R bin` would fail
+with a conflict.
 
 ## Inventory
 

@@ -605,3 +605,42 @@ memory limit still would not follow.
 
 Full context: `docs/ghostty-vs-wezterm-2026-09-03.md`, Addendum 1 "Open" and
 Addendum 2.
+
+## git package, and `~/bin` becomes stow-only — 2026-09-07
+
+Opened and closed the same day, inside the home-directory audit recorded at
+`org/machines/home-audit-2026-09-07/`.
+
+**The problem.** `~/.gitconfig` was the one shell-level dotfile not managed
+here, and the two machines had drifted: fedxps rewrote `https://github.com/`
+to SSH, bigfed carried only an obsolete `git://` → https rewrite. Git reads both
+the XDG file `~/.config/git/config` and the legacy `~/.gitconfig`, and the
+legacy one wins on conflicts — having both is what made the state confusing.
+
+**Decision.** One home, `~/.config/git/`, stowed from the new `git` package:
+`config` (the SSH rewrite, `user.useConfigOnly = true`, an `[include]` of
+`~/Desktop/org/claude-config/git/identity`) and `ignore` (the two Claude
+patterns, commented). Identity lives in that private include so no public file
+carries the address. `~/.gitconfig` is deleted on both machines.
+
+**Measured before deciding.** A missing include is ignored silently by git, and
+with `useConfigOnly` that silence becomes a refusal to commit. `git config
+--global` writes *through* the stow symlink into the repo copy — the symlink
+survives — so a setting made that way would be published by the next
+`gpushall` (now a root-charter pitfall).
+
+**Declined.** Stowing `.gitconfig` itself at `~` (keeps the legacy file that
+outranks the XDG one and invites a second file); per-machine identity files
+(two hand-kept copies, the drift that started this); aligning by hand with no
+package (nothing enforces it).
+
+**The other-machine step.** After the pull: `reload && rm ~/.gitconfig
+~/.config/git/ignore && stow-all` — the real `ignore` file conflicts with the
+package, and the legacy file must go or it keeps winning.
+
+**Same day, same audit.** `~/bin` is stow-only: the hand-made launchers that
+had accumulated beside the stow links (thirteen on bigfed, two on fedxps) moved
+to `~/.local/bin` as symlinks under a tool-homes convention (`~/opt/<Tool>`,
+`~/src/<tool>`); `bin/CLAUDE.md` and README §2 and §8 say so. And
+`80-clamav.sh`'s setup line now names Fedora 44's `clamav-freshclam`; bigfed,
+which had no clamav at all, was given it.

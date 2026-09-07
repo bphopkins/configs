@@ -1,0 +1,27 @@
+# Git global configuration, stowed to ~/.config/git/config (the XDG location).
+# There is deliberately no ~/.gitconfig on either machine: git reads both files
+# and the legacy one wins on conflicts, which is how the two machines drifted
+# apart before 2026-09-07. Everything git-global lives in ~/.config/git/.
+#
+# Identity is NOT here. This repo is public, so [user] name and email live in a
+# private include (bottom). Never set them with `git config --global`: that
+# command writes straight through the stow symlink into this file (measured
+# 2026-09-07), and the next gpushall would publish whatever it set. Edit this
+# file in the repo instead.
+
+[user]
+	# Refuse to guess an author from the login name and hostname. If the
+	# private identity include is absent, commits fail with a clear message
+	# instead of going out as bph@<host>.(none). (Git documents this option;
+	# the refusal itself was not exercised here.)
+	useConfigOnly = true
+
+[url "git@github.com:"]
+	# Every https GitHub URL becomes SSH, so a URL pasted from a browser clones
+	# and pushes over the key without editing the remote afterwards.
+	insteadOf = https://github.com/
+
+[include]
+	# Private and synced: [user] name and email. Git ignores a missing include
+	# silently; useConfigOnly above turns that silence into a refusal.
+	path = ~/Desktop/org/claude-config/git/identity
