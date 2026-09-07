@@ -24,6 +24,34 @@ the next `stow -R bin` would fail with a conflict.
   `bph_autosave`, sets `nomodifiable`, parks the cursor on a `\command`
   already in the text. Why the cost exists: `nvim/CLAUDE.md` → the
   cold-cache stall.
+- `tabula` — opens GNOME Text Editor in a randomly chosen monospace font,
+  bound to `<Super>x` in place of `gnome-text-editor --new-window`. The point
+  is exposure: the scratchpad is low-stakes enough to wear an unfamiliar face,
+  which the terminal is not. Two things to know before editing it. The font is
+  one GSettings key (`org.gnome.TextEditor custom-font`), which is
+  application-global and so re-fonts every open window, not just the new one;
+  and `use-system-font` must be false or the key is ignored in silence, which
+  is why the script sets it defensively every run. The rotation is a plain
+  table at the top — comment a line out to prune it, which is the intended way
+  to converge. Sizes are a flat 12; two normalisations were tried and dropped,
+  and the header records why. The *binding* is per-machine and outside this
+  repo: a dconf shortcut on bigfed, `bindsym $mod+x` in `sway/config` on
+  fedxps.
+
+- `screens-off` — locks the session and powers the displays down immediately,
+  bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never suspends:
+  it must answer SSH over the LAN and the tailnet whenever it is left alone, so
+  the displays are the only thing that may turn off, and this reaches that state
+  on the way out of the chair instead of 15 minutes later. Wayland has no
+  `xset dpms force off`; the lever is Mutter's readwrite `PowerSaveMode`
+  property (3 = off), and Mutter resets it to 0 on the next input event — which
+  is what makes a keypress wake the screens, and why the lock happens first.
+  Two provisions make it work over SSH from fedxps as well as locally: it
+  defaults `DBUS_SESSION_BUS_ADDRESS`, and it locks an explicitly looked-up
+  graphical session, since bare `loginctl lock-session` would lock the SSH
+  session instead. GNOME only. As with `tabula`, the *binding* is per-machine
+  dconf and outside this repo; the placement follows `sway/config`'s law, a
+  session op at `$mod+Ctrl+letter`, beside `$mod+Ctrl+l` for lock.
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC

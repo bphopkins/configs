@@ -65,17 +65,50 @@
 #
 # `font-style-*` is consulted only when the matching `font-family-*` is also
 # set, which is why the family is repeated on every line.
+#
+# `font-family` is a LIST, not a scalar. A second entry is a fallback consulted
+# for codepoints the first lacks, and a repeated key appends rather than
+# replaces — which is also why `--font-family=X` on the command line adds a
+# fallback instead of overriding, unless an empty `--font-family=` clears the
+# list first. Confirmed 2026-09-06.
+#
+# JuliaMono is the fallback because Source Code Pro lacks 13 of the 51 logic
+# symbols this work uses: ∧ ∨ ◇ ⊢ ⊨ ⊤ ⊥ ∈ ⊆ ∪ ∅ ⟹ ⟶. Note ◇ absent while □ is
+# present, so necessity and possibility were being drawn by different fonts.
+# JuliaMono covers 51/51 and Greek 33/33, at a 0.6em advance identical to
+# Source Code Pro's, so substitutes land on the cell grid. Left to fontconfig
+# these scattered across JetBrains Mono, Adwaita Mono and FreeMono.
+#
+# It is repeated on all four lists deliberately: measured 2026-09-06, a
+# fallback given only to `font-family` does NOT reach bold or italic, which
+# revert to fontconfig's own pick. Check with `+show-face --style=bold
+# --cp=0x22A2`.
+#
+# JuliaMono is TeX Live's and has no Fedora package, so it rides on the year
+# pin in fontconfig/conf.d/09-texlive-fonts.conf. If that goes stale the
+# fallback vanishes silently and the scatter returns; `tl-newyear switch`
+# checks the pin.
+#
 font-family = Source Code Pro
+font-family = JuliaMono
 font-style = Regular
 font-family-bold = Source Code Pro
+font-family-bold = JuliaMono
 font-style-bold = Bold
 font-family-italic = Source Code Pro
+font-family-italic = JuliaMono
 font-style-italic = Italic
 font-family-bold-italic = Source Code Pro
+font-family-bold-italic = JuliaMono
 font-style-bold-italic = Bold Italic
 
 # Points, as in WezTerm, and 12 is also Ghostty's own default. Held explicit so
 # the comparison does not rest on two defaults happening to agree.
+#
+# Declined 2026-09-06, tried in use: normalising size per font by x-height.
+# JuliaMono's is 6.60 against Source Code Pro's 5.76, which put it at 10.6, and
+# that read as plainly too small — the x-heights matched, but the advance
+# narrowed 12%, so the text got denser rather than equal. 12, whatever the face.
 font-size = 12
 
 # NO COUNTERPART (1/2) — faint text.

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# screens-off — lock the session and power down the displays, now.
+#
+# Bound to <Super><Ctrl>b on bigfed by a GNOME custom shortcut. That is the
+# session-op tier, one letter over from lock: sway/config's placement law
+# files a session op at $mod+Ctrl+letter, and this is $mod+Ctrl+l plus one
+# further step. The Escape family was considered and is wrong for it — Escape
+# means LEAVING, graded by weight, and both of its rungs are terminal and sit
+# behind a confirmation nag. On bigfed both Escape chords are taken anyway, by
+# Mutter's restore-shortcuts and cancel-input-capture. As with tabula, the
+# *binding* is per-machine dconf and lives outside this repo.
+#
+# WHY IT EXISTS. bigfed must stay reachable over SSH — LAN and tailnet alike —
+# whenever it is left alone, so it never suspends: `sleep-inactive-ac-type` is
+# 'nothing' and the power button is inert. No sleep state can serve sshd (S3
+# unpowers the NIC; s2idle freezes userspace), so the displays are the only
+# thing that may turn off. GNOME reaches that state on its own after
+# `idle-delay`, 15 min. This reaches the same state deliberately, on the way
+# out of the chair.
+#
+# HOW IT WORKS. Wayland has no `xset dpms force off`. Mutter exposes the DPMS
+# level as a readwrite D-Bus property — org.gnome.Mutter.DisplayConfig
+# PowerSaveMode, 0 on / 1 standby / 2 suspend / 3 off. Setting 3 is a real
+# monitor power-down, not a black screen.
+#
+# Mutter restores the property to 0 on the next input event. That is precisely
+# what lets a Bluetooth keypress light the screens again, and it is also why
+# the lock comes first: the key release from the chord itself can re-light
+# them, and it should land on the lock screen rather than on the desktop.
+#
+# It works over SSH as well as locally, so the screens can be blanked from
+# fedxps if they were left lit. Two things are needed for that and both are
+# below: the session bus address, which a non-graphical login does not carry,
+# and an explicit session id for the lock — bare `loginctl lock-session` locks
+# the *calling* session, which over SSH is the wrong one.
+#
+# GNOME only, which includes fedxps: it runs GNOME on Wayland, and sway is a
+# session it can be logged into rather than the one it uses. Under sway the
+# levers are different (`swaymsg 'output * power off'`, `swaylock -f`) and idle
+# blanking is a standing decline there (sway/CLAUDE.md).
+#
+# ⚠ Running this on fedxps blanks and locks, but does not leave it reachable
+# the way bigfed is. fedxps is a laptop configured to suspend, and the
+# reachable-while-dark state comes from `sleep-inactive-ac-type` being
+# 'nothing' underneath the blank.
+
+set -euo pipefail
+
+: "${DBUS_SESSION_BUS_ADDRESS:=unix:path=/run/user/$(id -u)/bus}"
+export DBUS_SESSION_BUS_ADDRESS
+
+die() { printf 'screens-off: %s\n' "$1" >&2; exit 1; }
+
+# The graphical session, found by type rather than by $XDG_SESSION_ID, which
+# is absent over SSH and in a service-spawned shell.
+graphical_session() {
+  local s
+  while read -r s _; do
+    case "$(loginctl show-session "$s" -p Type --value 2>/dev/null)" in
+      wayland|x11) printf '%s\n' "$s"; return 0 ;;
+    esac
+  done < <(loginctl list-sessions --no-legend)
+  return 1
+}
+
+# Check the compositor is reachable BEFORE locking, so a non-GNOME session
+# fails outright instead of locking and then failing to blank.
+gdbus introspect --session --dest org.gnome.Mutter.DisplayConfig \
+  --object-path /org/gnome/Mutter/DisplayConfig >/dev/null 2>&1 \
+  || die "org.gnome.Mutter.DisplayConfig is not on the session bus"
+
+session=$(graphical_session) || die "no graphical session found"
+
+loginctl lock-session "$session"
+gdbus call --session --dest org.gnome.Mutter.DisplayConfig \
+  --object-path /org/gnome/Mutter/DisplayConfig \
+  --method org.freedesktop.DBus.Properties.Set \
+  org.gnome.Mutter.DisplayConfig PowerSaveMode '<3>' >/dev/null

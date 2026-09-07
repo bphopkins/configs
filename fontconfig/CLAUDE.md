@@ -2,7 +2,7 @@
 
 Charter for `fontconfig/conf.d/09-texlive-fonts.conf`, stowed to
 `~/.config/fontconfig`. Its one job is to make TeX Live's font tree visible to
-GUI applications: 212 families before, 1,309 after.
+GUI applications: 212 families before, 1,398 after.
 
 - **Nothing is copied.** fontconfig reads the fonts where TeX Live already put
   them, under `/usr/local/texlive/2026/texmf-dist/fonts/`. There is no second
@@ -26,7 +26,7 @@ Both are snapshots of what TeX Live 2026 ships. Staleness after an update is
 benign in one direction only: new fonts appear unfiltered, nothing breaks and
 nothing disappears.
 
-- **Duplicates (22 globs)** suppress TeX Live's copies of families Fedora also
+- **Duplicates (25 globs)** suppress TeX Live's copies of families Fedora also
   packages — Latin Modern, Noto, DejaVu, Montserrat, JetBrains Mono, Source
   Code Pro, Cantarell, Font Awesome, STIX and others. Without them each family
   is listed twice and may resolve to the TeX Live copy, which is same-version
@@ -44,14 +44,36 @@ nothing disappears.
 ## Verifying
 
 ```bash
-fc-list : family | tr ',' '\n' | sed 's/^ *//' | sort -u | wc -l   # 1309
-fc-match -f '%{file}\n' "Latin Modern Roman"   # must be /usr/share/fonts/lm/...
+# LC_ALL=C is load-bearing: under en_US collation `sort -u` merges families
+# that differ only in case or accent, undercounting by ~14.
+fc-list : family | tr ',' '\n' | sed 's/^ *//' | LC_ALL=C sort -u | wc -l
+fc-list --format '%{file}\n' | grep -c '^/usr/local/texlive'   # 2317
 for g in serif sans-serif monospace system-ui emoji cursive fantasy; do
   fc-match -f "$g -> %{family}\n" "$g"; done   # must be unchanged by this file
 ```
 
+The total family count is **not** comparable between machines — it includes
+system fonts, and the two differ there (fedxps has LyX's TeX bitmap TTFs and a
+hand-placed Latin Modern in `~/.local/share/fonts`; bigfed has the `texlive-lm`
+and `jetbrains-mono-fonts` RPMs). Compare **2,317 faces under
+`/usr/local/texlive`** instead: that is what this file controls. The two
+machines agree on it only once both carry the same globs — on 2026-09-06 they
+read 2,351 apiece, then bigfed dropped to 2,317 when the Anonymous Pro,
+Atkinson Mono and IBM Plex Mono globs were added, and fedxps followed on its
+next sync. A one-sided figure means the config has not travelled yet.
+
 The generic aliases are the thing to watch: adding ~2,900 fonts must not move
-`serif`, `sans-serif` or `monospace`. Run `fc-cache -f` after any edit.
+`serif`, `sans-serif` or `monospace`.
+
+`fc-cache -f` is **not** the follow-up to an edit here, despite the reflex.
+`selectfont` rules are applied when an application loads fontconfig, not baked
+into the directory cache: measured 2026-09-06, adding a `rejectfont` glob took
+a sandbox from 28 faces to 14 with the cache untouched, and running `fc-cache`
+afterwards changed nothing. The cache is about font *files* — so it matters
+when the pinned `<dir>` moves under `tl-newyear`, or when fonts are installed
+or removed, and not otherwise. What a rule edit does need is the applications
+restarted, since each reads fontconfig only at startup; a GUI still listing a
+family twice after a pull has simply not been reopened.
 
 ## Not covered
 

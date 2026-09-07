@@ -40,7 +40,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 |---|---|---|
 | bash | `~` | module detail, git-sync guardrails + suite, reboot verdict, disk pair, the stow guard |
 | wezterm | `~` | *(no charter — the config file carries its own: pinned font faces, and the two measured latency/throughput settings)* |
-| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap)* |
+| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap, the JuliaMono fallback and `font-family`-as-a-list)* |
 | alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
@@ -128,10 +128,13 @@ reboot-verdict contract, the disk pair, the suites — is in `bash/CLAUDE.md`.
 
 TokyoNight "night" theme across Neovim, WezTerm, Ghostty, and Waybar. Source
 Code Pro 12pt font in three of the four terminals (WezTerm, Ghostty,
-Alacritty). Alacritty carries font settings only — no colorscheme, so it falls
-back to its own default palette. Ghostty is a deliberate transcription of the
-WezTerm config, added 2026-09-03 to make the two comparable like for like; its
-own comments carry the places where they cannot be made to agree.
+Alacritty). Ghostty additionally carries JuliaMono as a fallback behind it, for
+the logic and Greek that Source Code Pro does not draw — the font *list* is the
+mechanism, and its own config explains it. Alacritty carries font settings only
+— no colorscheme, so it falls back to its own default palette. Ghostty is a
+deliberate transcription of the WezTerm config, added 2026-09-03 to make the
+two comparable like for like; its own comments carry the places where they
+cannot be made to agree.
 The desktop's single urgent colour (`#d08770`) spans four configs in four
 languages — see `sway/CLAUDE.md` before changing it.
 

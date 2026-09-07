@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# tabula — open GNOME Text Editor in a randomly chosen monospace font.
+#
+# Bound to <Super>x by a GNOME custom shortcut, replacing the bare
+# `gnome-text-editor --new-window`. The point is exposure: the scratchpad is
+# low-stakes enough to wear an unfamiliar face without it costing anything,
+# which the terminal is not. Prune the table below as faces disqualify
+# themselves; what survives is what you can live in.
+#
+# HOW IT WORKS. Text Editor's font is one GSettings key, `custom-font`, holding
+# a Pango description ("Family 12"). This sets it and launches. There is no
+# per-window font: GSettings is application-global and Text Editor is
+# single-instance, so a new window re-fonts every window already open. That is
+# understood and accepted, not a bug.
+#
+# `use-system-font` must be false or `custom-font` is ignored entirely and this
+# script silently does nothing. It is set defensively on every run for that
+# reason.
+#
+# SIZES are a flat 12pt, deliberately.
+#
+# Two normalisations were tried and dropped, 2026-09-06. By x-height put
+# JuliaMono at 10.6, which read as plainly too small in use — the x-heights
+# matched but the advance narrowed 12%, so the text merely got denser. By
+# advance width it sat at 12.0, and 16 of the 24 faces landed on a flat 12
+# anyway, so the apparatus bought almost nothing. A trial should show a face at
+# the size you would actually adopt it at, and that size is 12.
+#
+# One consequence worth knowing: Inconsolata and Ligconsolata are 0.500em
+# against Source Code Pro's 0.600em, so at 12 their cells run ~17% narrower and
+# the text is correspondingly denser — a larger version of the effect that made
+# JuliaMono at 10.6 feel small. If either reads as cramped, that is the metric
+# and not the drawing; 14.4 puts it back on the same grid.
+#
+#   tabula                      open a scratchpad in a random font
+#   tabula --which              print the font currently set, without launching
+#   tabula --list               print the rotation
+#   TABULA_FONT="Fira Mono 12" tabula      pin one launch, no roll
+#
+# Adding a face: confirm the family name resolves to itself first, because
+# fc-match never fails, it substitutes silently —
+#   fc-match -f '%{family}\n' "Some Family:style=Regular"
+
+set -euo pipefail
+
+# --- the table --------------------------------------------------------------
+# Family|size. Comment out a line to drop it from the rotation; that is the
+# intended way to prune. Every entry was verified to resolve to itself on
+# 2026-09-06, and all are installed system-wide except JuliaMono and
+# Inconsolata LGC, which come from TeX Live and so depend on the year pin in
+# fontconfig/conf.d/09-texlive-fonts.conf.
+FONTS=(
+  # The seven installed 2026-09-06 for this trial.
+  "Source Code Pro|12"                # the incumbent, and the baseline
+  "Atkinson Hyperlegible Mono|12"     # legibility-first; only 359 glyphs
+  "IBM Plex Mono|12"
+  "Cousine|12"
+  "Anonymous Pro|12"
+  "Inconsolata|12"                    # no italic; Pango synthesises one
+  "Overpass Mono|12"                  # no italic; likewise
+
+  # Turned up while solving the terminal fallback problem.
+  "JuliaMono|12"                      # 51/51 logic symbols, 11k glyphs
+  "Inconsolata LGC Nerd Font|12"      # Inconsolata with a real drawn italic
+
+  # Already installed, and worth the exposure.
+  "JetBrains Mono|12"
+  "Cascadia Code|12"
+  "Fira Mono|12"
+  "Adwaita Mono|12"
+  "Liberation Mono|12"
+  "Go Mono|12"
+  "PT Mono|12"
+  "Droid Sans Mono|12"
+  "Libertinus Mono|12"                # a serif monospace; unusual, legible
+  "Ligconsolata|12"                   # Inconsolata plus coding ligatures
+
+  # GitHub's Monaspace superfamily — five deliberately different personalities
+  # at identical metrics, which makes them unusually good for this exercise.
+  "Monaspace Neon|12"                 # neo-grotesque
+  "Monaspace Argon|12"                # humanist
+  "Monaspace Xenon|12"                # slab serif
+  "Monaspace Radon|12"                # handwriting
+  "Monaspace Krypton|12"              # mechanical
+)
+# ----------------------------------------------------------------------------
+
+SCHEMA=org.gnome.TextEditor
+
+case "${1:-}" in
+  --which) gsettings get "$SCHEMA" custom-font; exit 0 ;;
+  --list)  printf '%s\n' "${FONTS[@]}" | tr '|' ' '; exit 0 ;;
+esac
+
+if [[ -n "${TABULA_FONT:-}" ]]; then
+  font=$TABULA_FONT
+else
+  entry=${FONTS[RANDOM % ${#FONTS[@]}]}
+  font="${entry%%|*} ${entry##*|}"
+fi
+
+gsettings set "$SCHEMA" use-system-font false
+gsettings set "$SCHEMA" custom-font "$font"
+
+exec gnome-text-editor --new-window "$@"
