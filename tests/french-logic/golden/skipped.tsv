@@ -1,0 +1,218 @@
+member	mode	error
+\A	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\C	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Cl	text	! Missing $ inserted.
+\F	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FN	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FNo	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FNt	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FR	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FRo	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FRt	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Lc	text	! LaTeX Error: \mathscr allowed only in math mode.
+\M	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MN	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MNo	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MNt	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MRel	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Mlog	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Mlr	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Mne	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Mnw	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Mse	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Msig	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\Msw	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\R	text	! LaTeX Error: \mathcal allowed only in math mode.
+\Rlog	text	! Missing $ inserted.
+\Rsig	text	! Missing $ inserted.
+\Vlog	text	! Missing $ inserted.
+\Vsig	text	! Missing $ inserted.
+\Wlog	text	! Missing $ inserted.
+\Wsig	text	! Missing $ inserted.
+\Yright	text	! Missing $ inserted.
+\af	text	! Missing $ inserted.
+\aff	text	! Missing $ inserted.
+\affirm	text	! Missing $ inserted.
+\afland	text	! Missing $ inserted.
+\aflor	text	! Missing $ inserted.
+\afneg	text	! Missing $ inserted.
+\afto	text	! Missing $ inserted.
+\asserts	text	! Missing $ inserted.
+\believe	text	! LaTeX Error: \mathsf allowed only in math mode.
+\believes	text	! LaTeX Error: \mathsf allowed only in math mode.
+\better	text	! LaTeX Error: \mathsf allowed only in math mode.
+\bisim	text	! Missing $ inserted.
+\botg	text	! Missing $ inserted.
+\bott	text	! Missing $ inserted.
+\cbelieve	text	! LaTeX Error: \mathsf allowed only in math mode.
+\cbelieves	text	! LaTeX Error: \mathsf allowed only in math mode.
+\ccred	text	! Missing $ inserted.
+\cfact	text	! Missing $ inserted.
+\choicema	text	! Missing $ inserted.
+\cknow	text	! LaTeX Error: \mathsf allowed only in math mode.
+\cknows	text	! LaTeX Error: \mathsf allowed only in math mode.
+\clor	text	! Missing $ inserted.
+\close	math	! Missing $ inserted.
+\cnecs	text	! Missing $ inserted.
+\cnecsolo	text	! Missing $ inserted.
+\cobs	text	! Missing $ inserted.
+\cobsolo	text	! Missing $ inserted.
+\condop	text	! Missing $ inserted.
+\condopsolo	text	! Missing $ inserted.
+\cought	text	! LaTeX Error: \mathsf allowed only in math mode.
+\cperms	text	! Missing $ inserted.
+\cposs	text	! Missing $ inserted.
+\cpossolo	text	! Missing $ inserted.
+\cprob	text	! Missing $ inserted.
+\cstit	text	! Missing $ inserted.
+\cto	text	! Missing $ inserted.
+\ctruthsetm	text	! Missing $ inserted.
+\ctruthsetml	text	! Missing $ inserted.
+\ctruthsetmm	text	! Missing $ inserted.
+\ctruthsetmsub	text	! Missing $ inserted.
+\de	text	! Missing $ inserted.
+\defby	text	! Missing $ inserted.
+\defbyvar	text	! Missing $ inserted.
+\deland	text	! Missing $ inserted.
+\delor	text	! Missing $ inserted.
+\den	text	! Missing $ inserted.
+\deneg	text	! Missing $ inserted.
+\deny	text	! Missing $ inserted.
+\derives	text	! Missing $ inserted.
+\derivi	text	! Missing $ inserted.
+\deto	text	! Missing $ inserted.
+\dstit	text	! Missing $ inserted.
+\eclassl	text	! Missing $ inserted.
+\ecu	text	! Missing $ inserted.
+\emptyset	text	! Missing $ inserted.
+\emptytruthset	text	! Missing $ inserted.
+\ent	text	! Missing $ inserted.
+\eruledj	math	! Missing $ inserted.
+\erulej	math	! Missing $ inserted.
+\fd	text	! Missing $ inserted.
+\filter	text	! Missing $ inserted.
+\flog	text	! Missing $ inserted.
+\flr	text	! Missing $ inserted.
+\fm	text	! Missing $ inserted.
+\fn	text	! Missing $ inserted.
+\fne	text	! Missing $ inserted.
+\fnof	text	! Missing $ inserted.
+\fnw	text	! Missing $ inserted.
+\forbidden	text	! LaTeX Error: \mathsf allowed only in math mode.
+\fr	text	! Missing $ inserted.
+\fs	text	! Missing $ inserted.
+\fse	text	! Missing $ inserted.
+\fsof	text	! Missing $ inserted.
+\fsub	text	! Missing $ inserted.
+\fsw	text	! Missing $ inserted.
+\gives	text	! Missing $ inserted.
+\gratuitous	text	! LaTeX Error: \mathsf allowed only in math mode.
+\henceforth	text	! LaTeX Error: \mathsf allowed only in math mode.
+\hitherto	text	! LaTeX Error: \mathsf allowed only in math mode.
+\hk	text	! Missing $ inserted.
+\iff	text	! Missing $ inserted.
+\ilor	text	! Missing $ inserted.
+\inclin	text	! Missing $ inserted.
+\incomp	text	! Missing $ inserted.
+\intersect	text	! Missing $ inserted.
+\iruledj	math	! Missing $ inserted.
+\irulej	math	! Missing $ inserted.
+\ito	text	! Missing $ inserted.
+\know	text	! LaTeX Error: \mathsf allowed only in math mode.
+\knows	text	! LaTeX Error: \mathsf allowed only in math mode.
+\logic	text	! LaTeX Error: \mathcal allowed only in math mode.
+\logicp	text	! LaTeX Error: \mathcal allowed only in math mode.
+\manrule	math	! Missing $ inserted.
+\may	text	! LaTeX Error: \mathsf allowed only in math mode.
+\mcseti	text	! Missing $ inserted.
+\mcslog	text	! Missing $ inserted.
+\minus	text	! Missing $ inserted.
+\mland	text	! Missing $ inserted.
+\mlandsolo	text	! Missing $ inserted.
+\mlexists	text	! Missing $ inserted.
+\mlexistssolo	text	! Missing $ inserted.
+\mlforall	text	! Missing $ inserted.
+\mlforallsolo	text	! Missing $ inserted.
+\mlnot	text	! Missing $ inserted.
+\mlnotsolo	text	! Missing $ inserted.
+\mlor	text	! Missing $ inserted.
+\mlorsolo	text	! Missing $ inserted.
+\mlto	text	! Missing $ inserted.
+\mltosolo	text	! Missing $ inserted.
+\mmodels	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mnmodels	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mntruesat	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\models	text	! Missing $ inserted.
+\modelsrel	text	! Missing $ inserted.
+\mtruesat	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mwnp	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mwnv	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mwrp	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\mwrv	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\natent	text	! Missing $ inserted.
+\nec	text	! Missing $ inserted.
+\neced	text	! Missing $ inserted.
+\necessitates	text	! Missing $ inserted.
+\negedrule	math	! Missing $ inserted.
+\negidrule	math	! Missing $ inserted.
+\negiprule	math	! Missing $ inserted.
+\negipstarrule	math	! Missing $ inserted.
+\nmodels	text	! Missing $ inserted.
+\nnatent	text	! Missing $ inserted.
+\nproves	text	! Missing $ inserted.
+\ntrues	text	! Missing $ inserted.
+\obligatory	text	! LaTeX Error: \mathsf allowed only in math mode.
+\onlyif	text	! Missing $ inserted.
+\optional	text	! LaTeX Error: \mathsf allowed only in math mode.
+\oputi	text	! Missing $ inserted.
+\oset	text	! Missing $ inserted.
+\ought	text	! LaTeX Error: \mathsf allowed only in math mode.
+\pcite	math	! You can't use `\spacefactor' in math mode.
+\permissible	text	! LaTeX Error: \mathsf allowed only in math mode.
+\pone	text	! Missing $ inserted.
+\poss	text	! Missing $ inserted.
+\possed	text	! Missing $ inserted.
+\power	text	! Missing $ inserted.
+\precedes	text	! Missing $ inserted.
+\proofsetl	text	! Missing $ inserted.
+\props	text	! LaTeX Error: \mathcal allowed only in math mode.
+\proves	text	! Missing $ inserted.
+\provesc	text	! Missing $ inserted.
+\provesio	text	! Missing $ inserted.
+\provesm	text	! Missing $ inserted.
+\provesrel	text	! Missing $ inserted.
+\provestf	text	! Missing $ inserted.
+\pthree	text	! Missing $ inserted.
+\ptwo	text	! Missing $ inserted.
+\pzero	text	! Missing $ inserted.
+\qedsymbol	math	! Missing $ inserted.
+\samevas	text	! LaTeX Error: \mathsf allowed only in math mode.
+\seq	text	! Missing $ inserted.
+\shortminus	text	! Missing $ inserted.
+\sketchqed	math	! Missing $ inserted.
+\sphere	text	! LaTeX Error: \mathbf allowed only in math mode.
+\strictif	text	! Missing $ inserted.
+\suchthat	text	! Missing $ inserted.
+\tcite	math	! You can't use `\spacefactor' in math mode.
+\then	text	! Missing $ inserted.
+\theory	text	! LaTeX Error: \mathcal allowed only in math mode.
+\tightwedge	text	! Missing $ inserted.
+\to	text	! Missing $ inserted.
+\topg	text	! Missing $ inserted.
+\topt	text	! Missing $ inserted.
+\triggers	text	! Missing $ inserted.
+\trues	text	! Missing $ inserted.
+\truthset	text	! Missing $ inserted.
+\truthsetm	text	! Missing $ inserted.
+\truthsetml	text	! Missing $ inserted.
+\truthsetmm	text	! Missing $ inserted.
+\truthsetmsub	text	! Missing $ inserted.
+\tseq	text	! Missing $ inserted.
+\tuple	text	! Missing $ inserted.
+\union	text	! Missing $ inserted.
+\unneced	text	! Missing $ inserted.
+\unpossed	text	! Missing $ inserted.
+\vw	text	! Missing $ inserted.
+\was	text	! LaTeX Error: \mathsf allowed only in math mode.
+\wedgeset	text	! Missing $ inserted.
+\willbe	text	! LaTeX Error: \mathsf allowed only in math mode.

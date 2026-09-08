@@ -79,3 +79,7 @@ authorized_keys
 ls-R
 __pycache__/
 *.pyc
+
+# tests/french-logic renders every package member to bitmaps under build/;
+# only the golden PDF and its hash list are tracked.
+tests/french-logic/build/

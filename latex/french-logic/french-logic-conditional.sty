@@ -1,0 +1,129 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-conditional}[2026/09/07 french-logic: conditional axiom families and their frame conditions]
+%% Uppercase names are axiom schemata, lowercase their frame conditions; the pairs stay
+%% together because they are correspondence pairs.  Refers into core for \strictif.
+% The units this one refers into; loaded here so the unit works on its own.
+\RequirePackage{french-logic-core}
+% xspace: every name ends in \xspace.
+\RequirePackage{xspace}
+
+% Conditional Axioms and Conditions on Frames
+%%% CM_R family (R↑: weakening value)
+\newcommand{\CMr}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}}\xspace}
+\newcommand{\CMrs}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^*}\xspace}
+\newcommand{\CMrss}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{**}}\xspace}
+\newcommand{\CMrsss}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{***}}\xspace}
+\newcommand{\CMrd}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{d}}\xspace}
+\newcommand{\CMra}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{a}}\xspace}
+\newcommand{\CMrS}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{s}}\xspace}
+\newcommand{\CMrconj}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{\land}}\xspace}
+\newcommand{\CMrdisj}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{\lor}}\xspace}
+\newcommand{\CMrconjd}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{\land^d}}\xspace}
+\newcommand{\CMrup}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{R}}^{\strictif}}\xspace}
+%%% CC_R family (R↓: strengthening value)
+\newcommand{\CCr}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}}\xspace}
+\newcommand{\CCrs}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^*}\xspace}
+\newcommand{\CCrss}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{**}}\xspace}
+\newcommand{\CCrsss}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{***}}\xspace}
+\newcommand{\CCrd}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{d}}\xspace}
+\newcommand{\CCra}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{a}}\xspace}
+\newcommand{\CCrS}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{s}}\xspace}
+\newcommand{\CCrconj}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{\land}}\xspace}
+\newcommand{\CCrdisj}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{\lor}}\xspace}
+\newcommand{\CCrdisjd}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{\lor^d}}\xspace}
+\newcommand{\CCrdown}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{R}}^{\strictif}}\xspace}
+%%% CM_L family (L↓: strengthening argument)
+\newcommand{\CMl}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}}\xspace}
+\newcommand{\CMls}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^*}\xspace}
+\newcommand{\CMlss}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{**}}\xspace}
+\newcommand{\CMlsss}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{***}}\xspace}
+\newcommand{\CMld}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{d}}\xspace}
+\newcommand{\CMla}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{a}}\xspace}
+\newcommand{\CMlas}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{a*}}\xspace}
+\newcommand{\CMlass}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{a**}}\xspace}
+\newcommand{\CMlS}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{s}}\xspace}
+\newcommand{\CMlconj}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{\land}}\xspace}
+\newcommand{\CMldisj}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{\lor}}\xspace}
+\newcommand{\CMlconjd}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{\land^d}}\xspace}
+\newcommand{\CMldown}{\ensuremath{\textup{\textbf{CM}}_{\fl@lbl{L}}^{\strictif}}\xspace}
+%%% CC_L family (L↑: weakening argument)
+\newcommand{\CCl}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}}\xspace}
+\newcommand{\CCls}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^*}\xspace}
+\newcommand{\CClss}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{**}}\xspace}
+\newcommand{\CClsss}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{***}}\xspace}
+\newcommand{\CCld}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{d}}\xspace}
+\newcommand{\CCla}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{a}}\xspace}
+\newcommand{\CClS}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{s}}\xspace}
+\newcommand{\CClconj}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{\land}}\xspace}
+\newcommand{\CCldisj}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{\lor}}\xspace}
+\newcommand{\CCldisjd}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{\lor^d}}\xspace}
+\newcommand{\CClup}{\ensuremath{\textup{\textbf{CC}}_{\fl@lbl{L}}^{\strictif}}\xspace}
+%%% cm_R family (lowercase)
+\newcommand{\cmr}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}})\xspace}
+\newcommand{\cmrs}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^*})\xspace}
+\newcommand{\cmrss}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{**}})\xspace}
+\newcommand{\cmrsss}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{***}})\xspace}
+\newcommand{\cmrd}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{d}})\xspace}
+\newcommand{\cmra}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{a}})\xspace}
+\newcommand{\cmrS}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{s}})\xspace}
+\newcommand{\cmrconj}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{\land}})\xspace}
+\newcommand{\cmrdisj}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{\lor}})\xspace}
+\newcommand{\cmrconjd}{(\ensuremath{\textnormal{cm}_{\fl@lbl{R}}^{\land^d}})\xspace}
+%%% cc_R family (lowercase)
+\newcommand{\ccr}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}})\xspace}
+\newcommand{\ccrs}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^*})\xspace}
+\newcommand{\ccrss}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{**}})\xspace}
+\newcommand{\ccrsss}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{***}})\xspace}
+\newcommand{\ccrd}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{d}})\xspace}
+\newcommand{\ccra}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{a}})\xspace}
+\newcommand{\ccrS}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{s}})\xspace}
+\newcommand{\ccrconj}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{\land}})\xspace}
+\newcommand{\ccrdisj}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{\lor}})\xspace}
+\newcommand{\ccrdisjd}{(\ensuremath{\textnormal{cc}_{\fl@lbl{R}}^{\lor^d}})\xspace}
+%%% cm_L family (lowercase)
+\newcommand{\cml}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}})\xspace}
+\newcommand{\cmls}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^*})\xspace}
+\newcommand{\cmlss}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{**}})\xspace}
+\newcommand{\cmlsss}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{***}})\xspace}
+\newcommand{\cmld}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{d}})\xspace}
+\newcommand{\cmla}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{a}})\xspace}
+\newcommand{\cmlas}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{a*}})\xspace}
+\newcommand{\cmlass}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{a**}})\xspace}
+\newcommand{\cmlS}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{s}})\xspace}
+\newcommand{\cmlconj}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{\land}})\xspace}
+\newcommand{\cmldisj}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{\lor}})\xspace}
+\newcommand{\cmlconjd}{(\ensuremath{\textnormal{cm}_{\fl@lbl{L}}^{\land^d}})\xspace}
+%%% cc_L family (lowercase)
+\newcommand{\ccl}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}})\xspace}
+\newcommand{\ccls}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^*})\xspace}
+\newcommand{\cclss}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{**}})\xspace}
+\newcommand{\cclsss}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{***}})\xspace}
+\newcommand{\ccld}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{d}})\xspace}
+\newcommand{\ccla}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{a}})\xspace}
+\newcommand{\cclS}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{s}})\xspace}
+\newcommand{\cclconj}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{\land}})\xspace}
+\newcommand{\ccldisj}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{\lor}})\xspace}
+\newcommand{\ccldisjd}{(\ensuremath{\textnormal{cc}_{\fl@lbl{L}}^{\lor^d}})\xspace}
+%%% Other
+\newcommand{\CNr}{\ensuremath{\textup{\textbf{CN}}_{\fl@lbl{R}}}\xspace}
+\newcommand{\CNl}{\ensuremath{\textup{\textbf{CN}}_{\fl@lbl{L}}}\xspace}
+\newcommand{\CNlr}{\ensuremath{\textup{\textbf{CN}}_{\fl@lbl{LR}}}\xspace}
+\newcommand{\CNra}{\ensuremath{\textup{\textbf{CN}}_{\fl@lbl{R}}^{\fl@lbl{A}}}\xspace}
+\newcommand{\cdax}{\ensuremath{\textup{\textbf{CD}}}\xspace}
+\newcommand{\CP}{\ensuremath{\textup{\textbf{CP}}}\xspace}
+\newcommand{\CPs}{\ensuremath{\textup{\textbf{CP}}^*}\xspace}
+\newcommand{\CTh}{\ensuremath{\textup{\textbf{CT}}^{\fl@lbl{H}}}\xspace}
+\newcommand{\cnr}{(\ensuremath{\textnormal{cn}_{\fl@lbl{R}}})\xspace}
+\newcommand{\cnl}{(\ensuremath{\textnormal{cn}_{\fl@lbl{L}}})\xspace}
+\newcommand{\cnlr}{(\ensuremath{\textnormal{cn}_{\fl@lbl{LR}}})\xspace}
+\newcommand{\cth}{(\ensuremath{\textnormal{ct}^{\fl@lbl{H}}})\xspace}
+\newcommand{\cths}{(\ensuremath{\textnormal{ct}^{\fl@lbl{H}*}})\xspace}
+\newcommand{\cduax}{\ensuremath{\textup{\textbf{C-Dual}}}\xspace}
+
+%%% Order conditions on frames
+\newcommand{\Rup}{(\ensuremath{\textnormal{R}{\uparrow}})\xspace}
+\newcommand{\Rdown}{(\ensuremath{\textnormal{R}{\downarrow}})\xspace}
+\newcommand{\Ldown}{(\ensuremath{\textnormal{L}{\downarrow}})\xspace}
+\newcommand{\Lup}{(\ensuremath{\textnormal{L}{\uparrow}})\xspace}
+
+\newcommand{\cthss}{(\ensuremath{\textnormal{ct}^{\fl@lbl{H}**}})\xspace}

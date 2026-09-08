@@ -13,11 +13,26 @@ return {
       local snip_dir = vim.fn.stdpath("config") .. "/lua/snippets"
       local gen = vim.fn.resolve(snip_dir .. "/sty-lua-snippets.py")
       local out = snip_dir .. "/french-logic.lua"
-      local sty = vim.fn.fnamemodify(gen, ":h:h:h:h") .. "/latex/french-logic/french-logic.sty"
+      -- The package is a hub plus the unit files it loads; the stamp covers
+      -- them all, hub first, in the hub's own order (the generator hashes its
+      -- -i arguments in the order given, so the two must agree).
+      local pkgdir = vim.fn.fnamemodify(gen, ":h:h:h:h") .. "/latex/french-logic"
+      local sty = pkgdir .. "/french-logic.sty"
       local fh = io.open(sty, "rb")
       if fh and vim.fn.executable("python3") == 1 then
-        local want = vim.fn.sha256(fh:read("*a"))
+        local hub = fh:read("*a")
         fh:close()
+        local files, blob = { sty }, hub
+        for unit in hub:gmatch("\\RequirePackage{french%-logic%-([%w%-]+)}") do
+          local uf = pkgdir .. "/french-logic-" .. unit .. ".sty"
+          local ufh = io.open(uf, "rb")
+          if ufh then
+            files[#files + 1] = uf
+            blob = blob .. ufh:read("*a")
+            ufh:close()
+          end
+        end
+        local want = vim.fn.sha256(blob)
         local have
         if vim.fn.filereadable(out) == 1 then
           for _, line in ipairs(vim.fn.readfile(out, "", 5)) do
@@ -28,14 +43,21 @@ return {
           end
         end
         if want ~= have then
-          local res = vim.fn.system({ "python3", gen, "-i", sty, "-o", out })
+          local cmd = { "python3", gen }
+          for _, f in ipairs(files) do
+            cmd[#cmd + 1] = "-i"
+            cmd[#cmd + 1] = f
+          end
+          local cov_cmd = vim.list_extend(vim.deepcopy(cmd), { "--coverage" })
+          vim.list_extend(cmd, { "-o", out })
+          local res = vim.fn.system(cmd)
           if vim.v.shell_error == 0 then
-            vim.notify("french-logic snippets regenerated from french-logic.sty")
+            vim.notify("french-logic snippets regenerated from the hub and " .. (#files - 1) .. " units")
             -- The .sty changed, so also check that no new command is
             -- missing a highlight registration in vimtex.lua.  Purely
             -- informational — highlighting falls back to the default
             -- command colour until registered.
-            local cov = vim.fn.system({ "python3", gen, "-i", sty, "--coverage" })
+            local cov = vim.fn.system(cov_cmd)
             if vim.v.shell_error ~= 0 then
               vim.notify(
                 "french-logic: commands without highlight registration (vimtex.lua):\n" .. cov,

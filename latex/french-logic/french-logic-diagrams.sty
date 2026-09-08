@@ -1,0 +1,24 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-diagrams}[2026/09/07 french-logic: TikZ styles for possible-worlds diagrams]
+
+% Possible worlds diagrams: http://www.actual.world/resources/tex/doc/TikZ.pdf
+\RequirePackage{tikz} 
+\RequirePackage{tikzsymbols}
+  \usetikzlibrary{arrows,calc,patterns,positioning,shapes}
+    \tikzset{
+      modal/.style={>=stealth',shorten >=1pt,shorten <=1pt,auto,node distance=1.5cm,semithick},
+      world/.style={circle,draw,minimum size=1cm,fill=gray!15},
+      point/.style={circle,draw,fill=black,inner sep=0.5mm},
+      reflexive above/.style={->,loop,in=120,out=60,looseness=#1},
+      reflexive above/.default={7},
+      reflexive/.style={reflexive above=#1},% the same loop with a tighter default
+      reflexive/.default={5},
+      reflexive point/.style={->,in=135,out=45,loop,looseness=#1},
+      reflexive point/.default={25},
+      reflexive below/.style={->,loop,in=240,out=300,looseness=#1},
+      reflexive below/.default={7},
+      reflexive left/.style={->,loop,in=150,out=210,looseness=#1},
+      reflexive left/.default={7},
+      reflexive right/.style={->,loop,in=30,out=330,looseness=#1},
+      reflexive right/.default={7}
+    }

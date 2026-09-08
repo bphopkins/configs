@@ -77,7 +77,14 @@ FONTS=(
 
   # GitHub's Monaspace superfamily — five deliberately different personalities
   # at identical metrics, which makes them unusually good for this exercise.
-  "Monaspace Neon|12"                 # neo-grotesque
+  # Neon is the one that has landed so far — "nice", 2026-09-06, the trial's
+  # only positive verdict to date. Two things go with that. The family is
+  # "Monaspace Neon"; "Monaspace Neon Mono" resolves to Noto Sans, which is the
+  # substitution trap this header warns about. And the superfamily reaches
+  # fontconfig only through texlive-monaspace-otf under /usr/local/texlive/YYYY,
+  # so promoting one of these to a terminal or editor default would tie that
+  # font to the year pin in fontconfig/conf.d/09-texlive-fonts.conf.
+  "Monaspace Neon|12"                 # neo-grotesque — his pick, 2026-09-06
   "Monaspace Argon|12"                # humanist
   "Monaspace Xenon|12"                # slab serif
   "Monaspace Radon|12"                # handwriting

@@ -1,0 +1,541 @@
+name	text	math	text_error	math_error	warning
+\A	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\AND	ok	ok			
+\ANDs	ok	ok			
+\B	ok	ok			
+\C	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\CCl	ok	ok			
+\CClS	ok	ok			
+\CCla	ok	ok			
+\CClconj	ok	ok			
+\CCld	ok	ok			
+\CCldisj	ok	ok			
+\CCldisjd	ok	ok			
+\CCls	ok	ok			
+\CClss	ok	ok			
+\CClsss	ok	ok			
+\CClup	ok	ok			
+\CCr	ok	ok			
+\CCrS	ok	ok			
+\CCra	ok	ok			
+\CCrconj	ok	ok			
+\CCrd	ok	ok			
+\CCrdisj	ok	ok			
+\CCrdisjd	ok	ok			
+\CCrdown	ok	ok			
+\CCrs	ok	ok			
+\CCrss	ok	ok			
+\CCrsss	ok	ok			
+\CE	ok	ok			
+\CEC	ok	ok			
+\CECN	ok	ok			
+\CEM	ok	ok			
+\CEMC	ok	ok			
+\CEMD	ok	ok			
+\CEMN	ok	ok			
+\CEMP	ok	ok			
+\CEMPs	ok	ok			
+\CEN	ok	ok			
+\CK	ok	ok			
+\CKD	ok	ok			
+\CKPs	ok	ok			
+\CMl	ok	ok			
+\CMlS	ok	ok			
+\CMla	ok	ok			
+\CMlas	ok	ok			
+\CMlass	ok	ok			
+\CMlconj	ok	ok			
+\CMlconjd	ok	ok			
+\CMld	ok	ok			
+\CMldisj	ok	ok			
+\CMldown	ok	ok			
+\CMls	ok	ok			
+\CMlss	ok	ok			
+\CMlsss	ok	ok			
+\CMr	ok	ok			
+\CMrS	ok	ok			
+\CMra	ok	ok			
+\CMrconj	ok	ok			
+\CMrconjd	ok	ok			
+\CMrd	ok	ok			
+\CMrdisj	ok	ok			
+\CMrs	ok	ok			
+\CMrss	ok	ok			
+\CMrsss	ok	ok			
+\CMrup	ok	ok			
+\CNl	ok	ok			
+\CNlr	ok	ok			
+\CNr	ok	ok			
+\CNra	ok	ok			
+\COc	ok	ok			
+\COvf	ok	ok			
+\CP	ok	ok			
+\CPs	ok	ok			
+\CT	ok	ok			
+\CTh	ok	ok			
+\CTs	ok	ok			
+\Cl	ERR	ok	! Missing $ inserted.		
+\D	ok	ok			
+\DDio	ok	ok			
+\E	ok	ok			
+\EC	ok	ok			
+\ECN	ok	ok			
+\EM	ok	ok			
+\EMC	ok	ok			
+\EMD	ok	ok			
+\EMN	ok	ok			
+\EMP	ok	ok			
+\EN	ok	ok			
+\F	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FDio	ok	ok			
+\FN	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FNo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FNt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FR	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FRo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FRt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Fm	ok	ok			
+\IO	ok	ok			
+\IOfn	ok	ok			
+\IOh	ok	ok			
+\IOhn	ok	ok			
+\IOn	ok	ok			
+\IOs	ok	ok			
+\IOsn	ok	ok			
+\K	ok	ok			
+\KB	ok	ok			
+\KD	ok	ok			
+\KDU	ok	ok			
+\KDUW	ok	ok			
+\KDUWought	ok	ok			
+\KDUought	ok	ok			
+\KDW	ok	ok			
+\KDWought	ok	ok			
+\KDfourfive	ok	ok			
+\KDought	ok	ok			
+\KT	ok	ok			
+\KU	ok	ok			
+\KUW	ok	ok			
+\KUWought	ok	ok			
+\KUought	ok	ok			
+\KW	ok	ok			
+\KWought	ok	ok			
+\Kfive	ok	ok			
+\Kfour	ok	ok			
+\Kfourfive	ok	ok			
+\Lc	ERR	ok	! LaTeX Error: \mathscr allowed only in math mode.		
+\Ldown	ok	ok			
+\Lup	ok	ok			
+\M	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MN	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MNo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MNt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MRel	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Mlog	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Mlr	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Mne	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Mnw	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Mse	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Msig	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Msw	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\OR	ok	ok			
+\ORs	ok	ok			
+\R	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\Rdown	ok	ok			
+\Rlog	ERR	ok	! Missing $ inserted.		
+\Rsig	ERR	ok	! Missing $ inserted.		
+\Rup	ok	ok			
+\SDL	ok	ok			
+\SDLplus	ok	ok			
+\SDLt	ok	ok			
+\SI	ok	ok			
+\SIs	ok	ok			
+\Sfive	ok	ok			
+\Sfour	ok	ok			
+\Slog	ok	ok			
+\T	ok	ok			
+\TOP	ok	ok			
+\Ts	ok	ok			
+\VW	ok	ok			
+\Val	ok	ok			
+\Vlog	ERR	ok	! Missing $ inserted.		
+\Vsig	ERR	ok	! Missing $ inserted.		
+\WO	ok	ok			
+\WOs	ok	ok			
+\Wlog	ERR	ok	! Missing $ inserted.		
+\Wsig	ERR	ok	! Missing $ inserted.		
+\Yright	ERR	ok	! Missing $ inserted.		
+\af	ERR	ok	! Missing $ inserted.		
+\aff	ERR	ok	! Missing $ inserted.		
+\affirm	ERR	ok	! Missing $ inserted.		
+\afland	ERR	ok	! Missing $ inserted.		
+\aflor	ERR	ok	! Missing $ inserted.		
+\afneg	ERR	ok	! Missing $ inserted.		
+\afto	ERR	ok	! Missing $ inserted.		
+\agent	ok	ok			
+\asserts	ERR	ok	! Missing $ inserted.		
+\atoms	ok	ok			
+\believe	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\believes	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\better	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\bisim	ERR	ok	! Missing $ inserted.		
+\botg	ERR	ok	! Missing $ inserted.		
+\bott	ERR	ok	! Missing $ inserted.		
+\by	ok	ok			
+\cax	ok	ok			
+\caxc	ok	ok			
+\caxpar	ok	ok			
+\cbelieve	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\cbelieves	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\ccax	ok	ok			
+\ccl	ok	ok			
+\cclS	ok	ok			
+\ccla	ok	ok			
+\cclconj	ok	ok			
+\ccld	ok	ok			
+\ccldisj	ok	ok			
+\ccldisjd	ok	ok			
+\ccls	ok	ok			
+\cclss	ok	ok			
+\cclsss	ok	ok			
+\ccr	ok	ok			
+\ccrS	ok	ok			
+\ccra	ok	ok			
+\ccrconj	ok	ok			
+\ccrd	ok	ok			
+\ccrdisj	ok	ok			
+\ccrdisjd	ok	ok			
+\ccred	ERR	ok	! Missing $ inserted.		
+\ccrs	ok	ok			
+\ccrss	ok	ok			
+\ccrsss	ok	ok			
+\cdax	ok	ok			
+\cduax	ok	ok			
+\cfact	ERR	ok	! Missing $ inserted.		
+\choice	ok	ok			
+\choicema	ERR	ok	! Missing $ inserted.		
+\cknow	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\cknows	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\clor	ERR	ok	! Missing $ inserted.		
+\close	ok	ERR		! Missing $ inserted.	
+\cmaxi	ok	ok			
+\cml	ok	ok			
+\cmlS	ok	ok			
+\cmla	ok	ok			
+\cmlas	ok	ok			
+\cmlass	ok	ok			
+\cmlconj	ok	ok			
+\cmlconjd	ok	ok			
+\cmld	ok	ok			
+\cmldisj	ok	ok			
+\cmls	ok	ok			
+\cmlss	ok	ok			
+\cmlsss	ok	ok			
+\cmr	ok	ok			
+\cmrS	ok	ok			
+\cmra	ok	ok			
+\cmrconj	ok	ok			
+\cmrconjd	ok	ok			
+\cmrd	ok	ok			
+\cmrdisj	ok	ok			
+\cmrs	ok	ok			
+\cmrss	ok	ok			
+\cmrsss	ok	ok			
+\cn	ok	ok			
+\cnax	ok	ok			
+\cnecs	ERR	ok	! Missing $ inserted.		
+\cnecsolo	ERR	ok	! Missing $ inserted.		
+\cnl	ok	ok			
+\cnlr	ok	ok			
+\cnr	ok	ok			
+\cobs	ERR	ok	! Missing $ inserted.		
+\cobsolo	ERR	ok	! Missing $ inserted.		
+\condop	ERR	ok	! Missing $ inserted.		
+\condopsolo	ERR	ok	! Missing $ inserted.		
+\cought	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\cperms	ERR	ok	! Missing $ inserted.		
+\cposs	ERR	ok	! Missing $ inserted.		
+\cpossolo	ERR	ok	! Missing $ inserted.		
+\cprob	ERR	ok	! Missing $ inserted.		
+\cred	ok	ok			
+\cstit	ERR	ok	! Missing $ inserted.		
+\cstito	ok	ok			
+\cth	ok	ok			
+\cths	ok	ok			
+\cthss	ok	ok			
+\cto	ERR	ok	! Missing $ inserted.		
+\ctruthset	ok	ok			
+\ctruthsetm	ERR	ok	! Missing $ inserted.		
+\ctruthsetml	ERR	ok	! Missing $ inserted.		
+\ctruthsetmm	ERR	ok	! Missing $ inserted.		
+\ctruthsetmsub	ERR	ok	! Missing $ inserted.		
+\dax	ok	ok			
+\daxc	ok	ok			
+\daxpar	ok	ok			
+\de	ERR	ok	! Missing $ inserted.		
+\defby	ERR	ok	! Missing $ inserted.		
+\defbyvar	ERR	ok	! Missing $ inserted.		
+\deland	ERR	ok	! Missing $ inserted.		
+\delor	ERR	ok	! Missing $ inserted.		
+\den	ERR	ok	! Missing $ inserted.		
+\deneg	ERR	ok	! Missing $ inserted.		
+\deny	ERR	ok	! Missing $ inserted.		
+\deriv	ok	ok			
+\derives	ERR	ok	! Missing $ inserted.		
+\derivi	ERR	ok	! Missing $ inserted.		
+\deto	ERR	ok	! Missing $ inserted.		
+\drule	ok	ok			
+\drulepar	ok	ok			
+\dsax	ok	ok			
+\dstit	ERR	ok	! Missing $ inserted.		
+\dstito	ok	ok			
+\duax	ok	ok			
+\duaxpar	ok	ok			
+\dvbar	ok	ok			
+\eclass	ok	ok			
+\eclassl	ERR	ok	! Missing $ inserted.		
+\ecu	ERR	ok	! Missing $ inserted.		
+\emptyset	ERR	ok	! Missing $ inserted.		
+\emptytruthset	ERR	ok	! Missing $ inserted.		
+\ent	ERR	ok	! Missing $ inserted.		
+\eruledj	ok	ERR		! Missing $ inserted.	
+\erulej	ok	ERR		! Missing $ inserted.	
+\false	ok	ok			
+\fd	ERR	ok	! Missing $ inserted.		
+\filter	ERR	ok	! Missing $ inserted.		
+\five	ok	ok			
+\flog	ERR	ok	! Missing $ inserted.		
+\flr	ERR	ok	! Missing $ inserted.		
+\fm	ERR	ok	! Missing $ inserted.		
+\fmlafmla	ok	ok			
+\fmlaset	ok	ok			
+\fn	ERR	ok	! Missing $ inserted.		
+\fne	ERR	ok	! Missing $ inserted.		
+\fnof	ERR	ok	! Missing $ inserted.		
+\fnw	ERR	ok	! Missing $ inserted.		
+\forbidden	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\four	ok	ok			
+\fr	ERR	ok	! Missing $ inserted.		
+\fs	ERR	ok	! Missing $ inserted.		
+\fse	ERR	ok	! Missing $ inserted.		
+\fsof	ERR	ok	! Missing $ inserted.		
+\fsub	ERR	ok	! Missing $ inserted.		
+\fsw	ERR	ok	! Missing $ inserted.		
+\gives	ERR	ok	! Missing $ inserted.		
+\gratuitous	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\henceforth	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\hitherto	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\hk	ERR	ok	! Missing $ inserted.		
+\hyp	ok	-			
+\hyphantom	ok	-			
+\iff	ERR	ok	! Missing $ inserted.		
+\ilor	ERR	ok	! Missing $ inserted.		
+\inclin	ERR	ok	! Missing $ inserted.		
+\incomp	ERR	ok	! Missing $ inserted.		
+\ind	ok	ok			
+\inf	ok	-			
+\infer	ok	ok			
+\infr	ok	-			
+\intersect	ERR	ok	! Missing $ inserted.		
+\iput	ok	ok			
+\iruledj	ok	ERR		! Missing $ inserted.	
+\irulej	ok	ERR		! Missing $ inserted.	
+\ito	ERR	ok	! Missing $ inserted.		
+\kax	ok	ok			
+\kaxc	ok	ok			
+\kaxpar	ok	ok			
+\know	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\knows	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\krule	ok	ok			
+\krulepar	ok	ok			
+\lang	ok	ok			
+\langd	ok	ok			
+\langm	ok	ok			
+\langmd	ok	ok			
+\langp	ok	ok			
+\logic	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\logicp	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\manrule	ok	ERR		! Missing $ inserted.	
+\maxi	ok	ok			
+\maxic	ok	ok			
+\maxipar	ok	ok			
+\may	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\mcseti	ERR	ok	! Missing $ inserted.		
+\mcslog	ERR	ok	! Missing $ inserted.		
+\metalogic	ok	ok			
+\minus	ERR	ok	! Missing $ inserted.		
+\mland	ERR	ok	! Missing $ inserted.		
+\mlandsolo	ERR	ok	! Missing $ inserted.		
+\mlexists	ERR	ok	! Missing $ inserted.		
+\mlexistssolo	ERR	ok	! Missing $ inserted.		
+\mlforall	ERR	ok	! Missing $ inserted.		
+\mlforallsolo	ERR	ok	! Missing $ inserted.		
+\mlnot	ERR	ok	! Missing $ inserted.		
+\mlnotsolo	ERR	ok	! Missing $ inserted.		
+\mlor	ERR	ok	! Missing $ inserted.		
+\mlorsolo	ERR	ok	! Missing $ inserted.		
+\mlto	ERR	ok	! Missing $ inserted.		
+\mltosolo	ERR	ok	! Missing $ inserted.		
+\mmodels	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mnmodels	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mntruesat	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\models	ERR	ok	! Missing $ inserted.		
+\modelsrel	ERR	ok	! Missing $ inserted.		
+\mprule	ok	ok			
+\mprulepar	ok	ok			
+\mtruesat	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mwnp	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mwnv	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mwrp	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\mwrv	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\natent	ERR	ok	! Missing $ inserted.		
+\nax	ok	ok			
+\naxc	ok	ok			
+\naxpar	ok	ok			
+\nec	ERR	ok	! Missing $ inserted.		
+\neced	ERR	ok	! Missing $ inserted.		
+\necessitates	ERR	ok	! Missing $ inserted.		
+\negedrule	ok	ERR		! Missing $ inserted.	
+\negidrule	ok	ERR		! Missing $ inserted.	
+\negiprule	ok	ERR		! Missing $ inserted.	
+\negipstarrule	ok	ERR		! Missing $ inserted.	
+\nmodels	ERR	ok	! Missing $ inserted.		
+\nnatent	ERR	ok	! Missing $ inserted.		
+\nproves	ERR	ok	! Missing $ inserted.		
+\nrule	ok	ok			
+\nrulepar	ok	ok			
+\ntrues	ERR	ok	! Missing $ inserted.		
+\obligatory	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\onlyif	ERR	ok	! Missing $ inserted.		
+\optional	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\oput	ok	ok			
+\oputi	ERR	ok	! Missing $ inserted.		
+\oset	ERR	ok	! Missing $ inserted.		
+\ought	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\parent	ok	ok			
+\pax	ok	ok			
+\pcite	ok	ERR		! You can't use `\spacefactor' in math mode.	
+\permissible	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\plrule	ok	ok			
+\plrulepar	ok	ok			
+\poax	ok	ok			
+\pone	ERR	ok	! Missing $ inserted.		
+\porule	ok	ok			
+\porulepar	ok	ok			
+\posax	ok	ok			
+\posrule	ok	ok			
+\posrulepar	ok	ok			
+\poss	ERR	ok	! Missing $ inserted.		
+\possed	ERR	ok	! Missing $ inserted.		
+\power	ERR	ok	! Missing $ inserted.		
+\precedes	ERR	ok	! Missing $ inserted.		
+\proofset	ok	ok			
+\proofsetl	ERR	ok	! Missing $ inserted.		
+\props	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\proves	ERR	ok	! Missing $ inserted.		
+\provesc	ERR	ok	! Missing $ inserted.		
+\provesio	ERR	ok	! Missing $ inserted.		
+\provesm	ERR	ok	! Missing $ inserted.		
+\provesrel	ERR	ok	! Missing $ inserted.		
+\provestf	ERR	ok	! Missing $ inserted.		
+\psax	ok	ok			
+\pthree	ERR	ok	! Missing $ inserted.		
+\ptwo	ERR	ok	! Missing $ inserted.		
+\pzero	ERR	ok	! Missing $ inserted.		
+\qed	ok	ok			
+\qedsymbol	ok	ERR		! Missing $ inserted.	
+\relrule	ok	ok			
+\relrulepar	ok	ok			
+\remarkqed	ok	ok			
+\reposs	ok	ok			
+\reposspar	ok	ok			
+\reprule	ok	ok			
+\reprulepar	ok	ok			
+\rerrule	ok	ok			
+\rerrulepar	ok	ok			
+\rerule	ok	ok			
+\rerulepar	ok	ok			
+\rmposs	ok	ok			
+\rmposspar	ok	ok			
+\rposs	ok	ok			
+\rposspar	ok	ok			
+\samevas	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\seq	ERR	ok	! Missing $ inserted.		
+\set	ok	ok			
+\setfmla	ok	ok			
+\setset	ok	ok			
+\shortminus	ERR	ok	! Missing $ inserted.		
+\sketchqed	ok	ERR		! Missing $ inserted.	
+\sphere	ERR	ok	! LaTeX Error: \mathbf allowed only in math mode.		
+\st	ok	ok			
+\stit	ok	ok			
+\stitought	ok	ok			
+\stitval	ok	ok			
+\strictif	ERR	ok	! Missing $ inserted.		
+\subrule	ok	ok			
+\subrulepar	ok	ok			
+\suchthat	ERR	ok	! Missing $ inserted.		
+\tautrule	ok	ok			
+\tautrulepar	ok	ok			
+\tax	ok	ok			
+\taxc	ok	ok			
+\taxpar	ok	ok			
+\tcite	ok	ERR		! You can't use `\spacefactor' in math mode.	
+\then	ERR	ok	! Missing $ inserted.		
+\theory	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\tightwedge	ERR	ok	! Missing $ inserted.		
+\to	ERR	ok	! Missing $ inserted.		
+\topg	ERR	ok	! Missing $ inserted.		
+\topt	ERR	ok	! Missing $ inserted.		
+\tree	ok	ok			
+\triggers	ERR	ok	! Missing $ inserted.		
+\true	ok	ok			
+\trues	ERR	ok	! Missing $ inserted.		
+\truthset	ERR	ok	! Missing $ inserted.		
+\truthsetm	ERR	ok	! Missing $ inserted.		
+\truthsetml	ERR	ok	! Missing $ inserted.		
+\truthsetmm	ERR	ok	! Missing $ inserted.		
+\truthsetmsub	ERR	ok	! Missing $ inserted.		
+\tseq	ERR	ok	! Missing $ inserted.		
+\tuple	ERR	ok	! Missing $ inserted.		
+\uax	ok	ok			
+\uaxc	ok	ok			
+\uaxpar	ok	ok			
+\union	ERR	ok	! Missing $ inserted.		
+\unneced	ERR	ok	! Missing $ inserted.		
+\unpossed	ERR	ok	! Missing $ inserted.		
+\val	ok	ok			
+\versal	ok	ok			
+\vw	ERR	ok	! Missing $ inserted.		
+\was	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\wax	ok	ok			
+\waxc	ok	ok			
+\wedgeset	ERR	ok	! Missing $ inserted.		
+\willbe	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
+\woax	ok	ok			
+\wocax	ok	ok			
+env:proof	ok	-			
+env:proofsketch	ok	-			
+env:block	ok	-			
+env:gentzen	ok	-			
+env:hilbertlist	ok	-			
+env:romanlist	ok	-			
+env:Romanlist	ok	-			
+env:arablist	ok	-			
+env:arablistpar	ok	-			
+env:alphlistpar	ok	-			
+env:Alphlist	ok	-			
+env:itemlist	ok	-			
+env:itemlistflush	ok	-			
+env:axiomproof	ok	-			
+env:theorem	ok	-			
+env:lemma	ok	-			
+env:proposition	ok	-			
+env:corollary	ok	-			
+env:definition	ok	-			
+env:example	ok	-			
+env:remark	ok	-			
+env:note	ok	-			
+env:convention	ok	-			
+env:observation	ok	-			
+env:digression	ok	-			

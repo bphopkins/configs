@@ -1,0 +1,49 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-deontic}[2026/09/07 french-logic: deontic operators, monadic and dyadic]
+%% Refers into core for \nec and \poss.
+% The units this one refers into; loaded here so the unit works on its own.
+\RequirePackage{french-logic-core}
+% graphicx: \scalebox and \rotatebox build the dyadic operator glyphs.
+\RequirePackage{graphicx}
+
+% Deontic Operators
+\newcommand{\ought}{\mathsf{{O}}}
+\newcommand{\may}{\mathsf{{P}}}
+\newcommand{\obligatory}{\mathsf{{O}}}
+\newcommand{\permissible}{\mathsf{{P}}}
+\newcommand{\forbidden}{\mathsf{{F}}}
+\newcommand{\gratuitous}{\mathsf{{G}}}
+\newcommand{\optional}{\mathsf{{T}}}
+\newcommand{\necessitates}{\Rightarrow}
+\newcommand{\triggers}{\Rightarrow}
+\newcommand{\cought}[2]{\ought(#1/#2)}
+\newcommand{\better}[2]{\mathsf{{B}}(#1/#2)}
+\newcommand{\samevas}[2]{\mathsf{{S}}(#1/#2)}
+
+% Dyadic Stuff
+% The dyadic operator glyph: a bar, a turned double bar, and an operator letter or
+% box, kerned and raised by hand.  One builder; each operator keeps the exact
+% parameters it was tuned with (kern before the letter, raise, scale).
+%   \fl@dyad{<left pad>}{<kern>}{<raise>}{<scale>}{<letter>}{<right pad>}
+\newcommand{\fl@dyad}[6]{{%
+    {\mbox{$\mkern#1$}}%
+    {\mathrel{\raisebox{.87pt}{\scalebox{1}{\rotatebox[origin=c]{0}{$\shortmid$}}}}}%
+    {\mbox{$\mkern-5mu$}}%
+    {\mathrel{\raisebox{.45pt}{\scalebox{1}{\rotatebox[origin=c]{90}{$\shortmid\mkern-1.1mu\shortmid$}}}}}%
+    {\mbox{$\mkern#2$}}%
+    {\mathrel{\raisebox{#3}{\scalebox{#4}{\rotatebox[origin=c]{0}{$#5$}}}}}%
+    {\mbox{$\mkern#6$}}%
+}}
+\newcommand{\condop}[1]{\fl@dyad{3.5mu}{-2.7mu}{.5pt}{.75}{\mathsf{#1}}{2.75mu}}
+\newcommand{\condopsolo}[1]{\fl@dyad{0mu}{-2.7mu}{.5pt}{.75}{\mathsf{#1}}{0mu}}
+%\newcommand{\cobs}{\Rightarrow}
+\newcommand{\cobs}{{\condop{O}}} % THIS IS THE STYLIZED COMMAND
+\newcommand{\cperms}{{\condop{P}}}
+\newcommand{\cobsolo}{\condopsolo{O}}
+\newcommand{\sphere}{\mathbf{\mathdollar}}
+\newcommand{\cfact}{\Box \mkern-8mu \mathrel{\raisebox{.6pt}{$\Rightarrow$}}}
+
+\newcommand{\cnecs}{\fl@dyad{3.5mu}{-2.2mu}{.53pt}{.7}{\nec}{2.75mu}}
+\newcommand{\cposs}{\fl@dyad{3.5mu}{-3.1mu}{.85pt}{.7}{\poss}{2.75mu}}
+\newcommand{\cnecsolo}{\fl@dyad{0mu}{-2.2mu}{.53pt}{.7}{\nec}{0mu}}
+\newcommand{\cpossolo}{\fl@dyad{0mu}{-3.1mu}{.85pt}{.7}{\poss}{0mu}}

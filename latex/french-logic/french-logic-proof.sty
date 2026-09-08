@@ -1,0 +1,30 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-proof}[2026/09/07 french-logic: the end-of-proof mark and consequence frameworks]
+%% Loaded by the hub after the structure unit: the house end-of-proof mark applies
+%% only when amsthm is present, whether loaded by structure or by the document.
+%% Refers into core for \proves.
+% The units this one refers into; loaded here so the unit works on its own.
+\RequirePackage{french-logic-core}
+% amssymb: the filled square; microtype: \textls in the framework names.
+\RequirePackage{amssymb}
+\RequirePackage{microtype}
+
+% Proof Stuff
+% End-of-proof mark, house form: a filled square, flush right on the last line with
+% no \quad before it (amsthm's default inserts one).  The math branch is left to
+% amsthm so that \qedhere works inside displays and lists.  Conditional on amsthm
+% being present -- loaded above, or by the document before this package under
+% [deon] -- so that a class with its own \qed (deon16) is left alone.
+\ifdefined\qedsymbol
+  \renewcommand{\qedsymbol}{$\blacksquare$}
+  \renewcommand{\qed}{\ifmmode\mathqed\else\leavevmode\unskip\penalty9999 \hbox{}\nobreak\hfill\hbox{\qedsymbol}\fi}
+\fi
+\newcommand{\setset}{\textls*[-30]{\textsc{Set-Set}}}
+\newcommand{\setfmla}{\textls*[-30]{\textsc{Set-Fmla}}}
+\newcommand{\fmlaset}{\textls*[-30]{\textsc{Fmla-Set}}}
+\newcommand{\fmlafmla}{\textls*[-30]{\textsc{Fmla-Fmla}}}
+\newcommand{\provesm}{\proves_{\!\!\fl@lbl{M}}}
+\newcommand{\provestf}{\proves_{\!\!\fl@lbl{TF}}}
+\newcommand{\provesio}{\proves_{\!\!\fl@lbl{IO}}}
+\newcommand{\provesc}{\proves_{\!\!\fl@lbl{C}}}
+\newcommand{\infer}{\; // \;}

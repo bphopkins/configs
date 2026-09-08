@@ -1,0 +1,223 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-core}[2026/09/07 french-logic: core notation: symbols, sets, syntax, relations, structures, semantics, metalanguage]
+%% The tower, top to bottom: symbol fonts, sets, syntax, relations, modal structures,
+%% functions, semantics, the metalanguage.  Every other unit refers into this one; it
+%% refers into nothing.
+% soul: \st below is a renewal of its strikeout command; trimclip: \clipbox in
+% \natent; graphicx: \scalebox and \rotatebox in the closure arrows and \nnatent.
+\RequirePackage{soul}
+\RequirePackage{trimclip}
+\RequirePackage{graphicx}
+
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{mathtools}
+\RequirePackage{stmaryrd}
+\RequirePackage{mathrsfs}
+\RequirePackage{xspace}
+\xspaceaddexceptions{/}
+
+% Misc Preliminary
+% The small letter on a name (the R of CM_R, the H of IO^H): upright, at
+% \scriptscriptstyle, so it scales with the mathematics around it -- smaller in a
+% footnote, larger in a heading, the floor size when nested.  Settled 2026-09-07 by
+% eye against the fixed-size idioms.  Internal: documents never type it.
+\newcommand{\fl@lbl}[1]{{\scriptscriptstyle\mathrm{#1}}}
+% In PDF bookmarks (hyperref, if a document loads it) the label is its bare letter.
+\AtBeginDocument{\@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{\def\fl@lbl#1{#1}}}{}}
+% \Yright is the sequent separator (\seq, \tseq): Humberstone's convention. stmaryrd
+% already declares it at this slot; the declaration is kept here as the record.
+\DeclareMathSymbol{\Yright}{\mathbin}{stmry}{"07}
+\DeclareMathSymbol{\shortminus}{\mathbin}{AMSa}{"39}
+\newcommand{\dvbar}{{{\mbox{$|\mkern-3.7mu|$}}}}
+\newcommand{\parent}[1]{(#1)}
+
+% Set Theoretic Notions and Relations
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\oset}[1]{\langle #1 \rangle}
+\newcommand{\tuple}[1]{\langle #1 \rangle}
+\newcommand{\inclin}{\sqsubseteq}
+\newcommand{\power}[1]{\wp(#1)}
+\renewcommand{\emptyset}{\varnothing}
+\newcommand{\intersect}{\cap}
+\newcommand{\union}{\cup}
+\newcommand{\suchthat}{\colon}
+\renewcommand{\st}{\textnormal{ s.t. }}
+
+% Misc Syntactical
+\newcommand{\Fm}{\textsf{Fm}}
+\newcommand{\lang}{\ensuremath{\mathscr{L}}\xspace}
+\newcommand{\langp}{\ensuremath{\mathscr{L}^{\fl@lbl{P}}}\xspace}
+\newcommand{\langm}{\ensuremath{\mathscr{L}^{\fl@lbl{M}}}\xspace}
+\newcommand{\langd}{\ensuremath{\mathscr{L}^{\fl@lbl{D}}}\xspace}
+\newcommand{\langmd}{\ensuremath{\mathscr{L}^{\fl@lbl{MD}}}\xspace}
+\newcommand{\logic}{\mathcal{L}}
+\newcommand{\metalogic}{\ensuremath{\mathcal{ML}}\xspace}% the metalanguage, in \logic's script; use instead of a literal "ML"
+\newcommand{\logicp}{\logic_{\!\fl@lbl{p}}}
+\newcommand{\Lc}{\ensuremath{\mathscr{L}^{\fl@lbl{C}}}\xspace}
+
+% Logical Operators and Relations
+\renewcommand{\iff}{\leftrightarrow}
+\newcommand{\onlyif}{\rightarrow}
+\newcommand{\then}{\rightarrow}
+\renewcommand{\to}{\rightarrow}% the kernel's already; renewed to declare \to a member with its house form
+\newcommand{\derives}{\Rightarrow}
+\newcommand{\gives}{\vdash}
+\newcommand{\asserts}{\vdash}
+\newcommand{\proves}{\vdash}
+\newcommand{\nproves}{\nvdash}
+\newcommand{\seq}{\;\Yright\;}
+\newcommand{\tseq}{\Yright\;}
+\newcommand{\modelsrel}[1]{\models_{\!\mathscr{#1}}}
+\newcommand{\provesrel}[1]{\proves_{\!\mathscr{#1}}}
+\DeclareFontFamily{U}{txsyc}{}
+\DeclareFontShape{U}{txsyc}{m}{n}{<->txsyc}{}
+\DeclareSymbolFont{txsycfont}{U}{txsyc}{m}{n}
+\DeclareMathSymbol{\strictif}{\mathrel}{txsycfont}{74}
+
+% Misc Modal Symbols, Operators and Relations
+\newcommand{\nec}{\Box}
+\newcommand{\poss}{{\Diamond}}
+\newcommand{\M}{\mathfrak{M}}
+\newcommand{\F}{\mathfrak{F}}
+\newcommand{\FR}{\mathfrak{F}_{\!\scriptscriptstyle R}}
+\newcommand{\FRo}{\mathfrak{F}_{\!\scriptscriptstyle R}^{\scriptscriptstyle 2}}
+\newcommand{\FRt}{\mathfrak{F}_{\!\scriptscriptstyle R}^{\scriptscriptstyle 3}}
+\newcommand{\FN}{\mathfrak{F}_{\!\scriptscriptstyle N}}
+\newcommand{\FNo}{\mathfrak{F}_{\!\scriptscriptstyle N}^{\scriptscriptstyle 1}}
+\newcommand{\FNt}{\mathfrak{F}_{\!\scriptscriptstyle N}^{\scriptscriptstyle 2}}
+\newcommand{\MRel}{\mathfrak{M}_{\!\scriptscriptstyle R}}
+\newcommand{\MN}{\mathfrak{M}_{\!\scriptscriptstyle N}}
+\newcommand{\MNo}{\mathfrak{M}_{\!\scriptscriptstyle N}^{\scriptscriptstyle 1}}
+\newcommand{\MNt}{\mathfrak{M}_{\!\scriptscriptstyle N}^{\scriptscriptstyle 2}}
+\newcommand{\C}{\mathfrak{C}}
+\newcommand{\R}{\mathcal{R}}
+\newcommand{\mwrv}{\M=\oset{W,R,V}}
+\newcommand{\mwrp}{\M=\oset{W,R,P}}
+\newcommand{\mwnv}{\M=\oset{W,N,V}}
+\newcommand{\mwnp}{\M=\oset{W,N,P}}
+\newcommand{\bisim}{\leftrightarroweq}
+\newcommand{\Msig}{\M^{{\scriptscriptstyle\Sigma}}}
+\newcommand{\Wsig}{W^{{\scriptscriptstyle\Sigma}}}
+\newcommand{\Rsig}{R^{{\scriptscriptstyle\Sigma}}}
+\newcommand{\Vsig}{V^{{\scriptscriptstyle\Sigma}}}
+\newcommand{\neced}{\nec}
+\newcommand{\unneced}{\nec^{{{\!\:\!\:\!\:\!\shortminus\! 1}}}}
+\newcommand{\possed}{\poss}
+\newcommand{\unpossed}{\poss^{{{\!\shortminus\! 1}}}}
+\newcommand{\Mlog}{\M^{{\scriptscriptstyle\logic}}}
+\newcommand{\Wlog}{W^{{\scriptscriptstyle\logic}}}
+\newcommand{\Rlog}{R^{{\scriptscriptstyle\logic}}}
+\newcommand{\flog}{f^{{\scriptscriptstyle\logic}}}
+\newcommand{\Vlog}{V^{{\scriptscriptstyle\logic}}}
+\newcommand{\A}{\mathfrak{A}}
+
+% Misc Mathematical
+\newcommand{\fn}{{f_{{\mkern-3.6mu\scriptscriptstyle N}}}}
+\newcommand{\fm}{{f_{{\mkern-3.6mu\scriptscriptstyle M}}}}
+\newcommand{\fd}{{f_{{\mkern-3.6mu\scriptscriptstyle D}}}}
+\newcommand{\fs}{{f_{{\mkern-3mu\scriptscriptstyle S}}}}
+\newcommand{\fr}{{f_{{\mkern-3.6mu\scriptscriptstyle R}}}}
+\newcommand{\fsub}[1]{{f_{{\mkern-3.5mu\scriptscriptstyle #1}}}}
+\newcommand{\fsof}[2]{\fs(#1,#2)}
+\newcommand{\fnof}[1]{\fn(#1)}
+
+% Semantic Notions and Relations
+\newcommand{\val}[1]{v(#1)}
+\newcommand{\vw}[2]{v_{#1}(#2)}
+\newcommand{\Val}[1]{\textnormal{Val}(#1)}
+\newcommand{\true}{\textnormal{T}}
+\newcommand{\false}{\textnormal{F}}
+\newcommand{\ind}{\textnormal{i}}
+\renewcommand{\models}{\vDash}
+\newcommand{\nmodels}{\nvDash}
+\newcommand{\trues}{\Vdash}
+\newcommand{\ntrues}{\nVdash}
+\newcommand{\mmodels}{\M\models}
+\newcommand{\mnmodels}{\M\nmodels}
+\newcommand{\mtruesat}[1]{\M,{#1}\trues}
+\newcommand{\mntruesat}[1]{\M,{#1}\ntrues}
+\newcommand{\eclass}[1]{|#1|}
+\newcommand{\ctruthset}[1]{\dvbar #1\dvbar}
+\newcommand{\eclassl}[1]{|#1|_{{\scriptscriptstyle \logic}}}
+\newcommand{\ctruthsetm}[1]{\dvbar #1\dvbar^{{\scriptscriptstyle \M}}}
+\newcommand{\ctruthsetml}[1]{\dvbar #1\dvbar^{{\scriptscriptstyle \M^{\logic}}}}
+\newcommand{\ctruthsetmsub}[2]{\dvbar #1\dvbar_{{\scriptscriptstyle #2}}^{{\scriptscriptstyle \M}}}
+\newcommand{\ctruthsetmm}[1]{\dvbar #1\dvbar_{{\scriptscriptstyle m}}^{{\scriptscriptstyle \M}}}
+\newcommand{\defby}{\,\mathrel{\raisebox{.25pt}{\mbox{:$\mkern-1.5mu$:}}\mbox{$\mkern-1.5mu$=}}\,}
+\newcommand{\defbyvar}{\:=_\textnormal{def}\:}
+\newcommand{\props}{{\mathcal{P}}}
+\newcommand{\emptytruthset}{\truthset{\!\cdot\!}}
+\newcommand{\pzero}{{p_0}}
+\newcommand{\pone}{{p_1}}
+\newcommand{\ptwo}{{p_2}}
+\newcommand{\pthree}{{p_3}}
+
+\newcommand{\truthset}[1]{\llbracket #1\rrbracket}
+\newcommand{\truthsetm}[1]{\llbracket #1\rrbracket^{{\scriptscriptstyle \M}}}
+\newcommand{\truthsetml}[1]{\llbracket #1\rrbracket^{{\scriptscriptstyle \M^{\logic}}}}
+\newcommand{\truthsetmsub}[2]{\llbracket #1\rrbracket_{{\scriptscriptstyle #2}}^{{\scriptscriptstyle \M}}}
+\newcommand{\truthsetmm}[1]{\llbracket #1\rrbracket_{{\scriptscriptstyle m}}^{{\scriptscriptstyle \M}}}
+
+% Completeness Proofs
+\newcommand{\proofset}[1]{[#1]}
+\newcommand{\proofsetl}[1]{[#1]_{{\scriptscriptstyle \logic}}}
+\newcommand{\mcslog}{\textsf{mcs}_{\logic}\ }
+
+% Neighborhood Semantics Metalanguage
+\newcommand{\mland}{\;\mathrel{\underline{\land}}\;}
+\newcommand{\mlor}{\;\mathrel{\underline{\lor}}\;}
+\newcommand{\mlnot}{\mathord{\underline{\lnot}}}
+\newcommand{\mlto}{\enspace\mathrel{\underline{\longrightarrow}}\enspace}
+\newcommand{\mlforall}{\mathord{\underline{\forall}}}
+\newcommand{\mlexists}{\mathord{\underline{\exists}}}
+% Solo forms: the bare symbols, without connective spacing, for MENTIONING a
+% metalanguage connective rather than USING it (cf. \cnecs vs. \cnecsolo).  Use
+% these when the connectives are named or listed; use the plain forms above when
+% they actually connect (e.g. in frame conditions).
+\newcommand{\mltosolo}{\mathord{\underline{\longrightarrow}}}
+\newcommand{\mlandsolo}{\mathord{\underline{\land}}}
+\newcommand{\mlorsolo}{\mathord{\underline{\lor}}}
+\newcommand{\mlnotsolo}{\mathord{\underline{\lnot}}}
+\newcommand{\mlforallsolo}{\mathord{\underline{\forall}}}
+\newcommand{\mlexistssolo}{\mathord{\underline{\exists}}}
+
+% Misc Other Technical (unsorted)
+\newcommand{\minus}{{\sim}}
+\newcommand{\ent}{{\:\:^\vdash\!\!/\!_\vDash\:}}
+\newcommand{\cn}[1]{\textnormal{Cn}(#1)}
+\newcommand{\theory}[1]{\mathcal{T}_{#1}}
+\newcommand{\topg}{\Uparrow_\textnormal{G}}
+\newcommand{\botg}{\Downarrow_\textnormal{G}}
+\newcommand{\topt}{\Uparrow_\textnormal{A}}
+\newcommand{\bott}{\Downarrow_\textnormal{A}}
+\newcommand{\natent}{%
+\mathrel{\text{\clipbox{0pt 0pt {.8\width} 0pt}{$\Vdash$}}\mkern.9mu}\vDash
+}
+\newcommand{\nnatent}{{\natent\!\!\!\!\!\!\!\!\!\; \raisebox{1.25pt}{\rotatebox[origin=c]{-50}{|}}}}
+
+
+% Closures, filters, atoms
+\newcommand{\wedgeset}{\!\wedge\!}
+\newcommand{\filter}{\uparrow\!\!}
+\newcommand{\Cl}[2]{\textnormal{\textup{Cl}}_{#1}(#2)}
+\newcommand{\mcseti}[2]{|#2|_{#1}}
+\newcommand{\tightwedge}{\mathbin{\mkern-1mu\wedge\mkern-1mu}}
+\newcommand{\atoms}{\textsf{At}}
+
+%%% For Canonical Neighborhood Models with Closures
+% Northeast arrows (45 degrees)
+\newcommand{\Mne}{\M^{\raisebox{-0.4ex}{\scalebox{0.6}{\rotatebox{45}{$\rightarrow$}}}}}
+\newcommand{\fne}{f^{\raisebox{-0.4ex}{\scalebox{0.6}{\rotatebox{45}{$\rightarrow$}}}}}
+% Northwest arrows (135 degrees)
+\newcommand{\Mnw}{\M^{\raisebox{-0.4ex}{\scalebox{0.6}{\rotatebox{135}{$\rightarrow$}}}}}
+\newcommand{\fnw}{f^{\raisebox{-0.4ex}{\scalebox{0.6}{\rotatebox{135}{$\rightarrow$}}}}}
+% Southeast arrows (315 degrees)
+\newcommand{\Mse}{\M^{\raisebox{-0.6ex}{\scalebox{0.6}{\rotatebox{-45}{$\rightarrow$}}}}}
+\newcommand{\fse}{f^{\raisebox{-0.6ex}{\scalebox{0.6}{\rotatebox{-45}{$\rightarrow$}}}}}
+% Southwest arrows (225 degrees)
+\newcommand{\Msw}{\M^{\raisebox{-0.5ex}{\scalebox{0.6}{\rotatebox{-135}{$\rightarrow$}}}}}
+\newcommand{\fsw}{f^{\raisebox{-0.5ex}{\scalebox{0.6}{\rotatebox{-135}{$\rightarrow$}}}}}
+% Northeast/Southwest bidirectional arrows
+\newcommand{\Mlr}{\M^{\raisebox{-0.5ex}{\scalebox{0.6}{\rotatebox{45}{$\leftrightarrow$}}}}}
+\newcommand{\flr}{f^{\raisebox{-0.5ex}{\scalebox{0.6}{\rotatebox{45}{$\leftrightarrow$}}}}}

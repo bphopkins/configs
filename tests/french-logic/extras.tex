@@ -1,0 +1,17 @@
+% Extra fixture pages for things that are not members: one page per block, each
+% headed by "%% page: <name>".  gen-fixture.py appends them to the hub fixture, so
+% the golden covers them like any member.
+%% page: diagram-modal
+\begin{tikzpicture}[modal]
+\node[world] (w) {$w$};
+\node[world] (v) [right of=w, node distance=2.2cm] {$v$};
+\node[point] (p) [below of=v, node distance=1.4cm] {};
+\path[->] (w) edge (v);
+\path[->] (v) edge (p);
+\path (w) edge[reflexive] (w);
+\path (v) edge[reflexive above] (v);
+\path (w) edge[reflexive below] (w);
+\path (w) edge[reflexive left] (w);
+\path (v) edge[reflexive right] (v);
+\path (p) edge[reflexive point] (p);
+\end{tikzpicture}

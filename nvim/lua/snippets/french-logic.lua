@@ -1,6 +1,6 @@
 -- Auto-generated from french-logic.sty
 -- Regenerate via sty-lua-snippets.py
--- sty-sha256: 276e881b66831b2610ca8209acd0f1006631d91047041d3d2143e134b24a633a
+-- sty-sha256: ecc8db1eaa9e8dd371d7c2aaa579ff440f2a2648371f1d1e186bc75e21b4e79c
 
 local ls = require("luasnip")
 local s  = ls.snippet
@@ -472,6 +472,7 @@ local snippets = {
   s({ trig = "\\pthree~", wordTrig = true }, { t("\\pthree") }),
   s({ trig = "\\ptwo~", wordTrig = true }, { t("\\ptwo") }),
   s({ trig = "\\pzero~", wordTrig = true }, { t("\\pzero") }),
+  s({ trig = "\\qedsymbol~", wordTrig = true }, { t("\\qedsymbol") }),
   s({ trig = "\\qed~", wordTrig = true }, { t("\\qed") }),
   s({ trig = "\\relrulepar~", wordTrig = true }, { t("\\relrulepar") }),
   s({ trig = "\\relrule~", wordTrig = true }, { t("\\relrule") }),

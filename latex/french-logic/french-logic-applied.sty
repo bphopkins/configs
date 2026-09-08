@@ -1,0 +1,25 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{french-logic-applied}[2026/09/07 french-logic: applied modal operators: temporal, epistemic, credence]
+%% Deontic modals are applied modals too; the categories are practical, not a taxonomy
+%% (README, Architecture).
+
+% Applied Modal Operators (to make these operators bold, add \textbf before the brackets around the operator letters)
+\newcommand{\hitherto}{\mathsf{{H}}}
+\newcommand{\henceforth}{\mathsf{{G}}}
+\newcommand{\was}{\mathsf{{P}}}
+\newcommand{\willbe}{\mathsf{{F}}}
+\newcommand{\precedes}{\prec}
+\newcommand{\knows}[1]{\mathsf{{K}}_{#1}}
+\newcommand{\know}{\mathsf{{K}}}
+\newcommand{\cknows}[1]{\mathsf{{k}}_{#1}}
+\newcommand{\cknow}{\mathsf{{k}}}
+\newcommand{\believes}[1]{\mathsf{{B}}_{#1}}
+\newcommand{\believe}{\mathsf{{B}}}
+\newcommand{\cbelieves}[1]{\mathsf{{b}}_{#1}}
+\newcommand{\cbelieve}{\mathsf{{b}}}
+
+
+% Credence and conditional probability
+\newcommand{\cprob}[2]{\textbf{P}({{#1} \mid {#2}})}
+\newcommand{\cred}[1]{\textbf{C}(#1)}
+\newcommand{\ccred}[2]{\textbf{C}({{#1} \mid {#2}})}

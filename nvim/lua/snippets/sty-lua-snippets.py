@@ -3,11 +3,14 @@ r"""
 Generate LuaSnip snippets from a LaTeX .sty file.
 
 Usage:
-    python3 sty-lua-snippets.py -i french-logic.sty -o french-logic.lua
+    python3 sty-lua-snippets.py -i french-logic.sty -i french-logic-core.sty ... -o french-logic.lua
 
-The script scans the .sty file for command/environment definitions
+Give the hub and every unit it loads, hub first (lua/plugins/snippets.lua derives
+the list from the hub's \RequirePackage{french-logic-...} lines).  The script
+scans the .sty files for command/environment definitions
 (\newcommand, \renewcommand, \providecommand, \DeclareMathOperator,
-\newenvironment, \renewenvironment, \newtheorem) and emits a Lua module
+\newenvironment, \renewenvironment, \newtheorem), skips names containing
+"@" (internal helpers a document cannot type), and emits a Lua module
 matching the latex-workshop.lua format (table literal + return snippets).
 
 The output header carries a `-- sty-sha256:` stamp of the input file, so
@@ -94,6 +97,8 @@ def collect_commands(text: str) -> Dict[str, CommandDef]:
     commands: Dict[str, CommandDef] = {}
     for match in CMD_PATTERN.finditer(text):
         name = match.group("name")
+        if "@" in name:
+            continue  # internal helper; a document cannot type it
         count = int(match.group("count") or 0)
         default = match.group("default")
         has_optional = default is not None
@@ -277,6 +282,7 @@ KNOWN_UNREGISTERED = {
     "versal",
     "sketchqed",
     "remarkqed",
+    "qedsymbol",
     "inf",
     "infer",
     "tcite",
@@ -373,8 +379,9 @@ def main() -> None:
     parser.add_argument(
         "-i",
         "--input",
-        default="french-logic.sty",
-        help="Path to the .sty file (default: %(default)s)",
+        action="append",
+        help="Path to a .sty file; repeat for the hub and each unit it loads "
+        "(the sha256 stamp covers all of them, in the order given)",
     )
     parser.add_argument(
         "-o",
@@ -402,8 +409,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open(args.input, "rb") as fh:
-        raw_bytes = fh.read()
+    inputs = args.input or ["french-logic.sty"]
+    raw_bytes = b""
+    for path in inputs:
+        with open(path, "rb") as fh:
+            raw_bytes += fh.read()
     sty_sha256 = hashlib.sha256(raw_bytes).hexdigest()
     raw_text = raw_bytes.decode("utf-8")
 
@@ -413,7 +423,7 @@ def main() -> None:
         sys.exit(report_coverage(stripped, args.vimtex))
 
     snippets = collect_snippets(stripped)
-    content = render_lua(snippets, args.input, sty_sha256)
+    content = render_lua(snippets, inputs[0], sty_sha256)
 
     if args.check:
         try:
@@ -422,7 +432,7 @@ def main() -> None:
         except FileNotFoundError:
             existing = None
         if existing != content:
-            print(f"{args.output}: stale (regenerate from {args.input})")
+            print(f"{args.output}: stale (regenerate from {' '.join(inputs)})")
             sys.exit(1)
         print(f"{args.output}: up to date")
         return

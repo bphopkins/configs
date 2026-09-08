@@ -234,6 +234,48 @@ The measurement is one loop; rerun it on both machines before and after any
 change, and after each TeX Live release. Cross-listed in
 `org/machines/machines.md` under the Latin Modern item.
 
+## 13. french-logic: the map, the unit split, the rendering suite
+
+- [x] Audit the single-file package end to end; build the consumer harness
+  (scratch copy of the dissertation and its siblings, page-by-page diffs) and
+  the rendering suite `tests/french-logic/`. @done(2026-09-07)
+- [x] Write the map (`latex/french-logic/README.md`) and the inventory
+  (`latex/french-logic/AUDIT.md`). @done(2026-09-07)
+- [ ] Work the open ledger in the map, one item at a time, each verified by
+  both nets before it lands. All thirteen D items closed 2026-09-07; the F
+  items (form drift) are worked per unit after the split.
+- [x] Split the package into the hub and the unit files the map plans, output-
+  identical under both nets; extend the snippet generator to read the units.
+  @done(2026-09-07) — fourteen units plus the quarry; no differences across
+  27 consumers, no changed fixture page.
+- [x] The F items decided by eye on the type board and landed: mode, face
+  (rule β), small labels (idiom A), decorations, structure indices, the three
+  folds. @done(2026-09-07)
+- [ ] The naming grammar: proposal recorded in the map (Conventions, "A grammar
+  for the names") and on the board; strict, lenient, or record-only is the
+  first decision of the next chat.
+- [ ] Per-unit ordering passes: within each unit the blocks still sit in the
+  old file's order; reorder by the tower with the suite watching.
+- [ ] `dissertation/CLAUDE.md`, the package paragraph: still describes aliascnt,
+  the old `deon` semantics, and an absolute path — Brandon's document, update on
+  his say-so.
+- [x] Decide the option design, the two IO-logic beamer decks, `\hypersetup`
+  and `geometry`. @done(2026-09-07) — one keyval switch per unit with `deon`
+  and `slim` bundles; the decks pass `deon` and build; hyperref defaults kept;
+  geometry stays with the documents.
+- [x] The opuscula drift: recorded as finding 10 in opuscula's AUDIT.md and
+  left as it is; no version of the package builds them. @done(2026-09-07)
+
+Opened 2026-09-07. The next session opens with `latex/french-logic/next-chat.md`,
+the dated brief that says what exists, how to verify it, and what comes next.
+The package is a semantic markup language for logic; the
+governing principles (nothing deleted without an accepted case, dependencies
+ride with the code, one package with unit files, a preamble by default) are
+recorded in the map, which is the living contract — read it before touching
+`latex/french-logic/`. Run `tests/french-logic/run.sh` after any edit there.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,

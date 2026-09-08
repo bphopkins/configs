@@ -100,13 +100,16 @@ there is staleness, not slowness). Full mechanism:
 
 ## Snippets
 
-`lua/snippets/french-logic.lua` (auto-generated from `french-logic.sty` by
-`sty-lua-snippets.py`; commands, `\newenvironment`s incl. optional args, and
-`\newtheorem`s) and `latex-workshop.lua` (BibTeX templates), loaded via
-filetype extensions in `snippets.lua`. **Regeneration is automatic**: the
-generator stamps the `.sty`'s sha256 into the output, `snippets.lua` compares
-at LuaSnip load and re-runs the generator on mismatch — completions cannot
-silently drift from the package. The write goes through the stow symlink into
+`lua/snippets/french-logic.lua` (auto-generated from the french-logic package
+— the hub `french-logic.sty` plus every `french-logic-<unit>.sty` it loads,
+since the 2026-09-07 split — by `sty-lua-snippets.py`; commands,
+`\newenvironment`s incl. optional args, and `\newtheorem`s) and
+`latex-workshop.lua` (BibTeX templates), loaded via filetype extensions in
+`snippets.lua`. **Regeneration is automatic**: the generator stamps one sha256
+over all the package files into the output, `snippets.lua` derives the file
+list from the hub's `\RequirePackage` lines, compares at LuaSnip load, and
+re-runs the generator on mismatch — completions cannot silently drift from
+the package. The write goes through the stow symlink into
 the repo, so the regenerated file is committed by the next `gpushall` —
 expected. The two files are opposites (TODO.md item 8): `latex-workshop.lua`
 may be hand-edited freely; **a hand edit to `french-logic.lua` is silently
@@ -116,12 +119,16 @@ or the `.sty`.
 Manual regeneration and drift checks, from the repo root:
 
 ```bash
-python3 nvim/lua/snippets/sty-lua-snippets.py -i latex/french-logic/french-logic.sty \
+python3 nvim/lua/snippets/sty-lua-snippets.py \
+  -i latex/french-logic/french-logic.sty -i latex/french-logic/french-logic-core.sty ... \
   -o nvim/lua/snippets/french-logic.lua [--check|--coverage]
 ```
 
+(give the hub and every unit it loads, hub first — the same order
+`snippets.lua` uses, so the stamps agree)
+
 `--coverage` cross-references the `.sty` against `vimtex.lua`'s registrations
-(the 7 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring
+(the 8 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring
 the `vimtex.lua` header — `\tcite`/`\pcite` are there because citation
 commands are coloured by VimTeX's own `texCmdRef` machinery in
 `after/syntax/tex.lua`, not by a custom-cmd registration); the auto-regen hook runs it whenever the `.sty`

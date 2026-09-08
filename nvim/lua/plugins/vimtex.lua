@@ -121,7 +121,7 @@ return {
     -- lifted OUT of the plumbing tone by the greekfam pattern below.
     --
     -- Deliberately unregistered (not oversights): \versal, \sketchqed,
-    -- \remarkqed (internal helpers, unused outside the .sty) and
+    -- \remarkqed, \qedsymbol (internal helpers, unused outside the .sty) and
     -- \inf/\infer (renames of TeX built-ins, retired with gentzen).
     -- Also \tcite/\pcite: they are citation commands, and are hooked
     -- into VimTeX's own texCmdRef machinery in after/syntax/tex.lua so
