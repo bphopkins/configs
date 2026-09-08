@@ -256,12 +256,12 @@ hl("texCmdGround", { fg = C.steel })
 -- The shared material of every register — body-toned violet.
 hl("texCmdVariable", { fg = C.math_fg, italic = true })
 
--- 22. NAMES OF SYNTACTIC OBJECTS  (CMr, kax, K, S4, CE, IO, RE, MP...)
+-- 22. NAMES OF SYNTACTIC OBJECTS  (CMr, Kax, K, S4, CE, IO, RE, MP...)
 -- Mentions, not uses: the dim rung of the warm side, bold for
 -- scanning, well under the landmark orange.
 hl("texCmdNameSyn", { fg = C.gold_dim, bold = true })
 
--- 23. NAMES OF SEMANTIC OBJECTS  (cmr, ccl, cnr, cth, Rup, Ldown...)
+-- 23. NAMES OF SEMANTIC OBJECTS  (cmr, ccl, cnr, cth, rup, ldown...)
 -- The dim rung of the cool side — every CMr↔cmr pair is a visible
 -- warm↔cool correspondence.
 hl("texCmdNameSem", { fg = C.blue_dim })

@@ -4,6 +4,7 @@ name	text	math	text_error	math_error	warning
 \ANDs	ok	ok			
 \B	ok	ok			
 \C	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\CCax	ok	ok			
 \CCl	ok	ok			
 \CClS	ok	ok			
 \CCla	ok	ok			
@@ -26,6 +27,8 @@ name	text	math	text_error	math_error	warning
 \CCrs	ok	ok			
 \CCrss	ok	ok			
 \CCrsss	ok	ok			
+\CDax	ok	ok			
+\CDualax	ok	ok			
 \CE	ok	ok			
 \CEC	ok	ok			
 \CECN	ok	ok			
@@ -39,6 +42,7 @@ name	text	math	text_error	math_error	warning
 \CK	ok	ok			
 \CKD	ok	ok			
 \CKPs	ok	ok			
+\CMax	ok	ok			
 \CMl	ok	ok			
 \CMlS	ok	ok			
 \CMla	ok	ok			
@@ -63,6 +67,7 @@ name	text	math	text_error	math_error	warning
 \CMrss	ok	ok			
 \CMrsss	ok	ok			
 \CMrup	ok	ok			
+\CNax	ok	ok			
 \CNl	ok	ok			
 \CNlr	ok	ok			
 \CNr	ok	ok			
@@ -74,9 +79,18 @@ name	text	math	text_error	math_error	warning
 \CT	ok	ok			
 \CTh	ok	ok			
 \CTs	ok	ok			
+\Cax	ok	ok			
+\Caxc	ok	ok			
+\Caxpar	ok	ok			
 \Cl	ERR	ok	! Missing $ inserted.		
 \D	ok	ok			
 \DDio	ok	ok			
+\Dax	ok	ok			
+\Daxc	ok	ok			
+\Daxpar	ok	ok			
+\Dsax	ok	ok			
+\Dualax	ok	ok			
+\Dualaxpar	ok	ok			
 \E	ok	ok			
 \EC	ok	ok			
 \ECN	ok	ok			
@@ -89,11 +103,11 @@ name	text	math	text_error	math_error	warning
 \F	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \FDio	ok	ok			
 \FN	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\FNo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\FNt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FNone	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FNtwo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \FR	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\FRo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\FRt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FRthree	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\FRtwo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \Fm	ok	ok			
 \IO	ok	ok			
 \IOfn	ok	ok			
@@ -120,17 +134,20 @@ name	text	math	text_error	math_error	warning
 \KUought	ok	ok			
 \KW	ok	ok			
 \KWought	ok	ok			
+\Kax	ok	ok			
+\Kaxc	ok	ok			
+\Kaxpar	ok	ok			
 \Kfive	ok	ok			
 \Kfour	ok	ok			
 \Kfourfive	ok	ok			
-\Lc	ERR	ok	! LaTeX Error: \mathscr allowed only in math mode.		
-\Ldown	ok	ok			
-\Lup	ok	ok			
 \M	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \MN	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\MNo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\MNt	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
-\MRel	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MNone	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MNtwo	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\MR	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Max	ok	ok			
+\Maxc	ok	ok			
+\Maxpar	ok	ok			
 \Mlog	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \Mlr	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \Mne	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
@@ -138,16 +155,21 @@ name	text	math	text_error	math_error	warning
 \Mse	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \Msig	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \Msw	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
+\Nax	ok	ok			
+\Naxc	ok	ok			
+\Naxpar	ok	ok			
 \OR	ok	ok			
 \ORs	ok	ok			
+\Pax	ok	ok			
+\Poax	ok	ok			
+\Posax	ok	ok			
+\Psax	ok	ok			
 \R	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
-\Rdown	ok	ok			
 \Rlog	ERR	ok	! Missing $ inserted.		
 \Rsig	ERR	ok	! Missing $ inserted.		
-\Rup	ok	ok			
 \SDL	ok	ok			
+\SDLT	ok	ok			
 \SDLplus	ok	ok			
-\SDLt	ok	ok			
 \SI	ok	ok			
 \SIs	ok	ok			
 \Sfive	ok	ok			
@@ -155,14 +177,24 @@ name	text	math	text_error	math_error	warning
 \Slog	ok	ok			
 \T	ok	ok			
 \TOP	ok	ok			
-\Ts	ok	ok			
+\TOPs	ok	ok			
+\Tax	ok	ok			
+\Taxc	ok	ok			
+\Taxpar	ok	ok			
+\Uax	ok	ok			
+\Uaxc	ok	ok			
+\Uaxpar	ok	ok			
 \VW	ok	ok			
 \Val	ok	ok			
 \Vlog	ERR	ok	! Missing $ inserted.		
 \Vsig	ERR	ok	! Missing $ inserted.		
 \WO	ok	ok			
 \WOs	ok	ok			
+\Wax	ok	ok			
+\Waxc	ok	ok			
 \Wlog	ERR	ok	! Missing $ inserted.		
+\Woax	ok	ok			
+\Wocax	ok	ok			
 \Wsig	ERR	ok	! Missing $ inserted.		
 \Yright	ERR	ok	! Missing $ inserted.		
 \af	ERR	ok	! Missing $ inserted.		
@@ -179,15 +211,11 @@ name	text	math	text_error	math_error	warning
 \believes	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \better	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \bisim	ERR	ok	! Missing $ inserted.		
+\bota	ERR	ok	! Missing $ inserted.		
 \botg	ERR	ok	! Missing $ inserted.		
-\bott	ERR	ok	! Missing $ inserted.		
 \by	ok	ok			
-\cax	ok	ok			
-\caxc	ok	ok			
-\caxpar	ok	ok			
 \cbelieve	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \cbelieves	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
-\ccax	ok	ok			
 \ccl	ok	ok			
 \cclS	ok	ok			
 \ccla	ok	ok			
@@ -209,8 +237,6 @@ name	text	math	text_error	math_error	warning
 \ccrs	ok	ok			
 \ccrss	ok	ok			
 \ccrsss	ok	ok			
-\cdax	ok	ok			
-\cduax	ok	ok			
 \cfact	ERR	ok	! Missing $ inserted.		
 \choice	ok	ok			
 \choicema	ERR	ok	! Missing $ inserted.		
@@ -218,7 +244,6 @@ name	text	math	text_error	math_error	warning
 \cknows	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \clor	ERR	ok	! Missing $ inserted.		
 \close	ok	ERR		! Missing $ inserted.	
-\cmaxi	ok	ok			
 \cml	ok	ok			
 \cmlS	ok	ok			
 \cmla	ok	ok			
@@ -242,7 +267,6 @@ name	text	math	text_error	math_error	warning
 \cmrss	ok	ok			
 \cmrsss	ok	ok			
 \cn	ok	ok			
-\cnax	ok	ok			
 \cnecs	ERR	ok	! Missing $ inserted.		
 \cnecsolo	ERR	ok	! Missing $ inserted.		
 \cnl	ok	ok			
@@ -269,9 +293,6 @@ name	text	math	text_error	math_error	warning
 \ctruthsetml	ERR	ok	! Missing $ inserted.		
 \ctruthsetmm	ERR	ok	! Missing $ inserted.		
 \ctruthsetmsub	ERR	ok	! Missing $ inserted.		
-\dax	ok	ok			
-\daxc	ok	ok			
-\daxpar	ok	ok			
 \de	ERR	ok	! Missing $ inserted.		
 \defby	ERR	ok	! Missing $ inserted.		
 \defbyvar	ERR	ok	! Missing $ inserted.		
@@ -286,11 +307,8 @@ name	text	math	text_error	math_error	warning
 \deto	ERR	ok	! Missing $ inserted.		
 \drule	ok	ok			
 \drulepar	ok	ok			
-\dsax	ok	ok			
 \dstit	ERR	ok	! Missing $ inserted.		
 \dstito	ok	ok			
-\duax	ok	ok			
-\duaxpar	ok	ok			
 \dvbar	ok	ok			
 \eclass	ok	ok			
 \eclassl	ERR	ok	! Missing $ inserted.		
@@ -341,24 +359,21 @@ name	text	math	text_error	math_error	warning
 \iruledj	ok	ERR		! Missing $ inserted.	
 \irulej	ok	ERR		! Missing $ inserted.	
 \ito	ERR	ok	! Missing $ inserted.		
-\kax	ok	ok			
-\kaxc	ok	ok			
-\kaxpar	ok	ok			
 \know	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \knows	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \krule	ok	ok			
 \krulepar	ok	ok			
 \lang	ok	ok			
+\langc	ok	ok			
 \langd	ok	ok			
 \langm	ok	ok			
 \langmd	ok	ok			
 \langp	ok	ok			
+\ldown	ok	ok			
 \logic	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
 \logicp	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
+\lup	ok	ok			
 \manrule	ok	ERR		! Missing $ inserted.	
-\maxi	ok	ok			
-\maxic	ok	ok			
-\maxipar	ok	ok			
 \may	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \mcseti	ERR	ok	! Missing $ inserted.		
 \mcslog	ERR	ok	! Missing $ inserted.		
@@ -389,9 +404,6 @@ name	text	math	text_error	math_error	warning
 \mwrp	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \mwrv	ERR	ok	! LaTeX Error: \mathfrak allowed only in math mode.		
 \natent	ERR	ok	! Missing $ inserted.		
-\nax	ok	ok			
-\naxc	ok	ok			
-\naxpar	ok	ok			
 \nec	ERR	ok	! Missing $ inserted.		
 \neced	ERR	ok	! Missing $ inserted.		
 \necessitates	ERR	ok	! Missing $ inserted.		
@@ -413,16 +425,13 @@ name	text	math	text_error	math_error	warning
 \oset	ERR	ok	! Missing $ inserted.		
 \ought	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \parent	ok	ok			
-\pax	ok	ok			
 \pcite	ok	ERR		! You can't use `\spacefactor' in math mode.	
 \permissible	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \plrule	ok	ok			
 \plrulepar	ok	ok			
-\poax	ok	ok			
 \pone	ERR	ok	! Missing $ inserted.		
 \porule	ok	ok			
 \porulepar	ok	ok			
-\posax	ok	ok			
 \posrule	ok	ok			
 \posrulepar	ok	ok			
 \poss	ERR	ok	! Missing $ inserted.		
@@ -438,27 +447,28 @@ name	text	math	text_error	math_error	warning
 \provesm	ERR	ok	! Missing $ inserted.		
 \provesrel	ERR	ok	! Missing $ inserted.		
 \provestf	ERR	ok	! Missing $ inserted.		
-\psax	ok	ok			
 \pthree	ERR	ok	! Missing $ inserted.		
 \ptwo	ERR	ok	! Missing $ inserted.		
 \pzero	ERR	ok	! Missing $ inserted.		
 \qed	ok	ok			
 \qedsymbol	ok	ERR		! Missing $ inserted.	
+\rdown	ok	ok			
 \relrule	ok	ok			
 \relrulepar	ok	ok			
 \remarkqed	ok	ok			
-\reposs	ok	ok			
-\reposspar	ok	ok			
+\repossrule	ok	ok			
+\repossrulepar	ok	ok			
 \reprule	ok	ok			
 \reprulepar	ok	ok			
 \rerrule	ok	ok			
 \rerrulepar	ok	ok			
 \rerule	ok	ok			
 \rerulepar	ok	ok			
-\rmposs	ok	ok			
-\rmposspar	ok	ok			
-\rposs	ok	ok			
-\rposspar	ok	ok			
+\rmpossrule	ok	ok			
+\rmpossrulepar	ok	ok			
+\rpossrule	ok	ok			
+\rpossrulepar	ok	ok			
+\rup	ok	ok			
 \samevas	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
 \seq	ERR	ok	! Missing $ inserted.		
 \set	ok	ok			
@@ -477,16 +487,13 @@ name	text	math	text_error	math_error	warning
 \suchthat	ERR	ok	! Missing $ inserted.		
 \tautrule	ok	ok			
 \tautrulepar	ok	ok			
-\tax	ok	ok			
-\taxc	ok	ok			
-\taxpar	ok	ok			
 \tcite	ok	ERR		! You can't use `\spacefactor' in math mode.	
 \then	ERR	ok	! Missing $ inserted.		
 \theory	ERR	ok	! LaTeX Error: \mathcal allowed only in math mode.		
 \tightwedge	ERR	ok	! Missing $ inserted.		
 \to	ERR	ok	! Missing $ inserted.		
+\topa	ERR	ok	! Missing $ inserted.		
 \topg	ERR	ok	! Missing $ inserted.		
-\topt	ERR	ok	! Missing $ inserted.		
 \tree	ok	ok			
 \triggers	ERR	ok	! Missing $ inserted.		
 \true	ok	ok			
@@ -498,9 +505,6 @@ name	text	math	text_error	math_error	warning
 \truthsetmsub	ERR	ok	! Missing $ inserted.		
 \tseq	ERR	ok	! Missing $ inserted.		
 \tuple	ERR	ok	! Missing $ inserted.		
-\uax	ok	ok			
-\uaxc	ok	ok			
-\uaxpar	ok	ok			
 \union	ERR	ok	! Missing $ inserted.		
 \unneced	ERR	ok	! Missing $ inserted.		
 \unpossed	ERR	ok	! Missing $ inserted.		
@@ -508,16 +512,10 @@ name	text	math	text_error	math_error	warning
 \versal	ok	ok			
 \vw	ERR	ok	! Missing $ inserted.		
 \was	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
-\wax	ok	ok			
-\waxc	ok	ok			
 \wedgeset	ERR	ok	! Missing $ inserted.		
 \willbe	ERR	ok	! LaTeX Error: \mathsf allowed only in math mode.		
-\woax	ok	ok			
-\wocax	ok	ok			
-env:proof	ok	-			
-env:proofsketch	ok	-			
-env:block	ok	-			
 env:gentzen	ok	-			
+env:block	ok	-			
 env:hilbertlist	ok	-			
 env:romanlist	ok	-			
 env:Romanlist	ok	-			
@@ -528,6 +526,8 @@ env:Alphlist	ok	-
 env:itemlist	ok	-			
 env:itemlistflush	ok	-			
 env:axiomproof	ok	-			
+env:proof	ok	-			
+env:proofsketch	ok	-			
 env:theorem	ok	-			
 env:lemma	ok	-			
 env:proposition	ok	-			

@@ -229,29 +229,31 @@ return {
       -- CN schema family
       re("CNfam", "CN[rl]\\w*", G.nsy),
       -- Other conditional-axiom labels
-      cmd("cdax", G.nsy),
+      cmd("CDax", G.nsy),
       cmd("CP", G.nsy),
       cmd("CPs", G.nsy),
       cmd("CTh", G.nsy),
-      cmd("cduax", G.nsy),
+      cmd("CDualax", G.nsy),
       -- Classical modal axiom labels + parenthesized + converse
-      -- Base: Xax, Xaxpar, Xaxc (where X ∈ {c,k,d,t,u,p,w,n})
-      re("axfam", "[ckdtupwn]ax\\w*", G.nsy),
+      -- Base: Xax, Xaxpar, Xaxc (where X ∈ {C,K,D,T,U,P,W,N}); since the
+      -- naming grammar (2026-09-08) a schema starts with a capital, and ax
+      -- marks that the same letters also name a system
+      re("axfam", "[CKDTUPWN]ax\\w*", G.nsy),
       -- ds/ps/po/pos variants
-      cmd("dsax", G.nsy),
-      cmd("psax", G.nsy),
-      cmd("poax", G.nsy),
-      cmd("posax", G.nsy),
-      cmd("woax", G.nsy),
-      cmd("wocax", G.nsy),
-      -- maxi family
-      re("maxifam", "maxi\\w*", G.nsy),
-      -- duax family
-      re("duaxfam", "duax\\w*", G.nsy),
-      -- Compound axiom labels: ccax, cnax, cmaxi
-      cmd("ccax", G.nsy),
-      cmd("cnax", G.nsy),
-      cmd("cmaxi", G.nsy),
+      cmd("Dsax", G.nsy),
+      cmd("Psax", G.nsy),
+      cmd("Poax", G.nsy),
+      cmd("Posax", G.nsy),
+      cmd("Woax", G.nsy),
+      cmd("Wocax", G.nsy),
+      -- Max family (the M schema; "Max", not "Maxi", since 2026-09-08)
+      re("maxfam", "Max\\w*", G.nsy),
+      -- Dualax family (Dual spelled as printed since 2026-09-08)
+      re("dualaxfam", "Dualax\\w*", G.nsy),
+      -- Compound axiom labels: CCax, CNax, CMax
+      cmd("CCax", G.nsy),
+      cmd("CNax", G.nsy),
+      cmd("CMax", G.nsy),
       -- I/O logic constraints
       cmd("TOP", G.nsy),
       cmd("SI", G.nsy),
@@ -259,7 +261,7 @@ return {
       cmd("AND", G.nsy),
       cmd("OR", G.nsy),
       cmd("CT", G.nsy),
-      cmd("Ts", G.nsy),
+      cmd("TOPs", G.nsy),
       cmd("SIs", G.nsy),
       cmd("WOs", G.nsy),
       cmd("ANDs", G.nsy),
@@ -303,11 +305,9 @@ return {
       -- Detachment-principle names
       cmd("FDio", G.nsy),
       cmd("DDio", G.nsy),
-      -- Rule names + parenthesized variants (32 commands → 1 pattern;
+      -- Rule names + parenthesized variants (38 commands → 1 pattern;
       -- booktabs \toprule etc. are carved back out by booktabsfam below)
       re("rulefam", "\\w*rule\\w*", G.nsy),
-      -- Possibility-rule names: rmposs, reposs, rposs + par variants
-      re("rpossfam", "r[me]?poss\\w*", G.nsy),
       -- Consequence-framework names (Set-Set, Set-Fmla, ...)
       cmd("setset", G.nsy),
       cmd("setfmla", G.nsy),
@@ -330,8 +330,9 @@ return {
       cmd("cnl", G.nse),
       cmd("cnlr", G.nse),
       re("cthfam", "cth\\w*", G.nse),
-      -- Order conditions on frames: Rup, Rdown, Lup, Ldown
-      re("orderfam", "[RL]%(up|down)>", G.nse),
+      -- Order conditions on frames: rup, rdown, lup, ldown (lowercase, as
+      -- every frame condition, since 2026-09-08)
+      re("orderfam", "[rl]%(up|down)>", G.nse),
 
       ----------------------------------------------------------------
       -- SEMANTIC RELATIONS  (texCmdTurnstileSem)
@@ -498,8 +499,7 @@ return {
       -- Language symbols — explicit alternation, NOT lang\w*: that
       -- pattern also captured stock \langle (splitting it from \rangle),
       -- and an explicit list keeps the coverage cross-check exact
-      mre("langfam", "lang%(p|m|d|md)?>", G.syo),
-      mcmd("Lc", G.syo),
+      mre("langfam", "lang%(p|m|d|md|c)?>", G.syo),
       mcmd("logic", G.syo),
       mcmd("logicp", G.syo),
       -- Term algebra / atoms-of-the-language
@@ -567,8 +567,8 @@ return {
       -- Order / lattice notation and the empty set: ambient set theory
       mcmd("topg", G.gr),
       mcmd("botg", G.gr),
-      mcmd("topt", G.gr),
-      mcmd("bott", G.gr),
+      mcmd("topa", G.gr),
+      mcmd("bota", G.gr),
       mcmd("filter", G.gr),
       mcmd("emptyset", G.gr),
       -- Set-theoretic notation (braces and operations; contents are

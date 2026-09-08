@@ -21,15 +21,32 @@ def members(path):
                      r'|\\newtheorem\s*\*?\s*\{([A-Za-z]+)\}'
                      r'|\\NewDocumentCommand\s*\\([A-Za-z]+)'
                      r'|\\DeclareCiteCommand\{\\([A-Za-z]+)\}')
+    # Headings come from the raw file's comments.  A %%% line is always a heading
+    # (the old section markers); a %% line is the unit's own prose, never one; a
+    # single-% line is a heading only when it opens a run of comment lines (the
+    # later lines of a run continue it as prose), is short, and is not a sentence.
+    # A trailing parenthetical is dropped from an over-long candidate, so
+    # "Applied Modal Operators (to make these bold ...)" keeps its heading.
     heading = None
-    for line in src.split('\n'):
-        pass
-    # headings are comment lines in the raw file; walk the raw file to keep them
     raw = open(path, encoding='utf-8').read().split('\n')
+    prev_comment = False
     for line in raw:
         s = line.strip()
-        if s.startswith('%') and not s.startswith('%%') and re.match(r'^%\s*[A-Za-z]', s) and len(s) < 80 and not s.startswith('% \\'):
-            heading = s.lstrip('% ').strip(); continue
+        is_comment = s.startswith('%')
+        is_rule = is_comment and not s.strip('%').strip()  # a bare %%%% line separates runs
+        if is_comment and not is_rule:
+            body = s.strip('%').strip()
+            strong = s.startswith('%%%')
+            if len(body) > 60 and body.endswith(')') and ' (' in body:
+                body = body[:body.rfind(' (')].strip()
+            ok = bool(re.match(r'^[A-Za-z]', body)) and len(body) <= 60 and not body.endswith('.')
+            if ok and (strong or (not s.startswith('%%') and not prev_comment)):
+                heading = body
+            if strong:
+                prev_comment = False  # a %%% heading opens a new run: a % line under it is a sub-heading
+                continue
+        prev_comment = is_comment and not is_rule
+        if is_comment: continue
         code = re.split(r'(?<!\\)%', line, maxsplit=1)[0]
         for m in pat.finditer(code):
             if m.group(1): name, args, opt = '\\' + m.group(1), int(m.group(2) or 0), m.group(3) is not None
@@ -84,7 +101,7 @@ deletion candidate (README, principle 1).
         if not os.path.exists(path): continue
         ms = members(path); total += len(ms)
         lines.append(f'\n## `french-logic-{u}.sty` — {len(ms)} members\n')
-        cur = None
+        cur = object()  # not None: a first group with no heading still gets its header row
         for name, args, opt, heading in ms:
             if heading != cur:
                 cur = heading

@@ -1,3 +1,6 @@
+Annotation, 2026-09-08: superseded by `next-chat-2026-09-08.md` beside this file —
+open that one first; this file stays as the record of the first chat's close.
+
 Prompt — the opening brief for the next french-logic chat. Dated record, written
 2026-09-07 at the close of the first chat. The next chat writes its successor at
 its own close and leaves this one in place; do not rewrite it.

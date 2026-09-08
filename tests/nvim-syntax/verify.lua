@@ -55,7 +55,7 @@ local checks = {
   { [[\<hilbertlist\>]], "texEnvArgNameLoaded", "begin{hilbertlist} loaded rung" },
   { [[\<tabular\>]], "texEnvArgName", "begin{tabular} default" },
   -- names of syntactic objects
-  { [[\\cax\>]], "texCmdNameSyn", "\\cax axiom (axfam pattern)" },
+  { [[\\Cax\>]], "texCmdNameSyn", "\\Cax axiom (axfam pattern)" },
   { [[\\CMr\>]], "texCmdNameSyn", "\\CMr schema (CCMfam)" },
   { [[\\Kfour\>]], "texCmdNameSyn", "\\Kfour system" },
   { [[\\EN\>]], "texCmdNameSyn", "\\EN system" },
@@ -63,7 +63,7 @@ local checks = {
   -- names of semantic objects; \cmr also pins the group-name-collision
   -- fix (slug ccmcond, NOT ccmfam ≅ CCMfam)
   { [[\\cmr\>]], "texCmdNameSem", "\\cmr condition (collision pin)" },
-  { [[\\Rup\>]], "texCmdNameSem", "\\Rup order condition" },
+  { [[\\rup\>]], "texCmdNameSem", "\\rup order condition" },
   -- metalinguistic relations; \trues sits DIRECTLY after \omega and
   -- \proves directly after \logic — the adjacency pins
   { [[\\trues\>]], "texCmdTurnstileSem", "\\trues (adjacency pin)" },

@@ -119,7 +119,7 @@ Background `#1a1b26`; contrast is WCAG vs that background.
 | derivability relations | `\proves` family, `\gives`, `\seq`, signed forces via af/de | `texCmdTurnstileSyn` | `#eec584` | — | 10.5 |
 | intensional operators | `\ought` `\may` `\cobs` `\cnecs` `\nec` `\sphere`, stit, epistemic, temporal | `texCmdIntension` | `#d9aa5e` | — | 8.0 |
 | semantic objects | `\M` `\F` `\flog` fams, `\truthset` `\ctruthset`, `f`-functions, valuations, truth values, STIT structures, credence | `texCmdSemObj` (+`texArgSemObj` ital) | `#74acf5` | — | 7.3 |
-| syntactic objects | `\proofsetl` `\eclassl`, languages `\lang*` `\Lc`, `\logic`, `\Fm` `\atoms` `\props`, mcs, `\cn` `\theory`, I/O out(·) | `texCmdSynObj` (+`texArgSynObj` ital) | `#bd9750` | — | 6.3 |
+| syntactic objects | `\proofsetl` `\eclassl`, languages `\lang*` (`\langc` since 2026-09-08), `\logic`, `\Fm` `\atoms` `\props`, mcs, `\cn` `\theory`, I/O out(·) | `texCmdSynObj` (+`texArgSynObj` ital) | `#bd9750` | — | 6.3 |
 | names, syntax side | schemata (CMr…), systems (K, CE, IO…), rules (RE, MP…), frameworks | `texCmdNameSyn` | `#bd9750` | bold | 6.3 |
 | names, semantics side | conditions (cmr, cth…), order conditions (R↑…) | `texCmdNameSem` | `#7396c2` | — | 5.6 |
 | object connectives | `\to` `\iff` `\then` `\onlyif` `\hk`, typed variants, stock `\land` `\lor` `\neg` `\top` `\bot` `\equiv` (stockbool) | `texCmdConnective` | `#c6ab90` | roman | 7.8 |

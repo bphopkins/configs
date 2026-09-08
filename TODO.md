@@ -244,6 +244,13 @@ change, and after each TeX Live release. Cross-listed in
 - [ ] Work the open ledger in the map, one item at a time, each verified by
   both nets before it lands. All thirteen D items closed 2026-09-07; the F
   items (form drift) are worked per unit after the split.
+- [x] Verify the first chat's work on fedxps: both nets, the snippet checks,
+  and a page-by-page comparison against the pre-split package (`145aad8`) —
+  the differences were exactly the deliberate list. @done(2026-09-08)
+- [x] D14 the inventory headings; D15 the mode table re-censused for `\Lc`
+  (golden 836 pages). @done(2026-09-08)
+- [x] fedxps could not run the harness's `compare.py` from the system Python:
+  Pillow was missing; installed from the Fedora package. @done(2026-09-08)
 - [x] Split the package into the hub and the unit files the map plans, output-
   identical under both nets; extend the snippet generator to read the units.
   @done(2026-09-07) — fourteen units plus the quarry; no differences across
@@ -251,14 +258,18 @@ change, and after each TeX Live release. Cross-listed in
 - [x] The F items decided by eye on the type board and landed: mode, face
   (rule β), small labels (idiom A), decorations, structure indices, the three
   folds. @done(2026-09-07)
-- [ ] The naming grammar: proposal recorded in the map (Conventions, "A grammar
-  for the names") and on the board; strict, lenient, or record-only is the
-  first decision of the next chat.
+- [x] The naming grammar: decided strict on 2026-09-08 (substituted, no
+  aliases) and landed in two rounds the same day, 59 renames, each proved on
+  both nets and the harness run on bigfed. @done(2026-09-08)
+- [x] The compute-heavy harness steps run on bigfed over SSH
+  (`french-logic-harness/remote.sh`: push, suite, census, compare, fetch);
+  settled 2026-09-08. @done(2026-09-08)
 - [ ] Per-unit ordering passes: within each unit the blocks still sit in the
   old file's order; reorder by the tower with the suite watching.
 - [ ] `dissertation/CLAUDE.md`, the package paragraph: still describes aliascnt,
-  the old `deon` semantics, and an absolute path — Brandon's document, update on
-  his say-so.
+  the old `deon` semantics, an absolute path, and (since the grammar landed)
+  the old names `\kax`, `\Rup`, `\MRel` — Brandon's document, update on his
+  say-so; the drafted replacement is in `latex/french-logic/next-chat-2026-09-08.md`.
 - [x] Decide the option design, the two IO-logic beamer decks, `\hypersetup`
   and `geometry`. @done(2026-09-07) — one keyval switch per unit with `deon`
   and `slim` bundles; the decks pass `deon` and build; hyperref defaults kept;
@@ -267,7 +278,8 @@ change, and after each TeX Live release. Cross-listed in
   left as it is; no version of the package builds them. @done(2026-09-07)
 
 Opened 2026-09-07. The next session opens with `latex/french-logic/next-chat.md`,
-the dated brief that says what exists, how to verify it, and what comes next.
+the dated brief that says what exists, how to verify it, and what comes next;
+each chat's brief is annotated at its head with the name of its successor.
 The package is a semantic markup language for logic; the
 governing principles (nothing deleted without an accepted case, dependencies
 ride with the code, one package with unit files, a preamble by default) are

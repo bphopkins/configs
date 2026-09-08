@@ -21,7 +21,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-core.sty` — 156 members
 
 
-**already declares it at this slot; the declaration is kept here as the record.**
+**Misc Preliminary**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -55,10 +55,10 @@ deletion candidate (README, principle 1).
 | `\langm` |  | TM | 5 | 2 |  |
 | `\langd` |  | TM | 38 | 23 |  |
 | `\langmd` |  | TM | 1 | 0 |  |
+| `\langc` |  | TM | 0 | 2 |  |
 | `\logic` |  | M | 94 | 31 |  |
 | `\metalogic` |  | TM | 0 | 0 |  |
 | `\logicp` |  | M | 0 | 0 |  |
-| `\Lc` |  | M | 0 | 2 |  |
 
 **Logical Operators and Relations**
 
@@ -88,15 +88,15 @@ deletion candidate (README, principle 1).
 | `\M` |  | M | 180 | 96 |  |
 | `\F` |  | M | 39 | 37 |  |
 | `\FR` |  | M | 3 | 0 |  |
-| `\FRo` |  | M | 1 | 0 |  |
-| `\FRt` |  | M | 1 | 0 |  |
+| `\FRtwo` |  | M | 1 | 0 |  |
+| `\FRthree` |  | M | 1 | 0 |  |
 | `\FN` |  | M | 0 | 0 |  |
-| `\FNo` |  | M | 3 | 0 |  |
-| `\FNt` |  | M | 3 | 0 |  |
-| `\MRel` |  | M | 1 | 0 |  |
+| `\FNone` |  | M | 3 | 0 |  |
+| `\FNtwo` |  | M | 3 | 0 |  |
+| `\MR` |  | M | 1 | 0 |  |
 | `\MN` |  | M | 0 | 0 |  |
-| `\MNo` |  | M | 1 | 0 |  |
-| `\MNt` |  | M | 1 | 0 |  |
+| `\MNone` |  | M | 1 | 0 |  |
+| `\MNtwo` |  | M | 1 | 0 |  |
 | `\C` |  | M | 10 | 7 |  |
 | `\R` |  | M | 0 | 0 |  |
 | `\mwrv` |  | M | 0 | 0 |  |
@@ -189,11 +189,6 @@ deletion candidate (README, principle 1).
 | `\mlto` |  | M | 48 | 94 |  |
 | `\mlforall` |  | M | 0 | 0 |  |
 | `\mlexists` |  | M | 0 | 0 |  |
-
-**they actually connect (e.g. in frame conditions).**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
 | `\mltosolo` |  | M | 4 | 1 |  |
 | `\mlandsolo` |  | M | 4 | 1 |  |
 | `\mlorsolo` |  | M | 4 | 1 |  |
@@ -211,8 +206,8 @@ deletion candidate (README, principle 1).
 | `\theory` | 1 | M | 0 | 0 |  |
 | `\topg` |  | M | 0 | 0 |  |
 | `\botg` |  | M | 0 | 0 |  |
-| `\topt` |  | M | 0 | 0 |  |
-| `\bott` |  | M | 0 | 0 |  |
+| `\topa` |  | M | 0 | 0 |  |
+| `\bota` |  | M | 0 | 0 |  |
 | `\natent` |  | M | 0 | 1 |  |
 | `\nnatent` |  | M | 0 | 0 |  |
 
@@ -264,6 +259,11 @@ deletion candidate (README, principle 1).
 
 ## `french-logic-applied.sty` — 16 members
 
+
+**Applied Modal Operators**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\hitherto` |  | M | 0 | 0 |  |
 | `\henceforth` |  | M | 0 | 0 |  |
 | `\was` |  | M | 1 | 1 |  |
@@ -306,7 +306,7 @@ deletion candidate (README, principle 1).
 | `\better` | 2 | M | 0 | 52 |  |
 | `\samevas` | 2 | M | 0 | 30 |  |
 
-**parameters it was tuned with (kern before the letter, raise, scale).**
+**Dyadic Stuff**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -329,51 +329,51 @@ deletion candidate (README, principle 1).
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\kax` |  | TM | 3 | 0 |  |
-| `\dax` |  | TM | 20 | 0 |  |
-| `\dsax` |  | TM | 1 | 0 |  |
-| `\tax` |  | TM | 0 | 0 |  |
-| `\uax` |  | TM | 7 | 0 |  |
-| `\wax` |  | TM | 0 | 0 |  |
-| `\maxi` |  | TM | 10 | 0 |  |
-| `\cax` |  | TM | 9 | 1 |  |
-| `\nax` |  | TM | 5 | 0 |  |
-| `\cmaxi` |  | TM | 0 | 0 |  |
-| `\ccax` |  | TM | 0 | 0 |  |
-| `\cnax` |  | TM | 0 | 0 |  |
-| `\duax` |  | TM | 5 | 0 |  |
-| `\pax` |  | TM | 1 | 0 |  |
-| `\psax` |  | TM | 0 | 0 |  |
-| `\poax` |  | TM | 3 | 0 |  |
-| `\posax` |  | TM | 0 | 0 |  |
-| `\woax` |  | TM | 4 | 0 |  |
-| `\wocax` |  | TM | 4 | 0 |  |
+| `\Kax` |  | TM | 3 | 0 |  |
+| `\Dax` |  | TM | 20 | 0 |  |
+| `\Dsax` |  | TM | 1 | 0 |  |
+| `\Tax` |  | TM | 0 | 0 |  |
+| `\Uax` |  | TM | 7 | 0 |  |
+| `\Wax` |  | TM | 0 | 0 |  |
+| `\Max` |  | TM | 10 | 0 |  |
+| `\Cax` |  | TM | 9 | 1 |  |
+| `\Nax` |  | TM | 5 | 0 |  |
+| `\CMax` |  | TM | 0 | 0 |  |
+| `\CCax` |  | TM | 0 | 0 |  |
+| `\CNax` |  | TM | 0 | 0 |  |
+| `\Dualax` |  | TM | 5 | 0 |  |
+| `\Pax` |  | TM | 1 | 0 |  |
+| `\Psax` |  | TM | 0 | 0 |  |
+| `\Poax` |  | TM | 3 | 0 |  |
+| `\Posax` |  | TM | 0 | 0 |  |
+| `\Woax` |  | TM | 4 | 0 |  |
+| `\Wocax` |  | TM | 4 | 0 |  |
 
 **Parenthesized**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\kaxpar` |  | TM | 1 | 0 |  |
-| `\daxpar` |  | TM | 2 | 0 |  |
-| `\taxpar` |  | TM | 0 | 0 |  |
-| `\uaxpar` |  | TM | 1 | 0 |  |
-| `\maxipar` |  | TM | 0 | 0 |  |
-| `\caxpar` |  | TM | 0 | 0 |  |
-| `\naxpar` |  | TM | 2 | 0 |  |
-| `\duaxpar` |  | TM | 2 | 0 |  |
+| `\Kaxpar` |  | TM | 1 | 0 |  |
+| `\Daxpar` |  | TM | 2 | 0 |  |
+| `\Taxpar` |  | TM | 0 | 0 |  |
+| `\Uaxpar` |  | TM | 1 | 0 |  |
+| `\Maxpar` |  | TM | 0 | 0 |  |
+| `\Caxpar` |  | TM | 0 | 0 |  |
+| `\Naxpar` |  | TM | 2 | 0 |  |
+| `\Dualaxpar` |  | TM | 2 | 0 |  |
 
 **Converses**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\kaxc` |  | TM | 0 | 0 |  |
-| `\daxc` |  | TM | 0 | 0 |  |
-| `\taxc` |  | TM | 0 | 0 |  |
-| `\uaxc` |  | TM | 0 | 0 |  |
-| `\waxc` |  | TM | 0 | 0 |  |
-| `\maxic` |  | TM | 0 | 0 |  |
-| `\caxc` |  | TM | 0 | 0 |  |
-| `\naxc` |  | TM | 0 | 0 |  |
+| `\Kaxc` |  | TM | 0 | 0 |  |
+| `\Daxc` |  | TM | 0 | 0 |  |
+| `\Taxc` |  | TM | 0 | 0 |  |
+| `\Uaxc` |  | TM | 0 | 0 |  |
+| `\Waxc` |  | TM | 0 | 0 |  |
+| `\Maxc` |  | TM | 0 | 0 |  |
+| `\Caxc` |  | TM | 0 | 0 |  |
+| `\Naxc` |  | TM | 0 | 0 |  |
 
 **Modal Derivation Rules**
 
@@ -392,9 +392,9 @@ deletion candidate (README, principle 1).
 | `\reprule` |  | TM | 0 | 0 |  |
 | `\tautrule` |  | TM | 0 | 0 |  |
 | `\subrule` |  | TM | 0 | 0 |  |
-| `\rmposs` |  | TM | 0 | 0 |  |
-| `\reposs` |  | TM | 0 | 0 |  |
-| `\rposs` |  | TM | 0 | 0 |  |
+| `\rmpossrule` |  | TM | 0 | 0 |  |
+| `\repossrule` |  | TM | 0 | 0 |  |
+| `\rpossrule` |  | TM | 0 | 0 |  |
 
 **Parenthesized**
 
@@ -413,9 +413,9 @@ deletion candidate (README, principle 1).
 | `\reprulepar` |  | TM | 0 | 0 |  |
 | `\tautrulepar` |  | TM | 0 | 0 |  |
 | `\subrulepar` |  | TM | 0 | 0 |  |
-| `\rmposspar` |  | TM | 0 | 0 |  |
-| `\reposspar` |  | TM | 0 | 0 |  |
-| `\rposspar` |  | TM | 0 | 0 |  |
+| `\rmpossrulepar` |  | TM | 0 | 0 |  |
+| `\repossrulepar` |  | TM | 0 | 0 |  |
+| `\rpossrulepar` |  | TM | 0 | 0 |  |
 
 **Modal Systems and Schema**
 
@@ -473,7 +473,7 @@ deletion candidate (README, principle 1).
 |---|---|---|---|---|---|
 | `\SDL` |  | TM | 3 | 0 |  |
 | `\SDLplus` |  | TM | 2 | 0 |  |
-| `\SDLt` |  | TM | 0 | 3 |  |
+| `\SDLT` |  | TM | 0 | 3 |  |
 | `\KDought` |  | TM | 2 | 0 |  |
 | `\KDUought` |  | TM | 1 | 0 |  |
 | `\KUought` |  | TM | 1 | 0 |  |
@@ -487,7 +487,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-conditional.sty` — 107 members
 
 
-**Conditional Axioms and Conditions on Frames**
+**CM_R family (R↑: weakening value)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -502,6 +502,11 @@ deletion candidate (README, principle 1).
 | `\CMrdisj` |  | TM | 0 | 0 |  |
 | `\CMrconjd` |  | TM | 1 | 2 |  |
 | `\CMrup` |  | TM | 1 | 1 |  |
+
+**CC_R family (R↓: strengthening value)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\CCr` |  | TM | 31 | 19 |  |
 | `\CCrs` |  | TM | 0 | 0 |  |
 | `\CCrss` |  | TM | 0 | 0 |  |
@@ -513,6 +518,11 @@ deletion candidate (README, principle 1).
 | `\CCrdisj` |  | TM | 1 | 1 |  |
 | `\CCrdisjd` |  | TM | 1 | 1 |  |
 | `\CCrdown` |  | TM | 1 | 1 |  |
+
+**CM_L family (L↓: strengthening argument)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\CMl` |  | TM | 42 | 20 |  |
 | `\CMls` |  | TM | 4 | 5 |  |
 | `\CMlss` |  | TM | 0 | 0 |  |
@@ -526,6 +536,11 @@ deletion candidate (README, principle 1).
 | `\CMldisj` |  | TM | 0 | 0 |  |
 | `\CMlconjd` |  | TM | 1 | 1 |  |
 | `\CMldown` |  | TM | 1 | 1 |  |
+
+**CC_L family (L↑: weakening argument)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\CCl` |  | TM | 19 | 18 |  |
 | `\CCls` |  | TM | 0 | 0 |  |
 | `\CClss` |  | TM | 0 | 0 |  |
@@ -537,6 +552,11 @@ deletion candidate (README, principle 1).
 | `\CCldisj` |  | TM | 1 | 1 |  |
 | `\CCldisjd` |  | TM | 1 | 1 |  |
 | `\CClup` |  | TM | 1 | 1 |  |
+
+**cm_R family (lowercase)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\cmr` |  | TM | 28 | 15 |  |
 | `\cmrs` |  | TM | 1 | 2 |  |
 | `\cmrss` |  | TM | 0 | 0 |  |
@@ -547,6 +567,11 @@ deletion candidate (README, principle 1).
 | `\cmrconj` |  | TM | 1 | 1 |  |
 | `\cmrdisj` |  | TM | 0 | 0 |  |
 | `\cmrconjd` |  | TM | 1 | 1 |  |
+
+**cc_R family (lowercase)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\ccr` |  | TM | 25 | 18 |  |
 | `\ccrs` |  | TM | 0 | 0 |  |
 | `\ccrss` |  | TM | 0 | 0 |  |
@@ -557,6 +582,11 @@ deletion candidate (README, principle 1).
 | `\ccrconj` |  | TM | 0 | 0 |  |
 | `\ccrdisj` |  | TM | 2 | 1 |  |
 | `\ccrdisjd` |  | TM | 6 | 3 |  |
+
+**cm_L family (lowercase)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\cml` |  | TM | 28 | 11 |  |
 | `\cmls` |  | TM | 2 | 2 |  |
 | `\cmlss` |  | TM | 5 | 2 |  |
@@ -569,6 +599,11 @@ deletion candidate (README, principle 1).
 | `\cmlconj` |  | TM | 1 | 1 |  |
 | `\cmldisj` |  | TM | 0 | 0 |  |
 | `\cmlconjd` |  | TM | 1 | 1 |  |
+
+**cc_L family (lowercase)**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\ccl` |  | TM | 21 | 14 |  |
 | `\ccls` |  | TM | 6 | 2 |  |
 | `\cclss` |  | TM | 2 | 0 |  |
@@ -579,11 +614,16 @@ deletion candidate (README, principle 1).
 | `\cclconj` |  | TM | 0 | 0 |  |
 | `\ccldisj` |  | TM | 2 | 1 |  |
 | `\ccldisjd` |  | TM | 6 | 3 |  |
+
+**Other**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\CNr` |  | TM | 22 | 2 |  |
 | `\CNl` |  | TM | 0 | 2 |  |
 | `\CNlr` |  | TM | 17 | 9 |  |
 | `\CNra` |  | TM | 3 | 0 |  |
-| `\cdax` |  | TM | 1 | 0 |  |
+| `\CDax` |  | TM | 1 | 0 |  |
 | `\CP` |  | TM | 0 | 0 |  |
 | `\CPs` |  | TM | 2 | 0 |  |
 | `\CTh` |  | TM | 8 | 8 |  |
@@ -592,11 +632,16 @@ deletion candidate (README, principle 1).
 | `\cnlr` |  | TM | 4 | 3 |  |
 | `\cth` |  | TM | 5 | 3 |  |
 | `\cths` |  | TM | 6 | 2 |  |
-| `\cduax` |  | TM | 1 | 0 |  |
-| `\Rup` |  | TM | 17 | 17 |  |
-| `\Rdown` |  | TM | 10 | 7 |  |
-| `\Ldown` |  | TM | 17 | 11 |  |
-| `\Lup` |  | TM | 10 | 7 |  |
+| `\CDualax` |  | TM | 1 | 0 |  |
+
+**Order conditions on frames**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\rup` |  | TM | 17 | 17 |  |
+| `\rdown` |  | TM | 10 | 7 |  |
+| `\ldown` |  | TM | 17 | 11 |  |
+| `\lup` |  | TM | 10 | 7 |  |
 | `\cthss` |  | TM | 2 | 0 |  |
 
 ## `french-logic-io.sty` — 26 members
@@ -630,7 +675,7 @@ deletion candidate (README, principle 1).
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\Ts` |  | TM | 0 | 0 |  |
+| `\TOPs` |  | TM | 0 | 0 |  |
 | `\SIs` |  | TM | 0 | 0 |  |
 | `\WOs` |  | TM | 0 | 0 |  |
 | `\ANDs` |  | TM | 0 | 0 |  |
@@ -684,11 +729,6 @@ deletion candidate (README, principle 1).
 | `\negedrule` |  | T | 0 | 0 |  |
 | `\negidrule` | 1 | T | 0 | 0 |  |
 | `\manrule` | 2 | T | 0 | 0 |  |
-
-**ripped from W2021 seminar final preamble, much is superfluous**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
 | `\incomp` |  | M | 0 | 0 |  |
 | `\close` | 1 | T | 0 | 1 |  |
 | `\hk` |  | M | 0 | 0 |  |
@@ -718,13 +758,13 @@ deletion candidate (README, principle 1).
 ## `french-logic-lists.sty` — 12 members
 
 
-**an environment of that name.**
+**(unheaded)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `env:block` |  | T | 0 | 94 |  |
 
-**completeness deck carried these four lines itself before the package did.**
+**List Environments**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -743,14 +783,14 @@ deletion candidate (README, principle 1).
 ## `french-logic-structure.sty` — 16 members
 
 
-**correctly but print "theorem" for every kind, so refuse them loudly.**
+**DISSERTATION THEOREM ENVIRONMENTS AND RELATED DEFINITIONS**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\sketchqed` |  | T | 0 | 0 |  |
 | `\remarkqed` |  | TM | 0 | 0 |  |
 
-**theorem kinds are declared under them by kind (plain, definition, remark).**
+**For Dissertation**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -765,17 +805,17 @@ deletion candidate (README, principle 1).
 | `env:convention` |  | T | 3 | 0 |  |
 | `env:observation` |  | T | 0 | 0 |  |
 | `env:digression` |  | T | 1 | 0 |  |
-
-**environment a member of the language (README, Conventions).**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
 | `env:proof` |  | T | 18 | 1 |  |
 | `env:proofsketch` |  | T | 13 | 2 |  |
 | `\qedsymbol` |  | T | - | - |  |
 
 ## `french-logic-cite.sty` — 4 members
 
+
+**Citations**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\flPossMark` |  | ? | - | - |  |
 | `\poscite` |  | ? | - | - |  |
 | `\tcite` | 2[opt] | T | 131 | 0 |  |
@@ -784,7 +824,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-proof.sty` — 11 members
 
 
-**being present -- loaded above, or by the document before this package under**
+**Proof Stuff**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|

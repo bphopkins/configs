@@ -4,17 +4,16 @@ member	mode	error
 \Cl	text	! Missing $ inserted.
 \F	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \FN	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\FNo	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\FNt	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FNone	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FNtwo	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \FR	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\FRo	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\FRt	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\Lc	text	! LaTeX Error: \mathscr allowed only in math mode.
+\FRthree	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\FRtwo	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \M	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \MN	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\MNo	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\MNt	text	! LaTeX Error: \mathfrak allowed only in math mode.
-\MRel	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MNone	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MNtwo	text	! LaTeX Error: \mathfrak allowed only in math mode.
+\MR	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \Mlog	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \Mlr	text	! LaTeX Error: \mathfrak allowed only in math mode.
 \Mne	text	! LaTeX Error: \mathfrak allowed only in math mode.
@@ -42,8 +41,8 @@ member	mode	error
 \believes	text	! LaTeX Error: \mathsf allowed only in math mode.
 \better	text	! LaTeX Error: \mathsf allowed only in math mode.
 \bisim	text	! Missing $ inserted.
+\bota	text	! Missing $ inserted.
 \botg	text	! Missing $ inserted.
-\bott	text	! Missing $ inserted.
 \cbelieve	text	! LaTeX Error: \mathsf allowed only in math mode.
 \cbelieves	text	! LaTeX Error: \mathsf allowed only in math mode.
 \ccred	text	! Missing $ inserted.
@@ -198,8 +197,8 @@ member	mode	error
 \theory	text	! LaTeX Error: \mathcal allowed only in math mode.
 \tightwedge	text	! Missing $ inserted.
 \to	text	! Missing $ inserted.
+\topa	text	! Missing $ inserted.
 \topg	text	! Missing $ inserted.
-\topt	text	! Missing $ inserted.
 \triggers	text	! Missing $ inserted.
 \trues	text	! Missing $ inserted.
 \truthset	text	! Missing $ inserted.
