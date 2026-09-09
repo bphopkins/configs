@@ -644,3 +644,239 @@ to `~/.local/bin` as symlinks under a tool-homes convention (`~/opt/<Tool>`,
 `~/src/<tool>`); `bin/CLAUDE.md` and README §2 and §8 say so. And
 `80-clamav.sh`'s setup line now names Fedora 44's `clamav-freshclam`; bigfed,
 which had no clamav at all, was given it.
+
+## 13. french-logic: the map, the unit split, the rendering suite — COMPLETE 2026-09-08
+
+Moved here from the map (`latex/french-logic/README.md`, *Open ledger*) on
+2026-09-08, when the last of the per-unit ordering passes closed the
+reorganisation the ledger tracked; the map keeps one line per item. The map is
+the package's living contract, the inventory `AUDIT.md` beside it is generated,
+the item closed in `TODO.md` on 2026-09-08 (its checklist is at the foot of
+this entry), and the four chats' briefs
+(`docs/french-logic-campaign-2026-09/next-chat*.md`) are the dated records of
+how each item was decided — the first chat on 2026-09-07 (audit, harness,
+suite, map, split, the D items, the faces and labels by eye), the second on
+2026-09-08 (the verification against the pre-split package, D14–D15, the
+naming grammar), the third on 2026-09-08 (D16, the dates, the charter, the
+ordering passes), the fourth on 2026-09-08 (the closing forms, the policy
+verdicts, the v1.0 release).
+Defects are numbered D, form drift F; the text below is the ledger as it stood
+when it moved.
+
+- **D1** orphan `\makeatother` at the end of the theorem block, and the
+  citation-block comment that blamed `\ExplSyntaxOn` for it. *Fixed
+  2026-09-07.*
+- **D2** U+2019 in the `modal` TikZ style's arrow tip. *Fixed 2026-09-07;
+  `stealth'` kept, plain `stealth` and arrows.meta `Stealth` verified as
+  alternatives.*
+- **D3** `\usepackage` for microtype inside the package. *Fixed 2026-09-07,
+  in place: the load stays with the STIT code that needs it.*
+- **D4** the signed-formula `\af`/`\de` family needs `relsize`, which nothing
+  loaded; fourteen members failed in both modes. *Fixed 2026-09-07: relsize
+  loaded beside ebproof, where the code lives.*
+- **D5** `\DeclareSymbolFont{stmry}` re-declared stmaryrd's symbol font and
+  dropped its bold version; `\Yright` re-declares stmaryrd's identical symbol.
+  *Resolved 2026-09-07: the font line removed; the `\Yright` declaration
+  kept by decision — the sequent arrow is Humberstone's convention and the
+  line is its record; `\shortminus` kept, it backs `\unneced` and
+  `\unpossed`.*
+- **D6** `\IOfn` set bare `\tiny` in a superscript; seven warnings per
+  dissertation build, and the label came out at script size. *Fixed
+  2026-09-07: first `\text{\tiny\textsf{H}}`, the size the definition asked
+  for, then, with the labels pass, `{\scriptscriptstyle\mathsf{H}}` — the
+  scaling size, sans because the name is a frame class; the IO-logic chapter's
+  23 sites match `\IOhn`'s label height.*
+- **D7** `\renewcommand{\qed}` broke `\qedhere` in display math (51 errors
+  against 0 for the amsthm original), failed to load under `deon` when
+  amsthm came later, and left a ■ orphaned at the left margin on printed
+  page 71. *Fixed 2026-09-07: the house placement rebuilt on amsthm's
+  mechanism — math branch amsthm's, text branch flush right with no `\quad`
+  and no break before the mark — applied only when amsthm is present;
+  `proofsketch` takes its □ through a local `\qedsymbol`, so `\qedhere`
+  works in sketches. Two dissertation pages changed, as intended.*
+- **D8** aliascnt was obsolete on the 2026-06-01 kernel, whose `\newtheorem`
+  uses `\newcounteralias`. *Fixed 2026-09-07: plain `\newtheorem{x}[theorem]`
+  for the ten kinds, the `\crefname`s kept, and a `\PackageError` on any
+  older format, since one would silently print "theorem" for every kind.
+  fedxps carries a 2026 TeX Live tree. No page changed; the warning is gone
+  from every consumer.*
+- **D9** the IO-logic beamer decks passed the removed `conflicts` option, and
+  under `deon` then hit the enumitem-under-beamer recursion the completeness
+  deck had worked around in its own preamble. *Fixed 2026-09-07: the package
+  carries the four-line `\setlist` shim, guarded on beamer, beside enumitem;
+  the two decks now pass `deon`. Both build again (27 and 24 pages); the
+  completeness deck's copy of the shim is now redundant.*
+- **D10** `block` sat inside the amsthm guard though it needs nothing there.
+  *Fixed 2026-09-07: defined after the guard, only when no class already
+  provides a `block`, with a log note otherwise.*
+- **D11** apparent no-ops. *Resolved 2026-09-07: the four `\!\,` kerns
+  removed (exactly zero glue). The `proof` renewal, byte-identical to
+  amsthm's, and `\renewcommand{\to}`, identical to the kernel's, are kept
+  and commented as pins: they declare the two as members with a house form,
+  and are why they appear in the inventory and the snippets.*
+- **D12** `\ProvidesPackage` carried prose where a date belongs. *Fixed
+  2026-09-07: `[2026/09/07 Semantic markup for logic]`; a version number
+  comes with the hub-and-units release.*
+- **D13** the `% !TEX root` line tied the shared package to one consumer by an
+  absolute path. *Resolved 2026-09-07: relative (`../../../dissertation/…`),
+  measured to resolve from the repo path and through the texmf symlink alike;
+  a tilde path does not resolve. The line exists so that compiling or viewing
+  from the package buffer acts on the dissertation; nothing else reads it.*
+- **D14** the inventory generator took the last line of a multi-line comment
+  as a group heading, so AUDIT.md showed prose fragments as headings, and a
+  first group with no heading lost its table header row. *Fixed 2026-09-08: a
+  heading is a `%%%` line, or the first line of a run of `%` lines, short and
+  not a sentence; the conditional unit's family headings appear for the first
+  time; the 543 member rows are unchanged.*
+- **D15** the mode table was not re-censused after `\Lc` gained its wrapper,
+  so the golden had no text page for it. *Fixed 2026-09-08: recensus (one row
+  changed), golden re-accepted at 836 pages.*
+- **D16** the stit unit loaded microtype with `[tracking=smallcaps]`, so a
+  document that loaded microtype itself before the package failed with an
+  option clash (compiled and seen 2026-09-08; no consumer does it). *Fixed
+  2026-09-08: microtype loaded bare, `\microtypesetup{tracking=smallcaps}`
+  after it — pixel-identical to the option form at 300 dpi, where tracking
+  off differs by 2723 pixels; both nets clean; the microtype-first document
+  compiles.*
+- **F1** mode, face, and naming drift as listed under *Conventions*. *Mode, face, labels, decorations, and structure indices settled 2026-09-07;
+  the naming grammar settled and landed 2026-09-08 (59 renames); the ordering
+  passes landed 2026-09-08, core first and the thirteen others the same day.
+  Closed.*
+- **F2** four hand-copied eight-line bodies (`\cnecs`, `\cposs` and their solo
+  forms) that were `\condop` with a different glyph and two kerns; two
+  identical theorem styles; two near-identical reflexive loop styles. *Fixed
+  2026-09-07: one builder `\fl@dyad` with each operator's six tuning numbers,
+  one style body under three names, one loop with two defaults; proved
+  identical on every net, the diagram included.*
+- **F3** header hierarchy, blank-line runs, trailing whitespace, lines over
+  100 characters. *Resolved 2026-09-07 by the split; the residue inside the
+  units went with the ordering passes on 2026-09-08: the old headers, the
+  indents left by the old `\ifdeon` block, the trailing whitespace. The lines
+  still over 100 characters are definitions, kept byte-identical. Closed.*
+
+Decisions closed 2026-09-07: the option design (above); hyperref keeps its
+defaults, a document that wants otherwise sets `\hypersetup` itself;
+`geometry` stays with the documents, where every consumer already sets it.
+The opuscula drift was recorded in that repo's inventory (finding 10) on
+2026-09-07 and left as it is. The ordering passes and the dissertation
+charter's package section both closed on 2026-09-08.
+
+**Post-mortem, 2026-09-08.** Four chats over two days. *Built:* a private
+consumer harness that rebuilds the 27 documents loading the stowed package
+from scratch against any candidate and compares them page by page (text,
+warnings, pixels, side-by-side images), with the heavy steps runnable on
+bigfed over SSH; a public rendering suite that typesets every member on its
+own page in every mode it survives and hashes it against a golden (836 pages),
+compiles the fixture under both option bundles, loads each unit alone, and
+regenerates the inventory; the map as a living contract; and the package as a
+hub over fourteen units plus a never-loaded quarry, every line of the old
+single file placed by multiset, every unit ordered under one comment grammar,
+released as v1.0. *Decided,* each by eye on the type board or in an ask with
+its five parts: the mode policy; the faces (rule β); the scaling label idiom;
+italic structure indices; scaling decorations; the option design with `deon`
+and `slim`; the strict naming grammar, 59 renames substituted with no aliases;
+the dates rule; the comment grammar; and, at the close, the converse *c* and
+the T on SDL as decorations, the per-letter kerns kept, four forms normalised
+(`\mcslog`'s trailing space, `\unneced`'s zero-glue chain, five
+`\newcommand*` unstarred; `\emptytruthset` kept on the ask, then its kerns
+dropped on the confirmation pass the same evening) and four policies recorded
+(the unused furniture, `\graphicspath`, `slim` kept; `philogic.sty` out of
+scope). Sixteen defects and three form drifts fixed, each proved on both nets;
+the pre-split package was compared page by page with the result and the
+differences were exactly the deliberate list. *Declined:* deleting any member
+(principle 1: unused members are vocabulary); a pure tower split, which would
+separate correspondence pairs; aliases for the old names; trimming the
+preamble's unused furniture; renaming the dyadic operators so that `solo`
+appends everywhere (the trailing *s* is the verb's, "conditionally
+necessitates"); and the standing "whatever your reading turns up" item, which
+would have made the brief chain never-ending. *Deferred* to item 14: deriving
+the template's `philogic.sty` from the units, and one command for a connective
+that spaces itself by context. One census correction: the hand-kept
+`usage.tsv` carried two opuscula documents' own `\SDLt` under the package's
+`\SDLT` until 2026-09-08.
+
+*The confirmation pass* (2026-09-08, evening): every choice re-photographed
+from v1.0 on the type board, thirty-three in a ledger. Thirty confirmed;
+`\emptytruthset` reversed to the open dot; and two notes became a sixth
+sitting — the decorations had lost their `\mkern-2mu` tuck in the scaling
+conversion (measured at 600 dpi: the whole 1.33 pt difference, the design
+size contributing nothing), restored as `\mkern-3mu` inside the script on the
+ten decorated members, the old gap at every size; and the SDL names took the
+old 2 pt tuck into the L's void, on `\SDLT` and `\SDLplus` alike. Harness:
+24 dissertation pages and their wrappers moved by hair widths, no page count
+changed. Left as a fine-tune (item 14): the decoration kern's value, −3 mu
+landed against a suspected −2 mu.
+
+**The tracker's checklist for item 13, moved here verbatim at the close:**
+
+- [x] Audit the single-file package end to end; build the consumer harness
+  (scratch copy of the dissertation and its siblings, page-by-page diffs) and
+  the rendering suite `tests/french-logic/`. @done(2026-09-07)
+- [x] Write the map (`latex/french-logic/README.md`) and the inventory
+  (`latex/french-logic/AUDIT.md`). @done(2026-09-07)
+- [x] Work the open ledger in the map, one item at a time, each verified by
+  both nets before it lands. All thirteen D items closed 2026-09-07; D14–D16
+  and the three F items by 2026-09-08; the ledger then moved to
+  `DECISIONS.md` item 13. @done(2026-09-08)
+- [x] Verify the first chat's work on fedxps: both nets, the snippet checks,
+  and a page-by-page comparison against the pre-split package (`145aad8`) —
+  the differences were exactly the deliberate list. @done(2026-09-08)
+- [x] D14 the inventory headings; D15 the mode table re-censused for `\Lc`
+  (golden 836 pages). @done(2026-09-08)
+- [x] fedxps could not run the harness's `compare.py` from the system Python:
+  Pillow was missing; installed from the Fedora package. @done(2026-09-08)
+- [x] Split the package into the hub and the unit files the map plans, output-
+  identical under both nets; extend the snippet generator to read the units.
+  @done(2026-09-07) — fourteen units plus the quarry; no differences across
+  27 consumers, no changed fixture page.
+- [x] The F items decided by eye on the type board and landed: mode, face
+  (rule β), small labels (idiom A), decorations, structure indices, the three
+  folds. @done(2026-09-07)
+- [x] The naming grammar: decided strict on 2026-09-08 (substituted, no
+  aliases) and landed in two rounds the same day, 59 renames, each proved on
+  both nets and the harness run on bigfed. @done(2026-09-08)
+- [x] The compute-heavy harness steps run on bigfed over SSH
+  (`french-logic-harness/remote.sh`: push, suite, census, compare, fetch);
+  settled 2026-09-08. @done(2026-09-08)
+- [x] Verify the second chat's work on bigfed: both nets, the snippet checks,
+  the syntax suite; the map's duplicate split, consumer count and two retired
+  names in the unit table corrected. @done(2026-09-08)
+- [x] The core ordering pass: 156 members in tower order, every definition
+  byte-identical, both nets clean; the comment grammar recorded in the map.
+  @done(2026-09-08)
+- [x] D16, the stit unit's microtype load: bare, with the tracking set after
+  it; pixel-identical, and a document that loads microtype first compiles.
+  @done(2026-09-08)
+- [x] A unit's `\ProvidesPackage` date is the date of its last change; io,
+  modal and conditional dated for the renames. @done(2026-09-08)
+- [x] Per-unit ordering passes for the thirteen other units: every definition
+  byte-identical, the old headers and indents gone, one comment grammar, both
+  nets clean. @done(2026-09-08)
+- [x] The closed D and F items moved from the map's ledger to `DECISIONS.md`
+  item 13, verbatim; the map keeps one line each. @done(2026-09-08)
+- [x] Conclude the campaign: every remaining candidate to a dated verdict
+  (landed, or left as it is), the version number on the hub, item 13 closed
+  into `DECISIONS.md`, the four briefs moved to a campaign directory under
+  `docs/`, no successor brief. @done(2026-09-08) — the converse c, the T on
+  SDL and the kerns decided on the board's fifth sitting; four forms landed
+  and four policies recorded from one batched ask; v1.0 on the hub; the four
+  briefs in `docs/french-logic-campaign-2026-09/`.
+- [x] `dissertation/CLAUDE.md`, the package section: rewritten on his say-so
+  for the hub and units, the option design, the counter aliases, the stow
+  path and the new names. @done(2026-09-08)
+- [x] Decide the option design, the two IO-logic beamer decks, `\hypersetup`
+  and `geometry`. @done(2026-09-07) — one keyval switch per unit with `deon`
+  and `slim` bundles; the decks pass `deon` and build; hyperref defaults kept;
+  geometry stays with the documents.
+- [x] The opuscula drift: recorded as finding 10 in opuscula's AUDIT.md and
+  left as it is; no version of the package builds them. @done(2026-09-07)
+
+Opened 2026-09-07, closed 2026-09-08. The four chats' briefs, each annotated
+at its head with its successor and the last with "no successor", are the
+dated record in `docs/french-logic-campaign-2026-09/`. The package is a
+semantic markup language for logic; the governing principles (nothing deleted
+without an accepted case, dependencies ride with the code, one package with
+unit files, a preamble by default) are recorded in the map, which is the
+living contract — read it before touching `latex/french-logic/`. Run
+`tests/french-logic/run.sh` after any edit there.
+

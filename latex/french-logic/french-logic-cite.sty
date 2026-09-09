@@ -1,18 +1,18 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-cite}[2026/09/07 french-logic: biblatex and the three citation forms]
+\ProvidesPackage{french-logic-cite}[2026/09/08 french-logic: biblatex and the three citation forms]
 %% Omitted by the hub under [deon]: a host class with its own bibliography driver
-%% clashes with biblatex.
+%% clashes with biblatex.  Ordered 2026-09-08; every definition is as it was.
 
-  %% useprefix    -- keep name prefixes in citation labels: "de Rijke",
-  %%                "van der Torre", "von Wright".  Without it biblatex
-  %%                drops them and prints "Rijke", "Torre", "Wright".
-  %% maxcitenames -- cite at most two names; "et al." beyond that.
-  %% sortcites    -- a multi-key \cite prints its numbers in ascending order.
-  \RequirePackage[backend=biber,useprefix=true,
-                  maxcitenames=2,mincitenames=1,sortcites=true]{biblatex}
-  \RequirePackage{csquotes}
+%%% The bibliography driver %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% useprefix    -- keep name prefixes in citation labels: "de Rijke",
+%%                "van der Torre", "von Wright".  Without it biblatex
+%%                drops them and prints "Rijke", "Torre", "Wright".
+%% maxcitenames -- cite at most two names; "et al." beyond that.
+%% sortcites    -- a multi-key \cite prints its numbers in ascending order.
+\RequirePackage[backend=biber,useprefix=true,
+                maxcitenames=2,mincitenames=1,sortcites=true]{biblatex}
+\RequirePackage{csquotes}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Citations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% Three forms, distinguished by whether the sentence itself names the author.
@@ -28,54 +28,53 @@
 %% Locators go in the optional argument, inside the bracket: \tcite[p.~143]{key}
 %% gives "Chellas [13, p. 143]".
 %%
+%% Name and label bind unbreakably: "Chellas~[16]" never splits across a line.
+%% biblatex's default here is an ordinary breakable space.
+\DeclareDelimFormat{namelabeldelim}{\addnbspace}
 
-  %% Name and label bind unbreakably: "Chellas~[16]" never splits across a line.
-  %% biblatex's default here is an ordinary breakable space.
-  \DeclareDelimFormat{namelabeldelim}{\addnbspace}
+%% \poscite -- the genitive form.  Modelled on numeric.cbx's \cite, with the
+%% label name and a possessive marker prefixed to the bracket.
+%%
+%% The marker follows the family name: a bare apostrophe after a final "s"
+%% (Chellas', Lewis'), otherwise "'s" (Williamson's, van Fraassen's).  The
+%% family name is captured by running a do-nothing name format over labelname
+%% first; with several names the last one wins, which is what "Holliday and
+%% Litak's" wants.
+%%
+\def\flLastFamily{}
+\DeclareNameFormat{flgrabfam}{\global\let\flLastFamily\namepartfamily}
+\ExplSyntaxOn
+\str_new:N \l__flcite_fam_str
+\str_new:N \l__flcite_end_str
+\NewDocumentCommand \flPossMark {} {
+  \str_set:Ne \l__flcite_fam_str { \flLastFamily }
+  \str_set:Ne \l__flcite_end_str
+    { \str_lowercase:f { \str_range:Nnn \l__flcite_fam_str {-1} {-1} } }
+  \str_if_eq:eeTF { \l__flcite_end_str } { s }
+    { \textquoteright } { \textquoteright s }
+}
+\ExplSyntaxOff
+\DeclareCiteCommand{\poscite}
+  {}
+  {\printnames[flgrabfam]{labelname}%
+   \ifnameundef{labelname}
+     {\printfield[citetitle]{labeltitle}}
+     {\printnames{labelname}}%
+   \flPossMark
+   \setunit*{\printdelim{namelabeldelim}}%
+   \printtext{\bibopenbracket}%
+   \usebibmacro{prenote}%
+   \usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}\printtext{\bibclosebracket}}
 
-  %% \poscite -- the genitive form.  Modelled on numeric.cbx's \cite, with the
-  %% label name and a possessive marker prefixed to the bracket.
-  %%
-  %% The marker follows the family name: a bare apostrophe after a final "s"
-  %% (Chellas', Lewis'), otherwise "'s" (Williamson's, van Fraassen's).  The
-  %% family name is captured by running a do-nothing name format over labelname
-  %% first; with several names the last one wins, which is what "Holliday and
-  %% Litak's" wants.
-  %%
-  \def\flLastFamily{}
-  \DeclareNameFormat{flgrabfam}{\global\let\flLastFamily\namepartfamily}
-  \ExplSyntaxOn
-  \str_new:N \l__flcite_fam_str
-  \str_new:N \l__flcite_end_str
-  \NewDocumentCommand \flPossMark {} {
-    \str_set:Ne \l__flcite_fam_str { \flLastFamily }
-    \str_set:Ne \l__flcite_end_str
-      { \str_lowercase:f { \str_range:Nnn \l__flcite_fam_str {-1} {-1} } }
-    \str_if_eq:eeTF { \l__flcite_end_str } { s }
-      { \textquoteright } { \textquoteright s }
-  }
-  \ExplSyntaxOff
-  \DeclareCiteCommand{\poscite}
-    {}
-    {\printnames[flgrabfam]{labelname}%
-     \ifnameundef{labelname}
-       {\printfield[citetitle]{labeltitle}}
-       {\printnames{labelname}}%
-     \flPossMark
-     \setunit*{\printdelim{namelabeldelim}}%
-     \printtext{\bibopenbracket}%
-     \usebibmacro{prenote}%
-     \usebibmacro{citeindex}%
-     \usebibmacro{cite}}
-    {\multicitedelim}
-    {\usebibmacro{postnote}\printtext{\bibclosebracket}}
-
-  %% Short forms.  These are what to type; \textcite and \poscite still work.
-  %% Declared with \newcommand (not \NewDocumentCommand) so that
-  %% sty-lua-snippets.py picks them up and emits \tcite~ / \pcite~ snippets;
-  %% they are registered for highlighting in nvim/lua/plugins/vimtex.lua.
-  %% An empty postnote is inert in biblatex, so \tcite{k} = \textcite{k}.
-  %% These carry the postnote only; for biblatex's rarely-needed prenote
-  %% slot, \textcite[pre][post]{k} and \poscite[pre][post]{k} still work.
-  \newcommand{\tcite}[2][]{\textcite[#1]{#2}}
-  \newcommand{\pcite}[2][]{\poscite[#1]{#2}}
+%% Short forms.  These are what to type; \textcite and \poscite still work.
+%% Declared with \newcommand (not \NewDocumentCommand) so that
+%% sty-lua-snippets.py picks them up and emits \tcite~ / \pcite~ snippets;
+%% they are registered for highlighting in nvim/lua/plugins/vimtex.lua.
+%% An empty postnote is inert in biblatex, so \tcite{k} = \textcite{k}.
+%% These carry the postnote only; for biblatex's rarely-needed prenote
+%% slot, \textcite[pre][post]{k} and \poscite[pre][post]{k} still work.
+\newcommand{\tcite}[2][]{\textcite[#1]{#2}}
+\newcommand{\pcite}[2][]{\poscite[#1]{#2}}

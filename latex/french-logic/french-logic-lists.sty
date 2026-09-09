@@ -1,27 +1,31 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-lists}[2026/09/07 french-logic: list environments, block, and right-margin annotations]
-
+\ProvidesPackage{french-logic-lists}[2026/09/08 french-logic: list environments, block, and right-margin annotations]
+%% Not gated by the hub: the decks use hilbertlist under [deon].  Ordered 2026-09-08;
+%% every definition is as it was.
 \RequirePackage{enumitem}
 
-% block: an indented display for quoted formulations.  Outside the amsthm guard
-% because it needs nothing from it; skipped where a class (beamer) already owns
-% an environment of that name.
+%%% Block %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% block: an indented display for quoted formulations.  Outside the amsthm guard
+%% because it needs nothing from it (D10); skipped where a class (beamer) already owns
+%% an environment of that name.
 \@ifundefined{block}{%
   \newenvironment{block}{\begin{list}{}{\setlength{\leftmargin}{2em}%
     \setlength{\rightmargin}{0em}}\item[]}{\end{list}}%
 }{\PackageInfo{french-logic}{Environment block already defined by the class; not redefined}}
 
-% List Environments
-% Under beamer, enumitem's and beamer's enumerate.sty \labelenumi redefinitions
-% chain into a recursion (TeX capacity exceeded, grouping levels).  Setting the
-% enumerate defaults through enumitem's own mechanism breaks the chain; the
-% completeness deck carried these four lines itself before the package did.
+%%% List environments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Under beamer, enumitem's and beamer's enumerate.sty \labelenumi redefinitions
+%% chain into a recursion (TeX capacity exceeded, grouping levels).  Setting the
+%% enumerate defaults through enumitem's own mechanism breaks the chain (D9); the
+%% completeness deck carried these four lines itself before the package did.
 \@ifclassloaded{beamer}{%
   \setlist[enumerate,1]{label=\arabic*.}%
   \setlist[enumerate,2]{label=(\alph*)}%
   \setlist[enumerate,3]{label=\roman*.}%
   \setlist[enumerate,4]{label=\Alph*.}%
 }{}
+%% Each list is an itemize or enumerate with its label, spacing and margins fixed;
+%% hilbertlist and axiomproof keep a right margin for \by annotations.
 \newenvironment{hilbertlist}{\begin{itemize}[topsep=8pt,noitemsep,labelsep=1.5em,leftmargin=2cm,rightmargin=1.25cm]}{\end{itemize}}
 \newenvironment{romanlist}{\begin{enumerate}[label=(\roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
 \newenvironment{Romanlist}{\begin{enumerate}[label=(\Roman*),topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{enumerate}}
@@ -32,4 +36,8 @@
 \newenvironment{itemlist}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1.25cm]}{\end{itemize}}
 \newenvironment{itemlistflush}{\begin{itemize}[topsep=8pt,noitemsep,leftmargin=1cm]}{\end{itemize}}
 \newenvironment{axiomproof}{\begin{enumerate}[label=(\arabic*),topsep=8pt,noitemsep,leftmargin=1.25cm,rightmargin=1.25cm]}{\end{enumerate}}
+
+%%% Right-margin annotations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \by{text} sets its text flush right: schema names in a hilbertlist, justifications
+%% in an axiomproof.
 \newcommand{\by}[1]{\hfill\textnormal{#1}}

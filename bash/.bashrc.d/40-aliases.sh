@@ -145,7 +145,10 @@ _reboot_stale_services() {
   # see the header -- so this call can never touch network or keyring.
   errf="$(mktemp "${TMPDIR:-/tmp}/reboot-check.XXXXXX")" || errf=/dev/null
   out="$(dnf needs-restarting -s --json --disable-repo='*' 2>"$errf" </dev/null)"
-  [[ "$errf" != /dev/null ]] && { err="$(head -n1 -- "$errf" | head -c 160)"; rm -f -- "$errf"; }
+  [[ "$errf" != /dev/null ]] && {
+    err="$(head -n1 -- "$errf" | head -c 160)"
+    rm -f -- "$errf"
+  }
   if [[ "$out" != *\[* ]]; then
     printf '%s' "$err"
     return 2
@@ -180,7 +183,10 @@ reboot-check() {
     json="$(dnf needs-restarting --json --disable-repo='*' 2>>"$errf" </dev/null)"
     degraded=1
   fi
-  [[ "$errf" != /dev/null ]] && { err="$(head -n1 -- "$errf" | head -c 160)"; rm -f -- "$errf"; }
+  [[ "$errf" != /dev/null ]] && {
+    err="$(head -n1 -- "$errf" | head -c 160)"
+    rm -f -- "$errf"
+  }
 
   if [[ "$json" =~ \"reboot_required\"[[:space:]]*:[[:space:]]*true ]]; then
     verdict=yes
@@ -195,89 +201,89 @@ reboot-check() {
   [[ -t 1 ]] && reset=$'\e[0m'
 
   case "$verdict" in
-    yes)
-      if [[ "$json" == *'"packages"'* ]]; then
-        seg="${json//$'\n'/}"   # one line, so the slices below can't straddle
-        seg="${seg#*\"packages\"}"
-        seg="${seg#*\[}"
-        seg="${seg%%\]*}"
-        mapfile -t pkgs < <(grep -o '"[^"]*"' <<<"$seg" | tr -d '"')
-      fi
-      count=${#pkgs[@]}
-      if ((count)); then
-        ((count == 1)) && noun=package || noun=packages
-        list=" -- $count core $noun updated since boot: $(_reboot_list 4 "${pkgs[@]}")"
-      else
-        list=" -- core updates landed since boot"
-      fi
-      [[ -n "$reset" ]] && color=$'\e[33m'
-      printf '%s[REBOOT]%s Reboot recommended%s%s\n' "$color" "$reset" "$list" "$degnote"
-      return 1
-      ;;
-    no)
-      # Only now is the service scan worth its ~3s: if a reboot is already
-      # recommended, whether a logout would ALSO have sufficed is moot. So the
-      # common post-upgrade path never pays for this.
-      local line svc
-      local -a session=() system=()
-      if ! svc="$(_reboot_stale_services)"; then
-        # Fail loud, mirroring the main check. These verdicts fire rarely by
-        # design, so a scan that died silently would be indistinguishable from
-        # a clean machine indefinitely -- and "[ OK ]" would claim more than
-        # was checked. Distinct message from the plugin-missing WARN below:
-        # here dnf answered the core question and only this scan failed. On
-        # failure $svc holds the helper's stderr excerpt, not data.
-        [[ -n "$reset" ]] && color=$'\e[31m'
-        printf '%s[WARN]%s No core updates since boot, but the service scan failed (%s) -- stale-service status unknown\n' \
-          "$color" "$reset" "${svc:-no error output}"
-        return 2
-      fi
-      while IFS= read -r line; do
-        case "$line" in
-          system*) system+=("${line#*$'\t'}") ;;
-          session*) session+=("${line#*$'\t'}") ;;
-        esac
-      done <<<"$svc"
-
-      if ((${#system[@]})); then
-        # Not a kernel-level reboot, but not a logout either: these run outside
-        # the session. Named as a reboot because that is the blunt fix and the
-        # habit anyway; the surgical one is offered alongside.
-        ((${#system[@]} == 1)) && noun=service || noun=services
-        [[ -n "$reset" ]] && color=$'\e[33m'
-        printf '%s[REBOOT]%s Reboot recommended -- %d system %s running stale code: %s (or: systemctl restart <unit>)%s\n' \
-          "$color" "$reset" "${#system[@]}" "$noun" "$(_reboot_list 3 "${system[@]}")" "$degnote"
-        return 1
-      elif ((${#session[@]})); then
-        ((${#session[@]} == 1)) && noun=service || noun=services
-        [[ -n "$reset" ]] && color=$'\e[36m'
-        printf '%s[RELOGIN]%s Re-login recommended -- nothing core changed, but %d session %s running stale code: %s%s\n' \
-          "$color" "$reset" "${#session[@]}" "$noun" "$(_reboot_list 3 "${session[@]}")" "$degnote"
-        return 3
-      fi
-
-      [[ -n "$reset" ]] && color=$'\e[32m'
-      if [[ -n "$degraded" ]]; then
-        # The claim shrinks to the evidence: core packages and services were
-        # checked, advisories were not -- so "nothing has changed" would
-        # overclaim, and the line says exactly what was verified.
-        printf '%s[ OK ]%s No reboot needed -- no core updates or stale services since boot%s\n' \
-          "$color" "$reset" "$degnote"
-      else
-        printf '%s[ OK ]%s No reboot needed -- nothing has changed since boot\n' \
-          "$color" "$reset"
-      fi
-      return 0
-      ;;
-    *)
-      # Both attempts failed -- and the fallback loads no repo metadata, so a
-      # hidden key prompt cannot be the cause here: this is dnf itself broken
-      # or absent. Say what stderr said instead of guessing.
+  yes)
+    if [[ "$json" == *'"packages"'* ]]; then
+      seg="${json//$'\n'/}" # one line, so the slices below can't straddle
+      seg="${seg#*\"packages\"}"
+      seg="${seg#*\[}"
+      seg="${seg%%\]*}"
+      mapfile -t pkgs < <(grep -o '"[^"]*"' <<<"$seg" | tr -d '"')
+    fi
+    count=${#pkgs[@]}
+    if ((count)); then
+      ((count == 1)) && noun=package || noun=packages
+      list=" -- $count core $noun updated since boot: $(_reboot_list 4 "${pkgs[@]}")"
+    else
+      list=" -- core updates landed since boot"
+    fi
+    [[ -n "$reset" ]] && color=$'\e[33m'
+    printf '%s[REBOOT]%s Reboot recommended%s%s\n' "$color" "$reset" "$list" "$degnote"
+    return 1
+    ;;
+  no)
+    # Only now is the service scan worth its ~3s: if a reboot is already
+    # recommended, whether a logout would ALSO have sufficed is moot. So the
+    # common post-upgrade path never pays for this.
+    local line svc
+    local -a session=() system=()
+    if ! svc="$(_reboot_stale_services)"; then
+      # Fail loud, mirroring the main check. These verdicts fire rarely by
+      # design, so a scan that died silently would be indistinguishable from
+      # a clean machine indefinitely -- and "[ OK ]" would claim more than
+      # was checked. Distinct message from the plugin-missing WARN below:
+      # here dnf answered the core question and only this scan failed. On
+      # failure $svc holds the helper's stderr excerpt, not data.
       [[ -n "$reset" ]] && color=$'\e[31m'
-      printf '%s[WARN]%s Reboot status unknown -- dnf needs-restarting failed even with repos disabled (%s; is dnf5-plugins installed?)\n' \
-        "$color" "$reset" "${err:-no error output}"
+      printf '%s[WARN]%s No core updates since boot, but the service scan failed (%s) -- stale-service status unknown\n' \
+        "$color" "$reset" "${svc:-no error output}"
       return 2
-      ;;
+    fi
+    while IFS= read -r line; do
+      case "$line" in
+      system*) system+=("${line#*$'\t'}") ;;
+      session*) session+=("${line#*$'\t'}") ;;
+      esac
+    done <<<"$svc"
+
+    if ((${#system[@]})); then
+      # Not a kernel-level reboot, but not a logout either: these run outside
+      # the session. Named as a reboot because that is the blunt fix and the
+      # habit anyway; the surgical one is offered alongside.
+      ((${#system[@]} == 1)) && noun=service || noun=services
+      [[ -n "$reset" ]] && color=$'\e[33m'
+      printf '%s[REBOOT]%s Reboot recommended -- %d system %s running stale code: %s (or: systemctl restart <unit>)%s\n' \
+        "$color" "$reset" "${#system[@]}" "$noun" "$(_reboot_list 3 "${system[@]}")" "$degnote"
+      return 1
+    elif ((${#session[@]})); then
+      ((${#session[@]} == 1)) && noun=service || noun=services
+      [[ -n "$reset" ]] && color=$'\e[36m'
+      printf '%s[RELOGIN]%s Re-login recommended -- nothing core changed, but %d session %s running stale code: %s%s\n' \
+        "$color" "$reset" "${#session[@]}" "$noun" "$(_reboot_list 3 "${session[@]}")" "$degnote"
+      return 3
+    fi
+
+    [[ -n "$reset" ]] && color=$'\e[32m'
+    if [[ -n "$degraded" ]]; then
+      # The claim shrinks to the evidence: core packages and services were
+      # checked, advisories were not -- so "nothing has changed" would
+      # overclaim, and the line says exactly what was verified.
+      printf '%s[ OK ]%s No reboot needed -- no core updates or stale services since boot%s\n' \
+        "$color" "$reset" "$degnote"
+    else
+      printf '%s[ OK ]%s No reboot needed -- nothing has changed since boot\n' \
+        "$color" "$reset"
+    fi
+    return 0
+    ;;
+  *)
+    # Both attempts failed -- and the fallback loads no repo metadata, so a
+    # hidden key prompt cannot be the cause here: this is dnf itself broken
+    # or absent. Say what stderr said instead of guessing.
+    [[ -n "$reset" ]] && color=$'\e[31m'
+    printf '%s[WARN]%s Reboot status unknown -- dnf needs-restarting failed even with repos disabled (%s; is dnf5-plugins installed?)\n' \
+      "$color" "$reset" "${err:-no error output}"
+    return 2
+    ;;
   esac
 }
 
@@ -303,11 +309,11 @@ reboot-check() {
 # executed before the function definition below is parsed.
 unalias sysupgrade 2>/dev/null || :
 sysupgrade() {
-  sudo dnf upgrade --refresh -y \
-    && sudo dnf autoremove -y \
-    && flatpak update -y \
-    && flatpak uninstall --unused -y
-  local rc=$?   # one line: a bare `local rc` would clobber $? with its own
+  sudo dnf upgrade --refresh -y &&
+    sudo dnf autoremove -y &&
+    flatpak update -y &&
+    flatpak uninstall --unused -y
+  local rc=$? # one line: a bare `local rc` would clobber $? with its own
   echo
   reboot-check
   return "$rc"
@@ -345,6 +351,7 @@ alias logic='cd ~/Desktop/teaching/logic && lsa'
 # Editing shortcuts
 alias configure='cd ~/Desktop/configs && nvim'
 alias dissertate='cd ~/Desktop/dissertation && nvim'
+alias french-logic='cd ~/Desktop/configs/latex/french-logic && nvim'
 alias homepage='cd ~/Desktop/bphopkins.net && nvim'
 alias teach='cd ~/Desktop/teaching && nvim'
 alias nousowl='cd ~/Desktop/nousowl.net && nvim'

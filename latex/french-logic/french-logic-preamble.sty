@@ -1,15 +1,20 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-preamble}[2026/09/07 french-logic: the document furniture: fonts, encodings, babel, conveniences]
+\ProvidesPackage{french-logic-preamble}[2026/09/08 french-logic: the document furniture: fonts, encodings, babel, conveniences]
 %% Loaded by the hub by default; omitted where a host class owns fonts and layout.
-%% Everything here is for the documents; no macro in the language depends on it.
+%% Everything here is for the documents; no macro in the language depends on it, and
+%% the units that need soul, trimclip or graphicx load them for themselves.
+%% Ordered 2026-09-08: fonts and language, the conveniences, graphics.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Non-Dependencies put here for a shorter preamble %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%% Fonts, encodings, language %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RequirePackage[T1]{fontenc}
 \RequirePackage[utf8]{inputenc}
 \RequirePackage{lmodern}
 \RequirePackage[english]{babel}
+
+%%% Conveniences %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Layout and colour (ragged2e, setspace, multicol, xcolor); strikeout and clipping
+%% (soul, trimclip); tables (tabularx, booktabs); frames and boxes (mdframed,
+%% adjustbox); lengths (calc); bold mathematics (bm); negated relations (centernot).
 \RequirePackage{ragged2e}
 \RequirePackage{setspace}
 \RequirePackage{multicol}
@@ -24,7 +29,7 @@
 \RequirePackage{bm}
 \RequirePackage{centernot}
 
-
-% Graphics, and the images/ search path
+%%% Graphics %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% graphicx, and the images/ search path.
 \RequirePackage{graphicx}
 \graphicspath{{./images/}}

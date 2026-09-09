@@ -1,12 +1,18 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-deontic}[2026/09/07 french-logic: deontic operators, monadic and dyadic]
-%% Refers into core for \nec and \poss.
+\ProvidesPackage{french-logic-deontic}[2026/09/08 french-logic: deontic operators, monadic and dyadic]
+%% Refers into core for \nec and \poss.  Ordered 2026-09-08: the monadic operators;
+%% the dyadic ones as arrows, in functional notation, and as the built glyphs; then
+%% Lewis's sphere and counterfactual.  Every definition is as it was; the plain double
+%% arrow that \cobs once was is in the quarry.
 % The units this one refers into; loaded here so the unit works on its own.
 \RequirePackage{french-logic-core}
 % graphicx: \scalebox and \rotatebox build the dyadic operator glyphs.
 \RequirePackage{graphicx}
 
-% Deontic Operators
+%%% Monadic operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Sans letters in double braces, the inner pair a placeholder for a future bold
+%% switch (README, Conventions).  \ought and \obligatory, \may and \permissible print
+%% alike: deliberate vocabulary.
 \newcommand{\ought}{\mathsf{{O}}}
 \newcommand{\may}{\mathsf{{P}}}
 \newcommand{\obligatory}{\mathsf{{O}}}
@@ -14,17 +20,23 @@
 \newcommand{\forbidden}{\mathsf{{F}}}
 \newcommand{\gratuitous}{\mathsf{{G}}}
 \newcommand{\optional}{\mathsf{{T}}}
+
+%%% Dyadic operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dyadic operators: arrows
+%% The double arrow as a conditional-obligation connective: A necessitates B.
 \newcommand{\necessitates}{\Rightarrow}
 \newcommand{\triggers}{\Rightarrow}
+% Dyadic operators: functional notation
+%% Conditional obligation, betterness and same value as functions of two arguments.
 \newcommand{\cought}[2]{\ought(#1/#2)}
 \newcommand{\better}[2]{\mathsf{{B}}(#1/#2)}
 \newcommand{\samevas}[2]{\mathsf{{S}}(#1/#2)}
-
-% Dyadic Stuff
-% The dyadic operator glyph: a bar, a turned double bar, and an operator letter or
-% box, kerned and raised by hand.  One builder; each operator keeps the exact
-% parameters it was tuned with (kern before the letter, raise, scale).
-%   \fl@dyad{<left pad>}{<kern>}{<raise>}{<scale>}{<letter>}{<right pad>}
+% Dyadic operators: the built glyphs
+%% The dyadic operator glyph: a bar, a turned double bar, and an operator letter or
+%% box, kerned and raised by hand.  One builder (F2); each operator keeps the exact
+%% parameters it was tuned with (kern before the letter, raise, scale).
+%%   \fl@dyad{<left pad>}{<kern>}{<raise>}{<scale>}{<letter>}{<right pad>}
+%% The solo forms have no padding: for mentioning an operator rather than using it.
 \newcommand{\fl@dyad}[6]{{%
     {\mbox{$\mkern#1$}}%
     {\mathrel{\raisebox{.87pt}{\scalebox{1}{\rotatebox[origin=c]{0}{$\shortmid$}}}}}%
@@ -36,14 +48,14 @@
 }}
 \newcommand{\condop}[1]{\fl@dyad{3.5mu}{-2.7mu}{.5pt}{.75}{\mathsf{#1}}{2.75mu}}
 \newcommand{\condopsolo}[1]{\fl@dyad{0mu}{-2.7mu}{.5pt}{.75}{\mathsf{#1}}{0mu}}
-%\newcommand{\cobs}{\Rightarrow}
-\newcommand{\cobs}{{\condop{O}}} % THIS IS THE STYLIZED COMMAND
+\newcommand{\cobs}{{\condop{O}}}
 \newcommand{\cperms}{{\condop{P}}}
 \newcommand{\cobsolo}{\condopsolo{O}}
-\newcommand{\sphere}{\mathbf{\mathdollar}}
-\newcommand{\cfact}{\Box \mkern-8mu \mathrel{\raisebox{.6pt}{$\Rightarrow$}}}
-
 \newcommand{\cnecs}{\fl@dyad{3.5mu}{-2.2mu}{.53pt}{.7}{\nec}{2.75mu}}
 \newcommand{\cposs}{\fl@dyad{3.5mu}{-3.1mu}{.85pt}{.7}{\poss}{2.75mu}}
 \newcommand{\cnecsolo}{\fl@dyad{0mu}{-2.2mu}{.53pt}{.7}{\nec}{0mu}}
 \newcommand{\cpossolo}{\fl@dyad{0mu}{-3.1mu}{.85pt}{.7}{\poss}{0mu}}
+
+%%% Lewis's sphere and counterfactual %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\sphere}{\mathbf{\mathdollar}}
+\newcommand{\cfact}{\Box \mkern-8mu \mathrel{\raisebox{.6pt}{$\Rightarrow$}}}

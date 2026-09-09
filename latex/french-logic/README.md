@@ -54,8 +54,9 @@ Settled 2026-09-07, in Brandon's words where quoted.
 
 ## Architecture
 
-*Status 2026-09-07: split done. `french-logic.sty` is the hub; the unit
-files below hold the language; `french-logic-quarry.sty` is never loaded.
+*Status 2026-09-08: split done, every unit ordered, v1.0 released 2026-09-08.
+`french-logic.sty` is the hub; the unit files below hold the language;
+`french-logic-quarry.sty` is never loaded.
 Every line of the single file moved verbatim into exactly one unit (checked
 by multiset), and both nets were clean: no differences across the 27
 consumers, no changed page among the 834 fixture pages. The dependency data
@@ -63,9 +64,10 @@ is measured — each external command was attributed by loading every package
 alone and probing — and the reference data is the closure of the package's
 own macro-to-macro uses. Each unit loads every package it needs and requires
 the units it refers into, so that it works on its own; `tests/french-logic/units.sh`
-proves it by loading each unit alone and typesetting all its members. Within
-units the order is still the old file's, block by block; the per-unit
-coherence passes reorder as they go.*
+proves it by loading each unit alone and typesetting all its members. Every
+unit was reordered on 2026-09-08 — core by the tower, the others by their own
+levels — with every definition byte-identical, the old headers gone, one
+comment grammar throughout, and both nets clean at each step.*
 
 The layering has two levels. **Core** is ordered by the tower of languages
 that the Neovim register taxonomy also uses (`nvim/docs/latex-register-taxonomy.md`):
@@ -80,13 +82,13 @@ belong together.
 | unit | file | holds | needs beyond the kernel | refers into |
 |---|---|---|---|---|
 | preamble | `french-logic-preamble.sty` | fontenc T1, inputenc utf8, lmodern, babel english; ragged2e, setspace, multicol, xcolor, soul, tabularx, mdframed, calc, trimclip, adjustbox, booktabs, bm, centernot; graphicx and `\graphicspath` | those | nothing |
-| core | `french-logic-core.sty` | symbol fonts (`\Yright`, `\shortminus`, `\strictif`); sets, tuples, powerset; the `f` functions; languages and logics (`\lang`, `\logic`); relations (`\proves`, `\models`, `\trues`, sequent arrows); modal structures (`\M`, `\F`, `\nec`, `\poss`, canonical decorations); truth sets, proof sets, valuations; the underlined metalanguage; closures and the closure arrows | amsmath, amssymb, mathtools, stmaryrd, mathrsfs, xspace, soul (`\st` is a renewal of soul's), graphicx, trimclip, the txfonts `txsyc` glyph | nothing |
+| core | `french-logic-core.sty` | in tower order since 2026-09-08: the label helper; symbols (`\Yright`, `\shortminus`, `\strictif`, `\dvbar`); sets and the definitional idiom; syntax (languages and logics, connectives with `\nec` and `\poss`, consequence and closure, proof sets and classes); relations (`\proves`, `\models`, `\trues`, sequent arrows); structures (`\M`, `\F`, `\C`, `\A`, indexed and Σ forms, the canonical model, the closure arrows); the `f` functions; semantics (valuations, satisfaction in a model, truth sets, operations on propositions); the underlined metalanguage | amsmath, amssymb, mathtools, stmaryrd, mathrsfs, xspace, soul (`\st` is a renewal of soul's), graphicx, trimclip, the txfonts `txsyc` glyph | nothing |
 | applied | `french-logic-applied.sty` | temporal (`\hitherto`, `\henceforth`, `\was`, `\willbe`), epistemic (`\knows`, `\believes`, …), credence (`\cprob`, `\cred`) | nothing | nothing |
 | deontic | `french-logic-deontic.sty` | `\ought`, `\may`, `\forbidden`, … ; dyadic operators `\cobs`, `\cperms`, `\cnecs`, `\cposs` and their solo forms; `\sphere`, `\cfact` | amssymb, graphicx | core (`\nec`, `\poss`) |
-| modal | `french-logic-modal.sty` | axiom names (`\kax` …, parenthesised, converse), rule names, system names (`\K` … `\CEMC`), deontic systems (`\SDL`, `\KDought`) | xspace | deontic (`\ought`), core (`\poss`) |
-| conditional | `french-logic-conditional.sty` | the CM/CC families with their lowercase frame conditions, CN, CP, CT, C-Dual, the order conditions `\Rup` … | xspace, core's `\strictif` | core |
+| modal | `french-logic-modal.sty` | axiom names (`\Kax` …, parenthesised, converse), rule names, system names (`\K` … `\CEMC`), deontic systems (`\SDL`, `\KDought`) | xspace | deontic (`\ought`), core (`\poss`) |
+| conditional | `french-logic-conditional.sty` | the CM/CC families with their lowercase frame conditions, CN, CP, CT, C-Dual, the order conditions `\rup` … | xspace, core's `\strictif` | core |
 | io | `french-logic-io.sty` | `\IO` and the IO systems, in/out/deriv, the rule names `\TOP` … `\CT` and their starred forms | amsmath (`\text` in `\IO`), xspace | core (`\fl@lbl`) |
-| stit | `french-logic-stit.sty` | `\cstit`, `\dstit`, the structure names via `\versal` | microtype | nothing |
+| stit | `french-logic-stit.sty` | `\cstit`, `\dstit`, the structure names via `\versal` | microtype, loaded bare with `tracking=smallcaps` set after it (D16) | nothing |
 | proof | `french-logic-proof.sty` | the Set-Set … framework names, the subscripted `\proves` variants, the `//` consequence separator `\infer` | amssymb, microtype; amsthm is detected, never loaded here | core (`\proves`) |
 | gentzen | `french-logic-gentzen.sty` | the `gentzen` proof-tree environment over ebproof, rule labels, the signed-formula `\af`/`\de` family | ebproof, relsize (loaded since D4) | nothing |
 | diagrams | `french-logic-diagrams.sty` | the TikZ styles for possible-worlds diagrams (`modal`, `world`, `point`, the `reflexive` loops) | tikz, tikzsymbols | nothing |
@@ -115,8 +117,10 @@ general. The rendering suite compiles the fixture under both bundles.
 
 ## Conventions
 
-*Status 2026-09-07: as practised, with the drift noted. The open items are
-worked through unit by unit and struck here as they settle.*
+*Status 2026-09-08: settled as listed, each with its date; nothing open. The
+last forms were decided on 2026-09-08, on the board's fifth and sixth sittings
+and in one batched ask, and the campaign closed with the v1.0 release; one kern
+value is a deferred fine-tune (item 14).*
 
 - **Mode.** Names — systems, axiom schemata, frame conditions, rules, I/O
   rules — are `\ensuremath{…}\xspace`, so they work in text and in math with
@@ -153,9 +157,15 @@ worked through unit by unit and struck here as they settle.*
   `par` parenthesised, `c` converse, `solo` the bare glyph for mention rather
   than use. Single letters: fraktur `\A \C \F \M` are structures, bold `\B \D \E \K \T` are
   systems, `\Slog`, `\four`, `\five` the forced exceptions. `\mathsf{{O}}` keeps
-  double braces as the placeholder for a future bold switch. Open: the `solo`
-  rule differs between the conditional operators (drop the trailing *s*) and
-  the metalanguage connectives (append).
+  double braces as the placeholder for a future bold switch. The `solo` rule,
+  settled 2026-09-08 in Brandon's words: a connective named as a verb —
+  `\cnecs` for "conditionally necessitates", like `\proves` and
+  `\necessitates` — is for use between sentences, with its connective
+  spacing; `solo` names the same glyph for mention, standalone and unspaced,
+  and replaces the verb's *s* (`\cnecsolo`, `\cobsolo`); the metalanguage
+  connectives are named by their symbols, so `solo` appends (`\mltosolo`).
+  Whether one command could serve both, spacing itself by context, is a
+  tracker item (`configs/TODO.md`, item 14), not a drift.
 - **The grammar of the names — settled 2026-09-08: strict, substituted, no
   aliases.** A name is the letters as printed, CamelCase, digits spelled out. Kind is carried by case and one suffix: an initial capital for a schema
   or a system (`\CMr`, `\K`), with `ax` added only where the same letters also
@@ -190,8 +200,50 @@ worked through unit by unit and struck here as they settle.*
   in headings. Hyperref bookmarks receive the bare letter. The symbol
   decorations on truth sets and classes (`\truthsetm`, `\proofsetl`,
   `\eclassl`) scale the same way since 2026-09-07, judged on the board.
+  Their old tuck — `\mkern-2mu` at text size inside the fixed box — went
+  missing in that conversion and came back on the sixth sitting (2026-09-08)
+  as `\mkern-3mu` inside the script on the ten decorated members, the old
+  gap at every size within a pixel; Brandon suspects −2 mu is the optimum,
+  a fine-tune on the tracker (item 14).
+- **Decorations** (board, fifth sitting, 2026-09-08). A decoration letter on
+  a name is an italic math letter at script size — the *c* of the converse
+  family, the *d*, *a*, *s* on the conditional schemata — so `\Wocax` sets
+  its converse *c* that way beside its sans O, where it had a text c; a
+  system's superscript decoration is a math superscript at script size, as
+  the + of `\SDLplus` and the * of `\CEMPs`, so `\SDLT` sets its T that
+  way, where it had a `\textsuperscript`. The family label stays `\fl@lbl`.
+  The kern under a subscripted letter is per-letter tuning and stays as it
+  is: `\Woax`, `\Wocax` and `\Waxc` kern before the underscore (text-size
+  mu, the deeper tuck under the W's arm), `\Poax` and `\Posax` inside the
+  subscript (script-size mu); measured on the board, not the same, and not
+  unified. The same idea gives the L its tuck (sixth sitting, 2026-09-08):
+  `\SDLT` and `\SDLplus` pull their superscript by `\mkern-4.5mu` into the
+  void above the L's foot, the 2 pt the old `\SDLt` had; the other superscript
+  decorations stay untucked.
+- **Kerns and forms** (2026-09-08, the batched ask). A kern is part of a
+  glyph's tuning and stays (`\unpossed`'s leading `\!`) until the eye says
+  otherwise: `\emptytruthset`'s `\!\cdot\!` was kept on the ask and dropped
+  on the confirmation pass later that day, the open dot reading better; a
+  run of kerns summing to zero is a no-op and goes, as D11's `\!\,` did — `\unneced`'s `\!\:\!\:\!\:\!` went on 2026-09-08,
+  0 pixels changed. No member ends in forced space: `\mcslog` lost its
+  trailing `\ ` the same day (no live use; a document can add space and
+  cannot remove it). Every member is `\newcommand`: the five `\newcommand*`
+  forms (`\IO`, `\hyphantom`, `\close`, `\incomp`, `\hk`) were unstarred,
+  output-identical.
 - **Spacing.** `/` is on the `\xspace` exception list, so `\ccr/\ccl` sets
   correctly.
+- **Comment grammar** (settled with the core pass, applied to every unit,
+  2026-09-08). Inside a unit a `%%%` line opens a level (the tower's in core,
+  the unit's own elsewhere), a short `%` line names a group within it — the
+  inventory's headings, so a group line stands apart from prose by a blank
+  line — and `%%` lines are prose, never headings. A group heading reads
+  "Level: group" where a level has more than one group. Each unit's head
+  comment says what it holds, what it refers into, and the date of its pass.
+- **Dates** (settled 2026-09-08). A file's `\ProvidesPackage` date is the date
+  of its last change, so a landing bumps the unit it touches; the hub's date
+  moves only when the hub itself changes. The hub carries the version, v1.0
+  since 2026-09-08 (the release D12 promised); a release moves the hub's date
+  and version together.
 - **Provenance.** `\Yright` as the sequent separator (`\seq`, `\tseq`) is
   Humberstone's convention; its declaration stays in the package as the
   record even though stmaryrd supplies the glyph. Renewals that restate a
@@ -199,11 +251,12 @@ worked through unit by unit and struck here as they settle.*
   redundancy.
 - **Duplicates.** Fourteen groups of byte-identical definitions (measured
   2026-09-08) are deliberate vocabulary until decided otherwise — principle 1:
-  eleven within one unit (`\then`, `\onlyif`, `\to`; `\gives`, `\asserts`,
-  `\proves`; the four names for `\Rightarrow`; …) and three across the applied
-  and deontic units, where different operators share a sans letter (`\was`,
-  `\may`, `\permissible`; `\willbe`, `\forbidden`; `\henceforth`,
-  `\gratuitous`).
+  ten within one unit (`\then`, `\onlyif`, `\to`; `\gives`, `\asserts`,
+  `\proves`; `\oset`, `\tuple`; …) and four across units: the three where
+  the applied and deontic operators share a sans letter (`\was`, `\may`,
+  `\permissible`; `\willbe`, `\forbidden`; `\henceforth`, `\gratuitous`)
+  and the four names for `\Rightarrow` (`\derives`, `\necessitates`,
+  `\triggers`, `\ecu`), which span core, deontic and gentzen.
 
 ## Tooling
 
@@ -218,9 +271,9 @@ worked through unit by unit and struck here as they settle.*
   register taxonomy by name shape (`C[CM][rl]\w*`, `[CKDTUPWN]ax\w*`, `\w*rule\w*`, `[rl]%(up|down)`, …); renames must keep to those shapes or update them. The
   coverage check is `sty-lua-snippets.py --coverage`.
 - **Rendering suite.** `tests/french-logic/run.sh`; golden re-accepted after
-  each landed change, last on 2026-09-08 when the mode table caught up with
-  `\Lc` and the fixture gained its text page (836 pages); the split changed no
-  page. `extras.tex` adds fixture pages for what has no
+  each landed change, last on 2026-09-08 after the confirmation pass (the
+  ten decorated members and both SDL names tucked, `\emptytruthset` open;
+  836 pages); the split changed no page. `extras.tex` adds fixture pages for what has no
   member, today the diagram styles, after a scratch-directory mishap showed
   that nothing else would notice them breaking.
   `\qed` and `\qedsymbol` are members of the fixture since D7 wrote them with
@@ -237,8 +290,12 @@ worked through unit by unit and struck here as they settle.*
 
 ## Consumers
 
-Twenty-eight documents load the stowed package; seventeen more in opuscula
-carry frozen copies of old versions and are untouched by edits here. The
+Thirty-three documents load the stowed package (counted 2026-09-08 by the
+directory each compiles in: the 27 harness targets, four in `opuscula/old`,
+and two `old/old.tex` files whose parent directory's frozen copy does not
+reach them, since TeX searches only the compile directory); twenty-seven
+more carry a frozen copy of an old version beside them, twenty-five in
+opuscula and two in the DEON fork, and are untouched by edits here. The
 dissertation and its seven article wrappers use 253 members. The three
 teaching documents use twenty macro uses in total, all from core, and
 otherwise use the package as a preamble. The `deon` option is passed by the
@@ -252,101 +309,67 @@ when `\SDLt` became `\SDLT` and its own definition no longer clashed; the two
 others lost one error each the same way. The DEON fork
 (`IO-logic/DEON/IO-DEON-fork/`) is a frozen tree with its own copy of the old
 package; its `final/` copies name the stowed package only because no copy
-sits beside them, and they were left as submitted.
+sits beside them, and they were left as submitted. The usage census the
+inventory reads (`usage.tsv`, in the harness) is hand-kept; its `\SDLT` row
+carried two opuscula documents' own `\SDLt` under the renamed key until
+2026-09-08, when it was corrected to zero — the package's `\SDLT` has no
+live site.
 
-## Open ledger
+## Ledger
 
-Defects are numbered D, form drift F; each carries a status. Fixed items stay
-until the unit split closes, then move to `configs/DECISIONS.md`.
+Defects are numbered D, form drift F. Every item below is closed; each is one
+line here and stands in full, as it read when it moved on 2026-09-08, in
+`configs/DECISIONS.md`, item 13.
 
-- **D1** orphan `\makeatother` at the end of the theorem block, and the
-  citation-block comment that blamed `\ExplSyntaxOn` for it. *Fixed
-  2026-09-07.*
-- **D2** U+2019 in the `modal` TikZ style's arrow tip. *Fixed 2026-09-07;
-  `stealth'` kept, plain `stealth` and arrows.meta `Stealth` verified as
-  alternatives.*
-- **D3** `\usepackage` for microtype inside the package. *Fixed 2026-09-07,
-  in place: the load stays with the STIT code that needs it.*
-- **D4** the signed-formula `\af`/`\de` family needs `relsize`, which nothing
-  loaded; fourteen members failed in both modes. *Fixed 2026-09-07: relsize
-  loaded beside ebproof, where the code lives.*
-- **D5** `\DeclareSymbolFont{stmry}` re-declared stmaryrd's symbol font and
-  dropped its bold version; `\Yright` re-declares stmaryrd's identical symbol.
-  *Resolved 2026-09-07: the font line removed; the `\Yright` declaration
-  kept by decision — the sequent arrow is Humberstone's convention and the
-  line is its record; `\shortminus` kept, it backs `\unneced` and
-  `\unpossed`.*
-- **D6** `\IOfn` set bare `\tiny` in a superscript; seven warnings per
-  dissertation build, and the label came out at script size. *Fixed
-  2026-09-07: first `\text{\tiny\textsf{H}}`, the size the definition asked
-  for, then, with the labels pass, `{\scriptscriptstyle\mathsf{H}}` — the
-  scaling size, sans because the name is a frame class; the IO-logic chapter's
-  23 sites match `\IOhn`'s label height.*
-- **D7** `\renewcommand{\qed}` broke `\qedhere` in display math (51 errors
-  against 0 for the amsthm original), failed to load under `deon` when
-  amsthm came later, and left a ■ orphaned at the left margin on printed
-  page 71. *Fixed 2026-09-07: the house placement rebuilt on amsthm's
-  mechanism — math branch amsthm's, text branch flush right with no `\quad`
-  and no break before the mark — applied only when amsthm is present;
-  `proofsketch` takes its □ through a local `\qedsymbol`, so `\qedhere`
-  works in sketches. Two dissertation pages changed, as intended.*
-- **D8** aliascnt was obsolete on the 2026-06-01 kernel, whose `\newtheorem`
-  uses `\newcounteralias`. *Fixed 2026-09-07: plain `\newtheorem{x}[theorem]`
-  for the ten kinds, the `\crefname`s kept, and a `\PackageError` on any
-  older format, since one would silently print "theorem" for every kind.
-  fedxps carries a 2026 TeX Live tree. No page changed; the warning is gone
-  from every consumer.*
-- **D9** the IO-logic beamer decks passed the removed `conflicts` option, and
-  under `deon` then hit the enumitem-under-beamer recursion the completeness
-  deck had worked around in its own preamble. *Fixed 2026-09-07: the package
-  carries the four-line `\setlist` shim, guarded on beamer, beside enumitem;
-  the two decks now pass `deon`. Both build again (27 and 24 pages); the
-  completeness deck's copy of the shim is now redundant.*
-- **D10** `block` sat inside the amsthm guard though it needs nothing there.
-  *Fixed 2026-09-07: defined after the guard, only when no class already
-  provides a `block`, with a log note otherwise.*
-- **D11** apparent no-ops. *Resolved 2026-09-07: the four `\!\,` kerns
-  removed (exactly zero glue). The `proof` renewal, byte-identical to
-  amsthm's, and `\renewcommand{\to}`, identical to the kernel's, are kept
-  and commented as pins: they declare the two as members with a house form,
-  and are why they appear in the inventory and the snippets.*
-- **D12** `\ProvidesPackage` carried prose where a date belongs. *Fixed
-  2026-09-07: `[2026/09/07 Semantic markup for logic]`; a version number
-  comes with the hub-and-units release.*
-- **D13** the `% !TEX root` line tied the shared package to one consumer by an
-  absolute path. *Resolved 2026-09-07: relative (`../../../dissertation/…`),
-  measured to resolve from the repo path and through the texmf symlink alike;
-  a tilde path does not resolve. The line exists so that compiling or viewing
-  from the package buffer acts on the dissertation; nothing else reads it.*
-- **D14** the inventory generator took the last line of a multi-line comment
-  as a group heading, so AUDIT.md showed prose fragments as headings, and a
-  first group with no heading lost its table header row. *Fixed 2026-09-08: a
-  heading is a `%%%` line, or the first line of a run of `%` lines, short and
-  not a sentence; the conditional unit's family headings appear for the first
-  time; the 543 member rows are unchanged.*
-- **D15** the mode table was not re-censused after `\Lc` gained its wrapper,
-  so the golden had no text page for it. *Fixed 2026-09-08: recensus (one row
-  changed), golden re-accepted at 836 pages.*
-- **F1** mode, face, and naming drift as listed under *Conventions*. *Mode, face, labels, decorations, and structure indices settled 2026-09-07;
-  the naming grammar settled and landed 2026-09-08 (59 renames); the per-unit
-  ordering passes remain.*
-- **F2** four hand-copied eight-line bodies (`\cnecs`, `\cposs` and their solo
-  forms) that were `\condop` with a different glyph and two kerns; two
-  identical theorem styles; two near-identical reflexive loop styles. *Fixed
-  2026-09-07: one builder `\fl@dyad` with each operator's six tuning numbers,
-  one style body under three names, one loop with two defaults; proved
-  identical on every net, the diagram included.*
-- **F3** header hierarchy, blank-line runs, trailing whitespace, lines over
-  100 characters. *Resolved 2026-09-07 by the split; the residue inside units
-  goes with each unit's coherence pass.*
+- **D1** orphan `\makeatother` and the comment that blamed `\ExplSyntaxOn` —
+  fixed 2026-09-07.
+- **D2** U+2019 in the `modal` arrow tip — fixed 2026-09-07; `stealth'` kept.
+- **D3** `\usepackage` for microtype inside the package — fixed 2026-09-07.
+- **D4** relsize for the signed-formula family, unloaded — fixed 2026-09-07.
+- **D5** stmaryrd's symbol font re-declared — resolved 2026-09-07; the
+  `\Yright` declaration kept as Humberstone's record.
+- **D6** `\IOfn`'s bare `\tiny` — fixed 2026-09-07; the label at the scaling
+  size.
+- **D7** the `\qed` renewal that broke `\qedhere` — fixed 2026-09-07 on
+  amsthm's mechanism; two dissertation pages changed, as intended.
+- **D8** aliascnt on the 2026-06-01 kernel — fixed 2026-09-07; older formats
+  refused.
+- **D9** the IO decks' removed `conflicts` option and the enumitem recursion
+  — fixed 2026-09-07; both decks build.
+- **D10** `block` inside the amsthm guard — fixed 2026-09-07.
+- **D11** apparent no-ops — resolved 2026-09-07; four kerns removed, the two
+  pins kept.
+- **D12** prose where the `\ProvidesPackage` date belongs — fixed 2026-09-07.
+- **D13** the absolute `!TEX root` path — resolved 2026-09-07, relative.
+- **D14** the inventory's prose-fragment headings — fixed 2026-09-08.
+- **D15** the mode table behind `\Lc`'s wrapper — fixed 2026-09-08; golden
+  836 pages.
+- **D16** microtype's option clash from the stit unit — fixed 2026-09-08;
+  bare load, `\microtypesetup` after.
+- **F1** mode, face and naming drift — settled 2026-09-07 and 2026-09-08; the
+  ordering passes landed 2026-09-08.
+- **F2** the four hand-copied dyadic bodies, two theorem styles, two loops —
+  folded 2026-09-07.
+- **F3** header hierarchy, blank-line runs, whitespace, long lines — resolved
+  by the split and the passes, 2026-09-08.
 
 Decisions closed 2026-09-07: the option design (above); hyperref keeps its
 defaults, a document that wants otherwise sets `\hypersetup` itself;
 `geometry` stays with the documents, where every consumer already sets it.
 The opuscula drift was recorded in that repo's inventory (finding 10) on
-2026-09-07 and left as it is. Pending: the per-unit ordering passes; the dissertation charter's package
-paragraph, which still describes aliascnt, the old `deon`, an absolute path,
-and now the old names.
+2026-09-07 and left as it is. The ordering passes and the dissertation
+charter's package section both closed on 2026-09-08. Closed 2026-09-08, at
+the campaign's end: the preamble's eight furniture loads no consumer uses
+(multicol, tabularx, xcolor, ragged2e, bm, centernot, calc; tikzsymbols in
+diagrams) stay, under principle 5 — the unit is a preamble, and the six
+documents outside the harness were never censused for them;
+`\graphicspath{{./images/}}` stays, harmless, for a document that has such a
+directory; `slim` stays, part of the option design and proved by the suite;
+`dissertation-template/philogic.sty`, which could one day be derived from the
+units, is out of the campaign's scope and on the tracker (item 14). Nothing is
+open but the decorations' kern fine-tune (item 14). The campaign concluded 2026-09-08; its four briefs are the dated
+record in `configs/docs/french-logic-campaign-2026-09/`, and its post-mortem
+is `configs/DECISIONS.md`, item 13.
 
 ## History
 
@@ -361,4 +384,19 @@ solo forms. 2026-09-05: the biblatex options and the citation forms.
 first three fixes. 2026-09-08: the second chat verified all of it on fedxps
 against the pre-split package (the differences were exactly the deliberate
 list), and fixed the inventory headings and the mode table; the naming grammar,
-decided strict, landed in two rounds the same day.
+decided strict, landed in two rounds the same day. Later on 2026-09-08 the
+third chat, on bigfed, verified the second's work, landed the core ordering
+pass, the microtype fix (D16), the dates rule and the dissertation charter's
+package section, recounted the duplicates and the consumers, and then, on
+his "let us proceed", landed the ordering passes for the thirteen other units
+and moved the closed ledger to `configs/DECISIONS.md`. The fourth chat, on
+bigfed later that day, verified the third's work, put the last three forms on
+the board (the converse *c*, the T on SDL, the kern under W against P), took
+the rest in one batched ask, landed four forms and recorded four policies,
+wrote the `solo` rule down in Brandon's words, released v1.0, and closed the
+campaign; the four briefs moved together to
+`configs/docs/french-logic-campaign-2026-09/`. That evening's confirmation
+pass, every choice re-photographed from v1.0 on the type board, returned three
+notes: `\emptytruthset` reversed to the open dot; the decorations' lost tuck
+restored (K3) and the SDL names tucked (Bk on both), the sixth sitting; the
+decorations' kern value is the one fine-tune left, on the tracker.

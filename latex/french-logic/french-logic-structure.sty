@@ -1,108 +1,116 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-structure}[2026/09/07 french-logic: hyperref, cleveref, and the theorem and proof environments]
+\ProvidesPackage{french-logic-structure}[2026/09/08 french-logic: hyperref, cleveref, and the theorem and proof environments]
 %% Omitted by the hub under [deon]: a host class that owns theorems and hyperlinks
-%% clashes with everything here.
+%% clashes with everything here.  Ordered 2026-09-08: the packages, the marks, the
+%% styles, the theorem environments, the proof environments; every definition is as
+%% it was.
 % amssymb: the open square and triangle of the sketch and remark marks.
 \RequirePackage{amssymb}
+\RequirePackage[hyperfootnotes=false]{hyperref}
+\RequirePackage{cleveref}
+\RequirePackage{footmisc}
+\RequirePackage{amsthm}
+%% The theorem environments below share one counter through \newtheorem's optional
+%% argument, which since LaTeX 2026-06-01 creates a counter alias that cleveref and
+%% hyperref read correctly (ltnews43).  Older formats would number correctly but print
+%% "theorem" for every kind, so refuse them loudly (D8).
+\IfFormatAtLeastTF{2026-06-01}{}{\PackageError{french-logic}
+  {LaTeX 2026-06-01 or later is required (counter aliases for theorem kinds)}
+  {Update TeX Live, or load an older french-logic.}}
 
-  \RequirePackage[hyperfootnotes=false]{hyperref}
-  \RequirePackage{cleveref}
-  \RequirePackage{footmisc}
-  \RequirePackage{amsthm}
-  % The theorem environments below share one counter through \newtheorem's
-  % optional argument, which since LaTeX 2026-06-01 creates a counter alias that
-  % cleveref and hyperref read correctly (ltnews43).  Older formats would number
-  % correctly but print "theorem" for every kind, so refuse them loudly.
-  \IfFormatAtLeastTF{2026-06-01}{}{\PackageError{french-logic}
-    {LaTeX 2026-06-01 or later is required (counter aliases for theorem kinds)}
-    {Update TeX Live, or load an older french-logic.}}
+%%% Marks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The open square of a proof sketch and the triangle that closes a remark.
+\newcommand{\sketchqed}{\hfill $\square$}
+\newcommand{\remarkqed}{\hfill \mbox{$\triangleleft$}}
 
-  %%% DISSERTATION THEOREM ENVIRONMENTS AND RELATED DEFINITIONS 
-  \newcommand{\sketchqed}{\hfill $\square$}
-  \newcommand{\remarkqed}{\hfill \mbox{$\triangleleft$}}
+%%% Theorem styles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% One style body, three names: no indent, 6pt above and below, an upright body, a
+%% head in the given font followed by a period.  Kept as three names because the
+%% theorem kinds are declared under them by kind (plain, definition, remark) (F2).
+\newcommand{\fl@thmstyle}[2]{\newtheoremstyle{#1}{6pt}{6pt}{\normalfont}{0pt}{#2}{.}{.5em}{}}
+\fl@thmstyle{noindentplain}{\scshape}
+\fl@thmstyle{noindentdefinition}{\scshape}
+\fl@thmstyle{noindentremark}{\itshape}
 
-  % For Dissertation
-  % One style body, three names: no indent, 6pt above and below, an upright body,
-  % a head in the given font followed by a period.  Kept as three names because the
-  % theorem kinds are declared under them by kind (plain, definition, remark).
-  \newcommand{\fl@thmstyle}[2]{\newtheoremstyle{#1}{6pt}{6pt}{\normalfont}{0pt}{#2}{.}{.5em}{}}
-  \fl@thmstyle{noindentplain}{\scshape}
-  \fl@thmstyle{noindentdefinition}{\scshape}
-  \fl@thmstyle{noindentremark}{\itshape}
+%%% Theorem environments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Eleven kinds on one counter, numbered within sections, each with its cleveref
+%% names; the remark kinds close with \remarkqed.
+\theoremstyle{noindentplain}
+\newtheorem{theorem}{Theorem}[section]
+\crefname{theorem}{theorem}{theorems}
+\Crefname{theorem}{Theorem}{Theorems}
 
-  \theoremstyle{noindentplain}
-    \newtheorem{theorem}{Theorem}[section]
-    \crefname{theorem}{theorem}{theorems}
-    \Crefname{theorem}{Theorem}{Theorems}
+\newtheorem{lemma}[theorem]{Lemma}
+\crefname{lemma}{lemma}{lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
 
-    \newtheorem{lemma}[theorem]{Lemma}
-    \crefname{lemma}{lemma}{lemmas}
-    \Crefname{lemma}{Lemma}{Lemmas}
+\newtheorem{proposition}[theorem]{Proposition}
+\crefname{proposition}{proposition}{propositions}
+\Crefname{proposition}{Proposition}{Propositions}
 
-    \newtheorem{proposition}[theorem]{Proposition}
-    \crefname{proposition}{proposition}{propositions}
-    \Crefname{proposition}{Proposition}{Propositions}
+\newtheorem{corollary}[theorem]{Corollary}
+\crefname{corollary}{corollary}{corollaries}
+\Crefname{corollary}{Corollary}{Corollaries}
 
-    \newtheorem{corollary}[theorem]{Corollary}
-    \crefname{corollary}{corollary}{corollaries}
-    \Crefname{corollary}{Corollary}{Corollaries}
+\theoremstyle{noindentdefinition}
+\newtheorem{definition}[theorem]{Definition}
+\crefname{definition}{definition}{definitions}
+\Crefname{definition}{Definition}{Definitions}
 
-  \theoremstyle{noindentdefinition}
-    \newtheorem{definition}[theorem]{Definition}
-    \crefname{definition}{definition}{definitions}
-    \Crefname{definition}{Definition}{Definitions}
+\newtheorem{example}[theorem]{Example}
+\crefname{example}{example}{examples}
+\Crefname{example}{Example}{Examples}
 
-    \newtheorem{example}[theorem]{Example}
-    \crefname{example}{example}{examples}
-    \Crefname{example}{Example}{Examples}
+\theoremstyle{noindentremark}
+\newtheorem{remark}[theorem]{Remark}
+\crefname{remark}{remark}{remarks}
+\Crefname{remark}{Remark}{Remarks}
+\AtEndEnvironment{remark}{\remarkqed}
 
-  \theoremstyle{noindentremark}
-    \newtheorem{remark}[theorem]{Remark}
-    \crefname{remark}{remark}{remarks}
-    \Crefname{remark}{Remark}{Remarks}
-    \AtEndEnvironment{remark}{\remarkqed}
+\newtheorem{note}[theorem]{Note}
+\crefname{note}{note}{notes}
+\Crefname{note}{Note}{Notes}
+\AtEndEnvironment{note}{\remarkqed}
 
-    \newtheorem{note}[theorem]{Note}
-    \crefname{note}{note}{notes}
-    \Crefname{note}{Note}{Notes}
-    \AtEndEnvironment{note}{\remarkqed}
+\newtheorem{convention}[theorem]{Convention}
+\crefname{convention}{convention}{conventions}
+\Crefname{convention}{Convention}{Conventions}
+\AtEndEnvironment{convention}{\remarkqed}
 
-    \newtheorem{convention}[theorem]{Convention}
-    \crefname{convention}{convention}{conventions}
-    \Crefname{convention}{Convention}{Conventions}
-    \AtEndEnvironment{convention}{\remarkqed}
+\newtheorem{observation}[theorem]{Observation}
+\crefname{observation}{observation}{observations}
+\Crefname{observation}{Observation}{Observations}
+\AtEndEnvironment{observation}{\remarkqed}
 
-    \newtheorem{observation}[theorem]{Observation}
-    \crefname{observation}{observation}{observations}
-    \Crefname{observation}{Observation}{Observations}
-    \AtEndEnvironment{observation}{\remarkqed}
+\newtheorem{digression}[theorem]{Digression}
+\crefname{digression}{digression}{digressions}
+\Crefname{digression}{Digression}{Digressions}
+\AtEndEnvironment{digression}{\remarkqed}
 
-    \newtheorem{digression}[theorem]{Digression}
-    \crefname{digression}{digression}{digressions}
-    \Crefname{digression}{Digression}{Digressions}
-    \AtEndEnvironment{digression}{\remarkqed}
-    % Identical to amsthm's proof: renewed to pin the house form and declare the
-    % environment a member of the language (README, Conventions).
-    \renewenvironment{proof}[1][\proofname]{\par
-      \pushQED{\qed}%
-      \normalfont
-      \topsep6\p@\@plus6\p@\relax
-      \trivlist
-      \item[\hskip\labelsep
-        \itshape
-        #1\@addpunct{.}]\ignorespaces
-      }{%
-        \popQED\endtrivlist\@endpefalse
-      }
-    \newenvironment{proofsketch}[1][Proof sketch]{\par
-    \renewcommand{\qedsymbol}{$\square$}% local to the environment, so \qedhere works in sketches too
-    \pushQED{\qed}%
-    \normalfont
-    \topsep6\p@\@plus6\p@\relax
-    \trivlist
-    \item[\hskip\labelsep
-      \itshape
-      #1\@addpunct{.}]\ignorespaces\leavevmode
-    }{%
-      \popQED\endtrivlist\@endpefalse
-    }
+%%% Proof environments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% proof is identical to amsthm's: renewed to pin the house form and declare the
+%% environment a member of the language (README, Conventions).  proofsketch takes its
+%% open square through a local \qedsymbol, so \qedhere works in sketches too (D7).
+\renewenvironment{proof}[1][\proofname]{\par
+  \pushQED{\qed}%
+  \normalfont
+  \topsep6\p@\@plus6\p@\relax
+  \trivlist
+  \item[\hskip\labelsep
+    \itshape
+    #1\@addpunct{.}]\ignorespaces
+  }{%
+    \popQED\endtrivlist\@endpefalse
+  }
+\newenvironment{proofsketch}[1][Proof sketch]{\par
+  \renewcommand{\qedsymbol}{$\square$}% local to the environment, so \qedhere works in sketches too
+  \pushQED{\qed}%
+  \normalfont
+  \topsep6\p@\@plus6\p@\relax
+  \trivlist
+  \item[\hskip\labelsep
+    \itshape
+    #1\@addpunct{.}]\ignorespaces\leavevmode
+  }{%
+    \popQED\endtrivlist\@endpefalse
+  }

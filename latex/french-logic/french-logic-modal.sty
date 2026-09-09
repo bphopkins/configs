@@ -1,12 +1,20 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-modal}[2026/09/07 french-logic: names of modal axioms, rules, and systems]
-%% Refers into deontic for \ought and into core for \poss.
+\ProvidesPackage{french-logic-modal}[2026/09/08 french-logic: names of modal axioms, rules, and systems]
+%% Refers into deontic for \ought and into core for \poss and the label helper.
+%% Every name is \ensuremath{...}\xspace, so it works in text and in math.  Schemata
+%% and systems are bold roman; rules, and the proper-name systems SDL and CO, roman
+%% (rule β, README, Conventions); the names follow the map's grammar.  Ordered
+%% 2026-09-08: axioms, rules, systems; every definition as it was, but for two decided on
+%% the board that day: \Wocax's converse c is the family's italic letter, and \SDLT's T a
+%% math superscript at script size, as \SDLplus's +; on the sixth sitting both took a
+%% \mkern-4.5mu tuck into the void above the L's foot, the old form's 2 pt.
 % The units this one refers into; loaded here so the unit works on its own.
 \RequirePackage{french-logic-deontic}
 % xspace: every name ends in \xspace.
 \RequirePackage{xspace}
 
-% Modal Axioms
+%%% Axioms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ax marks a schema whose letters also name a system (\Kax beside \K).
 \newcommand{\Kax}{\ensuremath{\textup{\textbf{K}}}\xspace}
 \newcommand{\Dax}{\ensuremath{\textup{\textbf{D}}}\xspace}
 \newcommand{\Dsax}{\ensuremath{\textup{\textbf{D}}^*}\xspace}
@@ -25,8 +33,8 @@
 \newcommand{\Poax}{\ensuremath{\textup{\textbf{P}}_{\!\ought}}\xspace}
 \newcommand{\Posax}{\ensuremath{\textup{\textbf{P}}_{\!\ought}^*}\xspace}
 \newcommand{\Woax}{\ensuremath{\textup{\textbf{W}}\!_\ought}\xspace}
-\newcommand{\Wocax}{\ensuremath{\textup{\textbf{W}}\!_{\ought\textnormal{c}}}\xspace}
-% Parenthesized
+\newcommand{\Wocax}{\ensuremath{\textup{\textbf{W}}\!_{\ought c}}\xspace}
+% Axioms: parenthesised
 \newcommand{\Kaxpar}{(\ensuremath{\textup{\textbf{K}}})\xspace}
 \newcommand{\Daxpar}{(\ensuremath{\textup{\textbf{D}}})\xspace}
 \newcommand{\Taxpar}{(\ensuremath{\textup{\textbf{T}}})\xspace}
@@ -35,7 +43,7 @@
 \newcommand{\Caxpar}{(\ensuremath{\textup{\textbf{C}}})\xspace}
 \newcommand{\Naxpar}{(\ensuremath{\textup{\textbf{N}}})\xspace}
 \newcommand{\Dualaxpar}{(\ensuremath{\textup{\textbf{Dual}}})\xspace}
-% Converses
+% Axioms: converses
 \newcommand{\Kaxc}{\ensuremath{\textup{\textbf{K}}_c}\xspace}
 \newcommand{\Daxc}{\ensuremath{\textup{\textbf{D}}_c}\xspace}
 \newcommand{\Taxc}{\ensuremath{\textup{\textbf{T}}_c}\xspace}
@@ -45,7 +53,8 @@
 \newcommand{\Caxc}{\ensuremath{\textup{\textbf{C}}_c}\xspace}
 \newcommand{\Naxc}{\ensuremath{\textup{\textbf{N}}_c}\xspace}
 
-% Modal Derivation Rules
+%%% Rules %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Roman; a name ends in rule, and the letter under RE is a scaling label.
 \newcommand{\rerule}{\ensuremath{\textnormal{RE}}\xspace}
 \newcommand{\relrule}{\ensuremath{\textnormal{RE}_{\fl@lbl{L}}}\xspace}
 \newcommand{\rerrule}{\ensuremath{\textnormal{RE}_{\fl@lbl{R}}}\xspace}
@@ -62,7 +71,7 @@
 \newcommand{\rmpossrule}{\ensuremath{\textnormal{RM}_\poss}\xspace}
 \newcommand{\repossrule}{\ensuremath{\textnormal{RE}_\poss}\xspace}
 \newcommand{\rpossrule}{\ensuremath{\textnormal{R}_\poss}\xspace}
-% Parenthesized
+% Rules: parenthesised
 \newcommand{\rerulepar}{(\ensuremath{\textnormal{RE}})\xspace}
 \newcommand{\relrulepar}{(\ensuremath{\textnormal{RE}_{\fl@lbl{L}}})\xspace}
 \newcommand{\rerrulepar}{(\ensuremath{\textnormal{RE}_{\fl@lbl{R}}})\xspace}
@@ -80,7 +89,9 @@
 \newcommand{\repossrulepar}{(\ensuremath{\textnormal{RE}_\poss})\xspace}
 \newcommand{\rpossrulepar}{(\ensuremath{\textnormal{R}_\poss})\xspace}
 
-% Modal Systems and Schema
+%%% Systems %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The normal systems by their schemata, then the E and the CE and CK families, VW
+%% and S.  \four, \five and \Slog are the forced exceptions to the grammar.
 \newcommand{\K}{\ensuremath{\textup{\textbf{K}}}\xspace}
 \newcommand{\D}{\ensuremath{\textup{\textbf{D}}}\xspace}
 \newcommand{\T}{\ensuremath{\textup{\textbf{T}}}\xspace}
@@ -127,10 +138,12 @@
 \newcommand{\VW}{\ensuremath{\textup{\textbf{VW}}}\xspace}
 \newcommand{\Slog}{\ensuremath{\textup{\textbf{S}}}\xspace}
 
-% Deontic Systems (and stuff)
+%%% Deontic systems %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SDL and the conditional-obligation systems CO are proper names, roman; the KD
+%% family with the O subscript is schema-built, bold.
 \newcommand{\SDL}{\ensuremath{\textnormal{SDL}}\xspace}
-\newcommand{\SDLplus}{\ensuremath{\textnormal{SDL}^+}\xspace}
-\newcommand{\SDLT}{\ensuremath{\textnormal{SDL\!\textsuperscript{T}}}\xspace}
+\newcommand{\SDLplus}{\ensuremath{\textnormal{SDL}^{\mkern-4.5mu+}}\xspace}
+\newcommand{\SDLT}{\ensuremath{\textnormal{SDL}^{\mkern-4.5mu\textnormal{T}}}\xspace}
 \newcommand{\KDought}{\ensuremath{\textup{\textbf{KD}}_\ought}\xspace}
 \newcommand{\KDUought}{\ensuremath{\textup{\textbf{KDU}}_\ought}\xspace}
 \newcommand{\KUought}{\ensuremath{\textup{\textbf{KU}}_\ought}\xspace}

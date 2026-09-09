@@ -1,6 +1,6 @@
 -- Auto-generated from french-logic.sty
 -- Regenerate via sty-lua-snippets.py
--- sty-sha256: e25bb645ad2cf0d6bc6ec66583ed067d378a1a5d438c4c8f59d267d8a33ea699
+-- sty-sha256: 0366077581c92c57fdd1596d5f7f61992367c60bd4af443bd2b0606797f0e9b9
 
 local ls = require("luasnip")
 local s  = ls.snippet

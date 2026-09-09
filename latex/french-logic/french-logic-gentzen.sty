@@ -1,44 +1,60 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-gentzen}[2026/09/07 french-logic: proof trees over ebproof, rule labels, signed formulas]
+\ProvidesPackage{french-logic-gentzen}[2026/09/08 french-logic: proof trees over ebproof, rule labels, signed formulas]
 %% Retired for new writing, but load-bearing: the IO-logic chapter and the decks use it.
-
-% EB Proof --  with style
+%% The rule labels, the signed formulas and the typed connectives came from the W2021
+%% seminar preamble.  Ordered 2026-09-08, every definition as it was; the same day the
+%% four \newcommand* forms were unstarred, so every member is \newcommand.
 \RequirePackage{ebproof}
 \RequirePackage{relsize}   % \mathlarger, for the signed-formula forces (\af, \de and kin) below
-  \newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
-    \newcommand*{\hyphantom}{\hypo{{$\hphantom{--}$}}}
-    \newcommand{\hyp}[1]{\hypo{#1}}
-    \newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
-    \renewcommand{\inf}[3]{\infer#1[#2]{#3}}
-    \newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
-    \newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
-    \newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
-    \newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
-    \newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
-    \newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
-    \newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
-    \newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
-    \newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
-    % ripped from W2021 seminar final preamble, much is superfluous
-    \newcommand*{\incomp}{\dagger}
-    \newcommand*{\close}[1]{$\scriptscriptstyle{#1}$}
-    \newcommand*{\hk}{{\supset}}
-    \newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
-    \newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
-    \newcommand{\aff}{\mathlarger{\mathlarger{+}}}
-    \newcommand{\den}{\mathlarger{\mathlarger{-}}}
-    \newcommand{\af}{{\mathlarger{+}}}
-    \newcommand{\de}{{\mathlarger{-}}}
-    \newcommand{\afland}{\af\!\land}
-    \newcommand{\deland}{\de\!\land}
-    \newcommand{\aflor}{\af\!\lor}
-    \newcommand{\delor}{\de\!\lor}
-    \newcommand{\afto}{\af\rightarrow}
-    \newcommand{\deto}{\de\rightarrow}
-    \newcommand{\afneg}{\af\neg}
-    \newcommand{\deneg}{\de\neg}
-    \newcommand{\ecu}{\Rightarrow}
-    \newcommand{\ito}{\rightarrow_i}
-    \newcommand{\cto}{\rightarrow_c}
-    \newcommand{\ilor}{\lor_i}
-    \newcommand{\clor}{\lor_c}
+
+%%% The tree %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gentzen is ebproof's prooftree; \hyp and \infr wrap its \hypo and \infer, and \inf
+%% renames TeX's infimum operator to a three-argument inference (members, README,
+%% Conventions).
+\newenvironment{gentzen}{\begin{prooftree}}{\end{prooftree}}
+\newcommand{\hyphantom}{\hypo{{$\hphantom{--}$}}}
+\newcommand{\hyp}[1]{\hypo{#1}}
+\newcommand{\infr}[4]{\infer[#1]#2[#3]{#4}}
+\renewcommand{\inf}[3]{\infer#1[#2]{#3}}
+
+%%% Rule labels %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Introduction and elimination labels, with or without a discharge index; the
+%% negation rules; a label of one's own; the closing index and the dagger.
+\newcommand{\irulej}[1]{$\scriptscriptstyle[#1 I]$}
+\newcommand{\iruledj}[2]{$\scriptscriptstyle[#1 I]_{#2}$}
+\newcommand{\erulej}[1]{$\scriptscriptstyle[#1 E]$}
+\newcommand{\eruledj}[2]{$\scriptscriptstyle[#1 E]_{#2}$}
+\newcommand{\negiprule}[1]{$\scriptscriptstyle{[\neg I^P]_{#1}}$}
+\newcommand{\negipstarrule}[1]{$\scriptscriptstyle{[\neg I^{P^*}]_{#1}}$}
+\newcommand{\negedrule}{$\scriptscriptstyle{[\neg E^\dagger]}$}
+\newcommand{\negidrule}[1]{$\scriptscriptstyle{[\neg I^\dagger]_{#1}}$}
+\newcommand{\manrule}[2]{$\scriptscriptstyle{[#1]_{#2}}$}
+\newcommand{\close}[1]{$\scriptscriptstyle{#1}$}
+\newcommand{\incomp}{\dagger}
+
+%%% Signed formulas %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Affirmation and denial as enlarged plus and minus, alone or before a connective.
+\newcommand{\affirm}[1]{{\mathlarger{\mathlarger{+}}\;{#1}}}
+\newcommand{\deny}[1]{\mathlarger{\mathlarger{-}}\;{#1}}
+\newcommand{\aff}{\mathlarger{\mathlarger{+}}}
+\newcommand{\den}{\mathlarger{\mathlarger{-}}}
+\newcommand{\af}{{\mathlarger{+}}}
+\newcommand{\de}{{\mathlarger{-}}}
+\newcommand{\afland}{\af\!\land}
+\newcommand{\deland}{\de\!\land}
+\newcommand{\aflor}{\af\!\lor}
+\newcommand{\delor}{\de\!\lor}
+\newcommand{\afto}{\af\rightarrow}
+\newcommand{\deto}{\de\rightarrow}
+\newcommand{\afneg}{\af\neg}
+\newcommand{\deneg}{\de\neg}
+
+%%% Connectives %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The hook, the double arrow, and the intuitionistic and classical arrows and
+%% disjunctions.
+\newcommand{\hk}{{\supset}}
+\newcommand{\ecu}{\Rightarrow}
+\newcommand{\ito}{\rightarrow_i}
+\newcommand{\cto}{\rightarrow_c}
+\newcommand{\ilor}{\lor_i}
+\newcommand{\clor}{\lor_c}

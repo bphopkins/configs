@@ -1,33 +1,42 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{french-logic-io}[2026/09/07 french-logic: input/output logic]
-% amsmath: \text in the small labels; xspace: every name ends in \xspace.
+\ProvidesPackage{french-logic-io}[2026/09/08 french-logic: input/output logic]
+%% Refers into core for the label helper.  amsmath: \text in \IO; xspace: every name
+%% ends in \xspace.  I/O and the systems built on it are proper names, roman (rule β);
+%% the frame class \IOfn is sans.  Ordered 2026-09-08: the systems, the operations,
+%% the rules and their starred forms, the detachment principles, the frame classes;
+%% every definition as it was (\IO unstarred the same day: every member is \newcommand).
 \RequirePackage{amsmath}
 \RequirePackage{xspace}
-% Refers into core for the label helper.
 \RequirePackage{french-logic-core}
 
-% Misc I/O Stuff
-\newcommand*{\IO}{\ensuremath{\textup{\text{I/O}}}\xspace}
+%%% Systems %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% I/O itself, the starred and indexed systems, and the Hilbert systems IO^H_i.
+\newcommand{\IO}{\ensuremath{\textup{\text{I/O}}}\xspace}
 \newcommand{\IOs}{\ensuremath{\textnormal{IO}^*}\xspace}
 \newcommand{\IOsn}[1]{\ensuremath{\textnormal{IO}^*_{#1}}\xspace}
 \newcommand{\IOn}[1]{\ensuremath{\textnormal{IO}_{#1}}\xspace}
 \newcommand{\IOh}{\ensuremath{\textnormal{IO}^{\fl@lbl{H}}}\xspace}
 \newcommand{\IOhn}[1]{\ensuremath{\textnormal{IO}^{\fl@lbl{H}}_{#1}}\xspace}
+
+%%% Operations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input, output and derivability as functions of a norm set, bare or indexed by
+%% system.
 \newcommand{\iput}[1]{\textnormal{in}(#1)}
 \newcommand{\oput}[1]{\textnormal{out}(#1)}
 \newcommand{\oputi}[2]{\textnormal{out}_{#1}(#2)}
 \newcommand{\deriv}[1]{\textnormal{deriv}(#1)}
 \newcommand{\derivi}[2]{\textnormal{deriv}_{#1}(#2)}
-\newcommand{\FDio}{\ensuremath{\textnormal{FD}_{\fl@lbl{IO}}}\xspace}
-\newcommand{\DDio}{\ensuremath{\textnormal{DD}_{\fl@lbl{IO}}}\xspace}
+
+%%% Rules %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The derivation rules of the I/O systems; the starred forms are the same names with
+%% a star.
 \newcommand{\TOP}{\ensuremath{\top}\xspace}
 \newcommand{\SI}{\ensuremath{\textnormal{SI}}\xspace}
 \newcommand{\WO}{\ensuremath{\textnormal{WO}}\xspace}
 \newcommand{\AND}{\ensuremath{\textnormal{AND}}\xspace}
 \newcommand{\OR}{\ensuremath{\textnormal{OR}}\xspace}
 \newcommand{\CT}{\ensuremath{\textnormal{CT}}\xspace}
-
-%OLD
+% Rules: starred
 \newcommand{\TOPs}{\ensuremath{\top^*}\xspace}
 \newcommand{\SIs}{\ensuremath{\textnormal{SI}^*}\xspace}
 \newcommand{\WOs}{\ensuremath{\textnormal{WO}^*}\xspace}
@@ -35,6 +44,11 @@
 \newcommand{\ORs}{\ensuremath{\textnormal{OR}^*}\xspace}
 \newcommand{\CTs}{\ensuremath{\textnormal{CT}^*}\xspace}
 
+%%% Detachment principles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Factual and deontic detachment, with the IO label.
+\newcommand{\FDio}{\ensuremath{\textnormal{FD}_{\fl@lbl{IO}}}\xspace}
+\newcommand{\DDio}{\ensuremath{\textnormal{DD}_{\fl@lbl{IO}}}\xspace}
 
-% Frame classes for the IO systems
+%%% Frame classes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The frame class of an IO system: sans, with the H label at the scaling size (D6).
 \newcommand{\IOfn}[1]{\ensuremath{\textup{\textsf{IO}}^{{\scriptscriptstyle\mathsf{H}}}_{#1}}\xspace}

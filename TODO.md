@@ -234,57 +234,34 @@ The measurement is one loop; rerun it on both machines before and after any
 change, and after each TeX Live release. Cross-listed in
 `org/machines/machines.md` under the Latin Modern item.
 
-## 13. french-logic: the map, the unit split, the rendering suite
+## 14. french-logic: deferred, for when the dissertation needs them
 
-- [x] Audit the single-file package end to end; build the consumer harness
-  (scratch copy of the dissertation and its siblings, page-by-page diffs) and
-  the rendering suite `tests/french-logic/`. @done(2026-09-07)
-- [x] Write the map (`latex/french-logic/README.md`) and the inventory
-  (`latex/french-logic/AUDIT.md`). @done(2026-09-07)
-- [ ] Work the open ledger in the map, one item at a time, each verified by
-  both nets before it lands. All thirteen D items closed 2026-09-07; the F
-  items (form drift) are worked per unit after the split.
-- [x] Verify the first chat's work on fedxps: both nets, the snippet checks,
-  and a page-by-page comparison against the pre-split package (`145aad8`) —
-  the differences were exactly the deliberate list. @done(2026-09-08)
-- [x] D14 the inventory headings; D15 the mode table re-censused for `\Lc`
-  (golden 836 pages). @done(2026-09-08)
-- [x] fedxps could not run the harness's `compare.py` from the system Python:
-  Pillow was missing; installed from the Fedora package. @done(2026-09-08)
-- [x] Split the package into the hub and the unit files the map plans, output-
-  identical under both nets; extend the snippet generator to read the units.
-  @done(2026-09-07) — fourteen units plus the quarry; no differences across
-  27 consumers, no changed fixture page.
-- [x] The F items decided by eye on the type board and landed: mode, face
-  (rule β), small labels (idiom A), decorations, structure indices, the three
-  folds. @done(2026-09-07)
-- [x] The naming grammar: decided strict on 2026-09-08 (substituted, no
-  aliases) and landed in two rounds the same day, 59 renames, each proved on
-  both nets and the harness run on bigfed. @done(2026-09-08)
-- [x] The compute-heavy harness steps run on bigfed over SSH
-  (`french-logic-harness/remote.sh`: push, suite, census, compare, fetch);
-  settled 2026-09-08. @done(2026-09-08)
-- [ ] Per-unit ordering passes: within each unit the blocks still sit in the
-  old file's order; reorder by the tower with the suite watching.
-- [ ] `dissertation/CLAUDE.md`, the package paragraph: still describes aliascnt,
-  the old `deon` semantics, an absolute path, and (since the grammar landed)
-  the old names `\kax`, `\Rup`, `\MRel` — Brandon's document, update on his
-  say-so; the drafted replacement is in `latex/french-logic/next-chat-2026-09-08.md`.
-- [x] Decide the option design, the two IO-logic beamer decks, `\hypersetup`
-  and `geometry`. @done(2026-09-07) — one keyval switch per unit with `deon`
-  and `slim` bundles; the decks pass `deon` and build; hyperref defaults kept;
-  geometry stays with the documents.
-- [x] The opuscula drift: recorded as finding 10 in opuscula's AUDIT.md and
-  left as it is; no version of the package builds them. @done(2026-09-07)
+Two items the reorganisation campaign (item 13, closed 2026-09-08) declared
+out of its scope, and one fine-tune from its confirmation pass. None is broken;
+handle each when a document asks for it, through the two nets (`tests/french-logic/run.sh` and the private harness in
+`org/claude-config/repos/configs/french-logic-harness/`).
 
-Opened 2026-09-07. The next session opens with `latex/french-logic/next-chat.md`,
-the dated brief that says what exists, how to verify it, and what comes next;
-each chat's brief is annotated at its head with the name of its successor.
-The package is a semantic markup language for logic; the
-governing principles (nothing deleted without an accepted case, dependencies
-ride with the code, one package with unit files, a preamble by default) are
-recorded in the map, which is the living contract — read it before touching
-`latex/french-logic/`. Run `tests/french-logic/run.sh` after any edit there.
+- [ ] Derive `dissertation-template/philogic.sty` from the units instead of
+  maintaining it apart. It is the template's one deliberate bundled `.sty`; a
+  derivation would be a script over the unit files with the template's trims
+  applied, proved by building the template against both.
+- [ ] One command for a dyadic connective that spaces itself by context.
+  Today `\cnecs` (use, between sentences, padded by hand inside the builder
+  `\fl@dyad`) and `\cnecsolo` (mention, unpadded) are two members, and the
+  same for `\cobs`/`\cobsolo` and `\cposs`/`\cpossolo`; Brandon said on
+  2026-09-08 that one name should do both if there is a natural way. The
+  natural mechanism is one `\mathrel` box around the glyph, so that TeX's
+  relation spacing applies in use and nothing at the ends of a formula; what
+  it needs is a measured comparison of that spacing against the tuned
+  paddings (3.5mu left, 2.75mu right) on the use sites — `\cobs` alone has
+  745 — with the `\xspace` question for prose considered beside it, since
+  these names are math-only today.
+- [ ] Fine-tune the decorations' tuck. The ten decorated sets (`\truthsetm`
+  and kin, `\proofsetl`, `\eclassl`) carry `\mkern-3mu` inside the script
+  since 2026-09-08, the old gap measured within a pixel at every size; Brandon
+  suspects −2 mu is the optimum. Rows K3 and K2 of the type board's section
+  11.1 are photographed for the comparison; judge by eye, land through both
+  nets (24 dissertation pages move by hair widths either way).
 
 ---
 
@@ -348,6 +325,10 @@ are in `DECISIONS.md` under the same item numbers.
   always` stays declined. The item's *reasoning* needed correcting — `systemd-oomd`
   is inactive here, so the cgroup-level reaper it assumed is not running; the
   verdict survives on other grounds. Closed 2026-09-05 → `DECISIONS.md` item 11.
+- **13. french-logic: the map, the unit split, the rendering suite** — a hub over
+  fourteen units, two nets, the map and the generated inventory, 59 renames, every
+  unit ordered, v1.0 released. Closed 2026-09-08 → `DECISIONS.md` item 13; the
+  four briefs in `docs/french-logic-campaign-2026-09/`.
 - Unnumbered closed work (the 2026-08-22 latency fix, lock/notifications, the sway
   restructure, the `scripts` repo retirement, the 2026-07-26 staleness sweeps,
   earlier setup) → `DECISIONS.md`, Done ledger.

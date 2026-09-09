@@ -21,16 +21,17 @@ deletion candidate (README, principle 1).
 ## `french-logic-core.sty` — 156 members
 
 
-**Misc Preliminary**
+**Symbols**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\Yright` |  | M | 0 | 6 |  |
 | `\shortminus` |  | M | 0 | 0 |  |
+| `\strictif` |  | M | 4 | 4 |  |
 | `\dvbar` |  | TM | 0 | 0 |  |
 | `\parent` | 1 | TM | 12 | 11 |  |
 
-**Set Theoretic Notions and Relations**
+**Sets**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -44,12 +45,25 @@ deletion candidate (README, principle 1).
 | `\union` |  | M | 48 | 112 |  |
 | `\suchthat` |  | M | 6 | 7 |  |
 | `\st` |  | TM | 12 | 23 |  |
+| `\defby` |  | M | 32 | 36 |  |
+| `\defbyvar` |  | M | 0 | 0 |  |
+| `\filter` |  | M | 0 | 8 |  |
+| `\topg` |  | M | 0 | 0 |  |
+| `\botg` |  | M | 0 | 0 |  |
+| `\topa` |  | M | 0 | 0 |  |
+| `\bota` |  | M | 0 | 0 |  |
 
-**Misc Syntactical**
+**Syntax: languages and logics**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\Fm` |  | TM | 3 | 3 |  |
+| `\props` |  | M | 4 | 8 |  |
+| `\atoms` |  | TM | 4 | 0 |  |
+| `\pzero` |  | M | 0 | 1 |  |
+| `\pone` |  | M | 0 | 0 |  |
+| `\ptwo` |  | M | 0 | 0 |  |
+| `\pthree` |  | M | 0 | 0 |  |
 | `\lang` |  | TM | 5 | 28 |  |
 | `\langp` |  | TM | 77 | 28 |  |
 | `\langm` |  | TM | 5 | 2 |  |
@@ -57,10 +71,10 @@ deletion candidate (README, principle 1).
 | `\langmd` |  | TM | 1 | 0 |  |
 | `\langc` |  | TM | 0 | 2 |  |
 | `\logic` |  | M | 94 | 31 |  |
-| `\metalogic` |  | TM | 0 | 0 |  |
 | `\logicp` |  | M | 0 | 0 |  |
+| `\metalogic` |  | TM | 0 | 0 |  |
 
-**Logical Operators and Relations**
+**Syntax: connectives**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -68,25 +82,62 @@ deletion candidate (README, principle 1).
 | `\onlyif` |  | M | 0 | 0 |  |
 | `\then` |  | M | 13 | 3 |  |
 | `\to` |  | M | 208 | 236 |  |
+| `\minus` |  | M | 0 | 0 |  |
+| `\nec` |  | M | 5 | 66 |  |
+| `\poss` |  | M | 5 | 36 |  |
+| `\tightwedge` |  | M | 8 | 4 |  |
+| `\wedgeset` |  | M | 0 | 0 |  |
+
+**Syntax: consequence and closure**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\cn` | 1 | TM | 32 | 43 |  |
+| `\theory` | 1 | M | 0 | 0 |  |
+| `\Cl` | 2 | M | 10 | 0 |  |
+| `\mcslog` |  | M | 0 | 0 |  |
+
+**Syntax: proof sets and classes**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\proofset` | 1 | TM | 0 | 0 |  |
+| `\proofsetl` | 1 | M | 154 | 62 |  |
+| `\eclass` | 1 | TM | 0 | 0 |  |
+| `\eclassl` | 1 | M | 29 | 9 |  |
+| `\mcseti` | 2 | M | 0 | 0 |  |
+
+**Relations**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\derives` |  | M | 0 | 0 |  |
 | `\gives` |  | M | 0 | 0 |  |
 | `\asserts` |  | M | 0 | 0 |  |
 | `\proves` |  | M | 99 | 105 |  |
 | `\nproves` |  | M | 5 | 2 |  |
+| `\provesrel` | 1 | M | 0 | 0 |  |
+| `\models` |  | M | 18 | 36 |  |
+| `\nmodels` |  | M | 4 | 0 |  |
+| `\modelsrel` | 1 | M | 0 | 0 |  |
+| `\trues` |  | M | 129 | 44 |  |
+| `\ntrues` |  | M | 27 | 2 |  |
 | `\seq` |  | M | 0 | 0 |  |
 | `\tseq` |  | M | 0 | 20 |  |
-| `\modelsrel` | 1 | M | 0 | 0 |  |
-| `\provesrel` | 1 | M | 0 | 0 |  |
-| `\strictif` |  | M | 4 | 4 |  |
+| `\ent` |  | M | 0 | 0 |  |
+| `\natent` |  | M | 0 | 1 |  |
+| `\nnatent` |  | M | 0 | 0 |  |
+| `\bisim` |  | M | 0 | 0 |  |
 
-**Misc Modal Symbols, Operators and Relations**
+**Structures: models, frames, classes, algebras**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\nec` |  | M | 5 | 66 |  |
-| `\poss` |  | M | 5 | 36 |  |
 | `\M` |  | M | 180 | 96 |  |
 | `\F` |  | M | 39 | 37 |  |
+| `\C` |  | M | 10 | 7 |  |
+| `\A` |  | M | 48 | 32 |  |
+| `\R` |  | M | 0 | 0 |  |
 | `\FR` |  | M | 3 | 0 |  |
 | `\FRtwo` |  | M | 1 | 0 |  |
 | `\FRthree` |  | M | 1 | 0 |  |
@@ -97,29 +148,41 @@ deletion candidate (README, principle 1).
 | `\MN` |  | M | 0 | 0 |  |
 | `\MNone` |  | M | 1 | 0 |  |
 | `\MNtwo` |  | M | 1 | 0 |  |
-| `\C` |  | M | 10 | 7 |  |
-| `\R` |  | M | 0 | 0 |  |
 | `\mwrv` |  | M | 0 | 0 |  |
 | `\mwrp` |  | M | 0 | 0 |  |
 | `\mwnv` |  | M | 0 | 0 |  |
 | `\mwnp` |  | M | 0 | 0 |  |
-| `\bisim` |  | M | 0 | 0 |  |
 | `\Msig` |  | M | 0 | 0 |  |
 | `\Wsig` |  | M | 0 | 0 |  |
 | `\Rsig` |  | M | 0 | 0 |  |
 | `\Vsig` |  | M | 0 | 0 |  |
-| `\neced` |  | M | 0 | 0 |  |
-| `\unneced` |  | M | 0 | 0 |  |
-| `\possed` |  | M | 0 | 0 |  |
-| `\unpossed` |  | M | 0 | 0 |  |
+
+**Structures: canonical models**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\Mlog` |  | M | 37 | 26 |  |
 | `\Wlog` |  | M | 65 | 24 |  |
 | `\Rlog` |  | M | 0 | 1 |  |
 | `\flog` |  | M | 100 | 58 |  |
 | `\Vlog` |  | M | 4 | 2 |  |
-| `\A` |  | M | 48 | 32 |  |
 
-**Misc Mathematical**
+**Structures: canonical models with closures**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\Mne` |  | M | 0 | 0 |  |
+| `\fne` |  | M | 0 | 0 |  |
+| `\Mnw` |  | M | 0 | 0 |  |
+| `\fnw` |  | M | 0 | 0 |  |
+| `\Mse` |  | M | 0 | 0 |  |
+| `\fse` |  | M | 0 | 0 |  |
+| `\Msw` |  | M | 0 | 0 |  |
+| `\fsw` |  | M | 0 | 0 |  |
+| `\Mlr` |  | M | 0 | 0 |  |
+| `\flr` |  | M | 0 | 0 |  |
+
+**Functions**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -132,7 +195,7 @@ deletion candidate (README, principle 1).
 | `\fsof` | 2 | M | 0 | 0 |  |
 | `\fnof` | 1 | M | 0 | 0 |  |
 
-**Semantic Notions and Relations**
+**Semantics: valuations and truth values**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -142,44 +205,42 @@ deletion candidate (README, principle 1).
 | `\true` |  | TM | 0 | 0 |  |
 | `\false` |  | TM | 0 | 0 |  |
 | `\ind` |  | TM | 0 | 0 |  |
-| `\models` |  | M | 18 | 36 |  |
-| `\nmodels` |  | M | 4 | 0 |  |
-| `\trues` |  | M | 129 | 44 |  |
-| `\ntrues` |  | M | 27 | 2 |  |
+
+**Semantics: satisfaction in a model**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\mmodels` |  | M | 0 | 0 |  |
 | `\mnmodels` |  | M | 0 | 0 |  |
 | `\mtruesat` | 1 | M | 0 | 0 |  |
 | `\mntruesat` | 1 | M | 0 | 0 |  |
-| `\eclass` | 1 | TM | 0 | 0 |  |
-| `\ctruthset` | 1 | TM | 0 | 0 |  |
-| `\eclassl` | 1 | M | 29 | 9 |  |
-| `\ctruthsetm` | 1 | M | 0 | 0 |  |
-| `\ctruthsetml` | 1 | M | 0 | 0 |  |
-| `\ctruthsetmsub` | 2 | M | 0 | 0 |  |
-| `\ctruthsetmm` | 1 | M | 0 | 0 |  |
-| `\defby` |  | M | 32 | 36 |  |
-| `\defbyvar` |  | M | 0 | 0 |  |
-| `\props` |  | M | 4 | 8 |  |
-| `\emptytruthset` |  | M | 0 | 0 |  |
-| `\pzero` |  | M | 0 | 1 |  |
-| `\pone` |  | M | 0 | 0 |  |
-| `\ptwo` |  | M | 0 | 0 |  |
-| `\pthree` |  | M | 0 | 0 |  |
+
+**Semantics: truth sets**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\truthset` | 1 | M | 274 | 54 |  |
 | `\truthsetm` | 1 | M | 23 | 33 |  |
 | `\truthsetml` | 1 | M | 1 | 1 |  |
 | `\truthsetmsub` | 2 | M | 0 | 0 |  |
 | `\truthsetmm` | 1 | M | 2 | 7 |  |
+| `\emptytruthset` |  | M | 0 | 0 |  |
+| `\ctruthset` | 1 | TM | 0 | 0 |  |
+| `\ctruthsetm` | 1 | M | 0 | 0 |  |
+| `\ctruthsetml` | 1 | M | 0 | 0 |  |
+| `\ctruthsetmsub` | 2 | M | 0 | 0 |  |
+| `\ctruthsetmm` | 1 | M | 0 | 0 |  |
 
-**Completeness Proofs**
+**Semantics: operations on propositions**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\proofset` | 1 | TM | 0 | 0 |  |
-| `\proofsetl` | 1 | M | 154 | 62 |  |
-| `\mcslog` |  | M | 0 | 0 |  |
+| `\neced` |  | M | 0 | 0 |  |
+| `\unneced` |  | M | 0 | 0 |  |
+| `\possed` |  | M | 0 | 0 |  |
+| `\unpossed` |  | M | 0 | 0 |  |
 
-**Neighborhood Semantics Metalanguage**
+**Metalanguage**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -196,71 +257,10 @@ deletion candidate (README, principle 1).
 | `\mlforallsolo` |  | M | 1 | 0 |  |
 | `\mlexistssolo` |  | M | 1 | 0 |  |
 
-**Misc Other Technical (unsorted)**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\minus` |  | M | 0 | 0 |  |
-| `\ent` |  | M | 0 | 0 |  |
-| `\cn` | 1 | TM | 32 | 43 |  |
-| `\theory` | 1 | M | 0 | 0 |  |
-| `\topg` |  | M | 0 | 0 |  |
-| `\botg` |  | M | 0 | 0 |  |
-| `\topa` |  | M | 0 | 0 |  |
-| `\bota` |  | M | 0 | 0 |  |
-| `\natent` |  | M | 0 | 1 |  |
-| `\nnatent` |  | M | 0 | 0 |  |
-
-**Closures, filters, atoms**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\wedgeset` |  | M | 0 | 0 |  |
-| `\filter` |  | M | 0 | 8 |  |
-| `\Cl` | 2 | M | 10 | 0 |  |
-| `\mcseti` | 2 | M | 0 | 0 |  |
-| `\tightwedge` |  | M | 8 | 4 |  |
-| `\atoms` |  | TM | 4 | 0 |  |
-
-**Northeast arrows (45 degrees)**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\Mne` |  | M | 0 | 0 |  |
-| `\fne` |  | M | 0 | 0 |  |
-
-**Northwest arrows (135 degrees)**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\Mnw` |  | M | 0 | 0 |  |
-| `\fnw` |  | M | 0 | 0 |  |
-
-**Southeast arrows (315 degrees)**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\Mse` |  | M | 0 | 0 |  |
-| `\fse` |  | M | 0 | 0 |  |
-
-**Southwest arrows (225 degrees)**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\Msw` |  | M | 0 | 0 |  |
-| `\fsw` |  | M | 0 | 0 |  |
-
-**Northeast/Southwest bidirectional arrows**
-
-| member | args | mode | diss | other | notes |
-|---|---|---|---|---|---|
-| `\Mlr` |  | M | 0 | 0 |  |
-| `\flr` |  | M | 0 | 0 |  |
-
 ## `french-logic-applied.sty` — 16 members
 
 
-**Applied Modal Operators**
+**Temporal**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -269,6 +269,11 @@ deletion candidate (README, principle 1).
 | `\was` |  | M | 1 | 1 |  |
 | `\willbe` |  | M | 1 | 1 |  |
 | `\precedes` |  | M | 0 | 0 |  |
+
+**Epistemic**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\knows` | 1 | M | 0 | 0 |  |
 | `\know` |  | M | 0 | 0 |  |
 | `\cknows` | 1 | M | 0 | 0 |  |
@@ -278,7 +283,7 @@ deletion candidate (README, principle 1).
 | `\cbelieves` | 1 | M | 0 | 0 |  |
 | `\cbelieve` |  | M | 0 | 0 |  |
 
-**Credence and conditional probability**
+**Credence**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -289,7 +294,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-deontic.sty` — 23 members
 
 
-**Deontic Operators**
+**Monadic operators**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -300,13 +305,23 @@ deletion candidate (README, principle 1).
 | `\forbidden` |  | M | 0 | 0 |  |
 | `\gratuitous` |  | M | 0 | 0 |  |
 | `\optional` |  | M | 0 | 0 |  |
+
+**Dyadic operators: arrows**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\necessitates` |  | M | 15 | 1 |  |
 | `\triggers` |  | M | 0 | 0 |  |
+
+**Dyadic operators: functional notation**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\cought` | 2 | M | 1 | 4 |  |
 | `\better` | 2 | M | 0 | 52 |  |
 | `\samevas` | 2 | M | 0 | 30 |  |
 
-**Dyadic Stuff**
+**Dyadic operators: the built glyphs**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -315,17 +330,22 @@ deletion candidate (README, principle 1).
 | `\cobs` |  | M | 378 | 367 |  |
 | `\cperms` |  | M | 15 | 30 |  |
 | `\cobsolo` |  | M | 6 | 5 |  |
-| `\sphere` |  | M | 30 | 5 |  |
-| `\cfact` |  | M | 1 | 0 |  |
 | `\cnecs` |  | M | 143 | 112 |  |
 | `\cposs` |  | M | 0 | 0 |  |
 | `\cnecsolo` |  | M | 1 | 5 |  |
 | `\cpossolo` |  | M | 0 | 0 |  |
 
+**Lewis's sphere and counterfactual**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\sphere` |  | M | 30 | 5 |  |
+| `\cfact` |  | M | 1 | 0 |  |
+
 ## `french-logic-modal.sty` — 124 members
 
 
-**Modal Axioms**
+**Axioms**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -349,7 +369,7 @@ deletion candidate (README, principle 1).
 | `\Woax` |  | TM | 4 | 0 |  |
 | `\Wocax` |  | TM | 4 | 0 |  |
 
-**Parenthesized**
+**Axioms: parenthesised**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -362,7 +382,7 @@ deletion candidate (README, principle 1).
 | `\Naxpar` |  | TM | 2 | 0 |  |
 | `\Dualaxpar` |  | TM | 2 | 0 |  |
 
-**Converses**
+**Axioms: converses**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -375,7 +395,7 @@ deletion candidate (README, principle 1).
 | `\Caxc` |  | TM | 0 | 0 |  |
 | `\Naxc` |  | TM | 0 | 0 |  |
 
-**Modal Derivation Rules**
+**Rules**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -396,7 +416,7 @@ deletion candidate (README, principle 1).
 | `\repossrule` |  | TM | 0 | 0 |  |
 | `\rpossrule` |  | TM | 0 | 0 |  |
 
-**Parenthesized**
+**Rules: parenthesised**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -417,7 +437,7 @@ deletion candidate (README, principle 1).
 | `\repossrulepar` |  | TM | 0 | 0 |  |
 | `\rpossrulepar` |  | TM | 0 | 0 |  |
 
-**Modal Systems and Schema**
+**Systems**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -467,13 +487,13 @@ deletion candidate (README, principle 1).
 | `\VW` |  | TM | 0 | 0 |  |
 | `\Slog` |  | TM | 0 | 0 |  |
 
-**Deontic Systems (and stuff)**
+**Deontic systems**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\SDL` |  | TM | 3 | 0 |  |
 | `\SDLplus` |  | TM | 2 | 0 |  |
-| `\SDLT` |  | TM | 0 | 3 |  |
+| `\SDLT` |  | TM | 0 | 0 |  |
 | `\KDought` |  | TM | 2 | 0 |  |
 | `\KDUought` |  | TM | 1 | 0 |  |
 | `\KUought` |  | TM | 1 | 0 |  |
@@ -487,7 +507,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-conditional.sty` — 107 members
 
 
-**CM_R family (R↑: weakening value)**
+**Schemata: CM_R (R↑, weakening value)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -503,7 +523,7 @@ deletion candidate (README, principle 1).
 | `\CMrconjd` |  | TM | 1 | 2 |  |
 | `\CMrup` |  | TM | 1 | 1 |  |
 
-**CC_R family (R↓: strengthening value)**
+**Schemata: CC_R (R↓, strengthening value)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -519,7 +539,7 @@ deletion candidate (README, principle 1).
 | `\CCrdisjd` |  | TM | 1 | 1 |  |
 | `\CCrdown` |  | TM | 1 | 1 |  |
 
-**CM_L family (L↓: strengthening argument)**
+**Schemata: CM_L (L↓, strengthening argument)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -537,7 +557,7 @@ deletion candidate (README, principle 1).
 | `\CMlconjd` |  | TM | 1 | 1 |  |
 | `\CMldown` |  | TM | 1 | 1 |  |
 
-**CC_L family (L↑: weakening argument)**
+**Schemata: CC_L (L↑, weakening argument)**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -553,7 +573,26 @@ deletion candidate (README, principle 1).
 | `\CCldisjd` |  | TM | 1 | 1 |  |
 | `\CClup` |  | TM | 1 | 1 |  |
 
-**cm_R family (lowercase)**
+**Schemata: CN**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\CNr` |  | TM | 22 | 2 |  |
+| `\CNl` |  | TM | 0 | 2 |  |
+| `\CNlr` |  | TM | 17 | 9 |  |
+| `\CNra` |  | TM | 3 | 0 |  |
+
+**Schemata: CT, CD, C-Dual, CP**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\CTh` |  | TM | 8 | 8 |  |
+| `\CDax` |  | TM | 1 | 0 |  |
+| `\CDualax` |  | TM | 1 | 0 |  |
+| `\CP` |  | TM | 0 | 0 |  |
+| `\CPs` |  | TM | 2 | 0 |  |
+
+**Frame conditions: cm_R**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -568,7 +607,7 @@ deletion candidate (README, principle 1).
 | `\cmrdisj` |  | TM | 0 | 0 |  |
 | `\cmrconjd` |  | TM | 1 | 1 |  |
 
-**cc_R family (lowercase)**
+**Frame conditions: cc_R**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -583,7 +622,7 @@ deletion candidate (README, principle 1).
 | `\ccrdisj` |  | TM | 2 | 1 |  |
 | `\ccrdisjd` |  | TM | 6 | 3 |  |
 
-**cm_L family (lowercase)**
+**Frame conditions: cm_L**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -600,7 +639,7 @@ deletion candidate (README, principle 1).
 | `\cmldisj` |  | TM | 0 | 0 |  |
 | `\cmlconjd` |  | TM | 1 | 1 |  |
 
-**cc_L family (lowercase)**
+**Frame conditions: cc_L**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -615,26 +654,23 @@ deletion candidate (README, principle 1).
 | `\ccldisj` |  | TM | 2 | 1 |  |
 | `\ccldisjd` |  | TM | 6 | 3 |  |
 
-**Other**
+**Frame conditions: cn**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
-| `\CNr` |  | TM | 22 | 2 |  |
-| `\CNl` |  | TM | 0 | 2 |  |
-| `\CNlr` |  | TM | 17 | 9 |  |
-| `\CNra` |  | TM | 3 | 0 |  |
-| `\CDax` |  | TM | 1 | 0 |  |
-| `\CP` |  | TM | 0 | 0 |  |
-| `\CPs` |  | TM | 2 | 0 |  |
-| `\CTh` |  | TM | 8 | 8 |  |
 | `\cnr` |  | TM | 4 | 0 |  |
 | `\cnl` |  | TM | 1 | 0 |  |
 | `\cnlr` |  | TM | 4 | 3 |  |
+
+**Frame conditions: ct**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\cth` |  | TM | 5 | 3 |  |
 | `\cths` |  | TM | 6 | 2 |  |
-| `\CDualax` |  | TM | 1 | 0 |  |
+| `\cthss` |  | TM | 2 | 0 |  |
 
-**Order conditions on frames**
+**Order conditions**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -642,12 +678,11 @@ deletion candidate (README, principle 1).
 | `\rdown` |  | TM | 10 | 7 |  |
 | `\ldown` |  | TM | 17 | 11 |  |
 | `\lup` |  | TM | 10 | 7 |  |
-| `\cthss` |  | TM | 2 | 0 |  |
 
 ## `french-logic-io.sty` — 26 members
 
 
-**Misc I/O Stuff**
+**Systems**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -657,13 +692,21 @@ deletion candidate (README, principle 1).
 | `\IOn` | 1 | TM | 26 | 2 |  |
 | `\IOh` |  | TM | 4 | 0 |  |
 | `\IOhn` | 1 | TM | 69 | 45 |  |
+
+**Operations**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\iput` | 1 | TM | 0 | 1 |  |
 | `\oput` | 1 | TM | 0 | 1 |  |
 | `\oputi` | 2 | M | 28 | 33 |  |
 | `\deriv` | 1 | TM | 0 | 1 |  |
 | `\derivi` | 2 | M | 44 | 15 |  |
-| `\FDio` |  | TM | 5 | 1 |  |
-| `\DDio` |  | TM | 5 | 1 |  |
+
+**Rules**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\TOP` |  | TM | 2 | 0 |  |
 | `\SI` |  | TM | 6 | 0 |  |
 | `\WO` |  | TM | 6 | 0 |  |
@@ -671,7 +714,7 @@ deletion candidate (README, principle 1).
 | `\OR` |  | TM | 0 | 0 |  |
 | `\CT` |  | TM | 2 | 0 |  |
 
-**OLD**
+**Rules: starred**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -682,7 +725,14 @@ deletion candidate (README, principle 1).
 | `\ORs` |  | TM | 0 | 0 |  |
 | `\CTs` |  | TM | 0 | 0 |  |
 
-**Frame classes for the IO systems**
+**Detachment principles**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\FDio` |  | TM | 5 | 1 |  |
+| `\DDio` |  | TM | 5 | 1 |  |
+
+**Frame classes**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -691,17 +741,27 @@ deletion candidate (README, principle 1).
 ## `french-logic-stit.sty` — 12 members
 
 
-**STIT**
+**Helper**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\versal` | 1 | TM | 0 | 0 |  |
+
+**Structures**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\tree` |  | TM | 7 | 10 |  |
 | `\agent` |  | TM | 0 | 3 |  |
 | `\choice` |  | TM | 0 | 3 |  |
 | `\stitought` |  | TM | 3 | 3 |  |
 | `\stitval` |  | TM | 0 | 9 |  |
 | `\choicema` |  | M | 0 | 6 |  |
+
+**Operators**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\cstit` | 2 | M | 2 | 3 |  |
 | `\dstit` | 2 | M | 0 | 9 |  |
 | `\cstito` |  | TM | 0 | 3 |  |
@@ -711,7 +771,7 @@ deletion candidate (README, principle 1).
 ## `french-logic-gentzen.sty` — 36 members
 
 
-**EB Proof --  with style**
+**The tree**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -720,6 +780,11 @@ deletion candidate (README, principle 1).
 | `\hyp` | 1 | T (in tree) | 0 | 1 |  |
 | `\infr` | 4 | T (in tree) | 18 | 45 |  |
 | `\inf` | 3 | T (in tree) | 0 | 0 |  |
+
+**Rule labels**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\irulej` | 1 | T | 0 | 0 |  |
 | `\iruledj` | 2 | T | 0 | 0 |  |
 | `\erulej` | 1 | T | 0 | 0 |  |
@@ -729,9 +794,13 @@ deletion candidate (README, principle 1).
 | `\negedrule` |  | T | 0 | 0 |  |
 | `\negidrule` | 1 | T | 0 | 0 |  |
 | `\manrule` | 2 | T | 0 | 0 |  |
-| `\incomp` |  | M | 0 | 0 |  |
 | `\close` | 1 | T | 0 | 1 |  |
-| `\hk` |  | M | 0 | 0 |  |
+| `\incomp` |  | M | 0 | 0 |  |
+
+**Signed formulas**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\affirm` | 1 | M | 0 | 0 |  |
 | `\deny` | 1 | M | 0 | 0 |  |
 | `\aff` |  | M | 0 | 0 |  |
@@ -746,6 +815,12 @@ deletion candidate (README, principle 1).
 | `\deto` |  | M | 0 | 0 |  |
 | `\afneg` |  | M | 0 | 0 |  |
 | `\deneg` |  | M | 0 | 0 |  |
+
+**Connectives**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
+| `\hk` |  | M | 0 | 0 |  |
 | `\ecu` |  | M | 0 | 0 |  |
 | `\ito` |  | M | 0 | 0 |  |
 | `\cto` |  | M | 0 | 0 |  |
@@ -758,13 +833,13 @@ deletion candidate (README, principle 1).
 ## `french-logic-lists.sty` — 12 members
 
 
-**(unheaded)**
+**Block**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `env:block` |  | T | 0 | 94 |  |
 
-**List Environments**
+**List environments**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -778,19 +853,24 @@ deletion candidate (README, principle 1).
 | `env:itemlist` |  | T | 5 | 4 |  |
 | `env:itemlistflush` |  | T | 1 | 0 |  |
 | `env:axiomproof` |  | T | 0 | 0 |  |
+
+**Right-margin annotations**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\by` | 1 | TM | 76 | 19 |  |
 
 ## `french-logic-structure.sty` — 16 members
 
 
-**DISSERTATION THEOREM ENVIRONMENTS AND RELATED DEFINITIONS**
+**Marks**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\sketchqed` |  | T | 0 | 0 |  |
 | `\remarkqed` |  | TM | 0 | 0 |  |
 
-**For Dissertation**
+**Theorem environments**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
@@ -805,6 +885,11 @@ deletion candidate (README, principle 1).
 | `env:convention` |  | T | 3 | 0 |  |
 | `env:observation` |  | T | 0 | 0 |  |
 | `env:digression` |  | T | 1 | 0 |  |
+
+**Proof environments**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `env:proof` |  | T | 18 | 1 |  |
 | `env:proofsketch` |  | T | 13 | 2 |  |
 | `\qedsymbol` |  | T | - | - |  |
@@ -824,20 +909,35 @@ deletion candidate (README, principle 1).
 ## `french-logic-proof.sty` — 11 members
 
 
-**Proof Stuff**
+**End-of-proof mark**
 
 | member | args | mode | diss | other | notes |
 |---|---|---|---|---|---|
 | `\qedsymbol` |  | T | - | - |  |
 | `\qed` |  | TM | 0 | 1 |  |
+
+**Consequence frameworks**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\setset` |  | TM | 0 | 0 |  |
 | `\setfmla` |  | TM | 10 | 2 |  |
 | `\fmlaset` |  | TM | 0 | 0 |  |
 | `\fmlafmla` |  | TM | 4 | 4 |  |
+
+**Indexed derivability**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\provesm` |  | M | 0 | 0 |  |
 | `\provestf` |  | M | 33 | 12 |  |
 | `\provesio` |  | M | 6 | 10 |  |
 | `\provesc` |  | M | 4 | 0 |  |
+
+**Consequence separator**
+
+| member | args | mode | diss | other | notes |
+|---|---|---|---|---|---|
 | `\infer` |  | TM | 4 | 0 |  |
 
 ## `french-logic-quarry.sty` — 0 members
