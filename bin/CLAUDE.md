@@ -214,10 +214,15 @@ Layout, deployment, curation history, and the conditional-rules syntax:
 ephemeral-scope exclusion): `docs/claude-config-behaviors-2026-08.md`. Facts
 worth keeping in view here:
 
-- A repo's linked `settings.local.json` **cannot be written** by Claude Code
-  ("don't ask again" silently fails to persist — the settings writer opens
-  `O_NOFOLLOW`). Add entries in `org/claude-config`, or put global ones in
-  `settings.json`, which is writable through its link.
+- A repo's linked `settings.local.json` **cannot be written** by Claude Code,
+  whether the file or its `.claude/` directory is the link: the settings writer
+  lstats the file and opens the parent `O_NOFOLLOW`, either check throws
+  `SymlinkWriteRefusedError`, and "don't ask again" logs it and moves on — the
+  grant holds for the session and nothing on screen says it did not persist.
+  Tested on 2.1.238 (2026-08-20) and 2.1.269 (2026-09-11); accepted as designed,
+  not worked around (`docs/claude-config-behaviors-2026-08.md`). Add entries in
+  `org/claude-config`, or put global ones in `settings.json`, which the same
+  writer does follow through its link.
 - `settings.json` denies `git commit` / `git push` as a hard block, not a
   prompt; matching is prefix-based, so `git -C <path> commit` slips the
   matcher — the global `CLAUDE.md` remains the backstop for intent.

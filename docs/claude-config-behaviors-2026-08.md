@@ -1,7 +1,8 @@
 # Claude Code configuration linkage — verified behaviors (2026-08)
 
 Dated record, true as of 2026-08-20; moved verbatim from the root `CLAUDE.md`
-on 2026-08-26 (context-policy Stage 2). The mechanism summary lives in
+on 2026-08-26 (context-policy Stage 2); annotated 2026-09-11 with the re-test of
+the frozen-lists finding on 2.1.269. The mechanism summary lives in
 `bin/CLAUDE.md`; layout and deployment in `org/claude-config/README.md`; the
 permission measurement (and the built-in read-only command list) in
 `org/claude-config/permission-measurement.md`. This file records the verified
@@ -121,6 +122,53 @@ Three traps that made this hard to test, each worth knowing on its own:
 Consequence: the seven repos whose permission file was deleted in the 2026-08-20
 curation are the only ones where a grant can still land — and each stops accepting
 them the moment `SessionEnd` harvests the first one and links it.
+
+**Re-tested 2026-09-11 on Claude Code 2.1.269 — same result, and a directory-level
+link fails too.** Protocol: three throwaway git repos under `$TMPDIR`, each seeded with
+`{"permissions":{"allow":[],"deny":["Bash(mkdir denied-dir)"]}}` — `file-link/` with
+`.claude/settings.local.json` a symlink to a file outside the repo, `dir-link/` with
+`.claude` itself a symlink to a directory outside it, `control/` with a real file. Each
+was opened once with `claude --permission-mode manual --debug-file …`, the trust
+dialog accepted, then `mkdir denied-dir` (the deny canary) and
+`curl -s -o /dev/null -w '%{http_code}\n' https://example.com` with "Yes, and don't
+ask again for: curl *" chosen.
+
+| repo | linked object | debug log at the write | file afterwards |
+|---|---|---|---|
+| `file-link` | the file | `SymlinkWriteRefusedError: Refusing to write through symlink: …/.claude/settings.local.json` | link intact, target byte-identical |
+| `dir-link` | the `.claude` directory | `SymlinkWriteRefusedError: Refusing to write into symlinked directory: …/.claude` | link intact, target byte-identical |
+| `control` | nothing | `Writing to temp file: …/settings.local.json.tmp.<pid>.<hex>`, `Renaming`, `written atomically` | `"allow": ["Bash(curl *)"]` added, deny kept, reformatted |
+
+Four things the 2026-08-20 run could not show:
+
+- **The refusal is silent.** The log reads `Persisting permission update: addRules to
+  source 'localSettings'`, then `Applying permission update: Adding 1 allow rule(s) …
+  ["Bash(curl *)"]`, then `[ERROR] Failed to add permission rules to localSettings
+  settings: …`. The rule holds for the session and the UI prints nothing, so in a
+  prompting mode the loss surfaces only at the next session.
+- **Linking `.claude/` instead of the file — the obvious workaround — is refused just
+  the same**, by a separate check on the parent directory.
+- **Reads are unaffected in both linked layouts**, and the seeded deny loaded before the
+  trust dialog even with `.claude` a symlink. The docs' "held until you trust the
+  folder" for a symlinked `.claude` covers allow rules and additional directories, which
+  the canary did not exercise.
+- **What gets written is the wildcard**, `Bash(curl *)`, although the prompt's own
+  suggestion names the exact command. And the probe has to be command-shaped: `touch
+  <file>` inside the repo offers only a session-scoped directory grant and an
+  acceptEdits switch, never a persistent row, and `sleep 1` never prompts at all.
+
+The source, read from the binary, says the same: the atomic settings writer takes an
+`allowSymlink` option that is true only for user settings or a file inside the config
+home; otherwise it opens the parent directory `O_DIRECTORY|O_NOFOLLOW` (`ELOOP` → the
+"symlinked directory" message) and lstats the file (the "through symlink" message), and
+a fallback that would write through the link is present but gated by a function that
+returns false. The user-settings scope, where `allowSymlink` is true, was checked the
+same day: two `/config` toggles in one session rewrote `org/claude-config/settings.json`
+through `~/.claude/settings.json`, the link survived, and the content round-tripped
+byte-identical. The call site is identical in 2.1.268 and 2.1.269 — the binary
+auto-updated between the source reading and the runs. Accepted as designed on
+2026-09-11 (`org/claude-config/TODO.md`, Closed), with directory links, copy-deploy
+plus harvest, and `ask` rules declined there.
 
 ## The deny block, and what it does not reach
 
