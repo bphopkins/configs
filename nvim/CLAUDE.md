@@ -24,7 +24,12 @@ VimTeX with latexmk and Okular (forward/inverse sync via neovim-remote). The
 Neovim instance would otherwise abort the entire `init()`, silently dropping
 every vimtex setting (this actually happened). The socket path is shared with
 `bin/okular-inverse` — change one, change the other. Treesitter highlighting
-is disabled for LaTeX: VimTeX's syntax engine is the sole highlighter.
+is disabled for LaTeX: VimTeX's syntax engine is the sole highlighter, under
+two locks — no latex parser is installed, and `treesitter-tex.lua` disables
+the highlighter should one arrive (its header says what else would change).
+A treesitter port of the colour layer was measured and **declined
+2026-09-12**: the pinned grammar rejects `\item[(\Kax)]` labels, 313 of them
+in the dissertation (DECISIONS.md). The latency suite pins the invariant.
 
 Custom syntax in `vimtex.lua`: 219 literal command names + 33 regex patterns
 registered into the register-taxonomy groups, coloured in
@@ -66,11 +71,20 @@ only once at least one package's syntax loads — headless tests need a
 
 ## Completion (TeX filetypes)
 
-blink.cmp (UI) → blink.compat (adapter) → cmp-vimtex (source) → VimTeX
-(scanner); TeX buffers use snippets + VimTeX completions only, no LSP
-(`completions.lua`). Two rules from the latency work still bind:
+blink.cmp (UI) with two sources in TeX buffers, LuaSnip snippets and path
+(`completions.lua`); no LSP. VimTeX's completer **left the menu 2026-09-12**:
+its rows are bare names (its scanner keeps a definition's name, never its
+arity), so every command row duplicated a snippet with less in it, and since
+the package split it offered no french-logic command at all (it scans only
+the hub, from a per-chapter `.fls` that predates the split). cmp-vimtex and
+blink.compat are parked as `enabled = false` fragments; VimTeX's omnifunc
+stays wired, so `<C-x><C-o>` still reaches its citation and label completion
+(pinned). texlab stays declined for the same reason: its command items are
+bare names too, so it cannot serve a snippet-first design; label and citation
+navigation is the only thing it would add. Two rules from the latency work
+still bind:
 
-- The `snippets` and `vimtex` providers are gated on `in_latex_context()` —
+- The `snippets` provider is gated on `in_latex_context()` —
   part-way through a `\command`, or inside the braces that follow one — so
   the menu doesn't fire over running prose. ⚠ The gate's look-behind window
   is **300 chars**; 60 was a real bug (completion died mid-`\cite{` once a
@@ -81,22 +95,37 @@ blink.cmp (UI) → blink.compat (adapter) → cmp-vimtex (source) → VimTeX
   raises `E216` on every `InsertEnter`. Guard + `pcall` backstop are pinned
   by the latency suite.
 
-bib/bibtex filetypes don't list the vimtex source (nothing to offer while
-authoring entries; snippets and path remain). Confining the vimtex source to
-brace contexts was considered and **declined** (2026-08-22 — the harvest is
-how half-remembered commands get found; revisit only on felt annoyance; the
-remedy for a repeatedly-accepted harvest item is curating it into a snippet).
+bib/bibtex filetypes get snippets and path. The 2026-08-22 decision to keep
+VimTeX's harvest visible ("how half-remembered commands get found", revisit
+on felt annoyance) is superseded by the drop above; the harvest it rested on
+had already gone empty for french-logic. Open: the gate's brace branch now
+serves only `\begin{`; inside `\cite{` it fuzzy-matches snippets against the
+key (TODO.md).
 
 ## The cold-cache stall (standing rule)
 
 VimTeX resolves `\usepackage`s by spawning `kpsewhich` per package (~190 ms
 each here), cached on disk per machine — so the **first backslash of a
 session** on an unwarmed machine can stall ~20 s, once. Remedy:
-`bin/vimtex-warm`. Both machines are warm; re-warm only after
+`bin/vimtex-warm`. Since 2026-09-12 typing no longer triggers the scan (the
+vimtex source is out of the menu); only `<C-x><C-o>` does, so the warm-up
+matters only for that. Both machines are warm; re-warm only after
 `:VimtexClearCache`, deleting an old TeX tree, or a genuinely new package
 set. A TeX Live release upgrade does **not** invalidate the cache (the risk
 there is staleness, not slowness). Full mechanism:
 `docs/insert-latency-2026-08.md`.
+
+## Keystroke cost (settled 2026-09-12)
+
+There is no latency problem on either machine: 4 ms per keystroke on bigfed
+and 7–8 ms on fedxps at the end of the longest dissertation line, in
+balanced or performance mode. The August residual of 54 ms was fedxps's
+power-saver mode (clocks pinned at 900 MHz), which still costs 17–21 ms;
+write in balanced on battery. Don't propose engine work for speed: the
+custom layer is ~60% of syntax time and merging its rules into families
+measured no gain, VimTeX's Unicode classes are off (they coloured nothing),
+and the three recorded exits stay declined. Record: DECISIONS.md and the
+addendum to `docs/insert-latency-2026-08.md`.
 
 ## Snippets
 
@@ -104,7 +133,9 @@ there is staleness, not slowness). Full mechanism:
 — the hub `french-logic.sty` plus every `french-logic-<unit>.sty` it loads,
 since the 2026-09-07 split — by `sty-lua-snippets.py`; commands,
 `\newenvironment`s incl. optional args, and `\newtheorem`s) and
-`latex-workshop.lua` (BibTeX templates), loaded via filetype extensions in
+`latex-workshop.lua` (497 generic command snippets and 32 BibTeX entry
+templates: a one-time conversion of LaTeX Workshop's data, itself generated
+from TeXstudio's package word lists), loaded via filetype extensions in
 `snippets.lua`. **Regeneration is automatic**: the generator stamps one sha256
 over all the package files into the output, `snippets.lua` derives the file
 list from the hub's `\RequirePackage` lines, compares at LuaSnip load, and
@@ -241,7 +272,7 @@ auto-running restore inside the pull, were considered and **declined**
 
 ## Regression suites
 
-- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — 45 checks:
+- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — 54 checks:
   env-name families, one command per registered family, pattern anchoring,
   argument links, the case-collision and adjacency pins, and that every
   pinned group carries a defined colour (a registration/ftplugin desync
@@ -250,7 +281,7 @@ auto-running restore inside the pull, were considered and **declined**
   intact. `perf.sh <file.tex>` beside it prices the whole custom layer
   (read-only; bigfed 2026-08-28: 0.47 ms/line on completeness.tex; under
   ~2 ms/line is imperceptible per keystroke).
-- `tests/nvim-latency/run.sh` (37 checks, ~40 s, hermetic, needs `pynvim`) —
+- `tests/nvim-latency/run.sh` (38 checks, ~40 s, hermetic, needs `pynvim`) —
   asserts the *structure* the latency fixes rest on and the behaviour they
   must not have broken; no millisecond assertions (timings move with the
   machine). Mutation-verified. `bench.py` beside it is the measurement tool;

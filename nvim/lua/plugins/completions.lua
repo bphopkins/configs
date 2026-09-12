@@ -1,9 +1,19 @@
 return {
-  -- Completion stack for LaTeX:
-  --   - VimTeX builds semantic completion data (labels, cites, macros, etc.)
-  --   - cmp-vimtex exposes that data as an nvim-cmp source named "vimtex"
-  --   - blink.compat lets blink.cmp consume that nvim-cmp source
-  --   - blink.cmp merges it with LuaSnip snippets, with snippets ranked higher
+  -- Completion stack for LaTeX (since 2026-09-12):
+  --   - blink.cmp draws the menu; in TeX buffers it runs two sources only,
+  --     LuaSnip snippets and paths
+  --   - the snippets are the two libraries in lua/snippets: the generic
+  --     latex-workshop set and the french-logic set generated from the
+  --     package, so every command row carries its arguments as placeholders
+  --   - VimTeX's own completer is no longer a menu source.  Its rows were
+  --     bare names (its scanner keeps only the name of a definition, never
+  --     the arity), so every command it offered duplicated a snippet with
+  --     less in it; and since the package's split into hub and units it
+  --     offered no french-logic command at all (it scans only the hub, and
+  --     takes the package list from a per-chapter .fls that predates the
+  --     split).  Dropped 2026-09-12; DECISIONS.md has the record.  VimTeX
+  --     still sets 'omnifunc', so <C-x><C-o> reaches its citation and label
+  --     completion by hand (pinned by the latency suite).
 
   -- friendly-snippets ships as a blink.cmp dependency, but with
   -- snippets.preset = "luasnip" below and no vscode loader anywhere in this
@@ -13,34 +23,18 @@ return {
   -- re-enable.
   { "rafamadriz/friendly-snippets", enabled = false },
 
-  -- 0) blink.compat: bridge between blink.cmp and nvim-cmp sources (like cmp-vimtex)
-  {
-    "saghen/blink.compat",
-    lazy = true,
-    opts = {}, -- required so blink.compat runs its setup and registers the compat provider
-    -- optional, but recommended if you want to pin:
-    -- version = "2.*",
-  },
-
-  -- 1) VimTeX completion source (nvim-cmp style) that will be proxied via blink.compat
-  {
-    "micangl/cmp-vimtex",
-    ft = { "tex", "plaintex", "latex" }, -- load only where VimTeX is active
-    -- Optional: explicit setup; not strictly required, but harmless and future‑proof.
-    -- This plugin reads completion info that VimTeX exposes (controlled in vimtex.lua) and
-    -- registers a nvim-cmp source called "vimtex".
-    config = function()
-      require("cmp_vimtex").setup({})
-    end,
-  },
-
-  -- 2) blink.cmp: extend its config to integrate cmp-vimtex via blink.compat
+  -- The adapter chain that carried VimTeX's completer into blink (cmp-vimtex,
+  -- an nvim-cmp source, proxied through blink.compat) is parked the same way:
+  -- enabled = false fragments, so nothing is cloned, checked or updated for a
+  -- source no filetype lists.  To bring it back, delete the two lines, re-add
+  -- a "vimtex" provider (name "vimtex", module "blink.compat.source") and
+  -- list it in tex_sources below.
+  { "saghen/blink.compat", enabled = false },
+  { "micangl/cmp-vimtex", enabled = false },
+  -- blink.cmp: LuaSnip as the snippet engine, TeX-only source lists, and the
+  -- latency gate on the snippets provider
   {
     "saghen/blink.cmp",
-    dependencies = {
-      "saghen/blink.compat", -- compat layer that knows how to call nvim-cmp sources
-      "micangl/cmp-vimtex", -- provides the "vimtex" source that compat will wrap
-    },
     opts = function(_, opts)
       -- Make sure nested tables exist so we can safely extend them, even if LazyVim
       -- (or another plugin) has not initialized these fields yet.
@@ -62,17 +56,18 @@ return {
       -- Where the LaTeX sources are allowed to run
       --
       -- blink queries every enabled provider on every keystroke.  In a TeX
-      -- buffer the two heavy ones are "snippets" (1063 snippets reachable
-      -- from tex) and "vimtex" (an nvim-cmp source proxied through
-      -- blink.compat, which calls VimTeX's own completer).  Measured on
-      -- fedxps, 2026-08-22, at the end of an 1860-char paragraph line:
-      -- ~33 ms and ~26 ms per keystroke respectively — paid on every
-      -- character of running prose, where neither can offer anything.
+      -- buffer the heavy one is "snippets" (about 1,050 snippets reachable
+      -- from tex); until 2026-09-12 the "vimtex" source was the other.
+      -- Measured on fedxps, 2026-08-22 (power-saver mode), at the end of an
+      -- 1860-char paragraph line: ~33 ms and ~26 ms per keystroke
+      -- respectively — paid on every character of running prose, where
+      -- neither could offer anything.
       --
-      -- So gate them on being somewhere a LaTeX completion makes sense:
-      -- part-way through a \command, or inside the braces that follow one.
-      -- Verified that \cnec, \cite{che and \ref{sec all still complete,
-      -- and that non-TeX filetypes are untouched.
+      -- So gate the provider on being somewhere a LaTeX completion makes
+      -- sense: part-way through a \command, or inside the braces that
+      -- follow one.  The gate stays open inside \cite{ and \ref{ even
+      -- though nothing lists their keys any more, so the window is still
+      -- pinned by the suite; non-TeX filetypes are untouched.
       ------------------------------------------------------------------
       local function in_latex_context()
         local ft = vim.bo.filetype
@@ -101,46 +96,13 @@ return {
       end
 
       ------------------------------------------------------------------
-      -- VimTeX provider via blink.compat
+      -- Snippets: keep them above the path source
       --
-      -- This is the blink.cmp "provider" that proxies the nvim-cmp
-      -- source called "vimtex" through blink.compat.
-      -- The actual data still comes from VimTeX (configured in vimtex.lua),
-      -- which cmp-vimtex reads and exposes.
-      ------------------------------------------------------------------
-      opts.sources.providers.vimtex =
-        vim.tbl_deep_extend("force", opts.sources.providers.vimtex or {}, {
-          -- IMPORTANT: this name must match the nvim-cmp source name
-          -- (cmp-vimtex registers itself as { name = "vimtex" }).
-          name = "vimtex",
-          module = "blink.compat.source",
-
-          -- Keep vimtex suggestions useful but below snippets.
-          -- (Higher score_offset -> higher priority in the menu.)
-          score_offset = 5,
-
-          -- Only enable this provider in TeX-ish filetypes so it
-          -- never runs in e.g. Lua/Markdown buffers — and, within those,
-          -- only where a LaTeX completion is plausible (see above).
-          enabled = function()
-            -- bib/bibtex used to be listed here too, but the source is not
-            -- offered in those filetypes any more (see the per-filetype
-            -- lists below), so the gate matches: tex-proper only.
-            local ft = vim.bo.filetype
-            local texish = ft == "tex" or ft == "plaintex" or ft == "latex"
-            return texish and in_latex_context()
-          end,
-        })
-
-      ------------------------------------------------------------------
-      -- Snippets: bump priority so they beat vimtex (and other sources)
-      --
-      -- This keeps your own LuaSnip templates at the top of the menu, even
-      -- when VimTeX could offer something with the same prefix.
+      -- This keeps your own LuaSnip templates at the top of the menu.
       ------------------------------------------------------------------
       opts.sources.providers.snippets =
         vim.tbl_deep_extend("force", opts.sources.providers.snippets or {}, {
-          -- Higher than vimtex (5) so snippet items float to the top.
+          -- Higher than path (0) so snippet items float to the top.
           score_offset = 10,
           -- In TeX, only where a LaTeX completion is plausible; elsewhere
           -- in_latex_context() returns true, so nothing else changes.
@@ -153,8 +115,8 @@ return {
       -- For TeX-related filetypes we *disable* the global defaults and
       -- use only:
       --   - "snippets" (your LuaSnip stuff, tuned for TeX)
-      --   - "vimtex"  (citations, refs, macros from VimTeX via cmp-vimtex)
       --   - "path"    (for \includegraphics, \input, etc.)
+      -- "vimtex" sat between them until 2026-09-12 (see the header).
       --
       -- This keeps the completion menu focused and avoids generic buffer/LSP
       -- suggestions that tend to be noisy in large LaTeX projects.
@@ -162,18 +124,13 @@ return {
       local tex_sources = {
         inherit_defaults = false,
         "snippets",
-        "vimtex",
         "path",
       }
 
-      -- bib gets snippets (the latex-workshop entry templates) and path,
-      -- but not the vimtex source: cmp-vimtex completes citations, labels
-      -- and commands *for tex buffers* and has nothing to offer while
-      -- authoring entries — and in a bib-only session the plugin (ft-gated
-      -- to tex) was never even loaded, leaving the provider half-wired
-      -- (2026-08-22).  in_latex_context() doesn't gate non-tex filetypes,
-      -- so snippets stay available everywhere in a bib file, which is what
-      -- entry templates want.
+      -- bib gets snippets (the latex-workshop entry templates) and path.
+      -- in_latex_context() doesn't gate non-tex filetypes, so snippets stay
+      -- available everywhere in a bib file, which is what entry templates
+      -- want.  (The vimtex source was never listed here, 2026-08-22.)
       local bib_sources = {
         inherit_defaults = false,
         "snippets",

@@ -8,6 +8,8 @@ asserted.  `verify.py` guards the structure; this tells you the numbers.
     ./bench.py                     # cost vs. logical line length, on the fixture
     ./bench.py --ablate            # attribute the cost to each subsystem
     ./bench.py --file FILE.tex     # measure a real document instead
+                                   # (EVERY paragraph line, minutes on a chapter;
+                                   #  add --ablate for the longest line only)
     ./bench.py --config DIR        # measure a different Neovim config tree
 
 How it measures: feed one character, then a synchronous `redraw`, which
@@ -16,8 +18,10 @@ between keystrokes so that deferred work triggered by one character is paid
 before the next is timed — and because a pause is when a slow-ramping CPU
 governor bites, which is how prose actually gets written.
 
-Reference numbers, fedxps (i7-7700HQ, tuned `powersave`), 2026-08-22, median
-ms per keystroke.  On the real `dissertation/completeness/completeness.tex`:
+Reference numbers, fedxps (i7-7700HQ, tuned `powersave`, i.e. Power Mode
+power-saver — in balanced or performance mode the 1841-char line measured
+7–8 ms on 2026-09-12; see the README), 2026-08-22, median ms per keystroke.
+On the real `dissertation/completeness/completeness.tex`:
 
     line length      585   1001   1417   1860
     before the fix    44     82    262    218

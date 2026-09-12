@@ -2075,18 +2075,10 @@ local snippets = {
     { t("\\contentsline{"), i(1, "type"), t("}{"), i(2, "text"), t("}{"), i(3, "page"), t("}") }
   ),
   s({ trig = "\\contentsname~", wordTrig = true }, { t("\\contentsname{"), i(1, "name"), t("}") }),
-  s(
-    { trig = "\\corollary~", wordTrig = true },
-    { t({ "\\begin{corollary}", "\t" }), i(1), t({ "", "\\end{corollary}" }) }
-  ),
   s({ trig = "\\cup~", wordTrig = true }, { t("\\cup") }),
   s({ trig = "\\date~", wordTrig = true }, { t("\\date{"), i(1), t("}") }),
   s({ trig = "\\ddots~", wordTrig = true }, { t("\\ddots") }),
   s({ trig = "\\ddot~", wordTrig = true }, { t("\\ddot{"), i(1), t("}") }),
-  s(
-    { trig = "\\definition~", wordTrig = true },
-    { t({ "\\begin{definition}", "\t" }), i(1), t({ "", "\\end{definition}" }) }
-  ),
   s({ trig = "\\delta~", wordTrig = true }, { t("\\delta") }),
   s({ trig = "\\description~", wordTrig = true }, {
     t({ "\\begin{description}", "\t\\item[" }),
@@ -2129,10 +2121,6 @@ local snippets = {
   ),
   s({ trig = "\\equiv~", wordTrig = true }, { t("\\equiv") }),
   s({ trig = "\\eta~", wordTrig = true }, { t("\\eta") }),
-  s(
-    { trig = "\\example~", wordTrig = true },
-    { t({ "\\begin{example}", "\t" }), i(1), t({ "", "\\end{example}" }) }
-  ),
   s({ trig = "\\exists~", wordTrig = true }, { t("\\exists") }),
   s({ trig = "\\fbox~", wordTrig = true }, { t("\\fbox{"), i(1, "text"), t("}") }),
   s({ trig = "\\figurename~", wordTrig = true }, { t("\\figurename{"), i(1, "name"), t("}") }),
@@ -2228,10 +2216,6 @@ local snippets = {
   s({ trig = "\\ldots~", wordTrig = true }, { t("\\ldots") }),
   s({ trig = "\\leftarrow~", wordTrig = true }, { t("\\leftarrow") }),
   s({ trig = "\\left~", wordTrig = true }, { t("\\left("), i(1), t("\\right)") }),
-  s(
-    { trig = "\\lemma~", wordTrig = true },
-    { t({ "\\begin{lemma}", "\t" }), i(1), t({ "", "\\end{lemma}" }) }
-  ),
   s({ trig = "\\leq~", wordTrig = true }, { t("\\leq") }),
   s({ trig = "\\linebreak~", wordTrig = true }, { t("\\linebreak") }),
   s({ trig = "\\linespread~", wordTrig = true }, { t("\\linespread{"), i(1, "x"), t("}") }),
@@ -2367,14 +2351,6 @@ local snippets = {
   s({ trig = "\\pm~", wordTrig = true }, { t("\\pm") }),
   s({ trig = "\\prime~", wordTrig = true }, { t("\\prime") }),
   s({ trig = "\\prod~", wordTrig = true }, { t("\\prod") }),
-  s(
-    { trig = "\\proof~", wordTrig = true },
-    { t({ "\\begin{proof}", "\t" }), i(1), t({ "", "\\end{proof}" }) }
-  ),
-  s(
-    { trig = "\\proposition~", wordTrig = true },
-    { t({ "\\begin{proposition}", "\t" }), i(1), t({ "", "\\end{proposition}" }) }
-  ),
   s({ trig = "\\providecommand~", wordTrig = true }, {
     t("\\providecommand{"),
     i(1, "cmd"),
@@ -2398,10 +2374,6 @@ local snippets = {
   s({ trig = "\\raggedleft~", wordTrig = true }, { t("\\raggedleft") }),
   s({ trig = "\\raggedright~", wordTrig = true }, { t("\\raggedright") }),
   s({ trig = "\\ref~", wordTrig = true }, { t("\\ref{"), i(1), t("}") }),
-  s(
-    { trig = "\\remark~", wordTrig = true },
-    { t({ "\\begin{remark}", "\t" }), i(1), t({ "", "\\end{remark}" }) }
-  ),
   s({ trig = "\\renewcommand~", wordTrig = true }, {
     t("\\renewcommand{"),
     i(1, "cmd"),
@@ -2512,10 +2484,6 @@ local snippets = {
     { trig = "\\thebibliography~", wordTrig = true },
     { t({ "\\begin{thebibliography}", "\t" }), i(1), t({ "", "\\end{thebibliography}" }) }
   ),
-  s(
-    { trig = "\\theorem~", wordTrig = true },
-    { t({ "\\begin{theorem}", "\t" }), i(1), t({ "", "\\end{theorem}" }) }
-  ),
   s({ trig = "\\theta~", wordTrig = true }, { t("\\theta") }),
   s(
     { trig = "\\thispagestyle~", wordTrig = true },
@@ -2619,7 +2587,6 @@ local snippets = {
   s({ trig = "\\draw~", wordTrig = true }, { t("\\draw") }),
   s({ trig = "\\droptitle~", wordTrig = true }, { t("\\droptitle") }),
   s({ trig = "\\else~", wordTrig = true }, { t("\\else") }),
-  s({ trig = "\\emptyset~", wordTrig = true }, { t("\\emptyset") }),
   s({ trig = "\\end~", wordTrig = true }, { t("\\end{"), i(1), t("}") }),
   s({ trig = "\\endtrivlist~", wordTrig = true }, { t("\\endtrivlist") }),
   s({ trig = "\\enspace~", wordTrig = true }, { t("\\enspace") }),
@@ -2694,13 +2661,11 @@ local snippets = {
   s({ trig = "\\proofname~", wordTrig = true }, { t("\\proofname") }),
   s({ trig = "\\pushQED~", wordTrig = true }, { t("\\pushQED{"), i(1), t("}") }),
   s({ trig = "\\qedhere~", wordTrig = true }, { t("\\qedhere") }),
-  s({ trig = "\\qedsymbol~", wordTrig = true }, { t("\\qedsymbol") }),
   s({ trig = "\\qquad~", wordTrig = true }, { t("\\qquad") }),
   s({ trig = "\\quad~", wordTrig = true }, { t("\\quad") }),
   s({ trig = "\\raisebox~", wordTrig = true }, { t("\\raisebox{"), i(1), t("}{"), i(2), t("}") }),
   s({ trig = "\\rangle~", wordTrig = true }, { t("\\rangle") }),
   s({ trig = "\\relax~", wordTrig = true }, { t("\\relax") }),
-  s({ trig = "\\remarkqed~", wordTrig = true }, { t("\\remarkqed") }),
   s({ trig = "\\rightmargin~", wordTrig = true }, { t("\\rightmargin") }),
   s({ trig = "\\rotatebox~", wordTrig = true }, { t("\\rotatebox{"), i(1), t("}{"), i(2), t("}") }),
   s({ trig = "\\rrbracket~", wordTrig = true }, { t("\\rrbracket") }),
@@ -2714,7 +2679,6 @@ local snippets = {
   s({ trig = "\\shortmid~", wordTrig = true }, { t("\\shortmid") }),
   s({ trig = "\\shortminus~", wordTrig = true }, { t("\\shortminus") }),
   s({ trig = "\\sim~", wordTrig = true }, { t("\\sim") }),
-  s({ trig = "\\sketchqed~", wordTrig = true }, { t("\\sketchqed") }),
   s({ trig = "\\smallskip~", wordTrig = true }, { t("\\smallskip") }),
   s({ trig = "\\sqsubseteq~", wordTrig = true }, { t("\\sqsubseteq") }),
   s({ trig = "\\square~", wordTrig = true }, { t("\\square") }),

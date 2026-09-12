@@ -41,6 +41,14 @@ return {
     vim.g.vimtex_imaps_enabled = 1
     vim.g.vimtex_quickfix_mode = 0
     vim.g.vimtex_syntax_conceal_disable = 1
+    -- Unicode symbol classes off (2026-09-12).  VimTeX's two literal-
+    -- character rules (texMathSymbol's symbol class and texCmdGreek's Greek
+    -- class) cost about a fifth of all syntax time per keystroke on the
+    -- longest completeness.tex line (syntime, bigfed) and colour nothing
+    -- here: the source is typed in ASCII, and the handful of non-ASCII
+    -- characters in the corpus are artefacts (ø, curly quotes, dashes).
+    -- Turn back on only if literal Unicode ever enters the source on purpose.
+    vim.g.vimtex_syntax_match_unicode = 0
     vim.g.tex_flavor = "latex"
 
     --------------------------------------------------------------------

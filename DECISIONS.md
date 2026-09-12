@@ -880,3 +880,71 @@ unit files, a preamble by default) are recorded in the map, which is the
 living contract — read it before touching `latex/french-logic/`. Run
 `tests/french-logic/run.sh` after any edit there.
 
+## nvim/LaTeX: treesitter, keystroke cost, and the completion layers — 2026-09-12
+
+One session that began as "explain treesitter in my config" and ended in
+measurements. Verdicts, each with its number:
+
+- **Treesitter stays off for TeX, and the port is declined on measured
+  grounds.** The pinned tree-sitter-latex grammar was built in a scratch
+  directory and run over the dissertation and opuscula (149 files): 219 of
+  the dissertation's 224 error nodes are `\item[(\Kax)]`-style labels, whose
+  brackets admit bare words only (313 such labels; a label macro would satisfy
+  it). Optional arguments on custom commands detach their mandatory groups in
+  the tree, but the only bracketed use is `\tcite`. A french-logic signature
+  is expressible in a query (the stock query already partitions commands by
+  name), and incremental re-parse of the longest line costs under 2 ms; none
+  of that is needed while there is no speed case. No latex parser has ever
+  been installed here; `treesitter-tex.lua`'s disable entry is a second lock
+  (its header now says so — it used to claim indent and textobjects "remain
+  available", which with no parser they never were). The latency suite already
+  pins "no treesitter highlighter" on the fixture.
+- **The fedxps latency residual was the power mode, not the engine.** Every
+  August number was taken in Power Mode power-saver (tuned `powersave`, EPP
+  `power`, clocks pinned at 900 MHz). Same bench, same 1841-char line,
+  2026-09-12: bigfed 4 ms; fedxps performance 7, balanced 8, power-saver
+  17–21 (p50); by line length under balanced 7/12/13/8 against the August
+  13/23/84/54. A pure regex microbench puts the laptop at 1.9× bigfed. The
+  August→today gap *within* power-saver is unexplained (battery vs mains and
+  config drift are the candidates). Verdict: write in balanced or performance
+  mode; there is nothing to gain from engine work for speed on either machine.
+- **Syntax cost, measured with `:syntime`.** The 250 custom rules are ~60% of
+  syntax time; VimTeX's two Unicode character classes ~18% and colour nothing
+  in an ASCII-typed source — `g:vimtex_syntax_match_unicode = 0` applied in
+  `vimtex.lua`. Merging same-group custom entries into one alternation per
+  family (250 → 73 rules) measured no reliable gain: the cost is matching
+  work, not rule count — don't retry. Disabling VimTeX's package syntaxes also
+  disables the custom layer (it is applied when a package syntax loads). VimTeX
+  is bound in one place only: math-zone detection reads the syntax stack, and
+  delimiter objects, `%`, math insert maps, matchparen and completion consult
+  it, so the base syntax stays whatever hosts the colour layer.
+- **VimTeX's candidates left the completion menu.** Its command rows are bare
+  names (the scanner keeps a definition's name, never its arity), so each
+  duplicated a snippet with less in it; and since the package's hub-and-units
+  split it offered no french-logic command at all — it scans only the hub, and
+  takes the package list from the chapter's article-wrapper `.fls`, dated
+  2026-08-18. Felt annoyance was the 2026-08-22 revisit condition. Filtering by
+  kind was verified possible (blink's `transform_items` on the provider;
+  cmp-vimtex stamps VimTeX's kind string on each row) and **dropping the whole
+  source** chosen instead; the cost, `\cite{` and `\ref{` rows, accepted, with
+  VimTeX's omnifunc kept wired for `<C-x><C-o>`. cmp-vimtex and blink.compat
+  parked as `enabled = false` fragments. The latency suite's six vimtex-provider
+  checks became: no provider, no source list names it, omnifunc wired, gate
+  open inside `\cite{`/`\ref{` (38 checks, unchanged in count). A consequence
+  for the cold-cache rule: typing no longer triggers VimTeX's kpsewhich scan.
+- **texlab stays declined, with the reason recorded.** Read in its source: its
+  command items are bare names too (snippet format only for `\begin` and
+  paired delimiters); it would follow `\RequirePackage` into the units via
+  kpsewhich's TEXMF roots and collect every command token it sees, internal
+  macros included. Label and citation navigation is the only thing it would add.
+- **Twelve duplicated snippets removed** from `latex-workshop.lua` (the seven
+  theorem environments, `\proof`, `\emptyset`, `\qedsymbol`, `\remarkqed`,
+  `\sketchqed`; byte-identical to the generated ones, showing as doubled menu
+  rows). Rule: the generic file must not carry a name the generator emits;
+  `comm -12` over the two `trig =` lists finds any recurrence.
+- Open, tracked in `TODO.md`: the gate's brace branch now serves only
+  `\begin{`; inside `\cite{` it fuzzy-matches snippets against the key.
+
+Records: `nvim/CLAUDE.md` (three clauses), `docs/insert-latency-2026-08.md`
+(addendum), `tests/nvim-latency/README.md` (reference-table note and the
+`--file` duration trap).

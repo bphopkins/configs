@@ -301,6 +301,23 @@ handle each when a document asks for it, through the two nets (`tests/french-log
 
 ---
 
+## 15. Completion gate: the brace branch now serves only `\begin{`
+
+- [ ] Decide whether `in_latex_context()` should stay open inside every
+  `\command{...}` or only after `\begin{`/`\end{`.
+
+Since 2026-09-12 the vimtex source is out of the menu (DECISIONS.md, that
+date), so inside `\cite{` and `\ref{` nothing useful is offered any more: the
+gate is open there, and blink fuzzy-matches the ~1,050 snippet triggers
+against the partial key (measured: 175 snippet rows for `\cite{che`). The
+branch still earns its keep after `\begin{`, where `\begin{ali` correctly
+surfaces the `align` family. Closing it elsewhere cuts that noise and the
+per-keystroke snippet query while typing keys. If done: the latency suite's
+"gate open inside `\cite{`/`\ref{`" checks flip to closed, and the two
+long-argument checks that pin the 300-char window need a `\begin{`-shaped
+argument instead of a `\cite` key list. Small; a session of its own only
+because it touches the suite.
+
 ## Closed
 
 One line per closed item — verdict, date, pointer. Full notes and post-mortems

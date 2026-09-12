@@ -16,9 +16,7 @@ stow -Rv -t ~/.config/nvim nvim
 
 * **LazyVim/LazyVim:** Provides the base “distro”.
 * **folke/tokyonight.nvim:** Locks the UI to the Tokyonight “night” palette.
-* **saghen/blink.compat:** Lets the completion engine speak the same language as third-party sources such as VimTeX, so the menu can include relevant autofills rather than just buffer text constantly.
-* **micangl/cmp-vimtex:** Exposes VimTeX’s knowledge of labels, citations, commands, and BibLaTeX entries to the completion system.
-* **saghen/blink.cmp:** Supplies the completion UI itself; configured to prioritize snippets and VimTeX data so the menu stays relevant in TeX buffers while still supporting other languages.
+* **saghen/blink.cmp:** Supplies the completion UI itself; in TeX buffers it lists my snippets and paths only, so the menu is exactly the two snippet libraries, while other languages keep the stock sources. VimTeX's own completion is one `<C-x><C-o>` away rather than in the menu, because its rows were bare names that duplicated the snippets (2026-09-12).
 * **L3MON4D3/LuaSnip:** Handles snippet expansion and loads my two auto-generated libraries, `latex-workshop.lua` and `french-logic.lua` — together the complete snippet inventory; nothing else contributes snippets. The french-logic set keeps itself current: `lua/snippets/sty-lua-snippets.py` stamps the `.sty`’s sha256 into its output, and on a mismatch at startup the generator re-runs, so snippets can’t silently drift from the package.
 * **lervag/vimtex:** Runs the LaTeX toolchain (latexmk + Okular), keeps source/PDF sync working, and scans projects for macros, figures, and bibliographies.
 * **barrett-ruth/live-server.nvim:** Gives me a live server of my homepage while I edit.

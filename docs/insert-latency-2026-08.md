@@ -45,3 +45,25 @@ The cache is plain JSON **on disk**, so it survives logout and reboot, and `vimt
 Two things that sound like they would invalidate it and **do not**: a TeX Live release upgrade leaves the cached absolute paths resolving (and `tl-newyear switch` keeps the old tree deliberately), so the risk there is *staleness*, not slowness — if an old tree is ever deleted, `getftime` returns `-1`, which is not greater than the stored ftime, so VimTeX keeps serving the old definitions rather than rescanning. And editing `french-logic.sty` costs one `.sty` re-read, not a `kpsewhich` spawn.
 
 Remedy: `bin/vimtex-warm`. Reproduce the cold case deliberately with `nvim --cmd "let g:vimtex_cache_root='/tmp/cold'" chapter.tex`. **Both machines are warm** — `fedxps` from the original fix, `bigfed` via `vimtex-warm -a` on 2026-08-22 (`~/.cache/vimtex/pkgcomplete.json`, 561 KB). Re-warm only after `:VimtexClearCache`, deleting an old TeX tree, or a genuinely new package set.
+
+## Addendum 2026-09-12 — the residual was the power mode
+
+Every number in this record was measured with fedxps in Power Mode
+power-saver (tuned `powersave`, EPP `power`, clocks pinned at 900 MHz), a
+condition the record names only in passing. Re-measured with the same bench on
+the same 1841-char line: bigfed 4 ms per keystroke; fedxps 7 in performance
+mode, 8 in balanced, 17–21 in power-saver (p50). By line length under
+balanced, 585/1007/1417/1841 → 7/12/13/8 ms, against the 13/23/84/54 above.
+A pure regex microbench puts the laptop at 1.9× bigfed, so the 25× syntax gap
+implied above was the power mode, not the engine. The "structural residual"
+and its three exits are moot unless one writes in power-saver mode; balanced
+is the mode for battery. The August→today gap *within* power-saver is
+unexplained (battery vs mains and config drift since the 22nd are the
+candidates).
+
+Two smaller findings from the same session: VimTeX's two Unicode character
+classes were ~18% of syntax time and coloured nothing (source is typed in
+ASCII), now off in `vimtex.lua`; and merging the custom rules into one
+alternation per family measured no reliable gain, because the cost is matching
+work, not rule count. `bench.py --file` without `--ablate` measures every
+paragraph line, minutes on a chapter. Ledger entry: `DECISIONS.md`, 2026-09-12.

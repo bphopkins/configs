@@ -40,14 +40,17 @@ broken:
 - VimTeX's matchparen is hooked in normal mode, unhooked during insert, and
   restored on leaving it — and `g:vimtex_matchparen_enabled` is still `1`, i.e.
   it was not blanket-disabled;
-- blink still completes after `\command`, inside `\cite{` and inside `\ref{`;
-- blink's `snippets` and `vimtex` providers report *disabled* in running prose,
-  where they used to be queried on every character;
+- blink still completes after `\command`, and the gate is open inside `\cite{`
+  and `\ref{` (VimTeX's rows left the menu by decision on 2026-09-12; no
+  `vimtex` provider exists, no TeX source list names it, and VimTeX's
+  omnifunc stays wired for `<C-x><C-o>` — all three pinned);
+- blink's `snippets` provider reports *disabled* in running prose, where it
+  used to be queried on every character;
 - a Lua buffer still auto-completes, i.e. non-TeX filetypes are untouched;
 - the auto-save autocmds live in the `bph_autosave` group, none is left
   ungrouped, and re-sourcing `autocmds.lua` does not duplicate them;
-- the gate's look-behind survives *long* arguments: sources stay enabled deep
-  in a 75-char `\cite` key list and after a long optional argument (at the
+- the gate's look-behind survives *long* arguments: the provider stays enabled
+  deep in a 75-char `\cite` key list and after a long optional argument (at the
   original 60-char window both went dead mid-argument — found 2026-08-22,
   while the short arguments above had been passing all along);
 - auto-save failures are loud exactly once: a readonly buffer is skipped
@@ -99,6 +102,8 @@ is worse than no check.
 ./bench.py                          # cost vs. logical line length
 ./bench.py --ablate                 # attribute it subsystem by subsystem
 ./bench.py --file ~/Desktop/dissertation/completeness/completeness.tex
+# --file alone measures EVERY paragraph line of the document, 14 keystrokes
+# each: minutes on a chapter.  --ablate confines itself to the longest line.
 ./bench.py --config /path/to/other-config
 ```
 
@@ -121,6 +126,14 @@ keystroke, `fedxps`, tuned `powersave`):
 
 Below roughly 1000 characters the config was never the problem. The floor for
 comparison is `nvim -u NONE` on the same line: **3.6 ms**.
+
+**2026-09-12 — those are power-saver numbers.** The laptop was in Power Mode
+power-saver (tuned `powersave`, EPP `power`, clocks pinned at 900 MHz) for
+every row above. Re-measured with this bench on the same 1841-char line:
+performance mode 7 ms, balanced 8 ms, power-saver 17–21 ms (p50), against
+4 ms on bigfed; by line length under balanced, 585/1007/1417/1841 → 7/12/13/8.
+The residual was the power mode, not the engine; write in balanced or
+performance mode. Full record: `docs/insert-latency-2026-08.md`, addendum.
 
 The attribution that produced the fix, at the end of an 1860-char line:
 

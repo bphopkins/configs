@@ -6,7 +6,10 @@ Timings are load- and machine-dependent, so nothing here asserts milliseconds
 rests on, plus the behaviour it must not have broken:
 
   * VimTeX's matchparen is live in normal mode and gone during insert
-  * blink still completes after \\command, \\cite{ and \\ref{
+  * blink still completes after \\command; the gate is open inside \\cite{
+    and \\ref{ (VimTeX's rows left the menu 2026-09-12; no vimtex provider
+    exists, no TeX source list names it, and VimTeX's omnifunc stays wired
+    for <C-x><C-o>)
   * blink stays quiet in running prose, where it used to fire on every char
   * non-TeX filetypes are untouched
   * the auto-save autocmd is in an augroup, so re-sourcing cannot duplicate it
@@ -32,6 +35,8 @@ v = Nvim().open_fixture()
 
 try:
     c.check("fixture opens as filetype tex", v.eval("&filetype"), "tex")
+    c.check("VimTeX omnifunc still wired for <C-x><C-o> (source dropped 2026-09-12)",
+            v.eval("&omnifunc"), "vimtex#complete#omnifunc")
     c.check("VimTeX syntax is the highlighter (no treesitter)",
             v.lua("return vim.treesitter.highlighter.active"
                   "[vim.api.nvim_get_current_buf()] ~= nil"), False)
@@ -103,22 +108,27 @@ try:
     v.reset_tail(scratch)
     v.type(" \\cnec")
     c.check("snippets provider enabled after '\\cnec'", provider_enabled("snippets"), True)
-    c.check("vimtex provider enabled after '\\cnec'", provider_enabled("vimtex"), True)
+    c.check("no vimtex provider (source dropped 2026-09-12)",
+            provider_enabled("vimtex"), "no-such-provider")
+    c.check("no TeX source list names vimtex",
+            v.lua("local pf = require('blink.cmp.config').sources.per_filetype "
+                  "for _, ft in ipairs({ 'tex', 'latex', 'plaintex', 'bib', 'bibtex' }) do "
+                  "  for _, src in ipairs(pf[ft] or {}) do "
+                  "    if src == 'vimtex' then return ft end end end "
+                  "return 'none'"), "none")
     c.check("menu shown after '\\cnec'", v.menu_visible(), True)
 
     v.reset_tail(scratch)
     v.type(" \\cite{che")
-    c.check("vimtex provider enabled inside '\\cite{'", provider_enabled("vimtex"), True)
-    c.check("menu shown inside '\\cite{'", v.menu_visible(), True)
+    c.check("gate open inside '\\cite{'", provider_enabled("snippets"), True)
 
     v.reset_tail(scratch)
     v.type(" \\ref{sec")
-    c.check("vimtex provider enabled inside '\\ref{'", provider_enabled("vimtex"), True)
+    c.check("gate open inside '\\ref{'", provider_enabled("snippets"), True)
 
     v.reset_tail(scratch)
     v.type(" ordinary prose words")
     c.check("snippets provider OFF in plain prose", provider_enabled("snippets"), False)
-    c.check("vimtex provider OFF in plain prose", provider_enabled("vimtex"), False)
     c.check("menu NOT shown in plain prose", v.menu_visible(), False)
 
     # Non-vacuity: the same probe must flip back on within the same buffer,
@@ -144,12 +154,12 @@ try:
 
     park_at_eol(" \\cite{vonwright1951,hansson1969,lewis1973,"
                 "chellas1974,aqvist1984,tomberlin")
-    c.check("vimtex provider enabled deep in a 75-char \\cite key list",
-            provider_enabled("vimtex"), True)
+    c.check("gate open deep in a 75-char \\cite key list",
+            provider_enabled("snippets"), True)
     park_at_eol(" \\cite[see the extended discussion in chapter four "
                 "of the second essay]{vonw")
-    c.check("vimtex provider enabled after a long optional argument",
-            provider_enabled("vimtex"), True)
+    c.check("gate open after a long optional argument",
+            provider_enabled("snippets"), True)
     v.escape()
 
     c.check("LuaSnip french-logic snippets still loaded",
