@@ -11,6 +11,8 @@ rests on, plus the behaviour it must not have broken:
     exists, no TeX source list names it, and VimTeX's omnifunc stays wired
     for <C-x><C-o>)
   * blink stays quiet in running prose, where it used to fire on every char
+  * <Tab> and <S-Tab> jump between LuaSnip placeholders, in insert and select
+    mode (LazyVim's own <Tab> entry knew only native snippets, 2026-09-12)
   * non-TeX filetypes are untouched
   * the auto-save autocmd is in an augroup, so re-sourcing cannot duplicate it
   * bench.py leaves the document it measures byte-identical
@@ -165,6 +167,39 @@ try:
     c.check("LuaSnip french-logic snippets still loaded",
             v.lua("local t = require('luasnip').get_snippets('french-logic') "
                   "return (t and #t or 0) > 0"), True)
+    v.escape()
+
+    # ---- snippet placeholder jumps ---------------------------------------
+    # LazyVim's blink spec adds its own <Tab> entry whenever the user's keymap
+    # has none, and that entry jumps *native* vim.snippet sessions only; under
+    # snippets.preset = "luasnip" it never fired, so <Tab> inside an expanded
+    # snippet inserted whitespace (found 2026-09-12: \frac{A  B}{}).
+    # completions.lua now names <Tab> as blink's own snippet_forward, which
+    # follows the preset; <S-Tab> is the preset's own snippet_backward.  Pinned
+    # through the real path -- the menu row accepted with <CR>, then the keys
+    # -- in insert mode and, for <Tab>, from select mode too (blink maps the
+    # snippet commands there separately, and LazyVim's entry was never one).
+    def keys(*ks, settle=0.5):
+        for k in ks:
+            v.nvim.input(k)
+            v.cmd("redraw")
+            time.sleep(settle)
+
+    v.reset_tail(scratch, "Scratch.")
+    v.type(" \\frac")
+    keys("<CR>", settle=0.8)
+    c.check("snippet: <CR> on the \\frac row opens a LuaSnip session",
+            v.eval("getline('.')") == "Scratch. \\frac{}{}"
+            and bool(v.lua("return require('luasnip').jumpable(1)")), True)
+    keys("A", "<Tab>", "B")
+    c.check("snippet: <Tab> jumps to the second placeholder",
+            v.eval("getline('.')"), "Scratch. \\frac{A}{B}")
+    keys("<S-Tab>", "C")
+    c.check("snippet: <S-Tab> jumps back and the placeholder text is replaced",
+            v.eval("getline('.')"), "Scratch. \\frac{C}{B}")
+    keys("<Tab>", "<Tab>", "E")
+    c.check("snippet: <Tab> from select mode reaches the end of the snippet",
+            v.eval("getline('.')"), "Scratch. \\frac{C}{B}E")
     v.escape()
 
     # ---- other filetypes keep stock behaviour ----------------------------

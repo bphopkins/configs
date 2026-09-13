@@ -7,7 +7,7 @@
 --   1. Treesitter highlighting disabled for tex (treesitter-tex.lua)
 --   2. VimTeX as primary syntax engine (default)
 --   3. Custom commands registered via g:vimtex_syntax_custom_cmds (vimtex.lua)
---   4. Environment-name matches from after/syntax/tex.lua (groups 23)
+--   4. Environment-name matches from after/syntax/tex.lua (section 28)
 --   5. TokyoNight "night" active
 --
 -- DESIGN — the register taxonomy.  Full theory, per-species table,
@@ -74,10 +74,11 @@ local C = {
   -- docs/latex-register-taxonomy.md, deliberately not built.
   math_fg = "#c6ab90", -- warm-tan material: math body, variables, formula
   -- args — and, in roman, the object-language connectives (the warm bank)
-  -- Semantic objects sit on a clean azure, pushed off the violet
-  -- material (dE00 13.8 -> 15.8) after the periwinkle read as a
-  -- "warm blue" clashing inside formulas (2026-08-28).  Next notch
-  -- away from violet: #6ea6f2 (costs distance to the condition names).
+  -- Semantic objects sit on a clean azure (2026-08-28: the periwinkle
+  -- read as a "warm blue" clashing inside formulas, and the azure was
+  -- pushed to dE00 15.8 from the violet material of that morning; against
+  -- the tan it stands at 34.8).  Dial if it still reads warm inside
+  -- formulas: #6ea6f2 (costs distance to the condition names).
   blue_obj = "#74acf5", -- azure: semantic objects
   blue_dim = "#7396c2", -- muted blue: names of semantic objects
   gold_bright = "#eec584", -- ⊢ family: derivability relations
@@ -123,9 +124,10 @@ hl("texMathZoneEnv", { fg = C.math_fg, italic = true })
 hl("texMathZoneTi", { fg = C.math_fg, italic = true })
 hl("texMathZoneTd", { fg = C.math_fg, italic = true })
 
--- Stock math commands sit on the glue-and-terms rung: \in, \subseteq,
--- \neg, \land, \cap ... share one tone with the .sty's \to, \union, \M,
--- so a connective's colour never depends on which file defined it.
+-- Stock math commands that no registration names sit on the glue rung:
+-- \in, \subseteq, \cap ... share one tone with the .sty's \union,
+-- \intersect, \set, so a set-theoretic symbol's colour never depends on
+-- which file defined it.  (The stock booleans are registered: 20a.)
 hl("texMathCmd", { fg = C.steel })
 
 hl("texMathSuperSub", { fg = C.dark5 })
@@ -136,6 +138,16 @@ hl("texMathOper", { fg = C.steel })
 ------------------------------------------------------------------------
 hl("texCmdRef", { fg = C.green })
 hl("texRefArg", { fg = C.green_dim, italic = true })
+-- The locator [...] of a cite (a page range, "esp. Remark 1.3.6") is the
+-- citation's other argument: the place within the work, subordinate to the
+-- deictic act just as the key is, so it joins the key on the dim-green rung.
+-- It is distinguished from the key by its brackets, not by hue -- the scheme
+-- has no free green rung between the landmark and this one.  Until 2026-09-12
+-- it inherited generic texOpt (#737aa2, contrast 4.1: the plumbing treatment
+-- of a figure placement), because VimTeX links texRefOpt -> texOpt and this
+-- file never set it.  Setting texRefOpt here leaves texOpt untouched, so
+-- [ht], [structure=false] and other true optional arguments stay gray.
+hl("texRefOpt", { fg = C.green_dim, italic = true })
 
 ------------------------------------------------------------------------
 -- 6. PREAMBLE / PACKAGES
@@ -217,7 +229,7 @@ hl("texCmdHyperref", { fg = C.cyan, underline = true })
 -- Satisfaction: the bright pole of the cool side.
 hl("texCmdTurnstileSem", { fg = C.blue5 })
 
--- 16. DERIVABILITY RELATIONS  (\proves family, \seq, signed forces)
+-- 16. DERIVABILITY RELATIONS  (\proves family, \seq)
 -- The bright pole of the warm side — ⊢ against ⊨, correspondence as
 -- temperature.
 hl("texCmdTurnstileSyn", { fg = C.gold_bright })
@@ -253,12 +265,11 @@ hl("texCmdConnective", { fg = C.math_fg })
 hl("texCmdGround", { fg = C.steel })
 
 -- 21. VARIABLES  (Greek letters, atoms p0..p3)
--- The shared material of every register — body-toned violet.
+-- The shared material of every register — the warm tan, italic.
 hl("texCmdVariable", { fg = C.math_fg, italic = true })
 
 -- 22. NAMES OF SYNTACTIC OBJECTS  (CMr, Kax, K, S4, CE, IO, RE, MP...)
--- Mentions, not uses: the dim rung of the warm side, bold for
--- scanning, well under the landmark orange.
+-- Mentions, not uses: the dim rung of the warm side, bold for scanning.
 hl("texCmdNameSyn", { fg = C.gold_dim, bold = true })
 
 -- 23. NAMES OF SEMANTIC OBJECTS  (cmr, ccl, cnr, cth, rup, ldown...)
@@ -266,7 +277,7 @@ hl("texCmdNameSyn", { fg = C.gold_dim, bold = true })
 -- warm↔cool correspondence.
 hl("texCmdNameSem", { fg = C.blue_dim })
 
--- 24. SCAFFOLDING  (\hypo, \infr, \by, \close, booktabs rules)
+-- 24. SCAFFOLDING  (\hyp, \infr, \by, \close, booktabs rules)
 -- Proof-tree and table furniture joins the \begin/\end/\item teal.
 hl("texCmdScaffold", { fg = C.teal })
 

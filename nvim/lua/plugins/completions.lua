@@ -53,6 +53,31 @@ return {
       opts.snippets.preset = "luasnip"
 
       ------------------------------------------------------------------
+      -- <Tab> inside a snippet: blink's own snippet_forward
+      --
+      -- LazyVim's blink spec adds a <Tab> entry of its own whenever the
+      -- user's keymap has none: LazyVim.cmp.actions.snippet_forward (a
+      -- vim.snippet jump -- the native engine only), then its AI-accept
+      -- hooks, then "fallback".  Under the luasnip preset no native session
+      -- ever exists, so inside an expanded snippet <Tab> fell through to a
+      -- literal tab (found 2026-09-12: \frac{A  B}{}).  Naming the entry
+      -- here keeps LazyVim's hook out; blink's snippet_forward follows the
+      -- preset, and this is the very entry blink's "enter" preset ships --
+      -- <S-Tab> still takes the preset's snippet_backward untouched, and
+      -- both are mapped in select mode as well, where LazyVim's function
+      -- never was.  Pinned by the latency suite.
+      --
+      -- Cost: an AI extra's ghost-text accept would need
+      -- LazyVim.cmp.map({ "ai_nes", "ai_accept" }) chained in before the
+      -- fallback.  Declined: LazyVim's coding.luasnip extra, which swaps the
+      -- action instead -- it also lazy-loads LuaSnip (moving the snippet
+      -- regeneration check from startup to first use), adds a jsregexp
+      -- build step, and depends on the friendly-snippets disabled above.
+      ------------------------------------------------------------------
+      opts.keymap = opts.keymap or {}
+      opts.keymap["<Tab>"] = { "snippet_forward", "fallback" }
+
+      ------------------------------------------------------------------
       -- Where the LaTeX sources are allowed to run
       --
       -- blink queries every enabled provider on every keystroke.  In a TeX

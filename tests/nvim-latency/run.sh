@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression check for the insert-mode latency work of 2026-08-22.
-# Run from anywhere: ~/Desktop/configs/tests/nvim-latency/run.sh  (~40 s)
+# Run from anywhere: ~/Desktop/configs/tests/nvim-latency/run.sh  (~50 s)
 #
 # Exit 0 = the speed-up's structure is intact and nothing it touched broke.
 # Nothing here asserts milliseconds -- timings belong to ./bench.sh, which is

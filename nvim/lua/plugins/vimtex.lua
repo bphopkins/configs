@@ -99,34 +99,45 @@ return {
     -- name, no backslash) to collapse repetitive families.  Corresponding
     -- hl() definitions are in after/ftplugin/tex.lua.
     --
-    -- The scheme is a scope/type ladder (2026-08-28 redesign):
-    --   texCmdTurnstile  metalinguistic relations: ⊢ ⊩ ⊨ ⩴, sequent
-    --                    arrows, signed-formula forces — widest scope,
-    --                    brightest cool
-    --   texCmdIntension  intensional operators, monadic and dyadic:
-    --                    O, P, □, ◇, □→, O(·/·), stit, K, B, G, H
-    --   texCmdSemObj     semantic objects: models, frames, functions,
-    --                    truth/proof sets, languages, theories — the
-    --                    coloured family the eye tracks (teal-green)
-    --   texCmdGround     object-language glue: connectives and
-    --                    set-theoretic plumbing — same tone as stock
-    --                    texMathCmd, so \to matches \land and origin
-    --                    (.sty vs kernel) never shows
-    --   texCmdVariable   Greek letters — variables are body-toned like
-    --                    their roman siblings (A, w), not command-toned
-    --   texCmdNameSyn    names of syntactic objects: axiom schemata,
-    --                    systems, rules, frameworks (warm, bold)
-    --   texCmdNameSem    names of semantic objects: frame and order
-    --                    conditions (warm, plain — correspondence rung)
-    --   texCmdScaffold   proof-tree and table scaffolding
-    --   texCmdQed        end-of-proof markers (proof-family magenta)
+    -- One group per species of the register taxonomy.  The theory, the
+    -- channel contract and the species table are the living contract
+    -- docs/latex-register-taxonomy.md, and the colours are the ftplugin's;
+    -- neither is restated here.  What each group holds:
+    --   texCmdTurnstileSem  semantic relations: ⊨ ⊩ and their negations,
+    --                       entailment, bisimulation
+    --   texCmdTurnstileSyn  derivability relations: ⊢ and kin, sequent
+    --                       arrows
+    --   texCmdIntension     intensional operators, monadic and dyadic:
+    --                       O, P, □, ◇, □→, O(·/·), stit, K, B, G, H
+    --   texCmdSemObj        semantic objects: models, frames, functions,
+    --                       truth sets, valuations, truth values, STIT
+    --                       structures, credence
+    --   texCmdSynObj        syntactic objects: proof sets, equivalence
+    --                       classes, languages, logics, the formula
+    --                       algebra, mcs, consequence, I/O out(·)
+    --   texCmdConnective    object-language connectives, stock or .sty:
+    --                       \to, \iff, \land, \neg, \top ...
+    --   texCmdGround        metalanguage glue: set theory, definition
+    --                       signs, the ml-connectives — the same tone as
+    --                       stock texMathCmd, so origin (.sty vs kernel)
+    --                       never shows
+    --   texCmdVariable      Greek letters and the atoms p0..p3: the
+    --                       material, body-toned like A and w
+    --   texCmdNameSyn       names of syntactic objects: schemata,
+    --                       systems, rules, frameworks
+    --   texCmdNameSem       names of semantic objects: frame and order
+    --                       conditions
+    --   texCmdScaffold      proof-tree and table scaffolding
+    --   texCmdQed           end-of-proof markers
+    --   texArg*             argument-content groups, wired by arglink()
     --
-    -- Standard math symbols (\in, \subseteq, \neg, ...) are NOT
-    -- registered here: texMathCmd itself is restyled to the Ground tone,
-    -- so an unregistered macro lands in the plumbing colour.  A new
-    -- SEMANTIC-OBJECT macro therefore needs a SemObj line to take its
-    -- teal — the coverage cross-check flags it.  Greek letters are
-    -- lifted OUT of the plumbing tone by the greekfam pattern below.
+    -- Stock math symbols that no entry names (\in, \subseteq, \cap, ...)
+    -- are NOT registered: texMathCmd itself is restyled to the Ground
+    -- tone, so an unregistered macro lands in the glue colour.  A new
+    -- macro of any other species therefore needs its own line to take
+    -- its colour — the coverage cross-check flags it.  The stock booleans
+    -- (stockbool) and the Greek letters (greekfam) are the two families
+    -- lifted OUT of that default below.
     --
     -- Deliberately unregistered (not oversights): \versal, \sketchqed,
     -- \remarkqed, \qedsymbol (internal helpers, unused outside the .sty) and
@@ -493,6 +504,17 @@ return {
       macmd("cprob", G.so, G.argso),
       macmd("cred", G.so, G.argso),
       macmd("ccred", G.so, G.argso),
+      -- Short model-definition macros
+      cmd("mwrv", G.so),
+      cmd("mwrp", G.so),
+      cmd("mwnv", G.so),
+      cmd("mwnp", G.so),
+      -- STIT model components (Tree, Agent, Choice, Value)
+      cmd("tree", G.so),
+      cmd("agent", G.so),
+      cmd("choice", G.so),
+      cmd("stitval", G.so),
+      mcmd("choicema", G.so),
 
       ----------------------------------------------------------------
       -- SYNTACTIC OBJECTS  (texCmdSynObj) — warm
@@ -526,17 +548,6 @@ return {
       macmd("oputi", G.syo, G.argsyo),
       macmd("deriv", G.syo, G.argsyo),
       macmd("derivi", G.syo, G.argsyo),
-      -- Short model-definition macros
-      cmd("mwrv", G.so),
-      cmd("mwrp", G.so),
-      cmd("mwnv", G.so),
-      cmd("mwnp", G.so),
-      -- STIT model components (Tree, Agent, Choice, Value)
-      cmd("tree", G.so),
-      cmd("agent", G.so),
-      cmd("choice", G.so),
-      cmd("stitval", G.so),
-      mcmd("choicema", G.so),
 
       ----------------------------------------------------------------
       -- OBJECT-LANGUAGE CONNECTIVES  (texCmdConnective)

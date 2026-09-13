@@ -20,7 +20,7 @@ syntax evaluation and no redraw, and every timing would be meaningless.
 | file | what it is |
 |---|---|
 | `run.sh` | the regression gate — run this |
-| `verify.py` | its 37 checks |
+| `verify.py` | its 42 checks |
 | `bench.py` | the measurement tool (no pass/fail) |
 | `stallwatch.lua` | in-session diagnostic for stalls you can't reproduce |
 | `harness.py` | shared Neovim harness |
@@ -29,7 +29,7 @@ syntax evaluation and no redraw, and every timing would be meaningless.
 ## The regression gate
 
 ```bash
-./run.sh          # ~40 s, exit 0 = intact
+./run.sh          # ~50 s, exit 0 = intact
 ```
 
 It asserts no milliseconds — timings move with the machine, the power profile
@@ -46,6 +46,10 @@ broken:
   omnifunc stays wired for `<C-x><C-o>` — all three pinned);
 - blink's `snippets` provider reports *disabled* in running prose, where it
   used to be queried on every character;
+- `<Tab>` and `<S-Tab>` jump between LuaSnip placeholders, from insert mode
+  and from select mode, through the real path (the `\frac` row accepted with
+  `<CR>`) — LazyVim's own `<Tab>` entry jumped native snippets only, and under
+  the luasnip preset it inserted whitespace instead (2026-09-12);
 - a Lua buffer still auto-completes, i.e. non-TeX filetypes are untouched;
 - the auto-save autocmds live in the `bph_autosave` group, none is left
   ungrouped, and re-sourcing `autocmds.lua` does not duplicate them;
@@ -85,6 +89,11 @@ NVIM_LATENCY_CONFIG=/path/to/mutated-tree python3 verify.py
   disk-failure/recovery checks fail (the dialog is back, so no notification
   ever fires), plus the same two-check cascade — which is what pins the
   guard.
+- *`completions.lua` without its `<Tab>` entry* (the state before 2026-09-12):
+  exactly the three jump checks fail — `<Tab>` inserts whitespace, the
+  `<S-Tab>` check then lands its text before the snippet, and select-mode
+  `<Tab>` inserts more of it; the session-opens check passes, as it always
+  did.
 
 (Historical, against the original pre-2026-08-22 tree of the then-23 checks:
 `16 passed, 7 failed — one matchparen, three prose-gating, three auto-save`.)

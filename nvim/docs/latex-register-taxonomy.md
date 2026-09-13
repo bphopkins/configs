@@ -116,7 +116,7 @@ Background `#1a1b26`; contrast is WCAG vs that background.
 | species | members (examples) | group | colour | weight | contrast |
 |---|---|---|---|---|---|
 | semantic relations | `\trues` `\models` + negations, `\bisim`, `\natent` | `texCmdTurnstileSem` | `#89ddff` | — | 11.3 |
-| derivability relations | `\proves` family, `\gives`, `\seq`, signed forces via af/de | `texCmdTurnstileSyn` | `#eec584` | — | 10.5 |
+| derivability relations | `\proves` family, `\gives`, `\seq` | `texCmdTurnstileSyn` | `#eec584` | — | 10.5 |
 | intensional operators | `\ought` `\may` `\cobs` `\cnecs` `\nec` `\sphere`, stit, epistemic, temporal | `texCmdIntension` | `#d9aa5e` | — | 8.0 |
 | semantic objects | `\M` `\F` `\flog` fams, `\truthset` `\ctruthset`, `f`-functions, valuations, truth values, STIT structures, credence | `texCmdSemObj` (+`texArgSemObj` ital) | `#74acf5` | — | 7.3 |
 | syntactic objects | `\proofsetl` `\eclassl`, languages `\lang*` (`\langc` since 2026-09-08), `\logic`, `\Fm` `\atoms` `\props`, mcs, `\cn` `\theory`, I/O out(·) | `texCmdSynObj` (+`texArgSynObj` ital) | `#bd9750` | — | 6.3 |
@@ -127,9 +127,10 @@ Background `#1a1b26`; contrast is WCAG vs that background.
 | material | Greek letters, `p₀`–`p₃`; math body; formula args | `texCmdVariable`, zones, `texArgFormula` | `#c6ab90` | italic | 7.8 |
 | landmarks | `\chapter` `\section`, titles; theorem-family env names | sectioning groups, `texEnvArgNameThm` | `#9ece6a` | bold | 9.4 |
 | loaded structure | env names: proof, proofsketch, gentzen, axiomproof, **hilbertlist** | `texEnvArgNameLoaded` | `#4fd6b0` | bold | 9.4 |
-| pure structure | `\begin`/`\end`, `\item`, default env names, booktabs rules, proof-tree scaffolding (`\hypo` `\infr` `\by` `\close`), `\footnote` | `texCmdEnv/Item/Scaffold/Footnote`, `texEnvArgName` | `#1abc9c` | names bold | 7.1 |
+| pure structure | `\begin`/`\end`, `\item`, default env names, booktabs rules, proof-tree scaffolding (`\hyp` `\infr` `\by` `\close`), `\footnote` | `texCmdEnv/Item/Scaffold/Footnote`, `texEnvArgName` | `#1abc9c` | names bold | 7.1 |
 | deixis | `\cref` `\ref` `\label` `\cite` `\tcite` `\pcite` | `texCmdRef` | `#9ece6a` | — | 9.4 |
 | deixis, the key | the `{...}` of a ref/cite | `texRefArg` | `#8fb665` | italic | 7.4 |
+| deixis, the locator | the `[...]` of a cite (page range, `esp. Remark 1.3.6`) | `texRefOpt` | `#8fb665` | italic | 7.4 |
 | prose inflection | `\emph` `\textit` `\textbf` tokens (content keeps body tone) | `texCmdStyle` etc. | `#9aa5ce` | italic | 7.0 |
 | boundaries | `$` and math delimiters; `\qed` family | math delim groups, `texCmdQed` | `#bb9af7` | — | 7.4 |
 | stage crew | preamble, packages, `\input`, `\newcommand` (defined name takes `#bd9750`) | package/def groups | `#f7768e` | def bold | 6.5 |
@@ -151,7 +152,15 @@ below the `blue_obj` they name. Derived, not chosen: the house dim step
 (mean of `blue_obj`→`blue_dim` and `gold_mid`→`gold_dim`, dL −8.0 /
 dC −9.4 in LCh) puts it dE00 6.5 from `#9ece6a`, inside the house band,
 and 18.6 / 19.0 clear of the loaded and container rungs so it cannot
-impersonate them. Prose inflections (`\emph`, `\textit`) are the voice
+impersonate them. The **locator** (the `[...]` of a cite: a page range,
+`esp. Remark 1.3.6`) is the citation's other argument, the place within
+the work. It joins the key on that dim rung — `texRefOpt` at `#8fb665`
+italic — subordinate to the act and told apart from the key by its
+brackets rather than by hue, since there is no free green rung between
+the landmark and this one. Until 2026-09-12 it inherited the generic
+`texOpt` gray (`#737aa2`, contrast 4.1) through VimTeX's default link:
+the plumbing treatment of a figure placement, too dim for bibliographic
+content. Prose inflections (`\emph`, `\textit`) are the voice
 modulating itself: firmly prose-side, muted command tokens, body-toned
 content.
 
@@ -163,9 +172,10 @@ fractured into unrelated hues when its nature is a single spectrum.
 ## The open questions, answered
 
 **How many hues?** One per genus that has an identity: the count is
-derived, not chosen — warm, cool, violet, gray, green, orange, magenta,
-red. Adding a hue requires exhibiting a new *genus*, not a new species;
-species within a genus are carried by lightness and weight.
+derived, not chosen — gold, blue, tan, gray, green, magenta, red, as the
+channel contract lists them. Adding a hue requires exhibiting a new
+*genus*, not a new species; species within a genus are carried by
+lightness and weight.
 
 **How much gradient within a hue?** At most three rungs. Measured
 CIEDE2000 between the warm rungs is 6.5–7.2, which is near the floor of
@@ -175,9 +185,10 @@ it. Rungs follow the salience rule (relations > objects > names).
 **Adjacent hues to encode spectra?** No continuous ramps. A ramp
 produces intermediate colours with no statable meaning, and the scheme
 must stay *learnable*: every colour answers "what does this mean?" in
-one sentence. Where a genuine spectrum exists (structure shading into
-content), it is encoded by **discrete borrowing** at the loaded end —
-hilbertlist wears the warm family — not by interpolation.
+one sentence. Where a genuine spectrum exists (the document dimension,
+landmarks down to scaffolding), it is encoded by **discrete rungs within
+one hue** — the document genus's greens, each with a statable meaning —
+not by interpolation.
 
 ## Borderline ledger
 
@@ -193,9 +204,10 @@ Calls that could reasonably go the other way; each is a one-line move.
   (a deeper blue) as distinct-from-semantics-in-general.
 - Languages, `\Fm`, `\props` — warm as syntactic objects, though they
   serve semantics as indices (`\proofsetl` subscripts).
-- Object connectives gray — markedness overrides depth (850 tokens of
-  warm skeleton would flood the field). Revisit if formulas feel
-  underpainted.
+- Object connectives — **resolved 2026-08-28: the warm bank** (the
+  material tan in roman, `texCmdConnective`): formulas cohere as warm
+  wholes, with style separating connective from variable. Revisit only
+  if the warm skeleton (some 850 tokens) floods the field.
 - `\ent` (⊢/⊨ interface glyph) — gray, as the interface itself.
 
 ## Revisit dials
@@ -205,8 +217,10 @@ Calls that could reasonably go the other way; each is a one-line move.
 - Poles feel inverted in some formula → report the formula; a two-hex
   swap trades the anchors while keeping the geometry.
 - Condition names too dim in appendix-B → `#7396c2` → `#7d9cc9`.
-- Cursorline (in `lua/plugins/colorscheme.lua`): `#1f2132` (1.08:1);
-  dials `#212439` / `#1d1e2c`.
+- Cursorline: no bar since 2026-09-07 (`cursorlineopt = "number"` in
+  `lua/config/options.lua`); the `#121320` in `lua/plugins/colorscheme.lua`
+  paints only the unfocused picker list and is the value should the bar
+  return — dials `#16161e` (1.05:1) / `#0f1019` (1.12:1).
 - Semantic azure `#74acf5` still reads warm inside formulas →
   `#6ea6f2` (costs distance to the condition names).
 - Formula unity resolved 2026-08-28 by the warm-tan material (γ, the
@@ -215,7 +229,4 @@ Calls that could reasonably go the other way; each is a one-line move.
   worlds/sets cool — requires fragile bare-letter matches and a
   letter→sort table derived from the corpus and confirmed line by
   line. Deliberately not built.
-- Math-body-vs-prose distance is now 28.7 dE00; the old violet dial
-  (`#af9ef5`) is obsolete.
-- Math body vs prose still too close → `#b3a8f2` → `#af9ef5` (costs
-  body brightness and nears the `$` magenta).
+- Math body vs prose: 28.7 dE00 with the warm tan; no dial is kept.

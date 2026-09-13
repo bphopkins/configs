@@ -117,6 +117,10 @@ local checks = {
   { [[\\pcite\[\\S2\]{\zsckF]], "texRefArg", "\\pcite key past a locator" },
   { [[\\textcite{\zsckG]], "texRefArg", "\\textcite key (biblatex module never loads)" },
   { [[\\poscite{\zsckH]], "texRefArg", "\\poscite key" },
+  -- citation LOCATOR [...]: joins the key's dim-green rung (texRefOpt),
+  -- not the plumbing gray it used to inherit from texOpt (2026-09-12).
+  { [[\\cite\[\zsp\.\~5]], "texRefOpt", "\\cite locator (was texOpt gray)" },
+  { [[\\tcite\[\zsp\.\~7]], "texRefOpt", "\\tcite locator" },
 }
 
 local fails = 0

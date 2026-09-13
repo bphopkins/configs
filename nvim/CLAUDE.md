@@ -31,7 +31,7 @@ A treesitter port of the colour layer was measured and **declined
 2026-09-12**: the pinned grammar rejects `\item[(\Kax)]` labels, 313 of them
 in the dissertation (DECISIONS.md). The latency suite pins the invariant.
 
-Custom syntax in `vimtex.lua`: 219 literal command names + 33 regex patterns
+Custom syntax in `vimtex.lua`: 218 literal command names + 32 regex patterns
 registered into the register-taxonomy groups, coloured in
 `after/ftplugin/tex.lua`; `after/syntax/tex.lua` colours environment *names*
 by family. The scheme's semantics — the tower, the channel contract, the
@@ -40,7 +40,7 @@ species table, the geometric law, the closure rule — are the living contract
 he rates it an improvement and a crude approximation of a scheme he cannot
 yet articulate; change it only from instances he brings, exhibited on the
 bench (the doc's Status section) before touching the config. 504 of the
-`.sty`'s 509 commands are covered; the 5 exclusions are deliberate and listed
+`.sty`'s 512 commands are covered; the 8 exclusions are deliberate and listed
 in the `vimtex.lua` header comment.
 
 Five VimTeX/Vim API traps, each of which had silently bitten this config:
@@ -95,6 +95,14 @@ still bind:
   raises `E216` on every `InsertEnter`. Guard + `pcall` backstop are pinned
   by the latency suite.
 
+`<Tab>` inside a snippet is named explicitly in `completions.lua` as blink's
+own `snippet_forward` (2026-09-12). LazyVim's blink spec adds a `<Tab>` entry
+of its own whenever the user's keymap has none, and that entry jumps native
+`vim.snippet` sessions only, so under the luasnip preset `<Tab>` in an
+expanded snippet inserted whitespace instead of jumping. The line duplicates
+blink's preset entry on purpose — it is what keeps LazyVim's hook out; four
+latency-suite checks pin the jumps, from insert and from select mode.
+
 bib/bibtex filetypes get snippets and path. The 2026-08-22 decision to keep
 VimTeX's harvest visible ("how half-remembered commands get found", revisit
 on felt annoyance) is superseded by the drop above; the harvest it rested on
@@ -133,7 +141,7 @@ addendum to `docs/insert-latency-2026-08.md`.
 — the hub `french-logic.sty` plus every `french-logic-<unit>.sty` it loads,
 since the 2026-09-07 split — by `sty-lua-snippets.py`; commands,
 `\newenvironment`s incl. optional args, and `\newtheorem`s) and
-`latex-workshop.lua` (497 generic command snippets and 32 BibTeX entry
+`latex-workshop.lua` (485 generic command snippets and 32 BibTeX entry
 templates: a one-time conversion of LaTeX Workshop's data, itself generated
 from TeXstudio's package word lists), loaded via filetype extensions in
 `snippets.lua`. **Regeneration is automatic**: the generator stamps one sha256
@@ -178,14 +186,33 @@ by four latency-suite checks). Don't "fix" it.
 
 ## Session persistence
 
-`persistence.lua` auto-loads a session on empty start for any CWD under
-`~/Desktop`; sessions are *saved* per-CWD everywhere (the gate controls only
-autoload); `<leader>qs` restores manually anywhere; bypass with
-`NVIM_NOSESSION=1`. **Headless runs neither autoload nor save** — the guard
-is an init()-registered `VimLeavePre` autocmd calling `persistence.stop()`
-when `nvim_list_uis()` is empty, and the VimLeavePre placement is
-load-bearing: `nvim --headless +qa!` exits before VimEnter ever fires. Before
-the guard, headless test runs actually clobbered a real session.
+`persistence.lua` auto-loads a session on empty start when CWD is a directory
+**strictly below** `~/Desktop` (the repos and their subdirs); the `~/Desktop`
+root is excluded — it is where a raw nvim and the LazyVim dashboard are
+wanted, not a project (2026-09-12). `<leader>qs` restores manually anywhere;
+bypass autoload with `NVIM_NOSESSION=1`.
+
+**Two cases disarm the quit-time save**, through an init()-registered
+`VimLeavePre` autocmd (group `PersistenceSaveGuard`) that calls
+`persistence.stop()` before the plugin's own save fires: `nvim_list_uis()`
+empty (**headless** — test suites once clobbered a real session this way, and
+the VimLeavePre placement is load-bearing since `nvim --headless +qa!` exits
+before VimEnter fires) and CWD being the `~/Desktop` root. The root exclusion
+matters because persistence writes a session per CWD on *every* quit, so a
+file opened from a `~/Desktop` shell was landing in the root session's
+**argument list** (`$argadd`) and returning on every bare launch — and
+`:bd`/`:%bd` never clear an arglist entry, only `:argdelete`/`:%argdelete` do
+(found 2026-09-12).
+
+Buffer-tab order is **not** persisted, by choice. bufferline keeps its moved
+order in `vim.g.BufferlinePositions`, and it can be made to survive a restart
+(add `globals` to `sessionoptions`, then re-apply the order once bufferline has
+loaded). That was built and then **dropped 2026-09-12**: the restore leaned on
+bufferline's undocumented internals and on cross-plugin load order (persistence
+on `VimEnter`, bufferline on `VeryLazy`), too fragile to carry, and an early
+attempt to force bufferline to load first broke the tabline render. To set a
+specific order instead, hand-edit the `badd` sequence in the session file with
+nvim closed — the default order follows it.
 
 ## Auto-save — both events are load-bearing
 
@@ -272,7 +299,7 @@ auto-running restore inside the pull, were considered and **declined**
 
 ## Regression suites
 
-- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — 54 checks:
+- `tests/nvim-syntax/run.sh` (~5 s, headless, read-only) — 56 checks:
   env-name families, one command per registered family, pattern anchoring,
   argument links, the case-collision and adjacency pins, and that every
   pinned group carries a defined colour (a registration/ftplugin desync
@@ -281,7 +308,7 @@ auto-running restore inside the pull, were considered and **declined**
   intact. `perf.sh <file.tex>` beside it prices the whole custom layer
   (read-only; bigfed 2026-08-28: 0.47 ms/line on completeness.tex; under
   ~2 ms/line is imperceptible per keystroke).
-- `tests/nvim-latency/run.sh` (38 checks, ~40 s, hermetic, needs `pynvim`) —
+- `tests/nvim-latency/run.sh` (42 checks, ~50 s, hermetic, needs `pynvim`) —
   asserts the *structure* the latency fixes rest on and the behaviour they
   must not have broken; no millisecond assertions (timings move with the
   machine). Mutation-verified. `bench.py` beside it is the measurement tool;

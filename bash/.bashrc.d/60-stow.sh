@@ -15,13 +15,14 @@ declare -A STOW_TARGETS=(
   [okular]="$HOME/.config"
   [sway]="$HOME/.config/sway"
   [swaylock]="$HOME/.config/swaylock"
+  [tmux]="$HOME/.config/tmux"
   [waybar]="$HOME/.config/waybar"
   [wofi]="$HOME/.config/wofi"
   [wezterm]="$HOME"
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash git wezterm ghostty alacritty nvim sway swaylock waybar mako wofi latex bin okular fontconfig)
+STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar mako wofi latex bin okular fontconfig)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 

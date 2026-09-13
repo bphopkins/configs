@@ -4,12 +4,13 @@ return {
     opts = function(_, opts)
       local ls = require("luasnip")
 
-      -- Auto-regenerate french-logic.lua when french-logic.sty changes.
-      -- The generator stamps the .sty's sha256 into the output header;
-      -- on mismatch it is re-run (~100 ms, and only when stale), so
-      -- completions can never silently drift from the package.  Paths
-      -- are resolved through the stow symlinks so this follows the repo
-      -- wherever it lives; missing .sty or python3 skips silently.
+      -- Auto-regenerate french-logic.lua when the package changes.  The
+      -- generator stamps one sha256 over the hub and every unit it loads
+      -- into the output header; on mismatch it is re-run (~100 ms, and
+      -- only when stale), so completions can never silently drift from
+      -- the package.  Paths are resolved through the stow symlinks so this
+      -- follows the repo wherever it lives; a missing hub or python3 skips
+      -- silently.
       local snip_dir = vim.fn.stdpath("config") .. "/lua/snippets"
       local gen = vim.fn.resolve(snip_dir .. "/sty-lua-snippets.py")
       local out = snip_dir .. "/french-logic.lua"
@@ -52,7 +53,9 @@ return {
           vim.list_extend(cmd, { "-o", out })
           local res = vim.fn.system(cmd)
           if vim.v.shell_error == 0 then
-            vim.notify("french-logic snippets regenerated from the hub and " .. (#files - 1) .. " units")
+            vim.notify(
+              "french-logic snippets regenerated from the hub and " .. (#files - 1) .. " units"
+            )
             -- The .sty changed, so also check that no new command is
             -- missing a highlight registration in vimtex.lua.  Purely
             -- informational — highlighting falls back to the default

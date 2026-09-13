@@ -318,6 +318,17 @@ long-argument checks that pin the 300-char window need a `\begin{`-shaped
 argument instead of a `\cite` key list. Small; a session of its own only
 because it touches the suite.
 
+Annotation 2026-09-13: the premise is measured false. In the latency harness,
+`\begin{ali` does surface the align family, but accepting a row writes
+`\begin{\begin{align*}` on one line and `\end{align*}}` two lines down (the
+snippet replaces only the letters after the brace; the auto-pair's `}`
+survives). The branch is harmful there, not merely noisy. The item closes with
+stage 3 of the LaTeX completion campaign
+(`docs/latex-completion-campaign-2026-09/PLAN.md`), which closes the brace
+branch to snippets and serves `\begin{` through VimTeX's environment names
+turned into templates; the suite check that pins the exact output is listed
+there.
+
 ## Closed
 
 One line per closed item — verdict, date, pointer. Full notes and post-mortems

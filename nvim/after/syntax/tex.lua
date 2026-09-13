@@ -10,8 +10,9 @@
 -- regions replace the environment body's contains-list, which would
 -- swallow all highlighting inside theorem/proof bodies.
 --
--- List/layout environments (hilbertlist, romanlist, block, ...) keep the
--- default texEnvArgName cyan on purpose.
+-- List/layout environments (romanlist, block, ...) keep the default
+-- texEnvArgName teal on purpose; hilbertlist alone is loaded structure
+-- and joins the proof family below.
 
 -- The document dimension is one green SPECTRUM (docs/
 -- latex-register-taxonomy.md): landmarks > loaded structure >

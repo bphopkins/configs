@@ -1,0 +1,23 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[hyperfootnotes=false]{hyperref}
+\newcommand{\foo}[1]{#1}
+\begin{document}
+\section{Title here}
+Prose $\text{word} + \left( x \right) \alpha$ and \ref{eq:one} \cite{key}.
+\begin{align}
+  a &= b \label{eq:one} \\
+  c &= \text{inner} d
+\end{align}
+\begin{tabular}{ll}
+  \toprule
+  x & y \\
+  \bottomrule
+\end{tabular}
+\begin{itemize}
+  \item[label] thing
+\end{itemize}
+%TODO fix this
+\verb|raw|
+\end{document}

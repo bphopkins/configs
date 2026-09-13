@@ -42,6 +42,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | wezterm | `~` | *(no charter — the config file carries its own: pinned font faces, and the two measured latency/throughput settings)* |
 | ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap, the JuliaMono fallback and `font-family`-as-a-list)* |
 | alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
+| tmux | `~/.config/tmux` | *(no charter — the config file carries its own: the XDG path choice, the status bar on sway's `$accent` #0088FF and why `fg` is restated, and the one green left on pane borders)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
 | swaylock | `~/.config/swaylock` | the fail-open unknown-key hazard |
