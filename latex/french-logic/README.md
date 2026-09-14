@@ -260,16 +260,19 @@ value is a deferred fine-tune (item 14).*
 
 ## Tooling
 
-- **Snippets.** `nvim/lua/snippets/sty-lua-snippets.py` generates the LuaSnip
-  module from braced `\newcommand` forms, comments stripped, reading the hub
-  and every unit it loads (`-i` repeated, hub first); the module carries one
-  hash over all of them and regenerates on the next Neovim start. It cannot
-  see `\DeclareMathSymbol`, `\NewDocumentCommand`, or `\DeclareCiteCommand`
-  members, and it keys list-shaped snippets on the substring `list` in an
-  environment's name.
+- **Snippets.** `nvim/lua/snippets/snipgen.py --sty french-logic.sty` generates
+  one LuaSnip file per unit under `nvim/lua/snippets/sty/` from the braced
+  `\newcommand`, `\newenvironment`, `\newtheorem`, `\DeclareMathOperator` and
+  `\DeclareMathSymbol` forms, comments stripped, following every
+  `\RequirePackage` whose `.sty` sits beside the hub; each file carries its
+  source's sha256 and regenerates on the next Neovim start. An optional
+  argument gives two rows; a list-shaped environment is one whose begin code
+  opens `itemize`, `enumerate`, `description` or a list already known. It
+  cannot see `\NewDocumentCommand` or `\DeclareCiteCommand` members
+  (`\poscite` is not completed).
 - **Highlighting.** `nvim/lua/plugins/vimtex.lua` registers members into the
   register taxonomy by name shape (`C[CM][rl]\w*`, `[CKDTUPWN]ax\w*`, `\w*rule\w*`, `[rl]%(up|down)`, …); renames must keep to those shapes or update them. The
-  coverage check is `sty-lua-snippets.py --coverage`.
+  coverage check is `snipgen.py --sty french-logic.sty --coverage`.
 - **Rendering suite.** `tests/french-logic/run.sh`; golden re-accepted after
   each landed change, last on 2026-09-08 after the confirmation pass (the
   ten decorated members and both SDL names tucked, `\emptytruthset` open;

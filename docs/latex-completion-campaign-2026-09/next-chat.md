@@ -1,3 +1,5 @@
+Annotation, 2026-09-13: build chat 1 opened from this brief and landed stage 1; its successor is `next-chat-2026-09-13.md` beside this file. Sections 1, 6 and 8 here still bind.
+
 Prompt — the opening brief for the first build chat of the LaTeX completion
 campaign. Dated record, written 2026-09-13 at the close of the second
 planning chat, on fedxps. The next chat writes its own successor beside this

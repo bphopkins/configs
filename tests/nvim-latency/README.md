@@ -7,9 +7,14 @@ notice — several hundred milliseconds per character, against a 3.6 ms floor.
 
 Everything here is hermetic: `fixture.tex` is self-contained, all editing
 happens on a copy under `$TMPDIR`, `persistence.nvim` is disarmed so no session
-is written, and no repo or real document is touched. The one external
-dependency is `french-logic.sty`, which the fixture loads from `~/texmf` via
-the usual stow link.
+is written, and no repo or real document is touched. Two leaks are known
+(2026-09-13): each instance writes a `bibcomplete%tmp%…` file into the live
+`~/.cache/vimtex`, and its accepts feed the live blink frecency store under
+`~/.local/state/nvim`; a scratch `cache_root` and `XDG_STATE_HOME` are the
+fix, a `TODO.md` item of the completion campaign. The external
+dependencies are `french-logic.sty`, which the fixture loads from `~/texmf`
+via the usual stow link, and since 2026-09-13 the generated snippet files
+under `nvim/lua/snippets/`, reached through the `~/.config/nvim` link.
 
 Requires `pynvim` (`python3 -m pip install --user pynvim`); a real UI is
 attached to the test instance, because without one there is no screen, hence no
@@ -20,16 +25,17 @@ syntax evaluation and no redraw, and every timing would be meaningless.
 | file | what it is |
 |---|---|
 | `run.sh` | the regression gate — run this |
-| `verify.py` | its 42 checks |
+| `verify.py` | its 71 checks |
 | `bench.py` | the measurement tool (no pass/fail) |
 | `stallwatch.lua` | in-session diagnostic for stalls you can't reproduce |
 | `harness.py` | shared Neovim harness |
-| `fixture.tex` | 4 paragraph lines of ~840/1250/1670/2080 chars |
+| `fixture.tex` | 4 paragraph lines of ~840/1250/1670/2080 chars; its preamble loads french-logic, names `fixture.bib` and defines one command (2026-09-13) |
+| `fixture.bib` | two keys for VimTeX's citation completer, copied beside the fixture by the harness |
 
 ## The regression gate
 
 ```bash
-./run.sh          # ~50 s, exit 0 = intact
+./run.sh          # ~150 s (146 s measured 2026-09-13), exit 0 = intact
 ```
 
 It asserts no milliseconds — timings move with the machine, the power profile
@@ -40,16 +46,60 @@ broken:
 - VimTeX's matchparen is hooked in normal mode, unhooked during insert, and
   restored on leaving it — and `g:vimtex_matchparen_enabled` is still `1`, i.e.
   it was not blanket-disabled;
-- blink still completes after `\command`, and the gate is open inside `\cite{`
-  and `\ref{` (VimTeX's rows left the menu by decision on 2026-09-12; no
-  `vimtex` provider exists, no TeX source list names it, and VimTeX's
-  omnifunc stays wired for `<C-x><C-o>` — all three pinned);
-- blink's `snippets` provider reports *disabled* in running prose, where it
-  used to be queried on every character;
+- the two gates of the completion layer rebuilt on TeXstudio's model
+  (2026-09-13, stage 3 of the campaign in
+  `docs/latex-completion-campaign-2026-09/`): blink's `snippets` provider is
+  enabled while a `\command` name is typed and nowhere else, its built-in
+  `omni` provider (VimTeX's completers) inside a command's braces and nowhere
+  else — so `\cite{` and `\ref{` are omni contexts (these two checks
+  *flipped* on 2026-09-13; they pinned the snippets gate open there while
+  VimTeX's rows were out of the menu), a command name typed inside another
+  command's braces (`\textbf{\al`) is a snippets context, and running prose
+  is neither, where blink used to fire on every character; no `vimtex`
+  provider exists, no TeX source list names it, every TeX source list names
+  `omni`, and VimTeX's omnifunc stays wired for `<C-x><C-o>` — all pinned;
+- the rows: VimTeX's citation keys arrive through omni (from `fixture.bib`);
+  a snippet row carries its description column; a math-only row is wrapped in
+  `$…$` in prose and bare inside math; an environment-restricted row (hyperref's
+  `\TextField`, `/Form`) hides in prose and shows inside its environment; the
+  fixture, which has no `.fls`, reaches amsmath's `\align` through the
+  french-logic hub's includes; the fixture's own `\newcommand` completes with
+  its arity, and a definition added to the file and saved is offered at the
+  next request; the core file and a french-logic unit are registered under
+  their `pkg-` keys and the retired `french-logic` filetype is empty;
+  `:SnippetsReload` keeps the registered row count and raises nothing, and a
+  row in the hand file with the same label and description as a generated row
+  shadows it (the loader lists `hand-local` first, the request-time dedupe
+  keeps the first);
+- `\begin{`: accepting `enumerate` at `\begin{enum` writes `\begin{enumerate}`,
+  an indented `\item` line and `\end{enumerate}` with no stray brace (the
+  2026-09-12 breakage wrote `\begin{\begin{align*}` / `\end{align*}}`), and
+  so does `hilbertlist`, a french-logic list environment VimTeX does not know
+  on the fixture, which reaches the menu from the loaded files (the union
+  decided 2026-09-13); a non-list environment gets an empty indented body line;
 - `<Tab>` and `<S-Tab>` jump between LuaSnip placeholders, from insert mode
   and from select mode, through the real path (the `\frac` row accepted with
-  `<CR>`) — LazyVim's own `<Tab>` entry jumped native snippets only, and under
-  the luasnip preset it inserted whitespace instead (2026-09-12);
+  `<CR>`, since 2026-09-13 TeXstudio's math-only `$\frac{num}{den}$` with named
+  placeholders, so the typed letters replace the selected text) — LazyVim's
+  own `<Tab>` entry jumped native snippets only, and under the luasnip preset
+  it inserted whitespace instead (2026-09-12);
+- blink's per-keystroke snippet check stays off LuaSnip's trigger scan
+  (2026-09-13, stage 4 of the campaign): the luasnip preset answered
+  `snippets.active()` with `ls.expandable()`, a match of every registered
+  trigger against the line, on every `InsertCharPre` and `TextChangedI`,
+  where the answer is discarded — 3.5 ms per prose keystroke with the
+  closure's 7,760 rows, and the closure load on the first insert-mode
+  keystroke of a session; `completions.lua` keeps the scan for `<Tab>` and
+  `<S-Tab>` only.  Pinned twice: prose keystrokes never reach the loader's
+  `ft_func` (the scan begins by asking for the buffer's filetypes), and the
+  one thing the scan served, a fully typed trigger expanding on `<Tab>` with
+  the menu closed, still works;
+- the loader's idle pre-warm registers a TeX buffer's closure after VimTeX's
+  init, one file per timer tick, so the first request no longer pays 660 to
+  750 ms (2026-09-13, stage 4): pinned before any keystroke, the pre-warm
+  reports done, a french-logic unit is registered, and the request path
+  never ran; and the description column is 45 cells (blink's default 30 cut
+  a tenth of the rows);
 - a Lua buffer still auto-completes, i.e. non-TeX filetypes are untouched;
 - the auto-save autocmds live in the `bph_autosave` group, none is left
   ungrouped, and re-sourcing `autocmds.lua` does not duplicate them;
@@ -66,9 +116,10 @@ broken:
   its own buffer-local mapping and snapshots ours as its fallback —
   undocumented upstream behaviour) and checkbox-list continuation.
 
-Run it after a VimTeX or blink.cmp update, after editing
-`lua/plugins/{vimtex,completions}.lua` or `lua/config/autocmds.lua`, or whenever
-typing in a long LaTeX paragraph starts feeling heavy again.
+Run it after a VimTeX, blink.cmp or LuaSnip update, after editing
+`lua/plugins/{vimtex,completions,snippets}.lua`, `lua/snippets/{loader,helpers}.lua`
+or `lua/config/autocmds.lua`, or whenever typing in a long LaTeX paragraph starts
+feeling heavy again.
 
 **Mutation-verified**, in three directions (2026-08-22, each run and checked
 against its exact failure set):
@@ -94,6 +145,39 @@ NVIM_LATENCY_CONFIG=/path/to/mutated-tree python3 verify.py
   `<S-Tab>` check then lands its text before the snippet, and select-mode
   `<Tab>` inserts more of it; the session-opens check passes, as it always
   did.
+
+**2026-09-13, stage 3 of the completion campaign**, three mutations of a copy
+of the tree with `pkg/` and `sty/` symlinked in (the copy has no
+`latex/french-logic`, so the startup regeneration check skips itself):
+
+- *The `\begin{` union removed* (the omni transform appends no names of the
+  loaded files): exactly the `hilbertlist` and `proofsketch` template checks
+  fail — VimTeX offers neither on the fixture — while `enumerate`, VimTeX's
+  own, still passes.  Found while doing this: a row that never appears made
+  the check *raise* instead of fail, aborting the run; `begin_accept` now pads
+  its result, so a mutation reaches its full failure set.
+- *The nested-command branch removed from the omni gate*: exactly the
+  `\textbf{\al`: omni closed check fails.
+- *The math wrap disabled in `helpers.lua`*: exactly five checks fail, the
+  `\alpha` prose wrap and the four `\frac` jump checks, whose expected text
+  carries the `$…$`.
+
+The two checks added at the close (`:SnippetsReload` keeps its counts; a
+hand row shadows its generated twin) were not mutation-run.
+
+**2026-09-13, stage 4**, one mutation of the same kind of copy, *the
+`snippets.active` override removed from `completions.lua`*: exactly the
+`ft_func` pin fails (24 calls for 12 keystrokes, want 0).  The `<Tab>`
+expansion check passes either way, as it must: it pins what the override
+preserves, not what it removes.  A second mutation the same day, *the
+`VimtexEventInitPost` autocmd removed from `loader.lua`*: exactly the
+pre-warm pin fails (no pre-warm state, want done) and the other 70 pass,
+the request path still registering the closure on its own. The shadow check
+cannot pass vacuously: it compares the list of `\frac` rows to exactly the
+injected row's id, so a loader that listed `hand-local` after the generated
+files, or a transform that kept the second row, both fail it. Its first run
+did fail, for a reason worth knowing: the patch that wrote it ate one level
+of backslashes and the injected trigger became a form feed plus `rac`.
 
 (Historical, against the original pre-2026-08-22 tree of the then-23 checks:
 `16 passed, 7 failed — one matchparen, three prose-gating, three auto-save`.)
@@ -193,15 +277,26 @@ scheduled callback runs during it and measures nothing. Use a busy loop.
 Separate from per-keystroke cost, and much larger. VimTeX resolves every
 `\usepackage`'d package by spawning `kpsewhich`, then reads the `.sty` it
 finds, caching both under `~/.cache/vimtex`. The completeness chapter's root
-pulls in **97 packages**, and on `fedxps` one `kpsewhich` spawn costs ~190 ms —
-which is *process startup*, not the lookup: `kpsewhich --var-value TEXMFHOME`,
-which looks nothing up, costs the same.
+pulls in 111 packages (97 before the french-logic unit split), and on `fedxps`
+one `kpsewhich` spawn costs ~190 ms in power-saver mode — which is *process
+startup*, not the lookup: `kpsewhich --var-value TEXMFHOME`, which looks
+nothing up, costs the same.
 
-Measured: **18,676 ms for the first `\command` completion with a cold cache,
-against 235 ms warm.** It is paid synchronously on the first backslash you type
-in a session, and it recurs whenever the cache goes cold — a TeX Live release
-upgrade, a new machine, `:VimtexClearCache`, or a document whose preamble
-brings in packages not seen before.
+Where it is paid has moved with the completion layer. Measured 2026-08-22:
+**18,676 ms for the first `\command` completion with a cold cache, against
+235 ms warm**, on the first backslash typed in a session, because VimTeX's
+command completer was in the menu then. Since 2026-09-12 that completer is out
+of the menu, and since 2026-09-13 VimTeX's argument completers are back inside
+braces through blink's omni provider, so the scan is paid at the **first
+`\begin{`** of a session (or `<C-x><C-o>`): 13.3 s cold on the chapter with
+111 packages, 28 to 31 ms primed; 356 ms cold on this suite's fixture (stage 4
+of the completion campaign, `docs/latex-completion-campaign-2026-09/PLAN.md`
+section 3). It recurs whenever the cache goes cold — a new machine,
+`:VimtexClearCache`, or a document whose preamble brings in packages not seen
+before; a TeX Live release upgrade does *not* empty it (the cached paths keep
+resolving; the risk there is staleness). `\usepackage{` is a separate 0.9 s
+per session that no cache covers: VimTeX lists `kpsewhich --all ls-R` per
+session and stores nothing.
 
 Reproduce it deliberately by pointing the cache elsewhere:
 
@@ -210,4 +305,6 @@ nvim --cmd "let g:vimtex_cache_root='/tmp/cold'" chapter.tex
 ```
 
 The remedy is `bin/vimtex-warm`, which pays it on purpose rather than
-mid-sentence.
+mid-sentence. This suite runs against the live cache, so its instances are
+primed and never see the stall (and each leaves a `bibcomplete%tmp%…` file
+there: `TODO.md` item 20 is the scratch cache root).

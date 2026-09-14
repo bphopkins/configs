@@ -1,0 +1,19 @@
+NOTICE
+
+The Lua files in this directory are generated data. Each was converted
+mechanically from one completion word list (a .cwl file) in the
+completion/ directory of TeXstudio, by nvim/lua/snippets/snipgen.py in
+this repository, from the TeXstudio git commit named in the file's
+header. Nothing here is hand-edited; a change belongs in the generator
+or upstream.
+
+TeXstudio (copyright Benito van der Zander, Jan Sundermeyer, Daniel
+Braun, Tim Hoffmann and its contributors) is distributed under the GNU
+General Public License, version 3. The word lists are part of that
+distribution; their own header comments, which credit their authors,
+are carried into each generated file.
+Source: https://github.com/texstudio-org/texstudio
+
+As derived works of those lists, the files in this directory are
+distributed under the same licence. A copy is in COPYING beside this
+notice. No other part of this repository is covered by this notice.

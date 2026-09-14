@@ -1,0 +1,22 @@
+% fixhub.sty for tests/snipgen: the hub of the .sty front end's fixture, one construct
+% per rule of PLAN.md section 2.  fixhub-unit.sty beside it carries the definitions.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{fixhub}[2026/09/13 fixture hub: requires, gating,
+  a multi-line description]
+%% The sibling unit is generated with the hub and listed as an include; the second
+%% and third requires of it are dropped from the includes.
+\RequirePackage{fixhub-unit}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[backend=biber,useprefix=true,
+                sortcites=true]{multiline}
+\RequirePackage{alpha, beta}
+\RequirePackageWithOptions{gamma}
+\usetikzlibrary{arrows, shapes}
+\RequirePackage{fixhub-unit}
+\newif\iffixhub@extra \fixhub@extratrue
+\iffixhub@extra\RequirePackage{delta}\fi% gated like the real hub, still a require
+\iffixhub@extra\RequirePackage{fixhub-unit}\fi
+%% The hub's own row; the unit defines the same name and its copy is dropped.
+\newcommand{\shared}{\relax}
+%\newcommand{\ghost}{commented out, never a row}
+\newcommand{\fl@internal}[1]{#1}% an @ name is internal to the package

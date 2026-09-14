@@ -17,9 +17,10 @@ artifact (prune declined 2026-08-26); not a charter — leave it alone.
   unless `structure` is off. ⚠ **Shared, snippet-coupled
   dependency**: `dissertation/`, `teaching/live-lecture/`, and parts of
   `teach-logic/` load the stowed copy, so edits here ripple into all of them.
-  The Neovim snippet library regenerates automatically on the next Neovim
-  start (sha-stamp check), but the vimtex highlight registrations are
-  maintained **by hand** — see `nvim/CLAUDE.md` (snippets, custom syntax).
+  The Neovim snippet files (`nvim/lua/snippets/sty/`, one per unit)
+  regenerate automatically on the next Neovim start (per-file sha stamps),
+  but the vimtex highlight registrations are maintained **by hand** — see
+  `nvim/CLAUDE.md` (snippets, custom syntax).
   The map is `french-logic/README.md`, the inventory `french-logic/AUDIT.md`;
   run `tests/french-logic/run.sh` after any edit. The reorganisation campaign
   of 2026-09-07/08 is concluded; its four briefs are the dated record in

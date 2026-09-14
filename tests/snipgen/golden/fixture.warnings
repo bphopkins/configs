@@ -1,0 +1,7 @@
+fixture.cwl: environment row unparsable, skipped: \begin{enumerate][widest label]
+fixture.cwl: unknown classification letter Q: \weird{arg}#Q
+fixture.cwl: bare backslash row skipped (the format cannot express it): \#{number of nuclei}#/experimental
+fixture.cwl: bare backslash row skipped (the format cannot express it): \
+fixture.cwl: row without a leading backslash skipped: a4wide
+fixture.cwl: unknown directive treated as a comment: #ifOpton
+fixture.cwl: keyvals block not terminated at end of file: #keyvals:\unterminated

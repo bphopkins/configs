@@ -948,3 +948,331 @@ measurements. Verdicts, each with its number:
 Records: `nvim/CLAUDE.md` (three clauses), `docs/insert-latency-2026-08.md`
 (addendum), `tests/nvim-latency/README.md` (reference-table note and the
 `--file` duration trap).
+
+## nvim/LaTeX: completion rebuilt on TeXstudio's model — 2026-09-13
+
+Two planning chats (2026-09-12 and 13) and five build chats (2026-09-13), all
+on fedxps. The LaTeX completion layer of `nvim/` was rebuilt on TeXstudio's
+model: one snippet library per package, generated from TeXstudio's completion
+word lists and from this repository's french-logic package, loaded per document
+from VimTeX's package table; VimTeX's argument completers in the same menu
+through blink's built-in omni provider; TeXstudio's context behaviours; and a
+record trail. The plan is `docs/latex-completion-campaign-2026-09/PLAN.md`,
+annotated closed 2026-09-13 – section 1 is the full form of every verdict
+below, section 2 the rules as built, section 3 every measurement, section 9 the
+spikes – with the comparison record `comparison-2026-09-12.md`, his study
+`texstudio-summary.md`, the briefs (`next-chat*.md`, each annotated at its
+head with its successor) and the probes (`spikes/README.md`) beside it. TODO
+items 8 and 15 closed with it (below). The generated data is 4,419 files under
+`nvim/lua/snippets/pkg/` (38 MB on disk) and 15 under `sty/`; the suites are
+`tests/snipgen` (22 checks), `tests/nvim-latency` (71) and `tests/nvim-syntax`
+(56), all green on fedxps at the close. bigfed is pending: its twin clone and
+its stage-4 numbers are the successor brief's queue, to be annotated here when
+they land.
+
+Verdicts, each asked with its measurement or measured in a spike;
+comparison-record sections in brackets.
+
+- **The source is the cwl corpus, whole.** Only `#S` (hidden) and `#B`
+  (colour-name) rows are dropped, the two TeXstudio's completer hides. The
+  LaTeX Workshop file was a lossy copy of a tenth of the data (2.4); the corpus
+  adds about 450 missing math commands (2.5) and named placeholders, and its 13
+  wrong arities and 21 artefacts vanish by construction. Every one of the 4,524
+  cwl files is converted, no package list and no `.fls` tracing on any machine:
+  TeXstudio compiles all of them into its binary, and the years of old
+  documents on bigfed need no step of their own. Excluded by rule:
+  expl3-commands, and any file with neither a row nor an `#include` outside
+  option blocks (104, fontenc among them); a file with only includes is
+  generated so the loader can follow them, and inputenc keeps its four rows.
+  Weight, measured before his call: 24 MB of cwl becomes 29.3 MB of Lua (38 MB
+  on disk, `logix.lua` the largest at 392 KB) against a 4.35 MiB pack, about
+  11% of files change a year, `--all` runs in 4.3 s. The earlier draft that
+  traced about 200 packages from this machine's `.fls` files is declined.
+- **`pkg/` is committed to the public repo, with attribution.** His call. Every
+  generated file names its cwl source, its sha256, the clone's commit and date,
+  and carries the cwl's own leading comment block, which credits its authors;
+  `pkg/NOTICE` states that the data derives from TeXstudio's word lists (GPL-3)
+  and `pkg/COPYING` is the licence text from the clone. He commits, nothing
+  here commits; `gpushall` prompts only for a file over 25 MB or matching a
+  secret glob, so the first push should list the 4,419 files once and ask
+  nothing (the largest is 392 KB; the push itself had not happened at the
+  close). Because the files travel by the normal sync, bigfed needs no clone;
+  regeneration and `--all --check` run where the clone exists
+  (`~/Desktop/texstudio`, pulled `--ff-only` by hand, at `0362907c2`
+  throughout).
+- **One file per package, loaded per buffer.** Each file carries an `includes`
+  header (the cwl's `#include` lines). The loader is LuaSnip's filetype
+  function: on the request path it reads `b:vimtex.packages` and the document
+  class (0.09 ms), adds the always-loaded core three (tex, latex-document,
+  latex-dev), closes over the headers transitively and registers a file once
+  per session under `pkg-<name>`, so a definition appears once however many
+  packages carry it (3); a package table refreshed by a compile is seen at the
+  next request. The filetype order decides which of two identical rows wins:
+  `tex`, the hand file, the document, the core three, the class, the closure in
+  walk order. Files are read by path with `dofile` (names carry dots). A name
+  with no file is skipped silently and named by `:SnippetsReport`;
+  `:SnippetsReload` re-reads everything and cleans LuaSnip's invalidated rows
+  (spike: without `clean_invalidated({ inv_limit = 0 })` the old rows stay
+  listed).
+- **The french-logic files come from the `.sty`, into a sibling directory
+  `sty/`.** The old generator's parsing moved into `snipgen.py --sty`: one file
+  per unit plus the hub, the hub's includes naming its 14 units and each unit's
+  its own requires, so the closure is the loader's transitive walk as for every
+  cwl file – TeXstudio's own answer for a package without a list, and the
+  fallback whenever there is no fresh `.fls`. A sibling directory because
+  `--all` deletes any `pkg/*.lua` without a cwl source and `pkg/NOTICE` claims
+  GPL-3 over that directory, and both stay exactly true. Read: the braced
+  `\newcommand` family, `\newenvironment`, `\newtheorem`,
+  `\DeclareMathOperator` and `\DeclareMathSymbol` (`\Yright`, `\shortminus`,
+  `\strictif`, math-wrapped by construction); `@` names skipped; 544 rows over
+  540 names, the old 537 plus the three symbols, no trigger with `~`. An
+  optional argument gives two rows, the bare and the bracketed: his usage is 93
+  bare `\tcite` against 40 with a locator, 8 against 0 for `\pcite`, 42 and 15
+  bare proof and proofsketch against none bracketed, so the old single row with
+  its bracket always inserted was being hand-corrected. No deduplication
+  against the core three for `.sty` rows: four coincide (`\emptyset`, `\iff`,
+  `\models`, `\to`), the request-time transform drops them, and `--sty` reading
+  nothing but `.sty` files is what lets the startup check regenerate
+  byte-identical files on bigfed without the clone. One `sty-sha256` stamp per
+  file over its own bytes replaces the blob stamp; the startup check in
+  `snippets.lua` compares the 15 and regenerates on a mismatch (0.9 ms to
+  check). `--coverage` moved verbatim. `\poscite`, whose arity is biblatex's
+  and not in its definition, is deferred.
+- **Unusual rows (`#*`) are generated, sunk by a small constant, the flag
+  kept.** His usage of unusual-marked commands is half a percent of stock
+  tokens, all preamble plumbing (2.6); the prior is sound and nothing is
+  hidden, no toggle. The sink is subtracted from the provider's own offset
+  (10), never a replacement (a replaced offset of −50 buried the row below
+  unrelated matches); its value is 5 (stage 4, below). The description ends
+  with a dim `∗`; the marker first, so that a cut never removes it, is his call
+  and deferred.
+- **One row per distinct signature; the shape in the description column.** The
+  label is the plain command, the column TeXstudio's list row minus the name
+  (`[position]{width}{text}`; for an environment the whole first line,
+  `\begin{alignat}[alignment]{ncols}`), the on-highlight window the full
+  expansion with named placeholders and the `\end`. Starred forms are separate
+  rows. Placeholders follow TeXstudio's rule with one measured extension: every
+  bracket group of any kind is one placeholder named by its content, `(x,y)`
+  one per group; in a row with explicit `%<…%>` markers the bare groups
+  attached to the row's own command are filled too, so `[scale=%<1%>]{file}`
+  gives two stops where TeXstudio gives one, and groups after that chain stay
+  literal. A `\begin{env}` row becomes the environment plus a body line and
+  `\end{env}`, `\item` in the body when any row of that environment, in the
+  file or the core lists, ends in `\item` (TeXstudio chops the `\item`, merges
+  the pair by hash and hard-codes it for itemize, enumerate and description).
+  `#keyvals` blocks are kept raw as a fifth field of the file, for the deferred
+  key-value tier. `cwlAliases.dat` needs no emission (401 entries, six not
+  derivable from the class name, none his). He gave the itemize, marker-row and
+  keyvals answers tentatively; reversing any is a generator change plus a
+  regeneration.
+- **Context behaviours are TeXstudio's.** A math-only row (`m`) expanded in
+  prose is wrapped in `$…$` at expansion time and bare inside math, through
+  function nodes asking `vimtex#syntax#in_mathzone()` (0.05 ms); a sweep of the
+  73 math-only commands he uses over all 41 dissertation files found 1,023 uses
+  in math and none in prose (100 apparent hits were commented-out code), so
+  there is no exception list. A row restricted to an environment (`/env`) is
+  hidden outside it, the innermost environment looked up once per request;
+  nearly moot for his packages (six typical rows, all hyperref form fields) and
+  kept because it is cheap.
+- **VimTeX's argument completers join the menu through blink's built-in `omni`
+  provider.** Enabled inside a `\command{…` context and nowhere else, and the
+  snippets provider while a `\command` name is typed and nowhere else, a
+  command name typed inside another command's braces (`\textbf{\al`) counting
+  as a snippets context. VimTeX's own completer patterns decide which braces
+  yield rows, and its command completer never fires: the 2026-09-12 drop of the
+  vimtex source stands. This fixed the measured `\begin{` breakage (2.7:
+  `\begin{\begin{align*}` on one line and `\end{align*}}` two below) and closed
+  item 15. The gate's look-behind window stays at 300 characters; the path
+  provider is unchanged.
+- **`\begin{` gives TeXstudio's environment template, over the union of
+  VimTeX's names and the loaded files'.** The omni transform rewrites each row
+  into a snippet-format edit – `name}`, a body line, `\end{name}` – extended
+  over the auto-paired `}`, with `\item` in the body for a list environment
+  (one whose begin code opens itemize, enumerate, description or a list already
+  known, to a fixpoint; exact on all 24 french-logic environments, where the
+  old name heuristic missed axiomproof), then appends every environment name of
+  the buffer's files and its document that VimTeX did not return, stamped with
+  the fields blink puts on a provider's own rows. Measured: VimTeX knows an
+  environment from its own 202 data files, the project's `\newenvironment`
+  lines and a scan of the packages a fresh `.fls` names; the fixture (no
+  `.fls`) got 65 names and none of french-logic's 25, the root (`.fls` of
+  2026-08-09) 179 and none, the completeness chapter (`.fls` of 2026-09-12) 171
+  and all 25; the fixture's closure knows 212 names, of which VimTeX's data
+  knows 125. Declined: a `regTrig` environment snippet (blink inserted the
+  pattern text), a pre-expand callback editing the buffer (blink fixes the
+  clear region first), VimTeX's names only (french-logic environments would
+  appear only after a fresh compile), a custom blink source for `\begin{`
+  (cleaner separation, twice the code).
+- **Document-local commands complete with arity, from the whole main file,
+  re-read when its mtime changes.** One stat per request, 0.06 ms per re-read
+  on the root's 142 lines; the `.sty` rules ported to Lua in `helpers.lua`, the
+  rows registered under the document's own pseudo-filetype. The whole file
+  because the dissertation defines three of its six own commands after
+  `\begin{document}`. Declined: the preamble only; the whole project through
+  VimTeX's parser memoised on the project mtime (11.6 ms per re-parse on the
+  root, 3.7 on a chapter); the same refreshed on compile success (a definition
+  would appear only after the next successful compile).
+- **Dedupe in two places, never at registration.** At generation a package row
+  identical to a row of the core three is dropped (74 of the closure's 117
+  cross-file duplicates; VimTeX's converter does the same); at request time the
+  snippets transform drops a repeated (label, description), keyed by a string
+  memoised per snippet id, which is also what lets a hand row shadow a
+  generated one. Dedupe at registration would make a row's home depend on which
+  document loaded first.
+- **Triggers are plain `\name`.** The trailing `~` on every old trigger was an
+  old chat's misreading of blink's menu; tilde-less triggers expand correctly
+  whether typed in full or in part.
+- **Option blocks (`#ifOption`) are skipped by default.** They matter for
+  babel, biblatex and fontenc only (2.5) and his biblatex options select zero
+  lines; `--option PKG:OPT` enables one for a run, and the generator's options
+  table is empty.
+- **Hand libraries survive as hand files.** `hand/bibtex.lua` holds the 32 bib
+  entry templates, without their `~`; `hand/local.lua` is his and starts empty.
+  `latex-workshop.lua`, `french-logic.lua` and `sty-lua-snippets.py` are
+  retired.
+- **Both transforms are idempotent, and every appended row carries blink's
+  stamps.** blink re-applies a provider's transform when it resolves an item,
+  stamps `source_id`, `source_name`, `cursor_column`, `score_offset` and `kind`
+  on a provider's rows before the transform, and adds the provider's offset to
+  each row first; so the sink is assigned from the offset rather than
+  decremented, the template rewrite is guarded, and a row the transform adds
+  carries the stamps or the accept path errors inside blink (found on the
+  harness).
+- **Stage 4, measured then tuned.** blink's luasnip preset answered
+  `snippets.active()` with LuaSnip's `expandable()` – every registered trigger
+  of the buffer's filetypes matched against the line – on every `InsertCharPre`
+  and `TextChangedI`, where the answer is discarded: 3.5 ms per prose keystroke
+  at the end of the fixture's longest line (23 to 19 ms), and the closure load
+  on the first insert-mode keystroke of a session, whatever it was. Applied as
+  objective: `completions.lua` answers `active()` from LuaSnip's session and
+  keeps the expandable check for `<Tab>`/`<S-Tab>`, the four `<Tab>` corners
+  measured identical in fresh instances, two pins. His round, asked with the
+  measurements: **the sink stays at 5** (frecency never lifts a snippet row,
+  blink's sort already lists a typical row before its unusual twin, 5 moved no
+  row in any probe and 10 buried one); **the closure is pre-warmed in idle
+  time** after `User VimtexEventInitPost`, one file per 10 ms tick (100 files
+  in 2.5 s on the harness, 104 in 3.6 s on the chapter), the request path
+  unchanged as the fallback; **the description column is 45 cells** (2.3% of
+  the chapter's rows still cut, from 9.9% at blink's 30; the `∗` is the last
+  character and the first thing a cut removes). Declined: sink 0 (un-decides
+  the small sink for no observed gain), sink 10 (buries), a synchronous
+  pre-warm at init, the widths 30, 40 and 60. The live look the same day:
+  `\name`, `\cite{`, `\begin{` and a math-only row in prose all as intended,
+  the math awareness the surprise, nothing reported wrong.
+
+**The numbers of stage 4.** fedxps in performance mode, both trees under one
+machine state, interleaved: the live tree against a scratch extraction of the
+committed pre-campaign tree (`1bb69b1`, 1,054 snippets). Per keystroke at the
+end of the fixture's 2,069-character line, medians of three runs: inside a
+command name 53 ms before and 54 after (p90 56 and 64); in prose 19 before, 23
+after as landed and 19 after the `snippets.active` fix. Per request in a
+command name the luasnip source costs 12 to 13 ms (0.8 to 1.1 before: blink's
+shallow copy of 7,760 rows against 1,054), the Rust fuzzy pass 5.4 ms per call
+(0.9), the live transform 0.6 ms; six requests for 35 keystrokes in both trees,
+none in prose. The transforms at the full row count, isolated: 7,758 rows, cold
+memo 5.2 ms, warm 1.4; blink's per-request copy 5.9 ms and its show_condition
+pass 3.3 ms (233 rows hidden in prose); the omni transform at `\begin{a` 0.7 to
+2.3 ms with 137 rows, VimTeX's env completer 23 ms for the empty prefix and 2
+ms for `a`, `loader.envs()` 0.35 ms. The first keystrokes of a session, fresh
+instances, medians of three: entering insert mode 107 ms in both trees; the
+closure load 660 to 750 ms (`ft_func`), which as landed fell on the first
+insert-mode keystroke, after the `active` fix on the first completion request,
+and after the pre-warm in idle time; that request's own first build 25 to 75 ms
+for the source items, 6 to 22 transform, 18 to 19 fuzzy, the menu 32 to 43 ms
+after the keystroke; the second request 27 ms to the menu (before: 15 and 10).
+After the pre-warm the first request finds `ft_func` at 0 ms and the menu 27 to
+38 ms after the keystroke; typing within the first second leaves about 100 ms
+of registration on that request. Memory: the closure adds 123 MB of Lua heap
+after a full collect and 174 MB of RSS (before: 1 and 4; headless on the
+chapter, heap 10 to 151 MB, 129 after a full collect, 603 ms to execute and
+add, 61.5 µs a row). Startup to VimEnter with the fixture, headless, five runs:
+216 ms after against 285 before (the old layer built its 1,054 snippets at
+`FileType`); the per-file stamp check 0.9 ms. The sink against frecency, a
+fresh store per condition: accepting `\AmSfont` three times from `\AmS` changed
+nothing at 0, 3, 5, 8 or 10, because blink hands an accepted LuaSnip row to the
+source's own `execute`, which never reaches `fuzzy.access` (wrapped: zero
+calls; the store stayed at 0 bytes); at 0 the fuzzy score already puts `\AmS`
+(99) over `\AmSfont` (91), at 5 the first three rows keep their order, at 10
+`\AMSautorefname` drops below the unrelated `\atoms`. The cold package cache on
+the chapter (111 packages, a scratch cache root): `\begin{a` 13.3 s cold, 28 ms
+in the same session and 31 ms in a new session on the primed root, so
+`vimtex-warm` suffices for `\begin{`; `\usepackage{a` 1.3 s cold and 0.9 s in
+every new session (VimTeX lists `kpsewhich --all ls-R` per session and caches
+nothing on disk), 11 to 23 ms after. On the fixture: `\begin{a` 356 ms cold, 16
+to 21 primed; `\usepackage{a` 0.8 s per session. The backslash that opens a
+command is itself a request in both trees (blink asks the source on the lone
+`\` and refilters the letters locally): 21 ms in the old tree, 50 ms (p90 63)
+in the new, so a command word costs about 30 ms more once, at its backslash,
+and the same per letter after; cutting that means fewer rows per request or a
+source of our own rather than LuaSnip's, and is not proposed. The section 9
+before figures (146 and 92 ms, balanced mode) were not reproduced: the same
+pre-campaign tree measures 53 and 19 in performance mode, the power mode
+explains part, the rest is unexplained.
+
+**Item 8, closed.** The two libraries the item named are gone, and with them
+the 13 wrong arities and 21 artefacts of the generic file. Nothing is
+hand-edited under `pkg/` or `sty/`: a systematic oddity is a generator change
+proved by `tests/snipgen` and a regeneration; a package quirk is a `.sty`
+change, which the startup check regenerates from; and the one-off divergence
+the item had no mechanism for is a row in `hand/local.lua` with the generated
+row's label and description, which shadows it by the loader's order and the
+request-time dedupe (pinned by the latency suite). The generator overrides
+table the item contemplated was not built; the hand file covers the case it was
+for. The item's checklist, moved here verbatim:
+
+- [x] Fix bulk-generation oddities in the two snippet libraries as they surface
+  in real use — no sweep, just capture-and-correct when noticed.
+  @done(2026-09-13) — both libraries retired with stage 3; the rule above
+  replaces the two-files-are-opposites rule.
+
+**Item 15, closed** at stage 3. The brace branch is closed to snippets inside
+every `\command{…}` and open to VimTeX's completers through the omni provider,
+so `\cite{che` no longer fuzzy-matches the snippet triggers against the key;
+`\begin{` is served by the template over the union. The item's premise had been
+measured false on 2026-09-13 (accepting a row at `\begin{ali` wrote
+`\begin{\begin{align*}` and left the auto-paired `}`); the exact output is
+pinned. The item's checklist, moved here verbatim:
+
+- [x] Decide whether `in_latex_context()` should stay open inside every
+  `\command{...}` or only after `\begin{`/`\end{`. @done(2026-09-13) — two
+  gates now: snippets while a command name is typed, omni inside its braces;
+  the `\cite{`/`\ref{` suite checks flipped to snippets-closed and omni-open,
+  the 300-character window pins moved to the omni gate.
+
+**Post-mortem.** *Built:* `snipgen.py` (the cwl front end with `--all`,
+`--cwl`, `--check`, `--option`; the `.sty` front end with `--sty` and
+`--coverage`); `pkg/` with `NOTICE` and `COPYING`; `sty/`; `loader.lua`
+(registration on demand, the document parse, `envs()`, the idle pre-warm,
+`:SnippetsReport`, `:SnippetsReload`); `helpers.lua`; `hand/`; the thin
+`snippets.lua` with the per-file stamp check; `completions.lua` (the two gates,
+the omni provider in the TeX source lists, the two transforms, the
+`snippets.active` override, the 45-cell column); `tests/snipgen` (22 checks,
+two mutations recorded, the goldens written by hand before the parser existed
+and met byte for byte); the latency suite from 42 to 71 checks with five
+mutations recorded; `tests/stylua.toml`. *Declined,* beyond the per-verdict
+list above: a package list of any kind; the stage-2 alternative of reading the
+core keys from our own generated files; a custom blink source in place of
+LuaSnip's (the one route to a cheaper backslash). *Deferred* to `TODO.md`,
+opened at the close: key-value completion inside `[…]` (4,486 keys for 178
+targets in the dissertation's closure), with the 77 keyvals-only cwl files the
+empty-file rule skips; a comment convention in the `.sty`, read by `--sty`, for
+named placeholders (99 of french-logic's 100 bare), math-only marking and
+`\poscite`'s arity; ranking from his corpus frequency in place of the `#*`
+prior, and the `∗` before the shape; autogenerating a bare list for a package
+with no cwl (his mod-cv, eptcs and deon16, the old documents on bigfed); the
+harness's hygiene (a scratch `cache_root` and `XDG_STATE_HOME` by default: each
+instance writes a `bibcomplete%tmp%…` file into the live `~/.cache/vimtex` and
+its accepts feed the live frecency store); a bench sitting for the five stray
+colours (1.4). *Left as observed* (PLAN.md section 8): the two looks of the
+`\begin{` list (VimTeX's rows with the field icon and a package tag, the loaded
+files' with the snippet icon); `in_env` reading the innermost environment only;
+the 24 to 33 includes with no file that `:SnippetsReport` names, most of them
+keyvals-only or expl3 files skipped by rule; `\usepackage{` at 0.9 s per
+session, which nothing primes; the unreproduced balanced-mode before figures.
+
+Records: `nvim/CLAUDE.md` (Completion and Snippets rewritten, the cold-cache
+rule, the suites list), `nvim/README.md` and `latex/french-logic/README.md`
+(the tooling bullets), `CLAUDE.md` here (`tests/snipgen`),
+`~/Desktop/CLAUDE.md` (the `texstudio/` clone), `tests/nvim-latency/README.md`
+(the flipped and added checks, the five mutations), `tests/snipgen/README.md`,
+and the campaign directory `docs/latex-completion-campaign-2026-09/`.

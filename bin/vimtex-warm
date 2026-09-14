@@ -5,12 +5,18 @@
 # reading the .sty it finds, caching the result under ~/.cache/vimtex.  On this
 # machine kpsewhich costs ~190 ms per spawn (that is process startup, not the
 # lookup: `kpsewhich --var-value TEXMFHOME`, which looks nothing up, costs the
-# same).  For a document with ~100 packages that is ~19 s, and it is paid
-# synchronously on the FIRST backslash you type in a session with a cold cache.
+# same).  For a document with ~110 packages that is 13 to 19 s, and it is paid
+# synchronously the first time a VimTeX completer needs it in a session with a
+# cold cache: since 2026-09-13 that is the first `\begin{` (or <C-x><C-o>), no
+# longer the first backslash (VimTeX's command completer left the menu on
+# 2026-09-12).  `\usepackage{` is a separate 0.9 s per session that no cache
+# covers; nothing here helps it.
 #
-# Run this after anything that invalidates the cache — a TeX Live release
-# upgrade, a new machine, `:VimtexClearCache` — or just once for a new document
-# whose preamble you have not opened before.
+# Run this after anything that empties the cache — a new machine,
+# `:VimtexClearCache`, deleting an old TeX tree — or just once for a new
+# document whose preamble you have not opened before.  A TeX Live release
+# upgrade does NOT empty it: the cached paths keep resolving, and the risk
+# after one is staleness, cured by `:VimtexClearCache` and a deliberate re-run.
 #
 # Usage:
 #   vimtex-warm FILE.tex...            warm these documents

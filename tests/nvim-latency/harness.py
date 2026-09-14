@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - reported by run.sh
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURE = os.path.join(HERE, "fixture.tex")
+FIXTURE_BIB = os.path.join(HERE, "fixture.bib")  # VimTeX's citation completer reads it (2026-09-13)
 
 
 class Nvim:
@@ -32,6 +33,8 @@ class Nvim:
         self.tmp = tempfile.mkdtemp(prefix="nvim-latency-")
         self.doc = os.path.join(self.tmp, "fixture.tex")
         shutil.copy2(FIXTURE, self.doc)
+        if os.path.exists(FIXTURE_BIB):
+            shutil.copy2(FIXTURE_BIB, os.path.join(self.tmp, "fixture.bib"))
 
         # NVIM_LATENCY_CONFIG points the suite at a different Neovim config
         # tree — used to mutation-test it against the pre-fix code, which is

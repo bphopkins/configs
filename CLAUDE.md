@@ -101,6 +101,11 @@ in-progress guards, offline handling, hints — and their scope live in
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
 
+**Run `tests/snipgen/run.sh` after any edit to `nvim/lua/snippets/snipgen.py`
+or to `latex/french-logic/`**; the snippet libraries under
+`nvim/lua/snippets/pkg/` and `sty/` are generated, committed data, never
+hand-edited (`nvim/CLAUDE.md`, Snippets).
+
 `tests/term-bench/` holds the terminal-comparison harnesses — flood throughput,
 SGR-density and SGR-encoding sweeps, a **repaint** bench replaying a recording of
 a real nvim session, and round-trip latency idle *and under load* — plus a README

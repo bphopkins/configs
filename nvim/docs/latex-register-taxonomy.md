@@ -5,7 +5,8 @@ Living contract for the colour scheme implemented in
 (colours), and `after/syntax/tex.lua` (environment-name families).
 Present-tense truth: edit in place when the scheme changes. The
 regression suite is `tests/nvim-syntax/`; the registration/`.sty`
-coverage check is `sty-lua-snippets.py --coverage`.
+coverage check is
+`snipgen.py --sty latex/french-logic/french-logic.sty --coverage`.
 
 The scheme's brief: colours encode the philosophy-of-logic structure of
 the writing surface — what kind of thing each token is, on which level

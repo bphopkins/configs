@@ -107,40 +107,6 @@ tree with no further step. All are clean today.
 
 ---
 
-## 8. Gradually perfect the generated snippet libraries
-
-- [ ] Fix bulk-generation oddities in the two snippet libraries as they surface
-  in real use — no sweep, just capture-and-correct when noticed.
-
-Raised 2026-08-22. The libraries were generated in bulk and small mistakes got
-internalized; they function well, but as the permanent snippet source they are
-worth perfecting over time ("if these end up being my source for the rest of
-time, then it's worth gradually perfecting them from here").
-
-**The one rule that makes fix-as-noticed work — the two files are opposites:**
-
-- `latex-workshop.lua` is a one-time conversion with no generator behind it:
-  **hand-edit it freely**; edits are durable (`.styluaignore`d too, so nothing
-  reflows them).
-- `french-logic.lua` is **regenerated wholesale** whenever `french-logic.sty`
-  changes (sha-stamp check at every Neovim start) — **a hand edit there is
-  silently obliterated by the next `.sty` change.** Durable fixes go into the
-  generator (`sty-lua-snippets.py`) when the oddity is systematic, or into the
-  `.sty` itself when the snippet faithfully mirrors a package quirk. Precedent
-  for the generator route: the 2026-07-26 env-optional-default refinement
-  (`\proof~` dropped its redundant `[\proofname]`) — exactly the shape of
-  change this item expects more of.
-
-If a one-off divergence from generator output is ever genuinely needed (not
-systematic, not a `.sty` matter), there is **no override mechanism yet** —
-designing one is part of this item. Candidates: an exceptions table in the
-generator (precedent: `KNOWN_UNREGISTERED` for `--coverage`), or a third
-hand-curated library file in `lua/snippets/` plus one name in `snippets.lua`'s
-`filetype_extend` (the growth path already noted in
-`docs/nvim-audit-2026-08-22.md`). Note that duplicate triggers across libraries do **not** shadow each
-other — both appear in the menu — so a shadowing scheme needs actual design,
-not just a second file.
-
 ## 10. `gpullall`'s restow hint cannot see a *new* stow package
 
 - [ ] Build the package list for the post-pull hint from the repo's directories
@@ -265,6 +231,144 @@ handle each when a document asks for it, through the two nets (`tests/french-log
 
 ---
 
+## 16. Key-value completion inside `[…]`
+
+- [ ] Build a small custom blink source for key-value completion inside a
+  command's optional argument, fed by the `keyvals` field of the generated
+  snippet files; give the stage-1 empty-file rule its third case, so the 77
+  keyvals-only cwl files are generated too.
+
+Deferred by the LaTeX completion campaign
+(`docs/latex-completion-campaign-2026-09/PLAN.md`, section 6; closed
+2026-09-13). The generated files under `nvim/lua/snippets/pkg/` keep every
+`#keyvals` block raw, as a fifth field keyed by the block's target text: 2,900
+cwl files carry blocks, 109,547 lines, 1.9 MB raw; in the dissertation's
+closure 4,486 keys for 178 targets. Snippets are the wrong instrument for them
+– a key is completed mid-argument, inside `[…]`, against the command it belongs
+to – so this is a third gate in `completions.lua`, inside the brackets that
+follow a command, where neither present gate opens and VimTeX's completers
+offer nothing, and a small source of our own reading the sidecar. The stage-1
+rule skips any cwl file with neither a row nor an `#include` outside option
+blocks, and 77 of the 104 files it skips hold only `#keyvals` blocks (lmodern,
+fontenc, tikzlibrarypositioning among them); this tier wants them, so the rule
+needs a third case, a regeneration (`snipgen.py --all`, where the clone is) and
+a `tests/snipgen` check. The latency suite gains the gate's pins.
+
+---
+
+## 17. A comment convention in the `.sty` for `snipgen.py --sty`
+
+- [ ] Design a comment convention in the french-logic `.sty` files that
+  `snipgen.py --sty` reads: named placeholders for the package's own commands,
+  a math-only mark, and a declared arity where the definition does not carry
+  one (`\poscite`).
+
+Deferred by the completion campaign (PLAN.md section 6). Three gaps with one
+shape. The cwl rows name their placeholders (`{num}{den}`); the `.sty` front
+end reads a definition's arity only, so 99 of french-logic's 100 bare command
+rows have unnamed `{}` stops. A `\newcommand` carries no classification, so
+only the three `\DeclareMathSymbol` rows (`\Yright`, `\shortminus`,
+`\strictif`) are math-wrapped by construction, and every other math-only member
+expands bare in prose where a cwl `#m` row is wrapped in `$…$`. `\poscite` is a
+`\DeclareCiteCommand`, its arity `[pre][post]{key}` biblatex's and absent from
+its definition, so it is not completed at all (as before the campaign). A
+comment beside each definition, in a form the generator reads and TeX ignores,
+serves all three; `tests/snipgen` gets fixture rows for it, the startup check
+regenerates `sty/` at the next Neovim start, and the `.sty` edits go through
+both french-logic nets (`tests/french-logic/run.sh` and the private harness),
+as every edit there does. Related: item 14.
+
+---
+
+## 18. The unusual-row prior: the marker's position, and ranking from his corpus
+
+- [ ] Decide whether the `∗` that marks a TeXstudio "unusual" row goes before
+  the shape in the description column rather than after it, so that a cut never
+  removes it: a generator change and a full regeneration.
+- [ ] Ranking from his corpus frequency as a generator input, in place of the
+  `#*` prior.
+
+Deferred by the completion campaign (PLAN.md sections 6 and 8). The `#*` flag
+is a cwl author's guess at typicality; his usage of unusual-marked commands is
+half a percent of stock tokens, all preamble plumbing, so the flag stays in the
+data and a small static sink (5, under the provider's offset of 10) breaks
+ties. Two facts measured at stage 4 bound the design. The description column is
+45 cells, 2.3% of the completeness chapter's rows are still cut, and the `∗` is
+the last character, the first thing a cut removes. And blink's frecency never
+sees an accepted LuaSnip row (`fuzzy.access` is never called for one; the store
+stayed at 0 bytes across every probe), so usage-based order cannot come from
+the menu and the generator is the only route; `spikes/usage.py` in the campaign
+directory already classifies every command he types over the dissertation,
+which is the input.
+
+---
+
+## 19. Bare lists for packages with no cwl
+
+- [ ] Autogenerate a bare snippet list from the `.sty` or `.cls` of a package
+  that has no cwl, found through kpsewhich, as TeXstudio does for a package
+  without a word list.
+
+Deferred by the completion campaign (PLAN.md section 6). His own classes
+(mod-cv, eptcs, deon16) and the old documents on bigfed name packages with no
+file under `pkg/` or `sty/` and get nothing for them; `:SnippetsReport` lists
+such names under "missing". The `.sty` front end already parses definitions
+with arity, so this is a lookup (`kpsewhich <name>.sty`, about 190 ms a spawn
+on fedxps in power-saver mode, measured 2026-08) plus a run of the same parser,
+cached as a generated file. The design question is where the output lives:
+`pkg/` is covered by `NOTICE` (GPL-3 data from TeXstudio) and pruned by
+`--all`; `sty/` is pruned by the sourceless-file rule of `--sty --check`, which
+removes a file whose header names a path that no longer exists, so a
+kpsewhich-found path would survive there until the tree it points into is
+deleted. A third directory, or a per-machine cache outside the repo, are the
+alternatives.
+
+---
+
+## 20. The latency harness's hygiene
+
+- [ ] Give `tests/nvim-latency/harness.py` a scratch VimTeX `cache_root` and a
+  scratch `XDG_STATE_HOME` by default, the cache seeded from the live one, so a
+  run leaves the live state untouched.
+
+Found at stage 4 of the completion campaign (PLAN.md section 5, the last
+hazard). Each harness instance writes a `bibcomplete%tmp%…` file into the live
+`~/.cache/vimtex` (eight found 2026-09-13), and its accepts feed the live blink
+frecency store (`stdpath('state')/blink/cmp/frecency.dat`), shada and undo
+history. The stage-4 probes isolated both per instance (`spikes/stage4lib.py`:
+`XDG_STATE_HOME` for state, `g:vimtex_cache_root` for the cache) and it works;
+making it the harness's default asserts nothing new, so no check changes. One
+thing to design for: a scratch cache root is cold, and the `\begin{` checks
+would then pay VimTeX's kpsewhich scan in every instance (356 ms on the
+fixture, one package in its table), so copy the live `~/.cache/vimtex` into the
+scratch root per run rather than starting empty. The suite's README records why
+each check exists; record the hygiene there.
+
+---
+
+## 21. A bench sitting for the five stray colours
+
+- [ ] Exhibit on the bench (`docs/latex-register-taxonomy.md`, the Status
+  section) the five theme colours that leak into TeX highlighting unassigned,
+  and land what he accepts.
+
+Found 2026-09-12
+(`docs/latex-completion-campaign-2026-09/comparison-2026-09-12.md`, section
+1.4) and kept out of the completion campaign by his rule: the register taxonomy
+changes only from instances he brings, exhibited on the bench before the config
+is touched (`nvim/CLAUDE.md`). The five: TokyoNight's Special reaches 19
+groups, among them `&` and `\\` in align and tabular (`texTabularChar`;
+TeXstudio gives alignment points a deliberate bold blue), math environment
+names (`texMathEnvArgName`, so `align` is cyan while `proof` is mint and
+`tabular` teal, and the family matches in `after/syntax/tex.lua` never see
+them) and `#1` parameters (`texNewcmdParm`); `texLength` resolves to Constant;
+the todo groups to Todo; the error and warning groups to red and amber,
+arguably right. All are retunes within existing species, no new genus:
+alignment furniture is pure structure, math environment names belong to the
+env-name family. Suite: `tests/nvim-syntax/run.sh` after.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,
@@ -299,36 +403,6 @@ handle each when a document asks for it, through the two nets (`tests/french-log
   background). ~3.6 MB of the repo's 9.2 MB is this directory, which is not a stow
   package.
 
----
-
-## 15. Completion gate: the brace branch now serves only `\begin{`
-
-- [ ] Decide whether `in_latex_context()` should stay open inside every
-  `\command{...}` or only after `\begin{`/`\end{`.
-
-Since 2026-09-12 the vimtex source is out of the menu (DECISIONS.md, that
-date), so inside `\cite{` and `\ref{` nothing useful is offered any more: the
-gate is open there, and blink fuzzy-matches the ~1,050 snippet triggers
-against the partial key (measured: 175 snippet rows for `\cite{che`). The
-branch still earns its keep after `\begin{`, where `\begin{ali` correctly
-surfaces the `align` family. Closing it elsewhere cuts that noise and the
-per-keystroke snippet query while typing keys. If done: the latency suite's
-"gate open inside `\cite{`/`\ref{`" checks flip to closed, and the two
-long-argument checks that pin the 300-char window need a `\begin{`-shaped
-argument instead of a `\cite` key list. Small; a session of its own only
-because it touches the suite.
-
-Annotation 2026-09-13: the premise is measured false. In the latency harness,
-`\begin{ali` does surface the align family, but accepting a row writes
-`\begin{\begin{align*}` on one line and `\end{align*}}` two lines down (the
-snippet replaces only the letters after the brace; the auto-pair's `}`
-survives). The branch is harmful there, not merely noisy. The item closes with
-stage 3 of the LaTeX completion campaign
-(`docs/latex-completion-campaign-2026-09/PLAN.md`), which closes the brace
-branch to snippets and serves `\begin{` through VimTeX's environment names
-turned into templates; the suite check that pins the exact output is listed
-there.
-
 ## Closed
 
 One line per closed item — verdict, date, pointer. Full notes and post-mortems
@@ -345,6 +419,12 @@ are in `DECISIONS.md` under the same item numbers.
   stay declined. Closed 2026-08-13 → `DECISIONS.md` item 5.
 - **6. Sway binding grammar** — the modifier-names-the-target law adopted; container
   tier dropped. Closed 2026-08-22 → `DECISIONS.md` item 6.
+- **8. Gradually perfect the generated snippet libraries** — closed by the
+  completion campaign: the two libraries retired, the generated files
+  (`nvim/lua/snippets/pkg/`, `sty/`) never hand-edited, a systematic fix a
+  generator change, a one-off a shadowing row in `hand/local.lua`. Closed
+  2026-09-13 → `DECISIONS.md`, "nvim/LaTeX: completion rebuilt on TeXstudio's
+  model" (2026-09-13).
 - **9. live-server root wrapper** — explicit directories at both ends plus
   `last_root`; simpler shapes measured lossy. Closed 2026-08-22 → `DECISIONS.md`
   item 9.
@@ -357,6 +437,11 @@ are in `DECISIONS.md` under the same item numbers.
   fourteen units, two nets, the map and the generated inventory, 59 renames, every
   unit ordered, v1.0 released. Closed 2026-09-08 → `DECISIONS.md` item 13; the
   four briefs in `docs/french-logic-campaign-2026-09/`.
+- **15. Completion gate: the brace branch** — two gates now: snippets while a
+  command name is typed, VimTeX's completers through blink's omni provider
+  inside its braces; `\begin{` writes the environment template, the exact
+  output pinned. Closed 2026-09-13 → `DECISIONS.md`, the same 2026-09-13
+  section.
 - Unnumbered closed work (the 2026-08-22 latency fix, lock/notifications, the sway
   restructure, the `scripts` repo retirement, the 2026-07-26 staleness sweeps,
   earlier setup) → `DECISIONS.md`, Done ledger.

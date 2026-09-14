@@ -1,2 +1,2 @@
-lua/snippets/french-logic.lua
-lua/snippets/latex-workshop.lua
+lua/snippets/pkg/
+lua/snippets/sty/

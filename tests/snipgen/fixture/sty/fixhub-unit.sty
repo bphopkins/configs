@@ -1,0 +1,40 @@
+% fixhub-unit.sty for tests/snipgen: every definition form the .sty front end reads,
+% and the ones it must not.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{fixhub-unit}[2026/09/13 fixture unit: the definition forms]
+\RequirePackage{epsilon}
+
+%%% Commands
+\newcommand{\plain}{\relax}
+\newcommand{\two}[2]{#1#2}
+\newenvironment{plainenv}{}{}% among the commands: rows keep source order
+\newcommand{\optdef}[2][blue]{#1#2}
+\newcommand{\optempty}[2][]{#1#2}
+\newcommand{\optmacro}[1][\relax]{#1}
+\renewcommand{\emptyset}{\varnothing}
+\providecommand{\prov}[1]{#1}
+\newcommand*{\starred}{\relax}
+\newcommand{\dup}{a}
+\renewcommand{\dup}[1]{#1}% the last definition gives the shape, the first the place
+\newcommand{\live}{\relax} % \newcommand{\dead}{never a row}
+\newcommand{\shared}{the unit's copy, dropped: the hub defined it first}
+\newcommand{\unit@helper}{internal}
+\newcommand{\split}
+  [1]{#1}
+\DeclareMathOperator{\op}{op}
+\DeclareMathOperator*{\opstar}{op}
+\DeclareMathSymbol{\sym}{\mathbin}{stmry}{"07}
+\DeclareMathSymbol{\fl@sym}{\mathbin}{stmry}{"08}
+
+%%% Environments
+\newenvironment{textdef}[1][Sketch]{#1}{}
+\newenvironment{macrodef}[1][\relax]{#1}{}
+\newenvironment{argenv}[2]{#1#2}{}
+\newenvironment{wrapswraps}{\begin{wrapslist}}{\end{wrapslist}}% a list through one defined later
+\newenvironment{wrapslist}{\begin{itemize}[noitemsep,%
+  leftmargin=1cm]}{\end{itemize}}
+\newenvironment{ownitem}{\begin{list}{}{\setlength{\leftmargin}{2em}}\item[]}{\end{list}}
+\renewenvironment{renewed}{}{}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem*{thmstar}{Theorem}
+\newtheoremstyle{nomatch}{}{}{}{}{}{}{}{}

@@ -3,9 +3,11 @@
 Charter for the `nvim` stow package (LazyVim-based), stowed to
 `~/.config/nvim`. Entry point `init.lua` bootstraps lazy.nvim via
 `lua/config/lazy.lua`. `README.md` here is the directory's viewport document —
-a plugin tour in Brandon's voice; not a charter. The engineering records
-behind the rules below: `docs/insert-latency-2026-08.md`,
-`docs/nvim-audit-2026-08-22.md`, and `DECISIONS.md` (items 2, 9, Done ledger).
+a plugin tour in Brandon's voice; not a charter. The engineering records behind
+the rules below: `docs/insert-latency-2026-08.md`,
+`docs/nvim-audit-2026-08-22.md`, `docs/latex-completion-campaign-2026-09/` (the
+completion layer) and `DECISIONS.md` (items 2, 9, the Done ledger, the
+2026-09-12 and 2026-09-13 sections).
 
 ## Layout
 
@@ -13,7 +15,8 @@ behind the rules below: `docs/insert-latency-2026-08.md`,
   pandoc)
 - `lua/plugins/` — plugin specs; `lua/plugins/inactive/` — disabled, kept
   deliberately (parked experiments)
-- `lua/snippets/` — LuaSnip libraries plus the `sty-lua-snippets.py` generator
+- `lua/snippets/` — the generated libraries (`pkg/`, `sty/`), the `snipgen.py`
+  generator, `loader.lua`, `helpers.lua`, and `hand/` (the two hand-kept files)
 - `after/ftplugin/` — filetype overrides (tex.lua: custom highlight colours)
 - `after/syntax/` — syntax layered on VimTeX (tex.lua: env-name families)
 
@@ -71,57 +74,112 @@ only once at least one package's syntax loads — headless tests need a
 
 ## Completion (TeX filetypes)
 
-blink.cmp (UI) with two sources in TeX buffers, LuaSnip snippets and path
-(`completions.lua`); no LSP. VimTeX's completer **left the menu 2026-09-12**:
-its rows are bare names (its scanner keeps a definition's name, never its
-arity), so every command row duplicated a snippet with less in it, and since
-the package split it offered no french-logic command at all (it scans only
-the hub, from a per-chapter `.fls` that predates the split). cmp-vimtex and
-blink.compat are parked as `enabled = false` fragments; VimTeX's omnifunc
-stays wired, so `<C-x><C-o>` still reaches its citation and label completion
-(pinned). texlab stays declined for the same reason: its command items are
-bare names too, so it cannot serve a snippet-first design; label and citation
-navigation is the only thing it would add. Two rules from the latency work
-still bind:
+Rebuilt on TeXstudio's model 2026-09-13 (the campaign in
+`docs/latex-completion-campaign-2026-09/`: `PLAN.md` section 2 is the contract
+as built, `DECISIONS.md`'s 2026-09-13 section the verdicts). blink.cmp draws
+the menu; in TeX buffers it runs three sources (`completions.lua`) and nothing
+else: `snippets` (LuaSnip, the generated libraries of the Snippets section),
+blink's built-in `omni` provider over VimTeX's omnifunc (citation keys, labels,
+environment names, packages, files) and `path`. No LSP: texlab's command items
+are bare names, so it cannot serve a snippet-first design, and label and
+citation navigation is all it would add (declined 2026-09-12). bib/bibtex
+buffers get snippets (the entry templates in `hand/bibtex.lua`) and path.
 
-- The `snippets` provider is gated on `in_latex_context()` —
-  part-way through a `\command`, or inside the braces that follow one — so
-  the menu doesn't fire over running prose. ⚠ The gate's look-behind window
-  is **300 chars**; 60 was a real bug (completion died mid-`\cite{` once a
-  key list ran long).
-- VimTeX's matchparen is switched off during insert (via its own
-  `vimtex#matchparen#{disable,enable}`), ⚠ guarded on
-  `g:vimtex_matchparen_enabled` — calling `disable()` with the feature off
-  raises `E216` on every `InsertEnter`. Guard + `pcall` backstop are pinned
-  by the latency suite.
+**The two gates** decide which source may fire, each in a 300-character
+look-behind (⚠ 60 was a real bug: completion died mid-`\cite{` once a key list
+ran long):
 
+- `snippets` while a `\command` name is typed (a lone backslash too) and
+  nowhere else, so the menu never fires over running prose;
+- `omni` inside the braces that follow a command, unless a new command name is
+  being typed there (`\textbf{\al` is a snippets context), and nowhere else.
+  VimTeX's own completer patterns decide which braces yield rows; its *command*
+  completer never fires (its rows are bare names; the 2026-09-12 drop stands,
+  and `<C-x><C-o>` still reaches the omnifunc). cmp-vimtex and blink.compat
+  stay parked as `enabled = false` fragments.
+
+Non-TeX filetypes are untouched by both. blink opens the menu on keyword
+characters, not on `{`, so a row inside `\cite{` appears once a letter is
+typed.
+
+**`\begin{`** writes TeXstudio's environment template: the omni transform
+rewrites every environment row into `\begin{name}`, an indented body line
+(`\item` for a list environment) and `\end{name}`, extended over the
+auto-paired `}` so no stray brace survives (the 2026-09-12 breakage wrote
+`\begin{\begin{align*}`), and appends the environment names the buffer's
+snippet files define that VimTeX did not return – VimTeX knows an environment
+only from its own data, the project's `\newenvironment` lines and the packages
+a *fresh* `.fls` names, so without the union no french-logic environment
+appeared until a compile. Pinned exact. ⚠ Both transforms must stay idempotent
+(blink re-applies a provider's transform when it resolves an item), and a row a
+transform appends must carry the fields blink stamps on a provider's own rows
+(`source_id`, `source_name`, `cursor_column`, `score_offset`, `kind`), or
+accepting it errors inside blink.
+
+**The snippets transform** sinks TeXstudio's "unusual" rows (`∗` at the end of
+the description) by a constant of 5 subtracted from the provider's offset of 10
+– never an absolute offset, which replaces the provider's – and drops a
+repeated (label, description) pair, keeping the first, which is how a hand row
+shadows a generated one and a core row its package twin (the loader's order,
+Snippets). Both are table lookups memoised per snippet id: blink shallow-copies
+every cached row per request and runs the transform over the full result. The
+description column is 45 cells (`label_description.width.max`; blink's 30 cut a
+tenth of the chapter's rows, 45 cuts 2.3%; decided with the menu in front of
+him). The sink is a static tie-break: blink's frecency never sees an accepted
+LuaSnip row (`fuzzy.access` is never called for one), so usage cannot lift a
+row (TODO 18).
+
+**`snippets.active` is answered from LuaSnip's session** (stage 4, 2026-09-13).
+blink's luasnip preset ran `ls.expandable()`, a match of every registered
+trigger against the line, on every `InsertCharPre` and `TextChangedI` and
+discarded the answer: 3.5 ms per prose keystroke with the closure's ~7,800
+rows, and it was what first loaded the closure, on the first insert-mode
+keystroke of a session. The override keeps the scan for `<Tab>`/`<S-Tab>` only,
+where a fully typed trigger with the menu closed still expands. ⚠ A blink
+update that adds another no-filter caller brings the cost back; the latency
+suite's `ft_func` pin (prose keystrokes never reach the loader) is what says
+so.
+
+Two rules from the latency work still bind. VimTeX's matchparen is switched off
+during insert (via its own `vimtex#matchparen#{disable,enable}`), ⚠ guarded on
+`g:vimtex_matchparen_enabled` – calling `disable()` with the feature off raises
+`E216` on every `InsertEnter`; guard and `pcall` backstop are pinned. And
 `<Tab>` inside a snippet is named explicitly in `completions.lua` as blink's
-own `snippet_forward` (2026-09-12). LazyVim's blink spec adds a `<Tab>` entry
+own `snippet_forward` (2026-09-12): LazyVim's blink spec adds a `<Tab>` entry
 of its own whenever the user's keymap has none, and that entry jumps native
-`vim.snippet` sessions only, so under the luasnip preset `<Tab>` in an
-expanded snippet inserted whitespace instead of jumping. The line duplicates
-blink's preset entry on purpose — it is what keeps LazyVim's hook out; four
+`vim.snippet` sessions only, so under the luasnip preset `<Tab>` in an expanded
+snippet inserted whitespace instead of jumping. The line duplicates blink's
+preset entry on purpose – it is what keeps LazyVim's hook out; four
 latency-suite checks pin the jumps, from insert and from select mode.
 
-bib/bibtex filetypes get snippets and path. The 2026-08-22 decision to keep
-VimTeX's harvest visible ("how half-remembered commands get found", revisit
-on felt annoyance) is superseded by the drop above; the harvest it rested on
-had already gone empty for french-logic. Open: the gate's brace branch now
-serves only `\begin{`; inside `\cite{` it fuzzy-matches snippets against the
-key (TODO.md).
+**Cost, settled 2026-09-13 – don't re-derive.** Against the pre-campaign tree
+under one machine state (fedxps, performance mode): 53 ms per keystroke before
+and 54 after inside a command name at the end of the fixture's longest line,
+prose 19 and 19; the backslash that opens a command is a request in both trees
+and costs about 30 ms more once (21 ms before, 50 after), the per-request copy
+of ~7,800 rows. Cutting that means a completion source of our own rather than
+LuaSnip's; declined. The numbers: `PLAN.md` section 3. Open, in `TODO.md`:
+key-value completion inside `[…]` (16), the marker's position and corpus
+ranking (18).
 
 ## The cold-cache stall (standing rule)
 
-VimTeX resolves `\usepackage`s by spawning `kpsewhich` per package (~190 ms
-each here), cached on disk per machine — so the **first backslash of a
-session** on an unwarmed machine can stall ~20 s, once. Remedy:
-`bin/vimtex-warm`. Since 2026-09-12 typing no longer triggers the scan (the
-vimtex source is out of the menu); only `<C-x><C-o>` does, so the warm-up
-matters only for that. Both machines are warm; re-warm only after
-`:VimtexClearCache`, deleting an old TeX tree, or a genuinely new package
-set. A TeX Live release upgrade does **not** invalidate the cache (the risk
-there is staleness, not slowness). Full mechanism:
-`docs/insert-latency-2026-08.md`.
+VimTeX resolves `\usepackage`s by spawning `kpsewhich` per package (about 190
+ms each on fedxps in power-saver mode), cached on disk per machine under
+`~/.cache/vimtex`, and pays the whole scan synchronously the first time a
+completer needs it. Since the campaign that is the **first `\begin{` of a
+session** (and `<C-x><C-o>`), never typing a command name: on a cold cache 13 s
+measured on a chapter with 111 packages, 356 ms on the small latency fixture,
+tens of ms once primed. Remedy: `bin/vimtex-warm`, which primes the kpsewhich
+cache and `pkgcomplete.json`; both machines are warm. Re-warm only after
+`:VimtexClearCache`, deleting an old TeX tree, or a genuinely new package set;
+a TeX Live release upgrade does **not** invalidate the cache (the risk there is
+staleness, not slowness). `\usepackage{` is a different cost that nothing
+primes: about 0.9 s once per session whatever the cache, because VimTeX lists
+`kpsewhich --all ls-R` per session and stores nothing; accepted. The snippet
+closure is not this stall: it loads in idle time after VimTeX's init
+(Snippets). Full mechanism: `docs/insert-latency-2026-08.md`; the measurements:
+`docs/latex-completion-campaign-2026-09/PLAN.md` section 3.
 
 ## Keystroke cost (settled 2026-09-12)
 
@@ -137,42 +195,87 @@ addendum to `docs/insert-latency-2026-08.md`.
 
 ## Snippets
 
-`lua/snippets/french-logic.lua` (auto-generated from the french-logic package
-— the hub `french-logic.sty` plus every `french-logic-<unit>.sty` it loads,
-since the 2026-09-07 split — by `sty-lua-snippets.py`; commands,
-`\newenvironment`s incl. optional args, and `\newtheorem`s) and
-`latex-workshop.lua` (485 generic command snippets and 32 BibTeX entry
-templates: a one-time conversion of LaTeX Workshop's data, itself generated
-from TeXstudio's package word lists), loaded via filetype extensions in
-`snippets.lua`. **Regeneration is automatic**: the generator stamps one sha256
-over all the package files into the output, `snippets.lua` derives the file
-list from the hub's `\RequirePackage` lines, compares at LuaSnip load, and
-re-runs the generator on mismatch — completions cannot silently drift from
-the package. The write goes through the stow symlink into
-the repo, so the regenerated file is committed by the next `gpushall` —
-expected. The two files are opposites (TODO.md item 8): `latex-workshop.lua`
-may be hand-edited freely; **a hand edit to `french-logic.lua` is silently
-obliterated** by the next `.sty` change — durable fixes go in the generator
-or the `.sty`.
+The libraries are generated, one file per package, and loaded per document
+(rebuilt on TeXstudio's model 2026-09-13; the rules as built are
+`docs/latex-completion-campaign-2026-09/PLAN.md` section 2, the suite
+`tests/snipgen`). Under `lua/snippets/`:
 
-Manual regeneration and drift checks, from the repo root:
+- `pkg/` – 4,419 files from TeXstudio's completion word lists (`snipgen.py
+  --all` over the read-only clone `~/Desktop/texstudio`, at `0362907c2`).
+  Derived GPL-3 data, committed to this public repo by his decision: each
+  file's header names its cwl source, its sha256, the clone's commit and the
+  list's own credits, and `pkg/NOTICE` with `pkg/COPYING` carries the
+  attribution and the licence. 38 MB on disk; the sync's vet prompts only above
+  25 MB per file.
+- `sty/` – 15 files from the french-logic package (`snipgen.py --sty
+  latex/french-logic/french-logic.sty`: the hub and its 14 units, 540 names).
+  His own data, so a sibling of `pkg/` and outside the notice. The hub file's
+  `includes` name the units and each unit's its own requires, so a document
+  that loads french-logic reaches every unit and every package they require
+  even with no fresh `.fls`.
+- `hand/bibtex.lua` (the 32 bib entry templates) and `hand/local.lua` (yours,
+  empty) – the two hand-kept files.
+- `helpers.lua` (math wrap, environment restriction, the parser for a
+  document's own definitions), `loader.lua` (below) and `snipgen.py`.
+
+A row is trigger `\name` (no `~`), one placeholder per bracket group, named by
+its content, and the shape in the description column; one row per distinct
+signature, so an optional argument gives a bare row and a bracket row; a
+math-only row expands wrapped in `$…$` in prose and bare inside math; an
+environment-restricted row is hidden outside its environment; a `\begin{env}`
+row is a template (body line, `\item` for a list environment, `\end`);
+TeXstudio's "unusual" rows carry `∗` and a small sink (Completion).
+
+**The loader** (`loader.lua`) is LuaSnip's filetype function. For a TeX buffer
+it reads VimTeX's package table and document class on every request (0.09 ms),
+adds the always-loaded core three (tex, latex-document, latex-dev), closes over
+the files' `includes` headers, registers a file once per session under
+`pkg-<name>`, and returns the pseudo-filetypes in the order that decides which
+of two identical rows wins: `tex`, `hand-local`, the document's own definitions
+(`doc-<id>`; the whole main file, re-read whenever its mtime changes), the core
+three, the class, the closure. Since stage 4 the closure is registered in idle
+time after `User VimtexEventInitPost`, one file per 10 ms tick (104 files in
+3.6 s on the completeness chapter), so the first request finds it in place; a
+request that comes first registers what is left. The closure costs about 0.7 s
+of CPU and 120 MB of heap per session per document, accepted. A name with no
+file (the expl3 and keyvals-only lists the generator skips by rule, a class
+without a list) is skipped silently; `:SnippetsReport` names them and prints
+what the buffer holds – main file, class, packages, files and rows, the
+pre-warm's state, the document's rows, the environment names for `\begin{`, the
+last dedupe count – and `:SnippetsReload` re-reads every registered file. A
+package table refreshed by a compile is seen at the next request.
+
+**Never hand-edit or format a file under `pkg/` or `sty/`** (both are in
+`.styluaignore`); a regeneration overwrites them. A systematic oddity is a
+generator change, proved by `tests/snipgen`, then a regeneration; a package
+quirk is a `.sty` change; a one-off is a row in `hand/local.lua` with the
+generated row's label and description, which shadows it (pinned). `sty/` keeps
+itself current: at LuaSnip load `snippets.lua` compares each file's
+`sty-sha256` stamp with its `.sty` (0.9 ms) and on a mismatch re-runs `--sty`
+(about 0.1 s), then `--coverage`; the write goes through the stow symlink into
+the repo, so the regenerated files are committed by the next `gpushall` –
+expected, and byte-identical on both machines, because `--sty` reads nothing
+but `.sty` files. `pkg/` regenerates only by hand, where the clone is, from the
+repo root:
 
 ```bash
-python3 nvim/lua/snippets/sty-lua-snippets.py \
-  -i latex/french-logic/french-logic.sty -i latex/french-logic/french-logic-core.sty ... \
-  -o nvim/lua/snippets/french-logic.lua [--check|--coverage]
+git -C ~/Desktop/texstudio pull --ff-only
+python3 nvim/lua/snippets/snipgen.py --all --check   # 0 stale, 0 missing, 0 extra, or the drift
+python3 nvim/lua/snippets/snipgen.py --all           # regenerate, then tests/snipgen/run.sh
+python3 nvim/lua/snippets/snipgen.py --sty latex/french-logic/french-logic.sty [--check|--coverage]
 ```
 
-(give the hub and every unit it loads, hub first — the same order
-`snippets.lua` uses, so the stamps agree)
-
+A regeneration changes what upstream changed (about 11% of files a year); read
+the generator's stderr after it, the warnings are upstream data errors and few.
 `--coverage` cross-references the `.sty` against `vimtex.lua`'s registrations
-(the 8 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring
-the `vimtex.lua` header — `\tcite`/`\pcite` are there because citation
-commands are coloured by VimTeX's own `texCmdRef` machinery in
-`after/syntax/tex.lua`, not by a custom-cmd registration); the auto-regen hook runs it whenever the `.sty`
-changed and raises a notification — informational, a newly added macro just
-renders in the default colour until registered by hand.
+(the 8 deliberate exclusions allowlisted in `KNOWN_UNREGISTERED`, mirroring the
+`vimtex.lua` header; `\tcite`/`\pcite` are there because citation commands are
+coloured by VimTeX's own `texCmdRef` machinery in `after/syntax/tex.lua`, not
+by a custom-cmd registration); the startup check runs it whenever a `.sty`
+changed and raises a notification – informational, a newly added macro just
+renders in the default colour until registered by hand. Open, in `TODO.md`: a
+comment convention in the `.sty` for named placeholders, math marks and
+`\poscite` (17), bare lists for packages with no cwl (19).
 
 ## Markdown tasks
 
@@ -246,8 +349,9 @@ Mason-installed binary (`~/.local/share/nvim/mason/bin/stylua` — **not on the
 shell PATH**) on every in-editor Lua save, so drift appears only in files
 last written outside Neovim. Manual run from the repo root:
 `~/.local/share/nvim/mason/bin/stylua nvim/` (`--check` to diff). The two
-generated snippet files are excluded via `nvim/.styluaignore`, honored by
-both the CLI walk and the in-editor path. Headless note: format-on-save — and
+generated snippet files, `lua/snippets/pkg/` and `lua/snippets/sty/` are
+excluded via `nvim/.styluaignore`, honored by both the CLI walk and the
+in-editor path. Headless note: format-on-save — and
 everything else in LazyVim's `User VeryLazy` callback — is inert under
 `--headless`; fire it manually
 (`vim.api.nvim_exec_autocmds("User", {pattern="VeryLazy"})`) or "works
@@ -308,9 +412,20 @@ auto-running restore inside the pull, were considered and **declined**
   intact. `perf.sh <file.tex>` beside it prices the whole custom layer
   (read-only; bigfed 2026-08-28: 0.47 ms/line on completeness.tex; under
   ~2 ms/line is imperceptible per keystroke).
-- `tests/nvim-latency/run.sh` (42 checks, ~50 s, hermetic, needs `pynvim`) —
+- `tests/nvim-latency/run.sh` (71 checks, ~150 s, hermetic, needs `pynvim`)
+  — the 42 of 2026-08-22, the stage-3 pins of 2026-09-13 (the two gates,
+  the rows, the `\begin{` template, the document's own commands) and the
+  four stage-4 pins of the same day (the idle pre-warm, the 45-cell
+  description column, blink's per-keystroke snippet check kept off
+  LuaSnip's trigger scan, a typed trigger still expanding on `<Tab>`);
   asserts the *structure* the latency fixes rest on and the behaviour they
   must not have broken; no millisecond assertions (timings move with the
-  machine). Mutation-verified. `bench.py` beside it is the measurement tool;
+  machine). Mutation-verified, five mutations recorded 2026-09-13 in its
+  README. `bench.py` beside it is the measurement tool;
   `stallwatch.lua` catches stalls in a live session. Read its README before
   changing any of it — it records which checks were once vacuous and why.
+- `tests/snipgen/run.sh` (22 checks, ~1 s, hermetic; the amsmath spot checks
+  run only where `~/Desktop/texstudio` exists) — the snippet generator's cwl
+  and `.sty` front ends. Run after any edit to `snipgen.py`, after a clone
+  pull, or after an edit to the french-logic package; its README records
+  what each check pins and the two mutations.
