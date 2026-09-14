@@ -110,6 +110,28 @@ preserve this shape — "continuum in the large, discrete in the small."
 | **bold** | name/anchor status — what the eye scans for |
 | **italic** | material and argument content; prose emphasis |
 
+**Why bold is the name channel (measured 2026-08-28).** The name/object
+split is one his writing already makes. Over the 11-file corpus (8,313
+command tokens), names sit in running prose and objects inside math:
+
+| | inline in prose | inside math |
+|---|---|---|
+| names, syntax side (systems) | 80% | 20% |
+| names, semantics side (conditions) | 77% | 23% |
+| names, syntax side (schemata) | 71% | 29% |
+| semantic objects | 0% | 100% |
+| intensional operators | 1% | 99% |
+| medium and notation | 2% | 98% |
+
+So a name is what the eye meets while reading a sentence, and an object
+what it meets while parsing a formula. Bold marks the first. The same
+figures are why the scheme is tuned for prose about logic: that is where
+its marked tokens actually land. Every custom logic macro carries
+`\ensuremath`, so this is a fact about his usage rather than about what
+the macros permit. Re-derive before leaning on the numbers — the corpus
+had drifted 1.4% by 2026-09-13, and `detachment/` is still the 12-line
+sketch. Source tables: `~/Desktop/archive/latex-color-campaign-2026-08-28/`.
+
 ## The species table
 
 Background `#1a1b26`; contrast is WCAG vs that background.

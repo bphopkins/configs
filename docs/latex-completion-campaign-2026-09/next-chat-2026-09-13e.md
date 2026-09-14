@@ -1,3 +1,5 @@
+Annotation, 2026-09-13: the sixth chat, the first on bigfed, opened from this brief and closed queue item 1 (the twin unmoved at `0362907c2`, the stale bytecode removed, the three suites and both drift checks green, `:SnippetsReport` on the chapter, the stage-4 numbers annotated into `PLAN.md` section 3, the two `~/Desktop/CLAUDE.md` items and the `DECISIONS.md` annotation from approved drafts), then item 2 at the close by his call, on the snippet checks alone (the comment reworded, the cite unit re-stamped, `--coverage` and the three suites green). Item 3 stays as written, optional; no successor was written. Section 4 here still binds.
+
 Prompt — the opening brief for the sixth chat of the LaTeX completion
 campaign, meant for the first chat that opens on bigfed. Dated record,
 written 2026-09-13 at the close of build chat 5, on fedxps (the letter: five

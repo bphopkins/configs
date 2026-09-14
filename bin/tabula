@@ -44,11 +44,27 @@
 set -euo pipefail
 
 # --- the table --------------------------------------------------------------
-# Family|size. Comment out a line to drop it from the rotation; that is the
-# intended way to prune. Every entry was verified to resolve to itself on
-# 2026-09-06, and all are installed system-wide except JuliaMono and
-# Inconsolata LGC, which come from TeX Live and so depend on the year pin in
+# Family|size. Every entry was verified to resolve to itself on 2026-09-06, and
+# all are installed system-wide except JuliaMono and Inconsolata LGC, which
+# come from TeX Live and so depend on the year pin in
 # fontconfig/conf.d/09-texlive-fonts.conf.
+#
+# MARKS. The table feeds the experiment and records it. An entry carries what
+# he has come to think of the face:
+#
+#   # liked <date>            it wore well; add a clause if there is a reason
+#   # dropped <date> — why    it disqualified itself. Comment the line out and
+#                             leave it here; why a face failed is worth keeping
+#                             alongside why one worked.
+#
+# Unmarked means untried, or tried and undecided. Both marks are revisable and
+# the set moves in both directions — this converges on his favourites by
+# wearing them, over however long that takes, and new faces can join at any
+# point. A mark records how a face wore in use; it is not an adoption, and
+# decides nothing about what the terminal or the editor default should be.
+# (This header said `his pick` until 2026-09-13. An agent had inferred it from
+# a desktop scratch file naming Monaspace, and it turned a liking into a
+# decision he had not made.)
 FONTS=(
   # The seven installed 2026-09-06 for this trial.
   "Source Code Pro|12"                # the incumbent, and the baseline
@@ -68,7 +84,7 @@ FONTS=(
   "Cascadia Code|12"
   "Fira Mono|12"
   "Adwaita Mono|12"
-  "Liberation Mono|12"
+  "Liberation Mono|12"                # liked 2026-09-13
   "Go Mono|12"
   "PT Mono|12"
   "Droid Sans Mono|12"
@@ -77,14 +93,14 @@ FONTS=(
 
   # GitHub's Monaspace superfamily — five deliberately different personalities
   # at identical metrics, which makes them unusually good for this exercise.
-  # Neon is the one that has landed so far — "nice", 2026-09-06, the trial's
-  # only positive verdict to date. Two things go with that. The family is
-  # "Monaspace Neon"; "Monaspace Neon Mono" resolves to Noto Sans, which is the
-  # substitution trap this header warns about. And the superfamily reaches
-  # fontconfig only through texlive-monaspace-otf under /usr/local/texlive/YYYY,
-  # so promoting one of these to a terminal or editor default would tie that
-  # font to the year pin in fontconfig/conf.d/09-texlive-fonts.conf.
-  "Monaspace Neon|12"                 # neo-grotesque — his pick, 2026-09-06
+  # Neon is one he likes — "nice", 2026-09-06. Two things go with that. The
+  # family is "Monaspace Neon"; "Monaspace Neon Mono" resolves to Noto Sans,
+  # which is the substitution trap this header warns about. And the superfamily
+  # reaches fontconfig only through texlive-monaspace-otf under
+  # /usr/local/texlive/YYYY, so promoting one of these to a terminal or editor
+  # default would tie that font to the year pin in
+  # fontconfig/conf.d/09-texlive-fonts.conf.
+  "Monaspace Neon|12"                 # neo-grotesque — liked 2026-09-06
   "Monaspace Argon|12"                # humanist
   "Monaspace Xenon|12"                # slab serif
   "Monaspace Radon|12"                # handwriting

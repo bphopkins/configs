@@ -10,6 +10,15 @@ bigfed half of section 0's criterion 1 and the bigfed numbers of section 3,
 carried by `next-chat-2026-09-13e.md` and to be annotated into section 3 when
 they land.
 
+Annotated 2026-09-13, bigfed (the sixth chat): the bigfed half landed.
+Criterion 1 of section 0 holds on both machines, the bigfed numbers are under
+section 3's stage-4 paragraph, and bigfed's machine-local `~/Desktop/CLAUDE.md`
+carries its two items. The queue of `next-chat-2026-09-13e.md` is emptied but
+for its optional item 3: its item 2, the comment in `french-logic-cite.sty`,
+landed in the same chat by his call, on the snippet checks alone (the stamp
+mechanism seen end to end: one stale file, regenerated, the stamp line the only
+change, `--coverage` and the three suites green).
+
 Live campaign plan, opened 2026-09-12 on fedxps, revised 2026-09-13 after
 the spikes (section 9) and again the same day as build chats 1, 2 and 3
 landed stages 1, 2 and 3 (section 3). Edit in place while the campaign runs; when it
@@ -632,6 +641,41 @@ more once, at its backslash, and the same per letter after; cutting that
 means fewer rows per request, a source of our own rather than LuaSnip's,
 and is not proposed.
 
+*bigfed, 2026-09-13, the sixth chat and the first on bigfed: the same probes,
+the live tree against the same scratch extraction of `1bb69b1`, three
+interleaved repetitions, on a desktop with no platform profile (AMD Ryzen 7
+3800X, governor and energy preference `performance`), the machine otherwise
+idle.* Per keystroke at the end of the fixture's 2,069-character line, medians
+of three runs: inside a command name 43 ms before and 44 after (p90 44 and 45);
+in prose 17 before and 16 after (p90 17 in both). Per request in a command name
+the luasnip source 8.9 to 9.4 ms (0.6 to 0.9 before), the Rust fuzzy pass 3.8
+to 3.9 ms per call (0.6), the live transform 0.3 ms, `ft_func` 0.25 ms; six
+requests for 35 keystrokes in both trees, none in prose. The first keystrokes
+of a session on the live tree after the pre-warm (100 files in 2.4 s of idle
+ticks on the harness), fresh instances, medians of three: entering insert mode
+8 ms, the backslash 30 to 33 ms, the first request's menu 22 ms after the
+keystroke (source 20 to 22 ms, transform 5.2 to 5.8, fuzzy 14 to 15), the
+second request 17 to 19 ms; Lua heap 129 MB after a full collect with the
+closure in place and 137 after the first request, RSS about 180 to 210 MB.
+Headless `loadprobe.lua` on the completeness chapter: 105 files, 7,836 rows,
+includes walk 5 ms, `loadfile` 26 ms, execute plus add 503 ms (55 µs a row),
+heap 10 to 150 MB, 129 after a full collect. The cold package cache on the
+chapter, a scratch cache root: `\begin{a` 5.7 s cold, 13 ms in the same session
+and 23 ms in a new session on the primed root; `\usepackage{a` 0.58 s cold and
+0.57 s in every new session, 10 ms after. Two differences of state, not of
+code: VimTeX's table on the chapter holds 97 packages here against fedxps's
+111, because bigfed's `completeness-article.fls` (2026-08-18) names the hub and
+no unit, so the 14 units arrive through the hub's includes and the closure is
+105 files and 7,836 rows (fedxps 104 and 7,834; the pre-warm 105 files in 3.3 s
+of idle ticks, 31 names with no file, 6 document rows, 211 environment names,
+as there), and the cold `\begin{` scan runs over 97 packages, not 111. The
+three suites green: syntax 56, latency 71 passed and 0 failed in 145 s, snipgen
+22; `--all --check` 4,419 files, 0 stale, 0 missing, 0 extra (42 warnings over
+18 files, the recorded count; the record's prose also names `class-hepthesis`,
+whose backslash-less lines are class options and raise none), the clone unmoved
+at `0362907c2`; `--sty --check` 15 files, 0/0/0; the four plugin commits equal
+to the lockfile. Criterion 1 of section 0 holds on both machines.
+
 **Stage 5 — records, then close.** Section 7. On bigfed: `gpullall`, both
 suites, `:SnippetsReport` on a chapter, and the stage-4 measurements there
 (the successor brief's queue). Annotate this file closed.
@@ -1036,4 +1080,14 @@ read-only on `completeness.tex`, with everything injected at runtime.
   the bigfed twin with the suites and the stage-4 measurements there, the
   `.sty` comment at his next french-logic session, and the optional
   balanced-mode re-measure.
-- next: the first chat on bigfed, from `next-chat-2026-09-13e.md`.
+- 2026-09-13, bigfed: the sixth chat, the first on bigfed, from
+  `next-chat-2026-09-13e.md`. Queue item 1: the twin unmoved at `0362907c2`,
+  the retired generator's bytecode removed, the three suites and the two drift
+  checks green, `:SnippetsReport` on the chapter, the stage-4 probes re-run
+  (section 3, the bigfed annotation), the two `~/Desktop/CLAUDE.md` items and
+  the `DECISIONS.md` annotation from approved drafts; then, by his call at the
+  close, queue item 2: the `french-logic-cite.sty` comment reworded, the cite
+  unit's file re-stamped by `--sty` (the stamp line its only change),
+  `--coverage` and the three suites green, the rendering nets skipped for a
+  comment; fedxps's `~/Desktop/CLAUDE.md` clause about the pending twin fixed
+  over SSH. No code touched. No successor: item 3 is optional.

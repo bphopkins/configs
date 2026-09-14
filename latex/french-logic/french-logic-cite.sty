@@ -71,7 +71,7 @@
 
 %% Short forms.  These are what to type; \textcite and \poscite still work.
 %% Declared with \newcommand (not \NewDocumentCommand) so that
-%% sty-lua-snippets.py picks them up and emits \tcite~ / \pcite~ snippets;
+%% snipgen.py --sty picks them up and emits the \tcite and \pcite snippets;
 %% they are registered for highlighting in nvim/lua/plugins/vimtex.lua.
 %% An empty postnote is inert in biblatex, so \tcite{k} = \textcite{k}.
 %% These carry the postnote only; for biblatex's rarely-needed prenote

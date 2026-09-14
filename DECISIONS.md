@@ -1276,3 +1276,20 @@ rule, the suites list), `nvim/README.md` and `latex/french-logic/README.md`
 `~/Desktop/CLAUDE.md` (the `texstudio/` clone), `tests/nvim-latency/README.md`
 (the flipped and added checks, the five mutations), `tests/snipgen/README.md`,
 and the campaign directory `docs/latex-completion-campaign-2026-09/`.
+
+*Annotated 2026-09-13, bigfed (the sixth chat, the first there).* The bigfed
+half landed: the twin clone at `0362907c2` with its charter byte-identical; the
+three suites green (syntax 56, latency 71, snipgen 22), `--all --check` and
+`--sty --check` 0/0/0, the four plugin commits equal to the lockfile;
+`:SnippetsReport` on the completeness chapter 105 files and 7,836 rows over a
+97-package table (bigfed's `completeness-article.fls` of 2026-08-18 names the
+hub and no unit, so the units come through the hub's includes); the stage-4
+probes, three interleaved repetitions on a desktop with no platform profile
+(governor performance): 43 ms per command-name keystroke before and 44 after,
+17 and 16 in prose; once pre-warmed, the first request's menu 22 ms after the
+keystroke and the backslash 30 to 33 ms; the closure 503 ms and 129 MB of heap
+after a full collect; `\begin{a` 5.7 s on a cold package cache and 23 ms
+primed, `\usepackage{a` 0.57 s per session. The full numbers are under
+`PLAN.md` section 3's stage-4 paragraph; bigfed's machine-local
+`~/Desktop/CLAUDE.md` carries the two items. Criterion 1 holds on both
+machines.
