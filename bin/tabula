@@ -70,7 +70,7 @@ FONTS=(
   "Source Code Pro|12"                # the incumbent, and the baseline
   "Atkinson Hyperlegible Mono|12"     # legibility-first; only 359 glyphs
   "IBM Plex Mono|12"
-  "Cousine|12"
+  "Cousine|12"                        # liked 2026-09-14
   "Anonymous Pro|12"
   "Inconsolata|12"                    # no italic; Pango synthesises one
   "Overpass Mono|12"                  # no italic; likewise

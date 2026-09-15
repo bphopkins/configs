@@ -130,7 +130,7 @@ its marked tokens actually land. Every custom logic macro carries
 `\ensuremath`, so this is a fact about his usage rather than about what
 the macros permit. Re-derive before leaning on the numbers — the corpus
 had drifted 1.4% by 2026-09-13, and `detachment/` is still the 12-line
-sketch. Source tables: `~/Desktop/archive/latex-color-campaign-2026-08-28/`.
+sketch. Source tables: `~/Desktop/archive/latex-color-campaign-2026-08-28/` on bigfed (unsynced; absent on fedxps).
 
 ## The species table
 

@@ -47,15 +47,34 @@ PROMPT_HIGHLIGHT=1
 # not this one (nousowl/configs/README.md). Both halves, kept in step by hand:
 #
 #     fedxps    32  green    this file
-#     bigfed    34  blue     this file
+#     bigfed    31  rose     this file
 #     nousowl   33  amber    nousowl/configs/bash/.bashrc.d/30-prompt.sh
 #     root      35  magenta  the package, untouched -- see the guard below
 #
+# The nousowl half is deployed and measured, not merely intended: that repo
+# holds no clone and is pushed to over ssh by its own configs/install.sh, which
+# installs plain files rather than stow symlinks. After the 2026-09-14 run the
+# server reports PROMPT_COLOR=33 and PROMPT_HIGHLIGHT=1. Bold is pinned on all
+# three boxes now, so weight reports nothing and hue carries the machine alone.
+#
 # Plain ANSI numbers rather than hex. The terminals run TokyoNight Night, whose
-# palette maps 32/34/33 to #9ece6a / #7aa2f7 / #e0af68, so the numbers already
+# palette maps 32/31/33 to #9ece6a / #f7768e / #e0af68, so the numbers already
 # *are* the theme colours; spelling them as 38;2;R;G;B would give the theme a
 # second source of truth and freeze the prompt if the theme ever moved. It also
 # keeps the prompt sane on a VT console and through a terminal that is not ours.
+#
+# bigfed held 34 blue for the first hours of that day. Bold blue is not merely
+# close to a directory in ls output, it is the same SGR: this prompt renders as
+# \e[1;34m and dircolors' DIR is 01;34, so on bigfed the prompt read as one more
+# folder name in every listing. Rose is the furthest free colour from that, and
+# it carries two smaller collisions, both accepted -- ARCHIVE is 01;31, and
+# #f7768e sits nearer root's #bb9af7 than blue did, so `sudo -i` on bigfed is
+# now told apart by hue where it used to differ in temperature as well.
+#
+# Cyan 36 was the other candidate, declined for staying inside the hue family
+# being escaped; 37 matches the foreground and so would have signalled nothing.
+# Brights 9-14 are byte-identical to 1-6 in this theme, so no bright variant
+# offers a colour the list above does not already have. Changed 2026-09-14.
 #
 # The EUID guard exists so root keeps the package's magenta on every machine,
 # which makes `sudo -i` a fourth distinguishable state rather than a lost one.
@@ -70,7 +89,7 @@ PROMPT_HIGHLIGHT=1
 if [[ $EUID -ne 0 ]]; then
   case "$HOSTNAME" in
   fedxps) PROMPT_COLOR=32 ;;
-  bigfed) PROMPT_COLOR=34 ;;
+  bigfed) PROMPT_COLOR=31 ;;
   *) ;;
   esac
 fi

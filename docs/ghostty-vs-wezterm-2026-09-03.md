@@ -342,7 +342,7 @@ dominated. `tic` and `infocmp` are both present on nousowl. Turned on in
 **Verified the same day.** `GHOSTTY_SHELL_FEATURES` is read at shell startup,
 so the check needs a new window rather than a config reload. In one: `ssh
 nousowl`, `echo $TERM` answers `xterm-ghostty`, and `ghostty +ssh-cache` lists
-`bph@192.168.0.223` — the cache keys on the resolved address, not on the
+`bph@<nousowl's LAN address>` — the cache keys on the resolved address, not on the
 `~/.ssh/config` alias. What settles it is the contrast on one binary and one
 machine: `htop` under `TERM=xterm-ghostty` exited 1 on `cannot initialize
 terminal type` before, and after runs to the same 2 s `timeout` that killed it

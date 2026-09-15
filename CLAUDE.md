@@ -124,12 +124,13 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 
 Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order — `00`
 shell-opts (reserved-empty), `10` env, `20` path (TeX-Live-first ordering,
-auto-detected year), `30` prompt (reserved-empty), `40` aliases
+auto-detected year), `30` prompt (one colour per machine), `40` aliases
 (`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`, `cc`/`ccf`,
 navigation), `50` git-sync, `60` stow, `70` `ls-tasks`, `80` `clam`, `85`
-`disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed). The empty modules
-are reserved slots, not dead code. Everything else — module hazards, the
-reboot-verdict contract, the disk pair, the suites — is in `bash/CLAUDE.md`.
+`disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed). The one empty
+module left is a reserved slot, not dead code. Everything else — module
+hazards, the reboot-verdict contract, the disk pair, the suites — is in
+`bash/CLAUDE.md`.
 
 ## Visual Consistency
 

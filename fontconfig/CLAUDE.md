@@ -62,7 +62,7 @@ for g in serif sans-serif monospace system-ui emoji cursive fantasy; do
 ```
 
 The total family count is **not** comparable between machines — it includes
-system fonts, and the two differ there (fedxps has LyX's TeX bitmap TTFs and a
+system fonts, and the two differ there (fedxps has a
 hand-placed Latin Modern in `~/.local/share/fonts`; bigfed has the `texlive-lm`
 and `jetbrains-mono-fonts` RPMs). Compare **2,317 faces under
 `/usr/local/texlive`** instead: that is what this file controls. The two

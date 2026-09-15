@@ -18,12 +18,14 @@ Priority for the next working day: **(3)**.
 The last remaining survey item (1 and 2 are done). The structure is sound — `.bashrc` sources
 `~/.bashrc.d/*.sh` in numbered order, and everything parses. Things a review might look
 at: whether `00-shell-opts.sh` should finally get real `shopt`/`set` options (history
-handling, `globstar`, `checkwinsize`); whether `30-prompt.sh` should define a prompt
-rather than inherit `/etc/bashrc`'s; and whether the aliases in `40-aliases.sh` still
-match how the machines are actually used.
+handling, `globstar`, `checkwinsize`); whether `30-prompt.sh` should go further and
+build PS1 itself, now that it colours the prompt but still inherits the string
+(2026-09-14); and whether the aliases in `40-aliases.sh` still match how the machines
+are actually used.
 
-**Deliberate, not oversights:** `00-shell-opts.sh` and `30-prompt.sh` are *reserved
-empty slots*, not dead files. `90-nix.sh` is **load-bearing on bigfed**, where nix has
+**Deliberate, not oversights:** `00-shell-opts.sh` is a *reserved empty slot*, not a
+dead file; `30-prompt.sh` was the other until 2026-09-14, when it took the per-machine
+prompt colours. `90-nix.sh` is **load-bearing on bigfed**, where nix has
 been installed since 2025-03-05 and this file is the only thing putting it on PATH —
 bigfed is the machine that builds Carnap, and the Stage 3 build ran through it.
 `.bashrc.min` / `.bash_profile.min` are rescue configs.
@@ -52,8 +54,14 @@ hardest to check.
 
 Raised 2026-08-17 out of a full public-exposure audit of this repo (all 138 tracked files,
 the working tree, and all 89 commits / 376 blobs of history). **The audit found nothing to
-remove**: no key, token, JWT, IP, MAC, phone, address, student data, or third-party PII has
-ever been committed, in HEAD or in history. This item is about the *mechanism*, not a spill.
+remove as of that date**: no key, token, JWT, IP, MAC, phone, address, student data, or
+third-party PII had been committed, in HEAD or in history. This item is about the
+*mechanism*, not a spill. One instance has landed since, and it is what the mechanism would
+have caught: `f5cc9df` (2026-09-03) committed nousowl's private LAN address in
+`docs/ghostty-vs-wezterm-2026-09-03.md`, redacted in the working tree 2026-09-14 but **still
+present in `HEAD` and on the public remote** until that redaction is committed. Non-routable,
+so nothing to rotate and no history rewrite is warranted — but do not read the sentence above
+as a standing claim about the repo.
 
 **The gap, precisely.** `_gsync_vet_new_files` lists staged paths with
 
@@ -94,7 +102,7 @@ against.
   modified-file gap the vet structurally cannot see — but only for whole files, never for
   a secret inside a legitimate one. Hence this item.
 - **The preference is a dedicated scan over `REPOS_DESKTOP`, not a `gpushall` bolt-on.**
-  `gpushall` is already the most safety-critical function here, guarded by 153 checks;
+  `gpushall` is already the most safety-critical function here, guarded by 168 checks;
   growing it has a cost. A separate command can also be run on demand and against repos
   that are not being pushed.
 
@@ -348,7 +356,7 @@ each check exists; record the hygiene there.
 
 ## 21. A bench sitting for the five stray colours
 
-- [ ] Exhibit on the bench (`docs/latex-register-taxonomy.md`, the Status
+- [ ] Exhibit on the bench (`nvim/docs/latex-register-taxonomy.md`, the Status
   section) the five theme colours that leak into TeX highlighting unassigned,
   and land what he accepts.
 
@@ -436,7 +444,7 @@ are in `DECISIONS.md` under the same item numbers.
 - **13. french-logic: the map, the unit split, the rendering suite** — a hub over
   fourteen units, two nets, the map and the generated inventory, 59 renames, every
   unit ordered, v1.0 released. Closed 2026-09-08 → `DECISIONS.md` item 13; the
-  four briefs in `docs/french-logic-campaign-2026-09/`.
+  three briefs in `docs/french-logic-campaign-2026-09/`.
 - **15. Completion gate: the brace branch** — two gates now: snippets while a
   command name is typed, VimTeX's completers through blink's omni provider
   inside its braces; `\begin{` writes the environment template, the exact

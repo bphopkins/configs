@@ -10,8 +10,7 @@ top.
 ## Module map (sourced in numbered order)
 
 - `00-shell-opts.sh` — shopt/set options. **Deliberately empty**, a reserved
-  slot; ditto `30-prompt.sh` (inherits the system prompt from `/etc/bashrc`).
-  An empty numbered module here is scaffolding, not dead code.
+  slot. An empty numbered module here is scaffolding, not dead code.
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim).
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions, duplicate-guarded. Each
   entry prepends, so **effective priority is the reverse of reading order** —
@@ -21,6 +20,17 @@ top.
   install in progress can't knock TeX Live off PATH). Pin an older release
   with `TEXLIVE_YEAR=<year>` — see `bin/CLAUDE.md`, TeX Live release
   upgrades. The bun block is a guarded shim, inert until bun exists.
+- `30-prompt.sh` — PS1 itself still comes from `/etc/bashrc`. This module sets
+  the `PROMPT_*` variables Fedora's bash-color-prompt package re-expands at
+  every prompt, so an edit here lands on the next prompt with no re-source.
+  `PROMPT_HIGHLIGHT=1` pins bold, which the package otherwise decides by a
+  string comparison against `DESKTOP_SESSION` — the reason bigfed and fedxps
+  looked different off the same repo. `PROMPT_COLOR` then gives each box its
+  own colour (fedxps green, bigfed rose, root magenta behind an EUID guard),
+  and **the scheme spans two repos**: nousowl's amber lives in that machine's
+  own `configs/bash/.bashrc.d/30-prompt.sh`, deployed by push over ssh rather
+  than by stow, and the two halves are kept in step by hand. The file's
+  comments carry the palette and the declined alternatives.
 - `40-aliases.sh` — aliases plus functions: `sysupgrade` and `reboot-check`
   (see "Reboot verdict" below), `tl-upgrade` (within-release TeX Live update;
   resolves `tlmgr` through PATH so it survives year bumps), `reload`
@@ -79,7 +89,7 @@ apart:
   rebase are reported (`[PULL] integrated changes from origin`) and fire the
   configs hints — the push path is never silently ahead of what you saw. A
   legacy positional message is accepted and joins all words; unknown flags are
-  rejected so `gpushall -f` can't commit 13 repos with the message `-f`
+  rejected so `gpushall -f` can't commit every repo in the rotation with the message `-f`
 - `gpull <name>...` / `gpush [-m MSG] <name>...` — the same flows for one or
   more repos under `~/Desktop`; names tab-complete from `REPOS_DESKTOP`
 - `gstatall [-f]` — read-only dashboard: branch, dirty count, behind/ahead,

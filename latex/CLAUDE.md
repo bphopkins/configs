@@ -23,7 +23,7 @@ artifact (prune declined 2026-08-26); not a charter — leave it alone.
   `nvim/CLAUDE.md` (snippets, custom syntax).
   The map is `french-logic/README.md`, the inventory `french-logic/AUDIT.md`;
   run `tests/french-logic/run.sh` after any edit. The reorganisation campaign
-  of 2026-09-07/08 is concluded; its four briefs are the dated record in
+  of 2026-09-07/08 is concluded; its three briefs are the dated record in
   `docs/french-logic-campaign-2026-09/`, and a session on the package now
   opens with the map. `dissertation-template/` deliberately bundles its own
   trimmed `philogic.sty` instead.

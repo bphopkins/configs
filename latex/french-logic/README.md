@@ -370,7 +370,7 @@ documents outside the harness were never censused for them;
 directory; `slim` stays, part of the option design and proved by the suite;
 `dissertation-template/philogic.sty`, which could one day be derived from the
 units, is out of the campaign's scope and on the tracker (item 14). Nothing is
-open but the decorations' kern fine-tune (item 14). The campaign concluded 2026-09-08; its four briefs are the dated
+open but the decorations' kern fine-tune (item 14). The campaign concluded 2026-09-08; its three briefs are the dated
 record in `configs/docs/french-logic-campaign-2026-09/`, and its post-mortem
 is `configs/DECISIONS.md`, item 13.
 
@@ -397,7 +397,7 @@ bigfed later that day, verified the third's work, put the last three forms on
 the board (the converse *c*, the T on SDL, the kern under W against P), took
 the rest in one batched ask, landed four forms and recorded four policies,
 wrote the `solo` rule down in Brandon's words, released v1.0, and closed the
-campaign; the four briefs moved together to
+campaign; the three briefs moved together to
 `configs/docs/french-logic-campaign-2026-09/`. That evening's confirmation
 pass, every choice re-photographed from v1.0 on the type board, returned three
 notes: `\emptytruthset` reversed to the open dot; the decorations' lost tuck

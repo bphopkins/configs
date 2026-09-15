@@ -42,7 +42,7 @@ species table, the geometric law, the closure rule — are the living contract
 `docs/latex-register-taxonomy.md`. Redesigned 2026-08-28, adopted and held:
 he rates it an improvement and a crude approximation of a scheme he cannot
 yet articulate; change it only from instances he brings, exhibited on the
-bench (the doc's Status section) before touching the config. 504 of the
+bench (the artifact "The Two Slopes") before touching the config. 504 of the
 `.sty`'s 512 commands are covered; the 8 exclusions are deliberate and listed
 in the `vimtex.lua` header comment.
 
