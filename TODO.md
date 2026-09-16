@@ -377,6 +377,96 @@ env-name family. Suite: `tests/nvim-syntax/run.sh` after.
 
 ---
 
+## 22. The wheel's lag and overshoot
+
+- [ ] Decide whether `mousescroll`'s `ver:` value should come down from 3, and
+  whether anything can be done about the input backlog itself.
+
+Measured on bigfed 2026-09-15, the half of that day's scroll work that was
+left open — see `nvim/CLAUDE.md`, "Scroll cost, and the CTRL-D step", and the
+`DECISIONS.md` section of the same date. `mousescroll=ver:3` gives **3 display
+rows per scroll *event***, and his MX Master reports `REL_WHEEL_HI_RES`, so
+libinput subdivides one physical detent into roughly three events — about ten
+display rows per notch, which is what he reported feeling.
+
+The complaint is not the distance but the lag and the overshoot, and that is an
+input backlog: 60 wheel events sent in 70 ms took **951 ms to drain** with
+syntax on and 344 ms with it off, so Neovim services about **63 wheel events a
+second** in a TeX buffer, ~190 display rows/s. The MX Master's free-spin wheel
+outruns that by a wide margin, the queue grows for as long as the flick lasts,
+the view keeps travelling after his hand stops, and it lands at an end of the
+document. Nothing coalesces the events – every one is serviced.
+
+snacks.scroll is not involved: it deliberately skips animation for wheel input,
+so this is mechanically distinct from the keyboard judder, though both are paid
+for out of the same 4.65 ms/screen row of syntax.
+
+What to weigh when it is picked up: a lower `ver:` cuts rows per event but not
+events per second, so it shortens the overshoot without fixing the lag; the
+free-spin/ratchet switch on the mouse itself is a hardware lever that costs
+nothing to try first; and whether a debounce is even expressible here is
+unknown — Neovim has no scroll-event coalescing to hook.
+
+---
+
+## 23. Multi-line paste arrives a line at a time under `TERM=xterm-ghostty`
+
+- [ ] Find out why a pasted block splits at its newlines, and decide what, if
+  anything, to change here.
+
+Raised 2026-09-15. Pasting a block of commands into Claude Code's prompt in
+Ghostty raised Ghostty's unsafe-paste dialog, and on confirming, each line was
+submitted as its own message.
+
+Half of it is closed. `clipboard-paste-protection = false` in `ghostty/config`
+removes the dialog, and the dialog was only ever a report of the condition:
+Ghostty asks when a paste carries a newline and the program reading input has
+not enabled bracketed paste mode. Silencing the report leaves the split
+untouched.
+
+**Upstream.** `anthropics/claude-code#54700`, "Multi-line paste fails in
+Ghostty 1.3.x with TERM=xterm-ghostty (works after switching to
+TERM=xterm-256color)". Reported at Claude Code 2.1.123 against Ghostty 1.3.1,
+regression traced to ~2.1.119, whose changelog carries "Fixed multi-line paste
+losing newlines in terminals using kitty keyboard protocol sequences inside
+bracketed paste". Closed as **not planned**; present here at 2.1.273. Their
+diagnosis is that Claude Code takes a kitty-protocol-aware paste tokenisation
+path when TERM is `xterm-ghostty`, and that path mangles the paste.
+
+Measured here the same day, the one factual error in that report and why the
+diagnosis survives it: they say `xterm-256color` declares neither bracketed
+paste nor the kitty extensions. On Fedora both entries declare `BE`/`BD` – the
+whole discriminator between them is `fullkbd`, which is the kitty keyboard
+capability, so the report points at its own cause more squarely than it knows.
+
+**Untested workaround:** `TERM=xterm-256color claude`, which would live on the
+`cc`/`ccf` aliases in `bash/.bashrc.d/40-aliases.sh`. It costs Claude Code's
+TUI the kitty keyboard protocol, so extended key reporting — shift+enter and
+its neighbours — changes inside it. Try it before adopting it.
+
+**A separate finding, unexplained, relevance unknown.** On nousowl the login
+shell sshd starts emits `\e[?2004h` under `TERM=xterm-256color` and never
+under `TERM=xterm-ghostty`; four reproductions off the raw pty stream. Ruled
+out by measurement: the entry's content (nousowl's `~/.terminfo` copy is
+byte-identical to bigfed's RPM entry), its `BE`/`BD` capability, the lookup
+path, the rc chain, login vs non-login, `-t` vs `-tt`, and termcap-buffer
+truncation (xterm-ghostty's termcap form is 1053 bytes against
+xterm-256color's 1086, and its compiled entry is the smaller of the two).
+Every bash started by hand over that same connection enables bracketed paste
+under `xterm-ghostty`; only the shell sshd starts does not. ⚠ Caveat that
+wants clearing first: this was measured through a bare Python pty with nothing
+at the far end to answer terminal queries, which is not a real Ghostty window.
+Re-measure in one before treating it as a fact about live use.
+
+⚠ The Clipboard comment in `ghostty/config` gives the cause of that nousowl
+finding as `ssh-terminfo` installing only into the login user's
+`~/.terminfo`, leaving nested contexts without it. That was measured wrong the
+same day: the entry is present for the login user and bracketed paste is off
+regardless. The comment stands as written by request — correct it when this
+item is picked up.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,

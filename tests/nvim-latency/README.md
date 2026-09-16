@@ -25,7 +25,7 @@ syntax evaluation and no redraw, and every timing would be meaningless.
 | file | what it is |
 |---|---|
 | `run.sh` | the regression gate — run this |
-| `verify.py` | its 71 checks |
+| `verify.py` | its 79 checks |
 | `bench.py` | the measurement tool (no pass/fail) |
 | `stallwatch.lua` | in-session diagnostic for stalls you can't reproduce |
 | `harness.py` | shared Neovim harness |
@@ -103,6 +103,19 @@ broken:
 - a Lua buffer still auto-completes, i.e. non-TeX filetypes are untouched;
 - the auto-save autocmds live in the `bph_autosave` group, none is left
   ungrouped, and re-sourcing `autocmds.lua` does not duplicate them;
+- the CTRL-D step is 10 *display* rows and stays there (2026-09-15): the
+  `bph_scroll_step` autocmd in `autocmds.lua` holds `'scroll'` through a
+  window resize and into a new split, `<C-d>` moves exactly ten display rows,
+  and a window no taller than the step keeps Vim's own half-window default.
+  `'scroll'` is window-local and Vim resets it to half the window height on
+  every size change, so the thing being pinned is that the autocmd re-applies
+  it — a plain `vim.opt.scroll` in `options.lua` is indistinguishable from
+  having nothing at all (mutation, below).
+  ⚠ The row count is measured *in the fixture*: the filetype check above
+  leaves a two-line `enew` Lua buffer current, where `<C-d>` cannot scroll and
+  the count reads 0 against an expected 10. It did, on the first run; the
+  `v.open_fixture()` and the filetype guard beside it are what stop that check
+  going quietly vacuous;
 - the gate's look-behind survives *long* arguments: the provider stays enabled
   deep in a 75-char `\cite` key list and after a long optional argument (at the
   original 60-char window both went dead mid-argument — found 2026-08-22,
@@ -120,6 +133,32 @@ Run it after a VimTeX, blink.cmp or LuaSnip update, after editing
 `lua/plugins/{vimtex,completions,snippets}.lua`, `lua/snippets/{loader,helpers}.lua`
 or `lua/config/autocmds.lua`, or whenever typing in a long LaTeX paragraph starts
 feeling heavy again.
+
+**2026-09-15, the scroll step**, three mutations of a copied config tree via
+`NVIM_LATENCY_CONFIG`, each run and checked against its exact failure set:
+
+- *The `bph_scroll_step` autocmd deleted outright*: `74 passed, 5 failed` —
+  the step (24, want 10), its survival of a resize (24) and of a split (12),
+  the return after resizing back (24), and the row count (22 rows, want 10).
+  The two checks that stay green are the ones that should: the fixture guard,
+  and the short-window default, which without the autocmd is what you get
+  everywhere.
+- *`vim.opt.scroll = 10` in `options.lua` instead of the autocmd* — the
+  tempting wrong implementation: **the identical `74 passed, 5 failed`**, the
+  same five values. Expected to survive the first check and did not, because
+  this harness attaches its UI after startup and the attach is itself a size
+  change, so Vim has already reset it to 24 before the first check reads it.
+  ⚠ That totality is a property of the harness; in an ordinary launch a plain
+  option would last until the first resize or split. The claim that does not
+  depend on the harness is the measured decay, 10 to 19 after a resize and to
+  13 in a split.
+- *The height guard dropped* (`> SCROLL` removed from the window test): **not
+  a failure but an abort** — `WinNew Autocommands for "*": E49: Invalid
+  scroll size`, raised on the first small window the suite opens, killing the
+  run before any count. Setting `'scroll'` larger than its window is an error,
+  and this autocmd fires on `WinNew`, so the guard is what keeps a completion
+  menu or a popup from throwing. That is the guard's real job; the
+  half-window-default check merely records the visible half of it.
 
 **Mutation-verified**, in three directions (2026-08-22, each run and checked
 against its exact failure set):

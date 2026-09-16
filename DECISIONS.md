@@ -1293,3 +1293,166 @@ primed, `\usepackage{a` 0.57 s per session. The full numbers are under
 `PLAN.md` section 3's stage-4 paragraph; bigfed's machine-local
 `~/Desktop/CLAUDE.md` carries the two items. Criterion 1 holds on both
 machines.
+
+
+## nvim: the CTRL-D step, and where scroll cost goes — 2026-09-15
+
+One chat on bigfed, opened as a diagnosis: scrolling felt "jolty", especially
+in LaTeX but also in other long documents. The finding is that two of the three
+things it could have been are not happening, and the third is the syntax layer
+seen through a unit the keystroke work never used. One change was made,
+`'scroll'` to 10 display rows; the rest is recorded so it is not re-derived.
+
+**The measurements** (bigfed, a live 106x56 window, `completeness.tex`; the
+harness is `tests/nvim-latency/harness.py` with a UI attached, so absolute
+per-redraw milliseconds are inflated by msgpack serialisation – the syntime
+figures, the screen-row geometry and the frame counts do not depend on it):
+
+- **Syntax is the cost, 4.65 ms per screen row scrolled** (`:syntime` over a
+  200-row sweep), falling to **1.60** with `vimtex_syntax_custom_cmds = {}`.
+  That 66/34 split confirms the ~60% already recorded for keystrokes rather
+  than revising it; what is new is the unit. Typing re-evaluates one line, so
+  the layer is invisible; scrolling re-evaluates a row for every row
+  travelled.
+- **The UI layer is noise**, re-confirming the 2026-08-22 verdict from the
+  scroll side: ablating statuscolumn, relativenumber, snacks indent guides,
+  `list`, cursorline and signcolumn changed nothing measurable, while `syntax
+  off` took the same loop from ~29 ms/step to 0.54 ms.
+- **Distance per press is constant.** Under `smoothscroll` the whole family
+  counts display rows: `<C-e>` 1, `<C-d>` `'scroll'`, `<C-f>`/`<PageDown>`/
+  `<S-Down>` 53. With `smoothscroll` off the same commands vary (4–24 and
+  10–39 rows) because they revert to buffer lines, which in soft-wrapped prose
+  is a paragraph.
+- **snacks.scroll drops frames.** LazyVim enables it; it animates any keyboard
+  scroll over one line across 200 ms in 10 ms steps, and delivered 9–15 of ~20
+  frames at 14–32 ms apart over four trials. A frame advancing three rows owes
+  ~14 ms of syntax against a 10 ms budget. Constant distance, uneven velocity
+  — that is the jolt.
+- **The wheel is a separate mechanism**: 3 display rows per *event*, ~3 events
+  per detent on a hi-res MX Master, and a 13x input backlog (60 events arrive
+  in 70 ms, drain in 951 ms; ~63 events/s serviced). Open as `TODO.md` item 22.
+- Checked and **ruled out**: the terminal (Ghostty, the faster one at
+  repaints); conceal reflow (`conceallevel` is 2 but VimTeX's conceal is off —
+  zero concealed lines in view, line height unchanged by cursor position);
+  `display` (it is `lastline`, so no `@@@` filler jump); and `syntax sync
+  minlines`, which made no consistent difference at 1, 50 or 200.
+
+**The change.** `'scroll'` = 10 display rows, from a default of 27 (half the
+window), via a `bph_scroll_step` autocmd in `nvim/lua/config/autocmds.lua`.
+His words: 27 is "absurd"; 10 is "vastly better".
+
+The autocmd is the mechanism rather than a line in `options.lua` because
+`'scroll'` is **window-local and Vim resets it to half the window height on
+every size change** – measured decaying from 10 to 19 after a resize to 40
+rows, and to 13 in a new `:split`, silently and with no error. It is therefore
+re-applied on `VimEnter`, `WinEnter`, `WinNew`, `VimResized` and `WinResized`,
+across every window, since a resize hits them all at once. If the autocmd never
+fires, stock behaviour returns, so the failure direction is safe. Verified
+against the config on disk: 10 across resizes and splits, and `<C-d>` moving
+exactly 10 rows every press.
+
+Its height guard turned out to be load-bearing rather than good manners.
+Setting `'scroll'` above its own window raises `E49: Invalid scroll size`, and
+the autocmd fires on `WinNew`, so an unguarded version throws on every small
+window created — a completion menu, a popup. Found by mutation, not by
+reasoning: dropping the guard does not fail a check, it aborts the latency
+suite on the first `WinNew`. The merits agree anyway; a ten-row step in a
+ten-row window is a whole page, and Vim's half-window default is better there.
+
+Eight checks were added to `tests/nvim-latency` (71 → 79) and mutation-verified
+in three directions; the exact failure sets are in that suite's README. One of
+them is worth repeating here, because it is the argument for the mechanism:
+`vim.opt.scroll = 10` in `options.lua` produces the **identical** failure set
+to deleting the autocmd entirely. Under the harness that is total, because the
+UI attaches after startup and the attach is itself a size change, so Vim has
+reset the option before the first check reads it; in an ordinary launch it
+would last until the first resize or split instead. Either way a plain option
+is not a weaker version of this, and the directly measured decay — 10 to 19
+after a resize, to 13 in a split — is the claim that does not depend on how
+the harness starts. And
+the row-count check was silently vacuous on its first run, reading 0 in the
+two-line `enew` Lua buffer an earlier check leaves current; the fixture is now
+reopened before it, with a filetype guard beside it.
+
+**Declined, both deliberately.**
+
+1. **Touching the custom colour layer**, though it is two thirds of the cost.
+   It is held by the french-logic working agreement and changes only from
+   instances he brings to the bench. The answer to a scroll complaint is
+   distance per press, not fewer colours.
+2. **Changing `mousescroll`**, for now — a lower `ver:` shortens the overshoot
+   without touching the lag, and the free-spin/ratchet switch on the mouse is a
+   cheaper thing to try first. Recorded as item 22 rather than guessed at.
+
+Also corrected in-session, and worth knowing because the bad method is
+inviting: screen-row displacement must be measured with `skipcol`, not by
+differencing `topline`. Under `smoothscroll` the view parks part-way into a
+wrapped line, so a topline difference counts whole paragraphs where the view
+moved a fraction of one. The reliable method is to count `<C-e>` presses
+between two saved views.
+
+## tabula: the font trial's arc, and what it declines — 2026-09-15
+
+One chat on bigfed, opened to record a complaint about Atkinson Hyperlegible
+Mono's lowercase `l`, which became the design of the trial itself. The standing
+question is which monospace faces are sustainable long-term as the **primary
+terminal font**, with Source Code Pro the incumbent to unseat. The rotation was
+restocked 24 → 39 and the working discipline settled; the operative rules live
+in `bin/tabula`'s header and `bin/CLAUDE.md`, and this entry records why.
+
+**The arc.** Phase one sorts through many faces in the scratchpad; phase two
+builds a ranking instrument once a shortlist exists; phase three wears the
+finalists in the terminal. Each phase produces the requirements of the next: a
+shortlist that does not yet exist cannot specify the instrument that would rank
+it, and finalists are what a terminal trial is worth running on.
+
+**The measurements worth not re-deriving:**
+
+- **Glyph coverage does not bear on the choice.** A census of 168 live files
+  across `n-cube`, `dissertation` and `opuscula` found 29 distinct non-ASCII
+  codepoints in 128 occurrences, 92 of them inside one archived file. VimTeX
+  conceal is off, so LaTeX source shows `\wedge` rather than the symbol. The
+  JuliaMono fallback in `ghostty/config` remains correct insurance and was left
+  alone – the terminal also renders Isabelle output and this chat – but judge a
+  face here on how ordinary Latin text wears.
+- **Cousine and Liberation Mono are one typeface.** Same designer (Steve
+  Matteson), identical metrics (0.600 advance, 0.528 x-height, 0.659 cap), and
+  identical `g`/`a`/`M` outlines. Of the glyphs probed only the `l` differs:
+  Liberation's begins at x=267, Cousine's at x=134. Both were marked liked a day
+  apart, 09-13 and 09-14. They are kept as a pair because that makes them a
+  controlled test of a letter he has now twice singled out.
+- **Source Code Pro is a low-x-height outlier**, 0.486 against a rotation median
+  near 0.52, while Liberation and Cousine sit at 0.528 with the shortest
+  ascenders in the table. The faces he likes best disagree on the obvious axis,
+  which is the argument for recording metrics beside verdicts and leaving the
+  theory until there is something to fit it to.
+- **Two controlled sets were added deliberately.** The Vera lineage (Bitstream
+  Vera Sans Mono, DejaVu Sans Mono, Hack) holds metrics fixed across three
+  drawings and 256/3322/1548 glyphs; Cascadia Mono is Cascadia Code minus
+  ligatures. Fira Code is *not* the same trick—it moves the advance too, 0.615
+  against Fira Mono's 0.600.
+- **`SMonoHand` is proportional**, despite the name and despite fontconfig
+  indexing it under `:spacing=mono`: `i` 0.280, `m` 0.776, `W` 1.039. Installed,
+  rejected, left on disk. Check advances, never the name or the spacing tag.
+
+**Declined**, all three proposed in this chat and all three rejected:
+
+1. **A terminal rotation**, changing the Ghostty font per new window. It would
+   produce data fastest, at the cost of the stable baseline the work is done in,
+   and it writes to a stowed config on every roll. The terminal is phase three;
+   the scratchpad suits phase one precisely because it is low-stakes.
+2. **A ranking CLI** doing pairwise insertion into a sorted list. Wanted
+   eventually – "there will be a tool built in the future" – but unspecifiable
+   before a shortlist exists. Until then the ordering is gathered informally, by
+   asking when a comparison is convenient and by recording what he volunteers.
+3. **Exposure logging with a weighted draw.** It would give every verdict a
+   denominator and converge the table faster. Declined to keep tabula stateless:
+   no logs, no counters. He reports in chat, and that is the instrument.
+
+**Method note.** Three claims written into the file during this session were
+wrong and were caught on re-reading: a "175 monospace families installed" figure
+that counted Nerd Font and CJK variants; "the lowest x-height here" for Intel
+One Mono, which is fifth; and an archived-file count of 75 that set a filtered
+number against an unfiltered total. A superlative measured over 24 entries does
+not survive the table growing to 39, so re-measure superlatives against the
+table as it stands.

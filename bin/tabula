@@ -7,6 +7,41 @@
 # which the terminal is not. Prune the table below as faces disqualify
 # themselves; what survives is what you can live in.
 #
+# THE ARC, settled 2026-09-15. This is meant to converge, and the table is
+# worked actively rather than merely left running.
+#
+#   Phase one, now.   Sort through many faces here; prune what he cannot see
+#                     himself using long-term, and cycle new ones in.
+#   Phase two, later. Once a shortlist exists, an instrument for ranking what
+#                     survives.
+#   Phase three.      The endgame: the finalists get worn in the terminal,
+#                     which is the venue the whole question is ultimately for.
+#
+# Do not build phase two or three early. The scratchpad is the right venue for
+# phase one, and we are nowhere near a shortlist.
+#
+# Restocking means installing. Measured 2026-09-15: the machine's own stock was
+# already exhausted by this table, bar Courier clones, OCR-B and a blanking
+# font, so the bench is the Fedora repos. The 2026-09-15 restock, recorded here
+# because configs/ has no package manifest and both machines must match:
+#
+#   sudo dnf install intel-one-mono-fonts polarsys-b612-mono-fonts \
+#     source-foundry-hack-fonts dejavu-sans-mono-fonts redhat-mono-fonts \
+#     vercel-geist-mono-fonts google-roboto-mono-fonts cascadia-mono-fonts \
+#     fira-code-fonts oxygen-mono-fonts twr-mint-mono-fonts \
+#     google-noto-sans-mono-fonts bitstream-vera-sans-mono-fonts \
+#     pcaro-hermit-fonts ax86-terminus-ttf-fonts
+#
+# Not packaged for Fedora, and so absent from this experiment until someone
+# installs them by hand: Iosevka, Victor Mono, Recursive, Commit Mono, Martian
+# Mono, Sometype, Hasklig, Fantasque, Space Mono, Courier Prime.
+#
+# THE PROTOCOL. He reports in chat, in sessions like this one. When he
+# expresses distaste for a face, ask whether he wants it pruned; never chop on
+# your own reading. Take convenient openings to weigh two faces against each
+# other informally, since an offhand comparison is data the table cannot
+# otherwise get. tabula stays stateless: no logs, no counters, no ranking CLI.
+#
 # HOW IT WORKS. Text Editor's font is one GSettings key, `custom-font`, holding
 # a Pango description ("Family 12"). This sets it and launches. There is no
 # per-window font: GSettings is application-global and Text Editor is
@@ -22,19 +57,24 @@
 # Two normalisations were tried and dropped, 2026-09-06. By x-height put
 # JuliaMono at 10.6, which read as plainly too small in use — the x-heights
 # matched but the advance narrowed 12%, so the text merely got denser. By
-# advance width it sat at 12.0, and 16 of the 24 faces landed on a flat 12
-# anyway, so the apparatus bought almost nothing. A trial should show a face at
-# the size you would actually adopt it at, and that size is 12.
+# advance width it sat at 12.0, and 16 of the 24 faces then in the table landed
+# on a flat 12 anyway, so the apparatus bought almost nothing. A trial should
+# show a face at the size you would actually adopt it at, and that size is 12.
 #
-# One consequence worth knowing: Inconsolata and Ligconsolata are 0.500em
-# against Source Code Pro's 0.600em, so at 12 their cells run ~17% narrower and
-# the text is correspondingly denser — a larger version of the effect that made
-# JuliaMono at 10.6 feel small. If either reads as cramped, that is the metric
-# and not the drawing; 14.4 puts it back on the same grid.
+# One consequence worth knowing: a face narrower than Source Code Pro's 0.600em
+# draws a denser page at the same nominal size -- a larger version of the effect
+# that made JuliaMono at 10.6 feel small. As of 2026-09-15 the narrow ones are
+# Inconsolata, Ligconsolata and Terminus at 0.500em (~17% narrower), Mint Mono
+# at 0.515 (~14%) and Anonymous Pro at 0.546 (~9%); Cascadia Code and Cascadia
+# Mono at 0.586 are close enough not to read as different. If one of them seems
+# cramped, that is the metric and not the drawing, and dividing 12 by the ratio
+# puts it back on Source Code Pro's grid -- 14.4 for the 0.500em group.
 #
 #   tabula                      open a scratchpad in a random font
 #   tabula --which              print the font currently set, without launching
 #   tabula --list               print the rotation
+#   tabula --verify             check every family resolves to itself; run it
+#                               on BOTH machines after any font install
 #   TABULA_FONT="Fira Mono 12" tabula      pin one launch, no roll
 #
 # Adding a face: confirm the family name resolves to itself first, because
@@ -44,10 +84,19 @@
 set -euo pipefail
 
 # --- the table --------------------------------------------------------------
-# Family|size. Every entry was verified to resolve to itself on 2026-09-06, and
-# all are installed system-wide except JuliaMono and Inconsolata LGC, which
-# come from TeX Live and so depend on the year pin in
-# fontconfig/conf.d/09-texlive-fonts.conf.
+# Family|size. Every entry is verified to resolve to itself, on BOTH machines,
+# before it is listed here; `tabula --verify` re-checks the whole table and is
+# the standing guard. Last run clean on bigfed and fedxps at 39 entries,
+# 2026-09-15. Most come from Fedora packages; JuliaMono, Inconsolata LGC and
+# the Monaspace superfamily come from TeX Live instead, and so depend on the
+# year pin in fontconfig/conf.d/09-texlive-fonts.conf.
+#
+# GLYPH COVERAGE IS NOT A PRUNING CRITERION. Measured 2026-09-15 across 168 live
+# files in n-cube, dissertation and opuscula: 29 distinct non-ASCII codepoints,
+# 128 occurrences in total, and 92 of those sit in one archived file. VimTeX
+# conceal is off, so LaTeX source shows \wedge and not the symbol. The JuliaMono
+# fallback in ghostty/config covers the rare case. Judge these faces on how
+# ordinary Latin text wears, not on a glyph count.
 #
 # MARKS. The table feeds the experiment and records it. An entry carries what
 # he has come to think of the face:
@@ -69,8 +118,16 @@ FONTS=(
   # The seven installed 2026-09-06 for this trial.
   "Source Code Pro|12"                # the incumbent, and the baseline
   "Atkinson Hyperlegible Mono|12"     # legibility-first; only 359 glyphs
+                                      # liked 2026-09-15, with one reservation:
+                                      # the lowercase "l" is almost unbearable
+                                      # to look at. Good otherwise; that one
+                                      # glyph is terrible.
   "IBM Plex Mono|12"
-  "Cousine|12"                        # liked 2026-09-14
+  "Cousine|12"                        # liked 2026-09-14. Measured
+                                      # 2026-09-15: the same design as
+                                      # Liberation Mono below. Same designer,
+                                      # same metrics, identical g/a/M outlines;
+                                      # of the glyphs probed, only the l differs.
   "Anonymous Pro|12"
   "Inconsolata|12"                    # no italic; Pango synthesises one
   "Overpass Mono|12"                  # no italic; likewise
@@ -84,12 +141,14 @@ FONTS=(
   "Cascadia Code|12"
   "Fira Mono|12"
   "Adwaita Mono|12"
-  "Liberation Mono|12"                # liked 2026-09-13
+  "Liberation Mono|12"                # liked 2026-09-13; "a lot" 2026-09-15
   "Go Mono|12"
-  "PT Mono|12"
-  "Droid Sans Mono|12"
-  "Libertinus Mono|12"                # a serif monospace; unusual, legible
-  "Ligconsolata|12"                   # Inconsolata plus coding ligatures
+  "PT Mono|12"                        # no italic
+  "Droid Sans Mono|12"                # no italic
+  "Libertinus Mono|12"                # a serif monospace; unusual, legible;
+                                      # no italic
+  "Ligconsolata|12"                   # Inconsolata plus coding ligatures;
+                                      # no italic
 
   # GitHub's Monaspace superfamily — five deliberately different personalities
   # at identical metrics, which makes them unusually good for this exercise.
@@ -105,6 +164,45 @@ FONTS=(
   "Monaspace Xenon|12"                # slab serif
   "Monaspace Radon|12"                # handwriting
   "Monaspace Krypton|12"              # mechanical
+
+  # Installed 2026-09-15 to restock the bench, all from the Fedora repos. Each
+  # was verified to resolve to itself on BOTH machines before being listed
+  # here; `tabula --verify` is the standing check.
+  "Intel One Mono|12"                 # legibility-engineered 2023, aimed at low
+                                      # vision; x-height 0.465 against Source
+                                      # Code Pro's 0.486
+  "B612 Mono|12"                      # drawn for aircraft cockpit displays;
+                                      # 0.650 advance, the widest in the table
+  "Red Hat Mono|12"                   # x-height 0.488, near Source Code Pro's
+  "Hermit|12"
+  "Geist Mono|12"
+  "Roboto Mono|12"
+  "Mint Mono|12"                      # 0.515 advance, so it runs dense; 16.6k
+                                      # glyphs, the widest coverage in the table
+  "Terminus (TTF)|12"                 # bitmap lineage, 0.500 advance; names its
+                                      # upright face Medium, not Regular
+  "Noto Sans Mono|12"                 # no italic
+  "Oxygen Mono|12"                    # no italic
+
+  # The Vera lineage: one set of metrics (0.602 advance, 0.547 x-height, 0.729
+  # cap), three drawings, wildly different coverage. Vera is the 2003 original,
+  # DejaVu extends it, Hack redraws it. Like Monaspace, a controlled comparison
+  # -- the metrics are held fixed and only the drawing moves.
+  "Bitstream Vera Sans Mono|12"       # 256 glyphs
+  "DejaVu Sans Mono|12"               # 3322 glyphs
+  "Hack|12"                           # 1548 glyphs
+
+  # Ligature controls against faces already listed above.
+  "Cascadia Mono|12"                  # Cascadia Code's metrics exactly, minus
+                                      # the ligatures
+  "Fira Code|12"                      # Fira Mono plus ligatures, but NOT its
+                                      # metrics: 0.615 against Fira Mono's
+                                      # 0.600. No italic.
+
+  # Installed and rejected 2026-09-15: oflb-smonohand-fonts. fontconfig indexes
+  # SMonoHand under :spacing=mono and the name says mono, but it is
+  # proportional -- i 0.280, m 0.776, W 1.039, l 0.274. Left on disk, kept out
+  # of the table. Check advances, never the name or fontconfig's spacing tag.
 )
 # ----------------------------------------------------------------------------
 
@@ -113,6 +211,24 @@ SCHEMA=org.gnome.TextEditor
 case "${1:-}" in
   --which) gsettings get "$SCHEMA" custom-font; exit 0 ;;
   --list)  printf '%s\n' "${FONTS[@]}" | tr '|' ' '; exit 0 ;;
+  --verify)
+    # Both machines must draw the same face for the same table. fc-match never
+    # fails -- it substitutes in silence -- so a font installed here and not
+    # there would have him judging a substitute without either of us knowing.
+    # Read-only; exit 0 clean, exit 1 if anything is missing.
+    rc=0
+    for entry in "${FONTS[@]}"; do
+      fam=${entry%%|*}
+      got=$(fc-match -f '%{family}' "${fam}:style=Regular" 2>/dev/null)
+      if [[ ",${got}," != *",${fam},"* ]]; then
+        printf 'MISSING  %-32s resolves to: %s\n' "$fam" "${got:-<nothing>}"
+        rc=1
+      fi
+    done
+    if [[ $rc -eq 0 ]]; then
+      printf 'ok: all %d families resolve to themselves on %s\n' "${#FONTS[@]}" "$(hostname)"
+    fi
+    exit $rc ;;
 esac
 
 if [[ -n "${TABULA_FONT:-}" ]]; then

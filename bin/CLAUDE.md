@@ -35,9 +35,15 @@ with a conflict.
   is why the script sets it defensively every run. The rotation is a plain
   table at the top — comment a line out to prune it, which is the intended way
   to converge. Sizes are a flat 12; two normalisations were tried and dropped,
-  and the header records why. The *binding* is per-machine and outside this
-  repo: a dconf shortcut on bigfed, `bindsym $mod+x` in `sway/config` on
-  fedxps.
+  and the header records why. **Fonts are system packages and do not sync,
+  while the table does, and `fc-match` substitutes in silence**, so run `tabula
+  --verify` on **both** machines after any font install; it walks the table and
+  exits non-zero on a family that resolves to something else. The ranking
+  instrument and the terminal trial are deliberately unbuilt: the trial is in
+  phase one and has no shortlist yet (verdict 2026-09-15; the arc and the
+  three declined mechanisms are in `DECISIONS.md`). The *binding* is
+  per-machine and outside this repo: a dconf shortcut on bigfed, `bindsym
+  $mod+x` in `sway/config` on fedxps.
 
 - `screens-off` — locks the session and lets GNOME power the displays down,
   bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never
@@ -116,9 +122,12 @@ The procedure, in order — each step earned its place:
 
 State, fingerprints, and ~130MB of build artifacts live in
 `~/.cache/tl-newyear` — machine-local, deliberately unsynced. Builds always
-go there via `-output-directory`, never in-place: `teach-logic/` and
-`opuscula/` track their build artifacts, and an in-place recompile would
-dirty tracked PDFs.
+go there via `-output-directory`, never in-place. `teach-logic/` tracks its
+build artifacts, so an in-place recompile dirties tracked PDFs; `opuscula/`
+carries 285 of them as **Syncthing** content since 2026-09-15
+(`org/machines/syncthing.md`), so one in-place recompile there rewrites all
+285 across three machines and leaves a year of `.stversions` entries on
+nousowl.
 
 **Known casualty: the *forall x* textbook.** `tabu` v2.9 (unmaintained)
 patches `array.sty` internals, and TL2026's rewritten `array` breaks all

@@ -225,6 +225,33 @@ cursor-style = block
 mouse-hide-while-typing = true
 
 
+# --- Clipboard --------------------------------------------------------------
+
+# NO COUNTERPART in .wezterm.lua, which has no paste confirmation to
+# transcribe. Off, 2026-09-15, because a paste into a terminal is always
+# deliberate here and the dialog fires in exactly the case it cannot help
+# with.
+#
+# What Ghostty calls an unsafe paste is one carrying a newline while the
+# program reading input has NOT enabled bracketed paste mode
+# (clipboard-paste-bracketed-safe, default true, is what excuses the rest).
+# So the prompt and the other half of the same annoyance -- a block of
+# commands running line by line instead of landing whole at the prompt --
+# are one fact seen twice, and this line reaches only the first of them.
+#
+# Bracketed paste is readline's, and readline gates it on finding a terminfo
+# entry for $TERM: measured 2026-09-15 under a pty, an unknown name and
+# `dumb` both suppress \e[?2004h, while an explicit
+# `set enable-bracketed-paste on` in inputrc forces it back on regardless.
+# `ssh-terminfo` installs xterm-ghostty into the *login user's* ~/.terminfo
+# on the far host, so the login shell is covered and a nested context is not
+# -- root through sudo, a docker exec, any second user. On nousowl the entry
+# sits only in ~bph/.terminfo, never /usr/share/terminfo (checked the same
+# day). That is where the line-by-line paste comes from, and it is fixed on
+# the far side, not here.
+clipboard-paste-protection = false
+
+
 # --- Window -----------------------------------------------------------------
 
 # default_cwd. Written tilde-relative so the one file suits both machines.

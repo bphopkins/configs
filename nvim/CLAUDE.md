@@ -7,7 +7,7 @@ a plugin tour in Brandon's voice; not a charter. The engineering records behind
 the rules below: `docs/insert-latency-2026-08.md`,
 `docs/nvim-audit-2026-08-22.md`, `docs/latex-completion-campaign-2026-09/` (the
 completion layer) and `DECISIONS.md` (items 2, 9, the Done ledger, the
-2026-09-12 and 2026-09-13 sections).
+2026-09-12, 2026-09-13 and 2026-09-15 sections).
 
 ## Layout
 
@@ -183,15 +183,51 @@ closure is not this stall: it loads in idle time after VimTeX's init
 
 ## Keystroke cost (settled 2026-09-12)
 
-There is no latency problem on either machine: 4 ms per keystroke on bigfed
-and 7–8 ms on fedxps at the end of the longest dissertation line, in
-balanced or performance mode. The August residual of 54 ms was fedxps's
-power-saver mode (clocks pinned at 900 MHz), which still costs 17–21 ms;
-write in balanced on battery. Don't propose engine work for speed: the
-custom layer is ~60% of syntax time and merging its rules into families
-measured no gain, VimTeX's Unicode classes are off (they coloured nothing),
-and the three recorded exits stay declined. Record: DECISIONS.md and the
-addendum to `docs/insert-latency-2026-08.md`.
+There is no latency problem **while typing** on either machine: 4 ms per
+keystroke on bigfed and 7–8 ms on fedxps at the end of the longest
+dissertation line, in balanced or performance mode. The August residual of
+54 ms was fedxps's power-saver mode (clocks pinned at 900 MHz), which
+still costs 17–21 ms; write in balanced on battery. Don't propose engine
+work for speed: the custom layer is ~60% of syntax time and merging its
+rules into families measured no gain, VimTeX's Unicode classes are off
+(they coloured nothing), and the three recorded exits stay declined.
+Record: DECISIONS.md and the addendum to `docs/insert-latency-2026-08.md`.
+Scrolling prices the same layer differently — next section.
+
+## Scroll cost, and the CTRL-D step (2026-09-15)
+
+Typing re-evaluates one line; scrolling re-evaluates a row for every row
+travelled, so the layer that is invisible per keystroke dominates a scroll.
+Measured on bigfed at a live 106x56 window, `:syntime` over a 200-screen-row
+sweep of `completeness.tex`: **4.65 ms of syntax per screen row**, 1.60 with
+`vimtex_syntax_custom_cmds = {}` – the same ~60/40 split the keystroke work
+recorded, in a different unit. Ablation put the whole UI layer (statuscolumn,
+relativenumber, snacks indent, `list`, cursorline, signcolumn) at noise:
+syntax off took the same loop from ~29 ms/step to 0.54 ms. None of this is a
+case for touching the colour layer.
+
+Under `smoothscroll` (LazyVim sets it) the whole scroll family counts
+**display rows**, so each step is exact and constant: `<C-e>` 1, the wheel 3
+per event, `<C-d>` `'scroll'`, `<C-f>`/`<PageDown>`/`<S-Down>` a page of 53.
+Distance per press does not vary; what reads as jolt is uneven velocity
+inside it.
+
+- **`'scroll'` is 10 display rows**, set by the `bph_scroll_step` autocmd in
+  `lua/config/autocmds.lua`; Vim's default, half the window, was 27 here.
+  ⚠ `'scroll'` is window-local and Vim **resets it to half the window height
+  on every size change**, so a plain `vim.opt.scroll` in `options.lua` does
+  not hold — measured decaying to 19 after a resize and to 13 in a split,
+  silently and with no error. The autocmd is the mechanism, not a flourish. ⚠ Its height guard is load-bearing too: setting
+  `'scroll'` above its window raises `E49`, and the autocmd fires on `WinNew`,
+  so without the guard every completion menu throws on creation. Both are
+  pinned by the latency suite, mutation-verified.
+- **snacks.scroll is left alone.** LazyVim enables it; it animates any
+  keyboard scroll over one line across 200 ms in 10 ms steps, and delivered
+  9–15 of ~20 frames at 14–32 ms apart — a frame advancing three rows owes
+  ~14 ms of syntax against a 10 ms budget. It does not animate the wheel.
+- The wheel's lag and overshoot are a different mechanism – input backlog,
+  not animation – and stay open as `TODO.md` item 22. Record:
+  `DECISIONS.md`.
 
 ## Snippets
 
@@ -321,7 +357,8 @@ nvim closed — the default order follows it.
 
 `lua/config/autocmds.lua` saves on **both** `InsertLeavePre` and
 `TextChanged` (augroup `bph_autosave`, so a re-source can't register a second
-copy). That pair is the *minimum* yielding the invariant "whenever I am in
+copy; the file's other concern is the CTRL-D step, above, under its own
+`bph_scroll_step` group). That pair is the *minimum* yielding the invariant "whenever I am in
 normal mode, the work is saved": `TextChanged` does not fire on Esc,
 `InsertLeavePre` does not fire on normal-mode edits — and note it is not
 insert-only: `x`, `dd`, `p`, `u` each write too. Neither event may be
@@ -391,8 +428,11 @@ auto-running restore inside the pull, were considered and **declined**
 ## Standing verdicts (don't re-derive)
 
 - **The LazyVim UI layer is not a latency lever** — measured by ablation,
-  everything under 1 ms (`docs/nvim-audit-2026-08-22.md`). Don't re-propose
-  statuscolumn/cursorline/snacks/clipboard changes as latency fixes.
+  everything under 1 ms (`docs/nvim-audit-2026-08-22.md`), and re-confirmed
+  from the scroll side 2026-09-15, where statuscolumn, relativenumber, snacks
+  indent, `list`, cursorline and signcolumn were all noise against syntax.
+  Don't re-propose statuscolumn/cursorline/snacks/clipboard changes as
+  latency fixes.
 - Notification bubbles are sized in `snacks.lua` (10 s / 0.55 width /
   wrapped; compact style kept after live comparison).
 - The two disabled plugins (friendly-snippets, catppuccin) are
@@ -412,12 +452,15 @@ auto-running restore inside the pull, were considered and **declined**
   intact. `perf.sh <file.tex>` beside it prices the whole custom layer
   (read-only; bigfed 2026-08-28: 0.47 ms/line on completeness.tex; under
   ~2 ms/line is imperceptible per keystroke).
-- `tests/nvim-latency/run.sh` (71 checks, ~150 s, hermetic, needs `pynvim`)
+- `tests/nvim-latency/run.sh` (79 checks, ~150 s, hermetic, needs `pynvim`)
   — the 42 of 2026-08-22, the stage-3 pins of 2026-09-13 (the two gates,
   the rows, the `\begin{` template, the document's own commands) and the
   four stage-4 pins of the same day (the idle pre-warm, the 45-cell
   description column, blink's per-keystroke snippet check kept off
-  LuaSnip's trigger scan, a typed trigger still expanding on `<Tab>`);
+  LuaSnip's trigger scan, a typed trigger still expanding on `<Tab>`) and
+  the eight scroll-step pins of 2026-09-15 (`'scroll'` held at 10 display
+  rows through a resize and a split, the exact step, the short-window
+  guard);
   asserts the *structure* the latency fixes rest on and the behaviour they
   must not have broken; no millisecond assertions (timings move with the
   machine). Mutation-verified, five mutations recorded 2026-09-13 in its

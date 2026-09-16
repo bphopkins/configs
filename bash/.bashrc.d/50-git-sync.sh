@@ -41,7 +41,6 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/llemmma.github.io"
   "$HOME/Desktop/teach-logic"
   "$HOME/Desktop/dissertation-template"
-  "$HOME/Desktop/opuscula"
   "$HOME/Desktop/sonnerie"
   "$HOME/Desktop/sylloge"
 )

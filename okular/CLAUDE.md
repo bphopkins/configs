@@ -39,5 +39,10 @@ the running process keeps its in-memory values until restarted.
 `okularrc` — window/session state plus a `[Recent Files]` list rewritten
 every session, which would churn a commit a day, collide on every rebase,
 and publish refereeing and teaching PDF names to a public remote — and
-`~/.local/share/okular/docdata/` — ~13MB of per-document state keyed to the
-unsynced `readings/` library.
+`~/.local/share/okular/docdata/`, 1.5 MB in 365 files as of 2026-09-15, whose
+names take the form `<size>.<document>.pdf.xml` and so publish those same
+names. One reason carries both exclusions, and it binds this repo alone.
+
+⚠ **Open since 2026-09-06**, when `readings/` stopped differing between the
+machines: whether per-document state should now follow the PDFs. It would not
+come here if so.

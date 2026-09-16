@@ -502,6 +502,73 @@ try:
     c.check("re-sourcing autocmds.lua does not duplicate them",
             autosave_total(), before)
 
+    # ---- the CTRL-D step: 10 display rows, held against resize (2026-09-15)
+    # 'scroll' is window-local and Vim RESETS it to half the window height on
+    # every size change, so a plain vim.opt.scroll in options.lua decays
+    # silently -- to 19 after one resize, to 13 in a split.  The
+    # bph_scroll_step autocmd in lua/config/autocmds.lua re-applies it.  The
+    # regression is silent in exactly the same way: nothing errors, <C-d>
+    # just quietly goes back to half a window.  Under 'smoothscroll' the step
+    # is counted in DISPLAY rows, which is the whole point of picking it.
+    def scroll_step_rows():
+        """Display rows one <C-d> moves the view, counted in <C-e> presses."""
+        return v.lua(r"""
+          vim.cmd('keepjumps normal! gg'); vim.cmd('normal! zt')
+          local a = vim.fn.winsaveview()
+          pcall(function() vim.cmd('keepjumps execute "normal! \\<C-d>"') end)
+          local b = vim.fn.winsaveview()
+          vim.fn.winrestview(a)
+          local n = 0
+          while n < 500 do
+            local c = vim.fn.winsaveview()
+            if c.topline > b.topline
+               or (c.topline == b.topline and (c.skipcol or 0) >= (b.skipcol or 0)) then break end
+            vim.cmd('keepjumps normal! \005')
+            local d = vim.fn.winsaveview()
+            if d.topline == c.topline and (d.skipcol or 0) == (c.skipcol or 0) then break end
+            n = n + 1
+          end
+          vim.fn.winrestview(a)
+          return n
+        """)
+
+    # Back to the fixture first: the filetype check above left a two-line
+    # `enew` Lua scratch buffer current, in which <C-d> cannot scroll at all
+    # and the row count below silently reads 0 -- caught when it did.
+    v.open_fixture()
+    c.check("'scroll' is the 10-display-row step", v.eval("&scroll"), 10)
+    c.check("the step is measured in the tex fixture, not a scratch buffer",
+            v.eval("&filetype"), "tex")
+
+    # 200 cols fits the whole fixture on one screen, so narrow it to give
+    # <C-d> somewhere to go -- and the resize is itself what Vim uses to
+    # clobber 'scroll'.
+    v.nvim.ui_try_resize(100, 50)
+    time.sleep(0.6)
+    c.check("'scroll' survives a window resize", v.eval("&scroll"), 10)
+
+    v.lua("vim.g.snacks_scroll = false")  # the animation races winsaveview
+    c.check("<C-d> moves exactly 10 display rows", scroll_step_rows(), 10)
+    v.lua("vim.g.snacks_scroll = nil")
+
+    v.cmd("split")
+    time.sleep(0.4)
+    c.check("'scroll' is set in a newly split window", v.eval("&scroll"), 10)
+    v.cmd("only")
+
+    # The guard: in a window no taller than the step, a 10-row step would be
+    # a whole page, so Vim's own half-window default is left in place.
+    v.nvim.ui_try_resize(100, 12)
+    time.sleep(0.6)
+    short_h = v.eval("winheight(0)")
+    c.check("a short window is no taller than the step", short_h <= 10, True)
+    c.check("a short window keeps Vim's half-window default",
+            v.eval("&scroll"), short_h // 2)
+
+    v.nvim.ui_try_resize(200, 50)
+    time.sleep(0.6)
+    c.check("'scroll' returns to the step after resizing back", v.eval("&scroll"), 10)
+
     # ---- auto-save failures are loud (once); successes stay silent -------
     # `silent! write` used to swallow a failed write entirely: modified
     # buffer, nothing shown, v:errmsg empty (demonstrated 2026-08-22 — the
