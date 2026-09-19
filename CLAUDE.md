@@ -50,7 +50,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | mako | `~/.config/mako` | timeout semantics, reload |
 | wofi | `~/.config/wofi` | launcher keys, same GTK3 dialect |
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
-| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
+| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the two rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own: the XDG single home, the private identity include, `useConfigOnly`, and how `git config --global` writes through the link)* |
@@ -98,6 +98,10 @@ in-progress guards, offline handling, hints — and their scope live in
 - `gpull <name>...` / `gpush [-m MSG] <name>...` — the same for named repos
 - `gstatall [-f]` — read-only per-repo dashboard; the safe first move
   whenever the machines may be out of step
+
+**Run `tests/claude/run.sh` after any edit to `bin/claude-link` or to
+`org/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
+`bin/context-check`.** Both are sandboxed under `$TMPDIR` and touch nothing real.
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
 

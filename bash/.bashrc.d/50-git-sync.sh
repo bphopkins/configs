@@ -43,6 +43,7 @@ REPOS_DESKTOP=(
   "$HOME/Desktop/dissertation-template"
   "$HOME/Desktop/sonnerie"
   "$HOME/Desktop/sylloge"
+  "$HOME/Desktop/syncthing-indicator"
 )
 
 # Vet thresholds. GSYNC_MAX_MB may be overridden in the environment; the

@@ -16,6 +16,11 @@ with a conflict.
 - `tl-newyear` + `tl-{roots,check,compare,visdiff}.sh` — TeX Live release
   migration; see below.
 - `okular-forward` / `okular-inverse` — the SyncTeX bridge; see below.
+- `context-check` — read-only gauge for the Claude configuration tree, in the
+  `disk-check` shape: nine verdict lines, exit 1 on a fault, 2 on
+  could-not-determine, every FAIL naming its repair. The half of that tree's
+  integrity a script can decide; `/restore-order` judges the prose and calls this
+  first. Suite: `tests/context-check/run.sh`.
 - `claude-link` / `claude-prune` / `claude-collect.sh` — Claude Code
   configuration linkage; see below.
 - `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose
@@ -232,6 +237,16 @@ worth keeping in view here:
   not worked around (`docs/claude-config-behaviors-2026-08.md`). Add entries in
   `org/claude-config`, or put global ones in `settings.json`, which the same
   writer does follow through its link.
+- **Both halves of the health check reach inside `~/.claude`, and that is new.**
+  The user-level link pass skips a shared directory that has disappeared —
+  `[ -e "$CFG/$e" ] || continue` — so only the sweep sees the dangling link left
+  behind, and the sweep walks `~/.claude` as well as `~/Desktop` for exactly that
+  reason. `~/.claude/plans` sat broken on both machines for 23 days because
+  nothing did. SessionStart now counts dangling links into the config and says so
+  in both channels; SessionEnd's `--auto` repairs them. An empty shared directory
+  is the cause, since git cannot carry one: `claude-link --apply` drops a
+  `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so a
+  directory visited once does not become a permanent entry. Fixed 2026-09-18.
 - `settings.json` denies `git commit` / `git push` as a hard block, not a
   prompt; matching is prefix-based, so `git -C <path> commit` slips the
   matcher — the global `CLAUDE.md` remains the backstop for intent.

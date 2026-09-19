@@ -224,6 +224,15 @@ echo
 # path still fails an O_NOFOLLOW write and so still blocks "don't ask again".
 # Only ever removes links that point INTO the shared config: foreign symlinks are
 # left alone.
+#
+# It sweeps ~/.claude as well as ~/Desktop, and that half is not redundant: the
+# user-level pass above is driven by `[ -e "$CFG/$e" ] || continue`, so a
+# directory that disappears from the shared tree is skipped in silence and its
+# link left dangling. That is not hypothetical -- `plans/` emptied out on
+# 2026-08-26 (git cannot carry an empty directory, so the checkout removed it),
+# and both machines carried a dangling ~/.claude/plans through 337 --auto runs
+# with nothing to notice. A keeper file now holds each such directory open; this
+# sweep is the backstop for the next one.
 echo "== sweep =="
 swept=0
 while IFS= read -r -d '' f; do
@@ -237,10 +246,14 @@ while IFS= read -r -d '' f; do
   else
     adp "would remove dangling link: $rel"; swept=$((swept+1))
   fi
-done < <(find "$DESK" -maxdepth 7 \
-           \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
-              -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
-           \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null)
+done < <( { find "$DESK" -maxdepth 7 \
+             \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
+                -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
+             \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null
+            # depth 3 reaches ~/.claude/<entry> and ~/.claude/projects/<scope>/memory,
+            # which is every link this script creates there. find does not descend
+            # through a symlink without -L, so it never walks into the config tree.
+            find "$CC" -maxdepth 3 -type l -print0 2>/dev/null ; } )
 [ "$swept" -gt 0 ] && n_adopt=$((n_adopt+swept))
 echo
 
@@ -307,6 +320,23 @@ if [ -d "$CFG/memory" ]; then
     # <scope> itself, so a transcript directory can never become a symlink into
     # the repo. Point it one level up and 7 checks in tests/claude/run.sh fail.
     [ $APPLY = 1 ] && mkdir -p "$CC/projects/$scope"
+    # An empty scope is a directory git cannot carry, so it never reaches the
+    # other machine and the scope list diverges. A keeper file holds it open.
+    # Only a deliberate run creates one: --auto would otherwise farm a permanent
+    # entry out of every directory a session was ever opened in, and an orphan
+    # scope (its directory gone) is cleaned by rmdir'ing it here -- the sweep
+    # above then removes the link.
+    if ! find "$CFG/memory/$scope" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null | grep -q .; then
+      if [ $AUTO = 1 ]; then
+        skp "$scope — empty and unkept; run claude-link --apply to hold it open"
+        n_skip=$((n_skip+1))
+      elif [ $APPLY = 1 ]; then
+        : > "$CFG/memory/$scope/.gitkeep" \
+          && { adp "$scope — empty, added .gitkeep so it replicates"; n_adopt=$((n_adopt+1)); }
+      else
+        adp "would add .gitkeep to empty scope $scope"; n_adopt=$((n_adopt+1))
+      fi
+    fi
     link_one "$CFG/memory/$scope" "$CC/projects/$scope/memory" memdir
   done
 fi

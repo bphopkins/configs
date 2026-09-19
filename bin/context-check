@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+#
+# context-check — read-only gauge for the Claude configuration tree.
+#
+#   context-check            one verdict line per check
+#   context-check -v         also print every offending path
+#
+# Exit: 0 all clear · 1 something is actually wrong · 2 could not determine
+#
+# The half of org/claude-config's integrity that a script can decide. Its
+# counterpart is `/restore-order`, which judges prose with agents; this decides
+# what a grep can, so an agent is never spent on it. Built 2026-09-18 from the
+# nine defects of that day's audit that needed no judgment at all — among them a
+# dangling ~/.claude/plans that had survived 23 days and 337 `claude-link --auto`
+# runs, because nothing looked.
+#
+# Read-only and unprivileged by construction: no writes, no sudo, no network.
+# Thresholds are absolute, not proportional, so one rule deploys to both
+# machines. Every FAIL prints the literal command that fixes it.
+#
+# Tag semantics, as in `disk-check`:
+#   [ OK ]  clear, nothing to do
+#   [FAIL]  something is wrong
+#   [WARN]  could not determine — never silently assumed healthy
+
+set -uo pipefail
+PATH="${PATH:-/usr/bin:/bin}:/usr/bin:/bin"
+
+CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
+CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
+DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
+
+# The harness's own numbers. Its consolidation prompt asks for "one line under ~150
+# characters" and treats ~200 as where "an index line is over ~200 chars, it's
+# carrying content that belongs in the topic file". So 200 is the DEMOTE TRIGGER and
+# 150 is the target. Corrected 2026-09-18: an earlier version of this gauge called
+# 200 "the shape the harness states", which conflated the two, and asserted that an
+# over-cap index is "rejected whole" and that the cap "is not measurable from here".
+# Both were false. The caps are 200 lines and 25,000 characters per index, enforced
+# client-side, and they truncate rather than reject.
+IDX_LINE_MAX=200
+IDX_LINE_TARGET=150
+
+VERBOSE=0
+for a in "$@"; do case "$a" in
+  -v|--verbose) VERBOSE=1 ;;
+  -h|--help) sed -n '2,24p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
+  *) echo "context-check: unknown option $a (try --help)" >&2; exit 2 ;;
+esac; done
+
+if [ -t 1 ]; then G=$'\e[32m'; R=$'\e[31m'; Z=$'\e[0m'; else G= R= Z=; fi
+n_fail=0 n_warn=0
+ok()   { printf '%s[ OK ]%s %s\n' "$G" "$Z" "$*"; }
+fail() { printf '%s[FAIL]%s %s\n' "$R" "$Z" "$*"; n_fail=$((n_fail+1)); }
+warn() { printf '%s[WARN]%s %s\n' "$R" "$Z" "$*"; n_warn=$((n_warn+1)); }
+fix()  { printf '       fix: %s\n' "$*"; }
+det()  { [ $VERBOSE = 1 ] && printf '       %s\n' "$@"; return 0; }
+
+[ -d "$CFG" ] || { warn "config tree not found at $CFG — nothing could be checked"; exit 2; }
+
+# 1 ── links into the config that no longer resolve ------------------------
+# A dangling link still fails every write through it, in silence. claude-link's
+# sweep repairs these; this says whether any are outstanding right now.
+dang=()
+while IFS= read -r -d '' f; do
+  [ -e "$f" ] && continue
+  case "$(readlink "$f" 2>/dev/null)" in "$CFG"/*) dang+=("$f") ;; esac
+done < <( { find "$CC" -maxdepth 3 -type l -print0 2>/dev/null
+            find "$DESK" -maxdepth 7 \
+              \( -name .git -o -name node_modules -o -name archive -o -name readings \
+                 -o -name finances -o -name personal -o -name lecture-recordings \) -prune -o \
+              \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null ; } )
+if [ ${#dang[@]} -eq 0 ]; then ok "links into the config: all resolve"
+else fail "links into the config: ${#dang[@]} dangling"; det "${dang[@]}"; fix "claude-link --apply"; fi
+
+# 2 ── directories git cannot carry ----------------------------------------
+# An empty directory never reaches the other machine, so its link dangles there
+# even though everything looks right here. This is what broke plans/.
+empt=(); while IFS= read -r -d '' d; do empt+=("$d"); done \
+  < <(find "$CFG" -path "$CFG/.git" -prune -o -type d -empty -print0 2>/dev/null)
+if [ ${#empt[@]} -eq 0 ]; then ok "no empty directories in the config"
+else fail "${#empt[@]} empty directory(ies) — git cannot carry them to the other machine"
+     det "${empt[@]}"; fix "claude-link --apply   (or rmdir the ones whose directory is gone)"; fi
+
+# 3 ── memory index line shape --------------------------------------------
+# Two distinct facts, and conflating them overstates the case. (a) The harness
+# asks for "index entries to one line under ~200 chars" -- that is a shape, and
+# this check measures it. (b) A server-side size cap rejects an over-large index
+# *whole*, at which point that scope's memory stops being recallable with nothing
+# on screen to say so -- that is the consequence, and its threshold is not
+# knowable from here. Report the shape; name the consequence; claim no proximity.
+over=0 near=0 worst=0 biggest=0 bigscope=- det3=()
+while IFS= read -r -d '' idx; do
+  sz=$(wc -c < "$idx"); [ "$sz" -gt "$biggest" ] && { biggest=$sz; bigscope=$(basename "$(dirname "$idx")"); }
+  while IFS= read -r line; do
+    case "$line" in "- ["*) n=${#line}
+      [ "$n" -gt "$IDX_LINE_TARGET" ] && near=$((near+1))
+      if [ "$n" -ge "$IDX_LINE_MAX" ]; then over=$((over+1)); [ "$n" -gt "$worst" ] && worst=$n
+        det3+=("$(basename "$(dirname "$idx")") ${n}c: $(printf '%.60s' "$line")…"); fi ;;
+    esac
+  done < "$idx"
+done < <(find "$CFG/memory" -name MEMORY.md -print0 2>/dev/null)
+if [ "$over" -eq 0 ]; then ok "memory index lines: none at or over the ~${IDX_LINE_MAX}c demote trigger; $near over the ~${IDX_LINE_TARGET}c target (largest index ${biggest}B, $bigscope)"
+else fail "memory index lines: $over at or over the ~${IDX_LINE_MAX}c demote trigger, worst ${worst}c; $near over the ~${IDX_LINE_TARGET}c target"
+     printf '       note: ~200c is the harness demote trigger, not its cap: past it a line is
+'
+     printf '             carrying content that belongs in the topic file. The target is ~150c.
+'
+     printf '             The real caps are 200 lines and 25,000 chars per index, client-side,
+'
+     printf '             and they fail PARTIALLY — the head loads, the tail is dropped silently.
+'
+     det "${det3[@]}"; fix "shorten the hooks in the named MEMORY.md files to one line each"; fi
+
+# 4 ── rules frontmatter key ----------------------------------------------
+# `globs:` is the internal field name. A rule using it loads unconditionally
+# with no error and no warning, which is the opposite of what the author meant.
+bad4=(); for f in "$CFG"/rules/*.md; do
+  [ -e "$f" ] || continue
+  awk '/^---$/{n++; next} n==1 && /^globs:/{print FILENAME; exit}' "$f" | grep -q . && bad4+=("$f")
+done
+if [ ${#bad4[@]} -eq 0 ]; then ok "rules frontmatter: no file uses globs: instead of paths:"
+else fail "${#bad4[@]} rule file(s) use globs: — they load in every session, silently"
+     det "${bad4[@]}"; fix "rename the key to paths: in the named files"; fi
+
+# 5 ── always-on budget (measured, not judged) ----------------------------
+# No threshold: what the budget should be is his call, not this tool's.
+aw=0; cw=0
+[ -f "$CFG/CLAUDE.md" ] && cw=$(wc -w < "$CFG/CLAUDE.md")
+rw=0 rn=0
+for f in "$CFG"/rules/*.md; do
+  [ -e "$f" ] || continue
+  awk '/^---$/{n++; next} n==1 && /^paths:/{found=1} END{exit !found}' "$f" && continue
+  rw=$((rw + $(wc -w < "$f"))); rn=$((rn+1))
+done
+aw=$((cw + rw))
+if [ -n "${CONTEXT_CHECK_ALWAYS_ON_MAX:-}" ] && [ "$aw" -gt "$CONTEXT_CHECK_ALWAYS_ON_MAX" ]; then
+  fail "always-on prose: $aw words (CLAUDE.md $cw + $rn unconditional rules $rw) — over your ceiling of $CONTEXT_CHECK_ALWAYS_ON_MAX"
+  fix "trim a rule file, or raise CONTEXT_CHECK_ALWAYS_ON_MAX"
+else ok "always-on prose: $aw words (CLAUDE.md $cw + $rn unconditional rules $rw)"; fi
+
+# 6+7 ── memory frontmatter, and index against directory ------------------
+if command -v python3 >/dev/null 2>&1; then
+  out=$(python3 - "$CFG" <<'PY'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1], 'memory')
+valid = {'user','feedback','project','reference'}
+fm_bad, idx_bad = [], []
+for scope in sorted(p for p in root.iterdir() if p.is_dir()):
+    files = sorted(f.name for f in scope.iterdir() if f.suffix == '.md' and f.name != 'MEMORY.md')
+    for n in files:
+        t = (scope/n).read_text()
+        if not t.startswith('---'): fm_bad.append(f"{scope.name}/{n}: no frontmatter"); continue
+        head = t.split('---')[1]
+        nm = re.search(r'^name:\s*(\S+)', head, re.M)
+        ty = re.search(r'^\s+type:\s*(\S+)', head, re.M)
+        if not nm: fm_bad.append(f"{scope.name}/{n}: no name:")
+        elif nm.group(1) != n[:-3]: fm_bad.append(f"{scope.name}/{n}: name: {nm.group(1)} != filename")
+        if not re.search(r'^description:', head, re.M): fm_bad.append(f"{scope.name}/{n}: no description:")
+        if not ty: fm_bad.append(f"{scope.name}/{n}: no metadata.type")
+        elif ty.group(1) not in valid: fm_bad.append(f"{scope.name}/{n}: type {ty.group(1)}")
+    idx = scope/'MEMORY.md'
+    links = re.findall(r'^- \[[^\]]*\]\(([^)]+)\)', idx.read_text(), re.M) if idx.exists() else []
+    if files and not idx.exists(): idx_bad.append(f"{scope.name}: {len(files)} memories, no MEMORY.md")
+    for n in files:
+        if n not in links: idx_bad.append(f"{scope.name}: {n} missing from MEMORY.md")
+    for l in links:
+        if not (scope/l).exists(): idx_bad.append(f"{scope.name}: MEMORY.md points at {l}, which is absent")
+print(len(fm_bad)); print(len(idx_bad))
+for x in fm_bad + idx_bad: print(x)
+PY
+) || out=""
+  if [ -z "$out" ]; then warn "memory frontmatter and indexes: the check itself failed — not verified"
+  else
+    nf=$(sed -n 1p <<<"$out"); ni=$(sed -n 2p <<<"$out"); rest=$(sed -n '3,$p' <<<"$out")
+    if [ "$nf" = 0 ]; then ok "memory frontmatter: all valid (name, description, metadata.type)"
+    else fail "memory frontmatter: $nf problem(s)"; det "$rest"; fix "correct the named files' frontmatter"; fi
+    if [ "$ni" = 0 ]; then ok "memory indexes agree with their directories"
+    else fail "memory indexes: $ni disagreement(s) with the directory"; det "$rest"
+         fix "add the missing MEMORY.md lines, or drop the entries whose file is gone"; fi
+  fi
+else warn "python3 absent — memory frontmatter and indexes not verified"
+fi
+
+# 8 ── permission entries naming paths that do not resolve ----------------
+dead8=()
+while IFS= read -r -d '' f; do
+  while IFS= read -r p; do
+    b=$p; while case "$b" in *'*'*) true ;; *) false ;; esac; do b=$(dirname "$b"); done
+    [ -n "$b" ] && [ "$b" != "/" ] && [ ! -e "$b" ] && dead8+=("${f#"$CFG"/repos/} -> $p")
+  done < <(grep -oE '/(home|tmp)/[^"[:space:]:)*]*' "$f" 2>/dev/null | sort -u)
+done < <(find "$CFG/repos" -name settings.local.json -print0 2>/dev/null)
+if [ ${#dead8[@]} -eq 0 ]; then ok "permission entries: every path named resolves"
+else fail "${#dead8[@]} permission entry(ies) name a path that no longer exists"
+     det "${dead8[@]}"; fix "drop the entries, or correct the paths, in the named files"; fi
+
+# 9 ── repos/ entries for a tree absent here ------------------------------
+# Informational: a repo cloned on only one machine is normal and by decision.
+miss=(); while IFS= read -r -d '' f; do
+  rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel")
+  [ "$repo" = "_desktop-root" ] && t="$DESK" || t="$DESK/$repo"
+  [ -d "$t" ] || miss+=("$repo")
+done < <(find "$CFG/repos" -type f \( -name settings.local.json -o -name CLAUDE.local.md \) -print0 2>/dev/null)
+uniq_miss=$(printf '%s\n' "${miss[@]:-}" | grep -v '^$' | sort -u)
+nm=$(printf '%s' "$uniq_miss" | grep -c . || true)
+if [ "$nm" -eq 0 ]; then ok "repos/: every entry's tree is present on this machine"
+else ok "repos/: $nm entry(ies) for a tree not on this machine (normal if by decision)"; det $uniq_miss; fi
+
+echo
+if [ "$n_fail" -gt 0 ]; then printf '%s%d failing%s, %d unknown\n' "$R" "$n_fail" "$Z" "$n_warn"; exit 1; fi
+if [ "$n_warn" -gt 0 ]; then printf '%d unknown, nothing failing\n' "$n_warn"; exit 2; fi
+echo "all clear"; exit 0

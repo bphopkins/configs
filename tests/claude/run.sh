@@ -4,8 +4,10 @@
 #   bash tests/claude/run.sh
 #
 # Fully sandboxed under $TMPDIR: a fake HOME, a fake org/claude-config, a fake
-# ~/Desktop. Touches nothing real, needs no network. Resolves the scripts
-# relative to its own location, so it tests the checkout it lives in.
+# ~/Desktop. Needs no network. Resolves claude-link relative to its own location,
+# so it tests the checkout it lives in; the hooks live in org/claude-config and
+# are read from there. Writes nothing real -- two late sections read the live
+# config tree, and only read it.
 #
 # Last line follows the tests/gsync convention: "passed: N  failed: M".
 set -uo pipefail
@@ -151,6 +153,59 @@ yes_ "foreign dangling link untouched"    '[ -L "$w/desk/rep/CLAUDE.local.md" ]'
 out=$(run "$w")
 not_ "dry run does not sweep"             '[[ "$out" == *"removed dangling"* ]]'
 
+echo "== dangling links inside ~/.claude are swept too =="
+# The plans regression. The user-level pass is driven by `[ -e "$CFG/$e" ]`, so a
+# shared directory that disappears is skipped in silence; only the sweep sees it.
+w=$(mkworld)
+mkdir -p "$w/cfg/plans"; : > "$w/cfg/plans/.gitkeep"
+run "$w" --apply >/dev/null
+yes_ "a shared dir links at user level"   '[ -L "$w/home/.claude/plans" ]'
+rm -f "$w/cfg/plans/.gitkeep"; rmdir "$w/cfg/plans"   # last file gone; git drops the dir
+yes_ "link dangles once the dir goes"     '[ -L "$w/home/.claude/plans" ] && [ ! -e "$w/home/.claude/plans" ]'
+out=$(run "$w")
+yes_ "  dry run reports it"               '[[ "$out" == *"would remove dangling link"*plans* ]]'
+yes_ "  and the link pass stays silent"   '[[ "$out" != *"[WARN]"*plans* ]]'
+out=$(run "$w" --apply)
+not_ "  --apply removes it"               '[ -L "$w/home/.claude/plans" ]'
+ln -s "$w/nowhere/x" "$w/home/.claude/foreign"
+run "$w" --apply >/dev/null
+yes_ "foreign dangling link here untouched" '[ -L "$w/home/.claude/foreign" ]'
+# the fedxps case: a memory scope deleted from the shared tree
+rm -f "$w/cfg/memory/-shared/s.md" "$w/cfg/memory/-shared/MEMORY.md"; rmdir "$w/cfg/memory/-shared"
+out=$(run "$w" --apply)
+not_ "dangling memory-scope link swept"   '[ -L "$w/home/.claude/projects/-shared/memory" ]'
+yes_ "  transcript dir left in place"     '[ -d "$w/home/.claude/projects/-shared" ]'
+
+echo "== an empty memory scope is held open so it replicates =="
+w=$(mkworld)
+mkdir -p "$w/cfg/memory/-empty"
+run "$w" --auto >/dev/null 2>&1          # --auto prints nothing; it logs
+not_ "--auto does not create a keeper"    '[ -e "$w/cfg/memory/-empty/.gitkeep" ]'
+yes_ "  and says why in the log"          'grep -q "empty and unkept" "$w/home/.claude/claude-link-auto.log"'
+out=$(run "$w")
+yes_ "dry run reports the keeper"         '[[ "$out" == *"would add .gitkeep"* ]]'
+not_ "  and creates nothing"              '[ -e "$w/cfg/memory/-empty/.gitkeep" ]'
+out=$(run "$w" --apply)
+yes_ "--apply creates the keeper"         '[ -f "$w/cfg/memory/-empty/.gitkeep" ]'
+yes_ "  the scope still links"            '[ -L "$w/home/.claude/projects/-empty/memory" ]'
+out=$(run "$w" --apply)
+not_ "  idempotent: no second report"     '[[ "$out" == *".gitkeep"* ]]'
+not_ "a scope with content is left alone" '[ -e "$w/cfg/memory/-shared/.gitkeep" ]'
+
+echo "== the hook notices a dangling link into the config =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "healthy: resolving links do not warn" '[[ "$j" == *"no longer exists"* ]]'
+  ln -s "$w/cfg/gone" "$w/home/.claude/plans"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a dangling link into the config warns" '[[ "$j" == *"1 link(s)"*"no longer exists"* ]]'
+  yes_ "  and reaches the user too"       'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  ln -s "$w/nowhere/else" "$w/home/.claude/foreign"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "  a foreign dangling link is not counted" '[[ "$j" == *"1 link(s)"* ]]'
+fi
+
 echo "== ephemeral scopes are never harvested or linked =="
 w=$(mkworld)
 for e in -tmp-scratch -var-tmp-x -run-user-1000-y; do
@@ -275,6 +330,20 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   yes_ "broken: systemMessage present"    'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
   yes_ "  and still valid JSON"           'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
   yes_ "  model context kept too"         'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin)[\"hookSpecificOutput\"][\"additionalContext\"] else 1)"'
+fi
+
+echo "== the live config holds no directory git cannot carry =="
+# The root cause of the plans breakage, asserted against the real tree: git
+# cannot carry an empty directory, so an empty one here means a link on the
+# other machine is about to dangle. Read-only.
+RCFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
+if [ -d "$RCFG" ]; then
+  empties=$(find "$RCFG" -path "$RCFG/.git" -prune -o -type d -empty -print 2>/dev/null)
+  if [ -z "$empties" ]; then ok "no empty directories in the shared config"
+  else no "empty directories in the shared config: $(echo $empties)"; fi
+  yes_ "  plans/ is held open by a keeper" '[ -e "$RCFG/plans/.gitkeep" ]'
+else
+  ok "live config not on this machine, skipped"
 fi
 
 echo "== gpullall wires up what it pulls =="
