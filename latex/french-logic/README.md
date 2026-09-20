@@ -9,7 +9,7 @@ axioms, rules, and systems of the field, the I/O-logic and STIT vocabularies,
 the underlined first-order metalanguage of neighbourhood semantics, and the
 document structure a logic dissertation needs. Developed since 2021 under
 Rohan French's supervision, hence the name. The homepage's phrase for the
-ambition: "a useful semantic markup macro for students and logicians of a
+ambition: "a useful semantic markup language for students and logicians of a
 certain kind."
 
 This file is the map of the package: what it is for, how it is organised,
