@@ -40,7 +40,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 |---|---|---|
 | bash | `~` | module detail, git-sync guardrails + suite, reboot verdict, disk pair, the stow guard |
 | wezterm | `~` | *(no charter — the config file carries its own: pinned font faces, and the two measured latency/throughput settings)* |
-| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap, the JuliaMono fallback and `font-family`-as-a-list)* |
+| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap, the JuliaMono fallback and `font-family`-as-a-list, the forked palette in `themes/`, the 600-weight bold)* |
 | alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
 | tmux | `~/.config/tmux` | *(no charter — the config file carries its own: the XDG path choice, the status bar on sway's `$accent` #0088FF and why `fg` is restated, and the one green left on pane borders)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
@@ -138,15 +138,30 @@ hazards, the reboot-verdict contract, the disk pair, the suites — is in
 
 ## Visual Consistency
 
-TokyoNight "night" theme across Neovim, WezTerm, Ghostty, and Waybar. Source
-Code Pro 12pt font in three of the four terminals (WezTerm, Ghostty,
-Alacritty). Ghostty additionally carries JuliaMono as a fallback behind it, for
-the logic and Greek that Source Code Pro does not draw — the font *list* is the
-mechanism, and its own config explains it. Alacritty carries font settings only
-— no colorscheme, so it falls back to its own default palette. Ghostty is a
-deliberate transcription of the WezTerm config, added 2026-09-03 to make the
-two comparable like for like; its own comments carry the places where they
-cannot be made to agree.
+TokyoNight "night" across Neovim, WezTerm and Ghostty — and since 2026-09-20
+the three no longer agree, deliberately. Neovim stays on folke's
+tokyonight.nvim by standing preference. Ghostty is the surface where tweaks
+are made: it runs a fork of the palette,
+`ghostty/themes/tokyonight-night-bph`, itself based on folke's *generated*
+theme rather than the one Ghostty ships, which flattens the bright set into a
+copy of the normal set. WezTerm keeps the shipped built-in unchanged, as the
+control a tweak can be judged against. The shell prompt is off the palette
+entirely on all three machines (`bash/CLAUDE.md`). Waybar is not on the theme
+at all: measured 2026-09-20, its five colours are `#000000`, `#ffffff`,
+`#9e9e9e`, a `#228B22` accent and the shared `#d08770` urgent.
+
+Source Code Pro 12pt font in three of the four terminals (WezTerm, Ghostty,
+Alacritty), with Ghostty's bold at Semibold 600 since 2026-09-20 where
+WezTerm's stays at Bold 700. Ghostty additionally carries JuliaMono as a
+fallback behind it, for the logic and Greek that Source Code Pro does not
+draw — the font *list* is the mechanism, and its own config explains it.
+Alacritty carries font settings only — no colorscheme, so it falls back to
+its own default palette. Ghostty began as a deliberate transcription of the
+WezTerm config, added 2026-09-03 to make the two comparable like for like;
+that comparison closed 2026-09-05, and the two have since parted on colour
+and on bold weight — both recorded in `ghostty/config`'s header, alongside
+the places they could never be made to agree.
+
 The desktop's single urgent colour (`#d08770`) spans four configs in four
 languages — see `sway/CLAUDE.md` before changing it.
 

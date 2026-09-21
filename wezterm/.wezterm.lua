@@ -77,8 +77,15 @@ config.mux_output_parser_coalesce_delay_ms = 0
 -- reps each, draining 200000 lines: 16K gave 1057ms, the default 970, 128K 946,
 -- 1M 844, 4M 878. So the default sits near 128K, 1M is the floor, and 4M is
 -- past it. 13% off the flood time for one line and a megabyte of RSS per pane.
--- It does not close the gap to Ghostty (still ~2x on sparse text, which is
--- compute), it just stops giving away the part that was configuration.
+-- It just stops giving away the part that was configuration.
+--
+-- This line used to name the residual as "still ~2x on sparse text, which is
+-- compute". That figure was retracted on 2026-09-05: warm, the two tie on raw
+-- flooding and WezTerm edges slightly ahead, and the old number was a
+-- cold-cache artefact. Ghostty's real advantage is in repaints (2.3x fedxps,
+-- 2.9x bigfed) and in responsiveness while output streams (8.6x, 19.7x on
+-- bigfed), neither of which any buffer size here reaches. Corrected 2026-09-20;
+-- the chain is docs/ghostty-vs-wezterm-2026-09-03.md and its three addenda.
 config.mux_output_parser_buffer_size = 1048576
 
 -- Finally, return the configuration to wezterm:

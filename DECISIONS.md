@@ -1456,3 +1456,128 @@ One Mono, which is fifth; and an archived-file count of 75 that set a filtered
 number against an unfiltered total. A superlative measured over 24 entries does
 not survive the table growing to 39, so re-measure superlatives against the
 table as it stands.
+
+---
+
+## Terminal colour: the palette made explicit, the prompt taken off it — 2026-09-20
+
+Opened by a question about whether the terminal and Neovim were running the same
+TokyoNight variant. They were — both "night" — but the answer exposed that they
+are two independent declarations that agree only by descent, and the session
+turned into making the terminal's half explicit so it could be tuned.
+
+**What changed.** `ghostty/themes/tokyonight-night-bph` is new, stowed to
+`~/.config/ghostty/themes/`, and `ghostty/config` names it instead of the
+shipped `TokyoNight Night`. `bash/.bashrc.d/30-prompt.sh` and its nousowl twin
+give each machine a truecolor hex off the palette. `ghostty/config` renders bold
+at Semibold 600. Charters amended: root `CLAUDE.md` (Visual Consistency, the
+ghostty index row), `bash/CLAUDE.md`, `nousowl/configs/README.md`.
+
+**Why a fork rather than overrides.** Ghostty lets a config line override a
+theme in either order — `man ghostty`, --theme: "Any additional colors
+specified via background, foreground, palette, etc. will override the colors
+specified in the theme", confirmed both ways round. So explicitness was never
+needed for tweaking; what a fork buys is one editable file with its own history
+and a mechanical diff against upstream. The config keeps the override slot for
+experiments, which delete cleanly.
+
+**Why folke's generated theme is the baseline, not Ghostty's shipped one.**
+tokyonight.nvim generates terminal themes from the palette that colours the
+editor, and ships one for Ghostty at `extras/ghostty/tokyonight_night`. It
+disagrees with the theme Ghostty ships on six values — brights 9-14, which
+Ghostty's copy sets equal to 1-6 where the generator derives them with
+`Util.brighten` (+5 lightness, +20 saturation in HSLuv). Measured: Neovim's own
+`colors.terminal` for night is folke's set byte for byte, so bright red had been
+`#f7768e` in a Ghostty tab and `#ff899d` in a `:terminal` buffer. The extras file
+on disk sits at commit cdc07ac7, which `nvim/lazy-lock.json` pins, so the
+baseline is the build the editor is running. `cursor-text = #1a1b26` is kept
+though the generator emits none; it is the one line the standing diff prints.
+
+**WezTerm is deliberately left on the old baseline.** Its built-in agrees with
+Ghostty's shipped theme, so it is now both an unmodified control a tweak can be
+judged against and a way to tell the two terminals apart with both open. It also
+stays at Bold 700. The header of `ghostty/config` records both divergences; the
+2026-09-05 performance verdict the parity protected is closed.
+
+**Neovim stays upstream, by standing preference.** It reads none of the terminal
+palette: under `termguicolors` it emits direct RGB from the plugin's own table,
+so a change to the theme file reaches the shell world and stops at nvim's edge.
+The terminal is the tweakable surface; the editor is not. If the two should ever
+move together the hook is `on_colors` — and note it runs *last*, after
+`error = red1`, `warning = yellow`, `bg_visual` and the whole `colors.terminal`
+table have been snapshotted, so overriding a base name leaves its aliases behind.
+
+**The prompt.** Previously ANSI 31/32/33, chosen in 2026-09-14 precisely so the
+prompt would be theme colours with no second source of truth. That reasoning was
+right for a prompt meant to look like the theme and wrong for one meant to be a
+machine identity: an index is by construction the same colour as everything else
+asking for that index, which is why bigfed's rose was also dircolors' ARCHIVE at
+`01;31`. The requirement — "stop me running something meant for fedxps on
+nousowl" — forces a colour nothing else on screen can be.
+
+The derivation: TokyoNight's sixteen occupy only six hue positions, because the
+bright set sits almost on top of the normal set, leaving three wide gaps centred
+at 45 (orange), 187 (teal) and 339 (rose). One colour per gap. fedxps `#73daca`,
+bigfed `#ff5fd1`, nousowl `#ff9e64` — CIEDE2000 13.3 from the nearest palette
+entry at worst against 0.0 before, 41.4 apart from each other against 26.5,
+contrast 6.4 / 10.3 / 8.4 on `#1a1b26`. `#73daca` and `#ff9e64` are folke's
+green1 and orange; `#ff5fd1` is constructed, the rose gap holding no tokyonight
+colour. Root keeps the package's magenta behind the EUID guard, 13.3 or more
+from all three. Each host retains its old index as a `$COLORTERM` fallback:
+Fedora ships `SendEnv COLORTERM` and nousowl's sshd accepts it, so the variable
+survives the ssh hop — measured, it reads `truecolor` on the far side — while a
+VT console drops to the index.
+
+**Bold at 600.** The prompt was a tick heavier than wanted and SGR offers no
+intermediate intensity, so the tick had to come from what bold *renders as*.
+Source Code Pro carries Medium 500 and Semibold 600; Semibold is the single step
+down from Bold 700. It reaches every bold glyph, not just the prompt. The
+families disagree on the name — Source Code Pro "Semibold", JuliaMono "SemiBold"
+— and one value matches both: with the change in place,
+`+show-face --style=bold --cp=0x22A2` reports "JuliaMono SemiBold" where it
+previously reported "JuliaMono", so the logic-symbol fallback follows the weight
+down instead of being stranded at 700.
+
+**Declined.**
+
+- *Inlining the 22 values in `ghostty/config`.* Everything in one file, but it
+  loses the mechanical diff against upstream, which is the whole point.
+- *Deltas only, keeping `theme = TokyoNight Night`.* Smallest surface, but
+  "what is palette 5" still needs `+show-config`.
+- *Mirroring the fork into `.wezterm.lua`.* A second hand-synced copy of the
+  palette with nothing keeping the two honest. A generator over one source file
+  was weighed and declined as machinery for a 22-value table.
+- *Declaring nvim's full 34-value palette in `on_colors`.* Owning a snapshot
+  while upstream still owns every derivation and all ~2000 group mappings; an
+  upstream palette change would silently no-op and the file would go stale.
+- *Bringing Ghostty's search colours onto the palette.* `#ffe082` amber and
+  `#f2a57e` peach belong to no theme, which is exactly what makes a search hit
+  read as the machine pointing at something. Judged in use and kept; the note
+  sits at the foot of the theme file.
+- *An all-unborrowed identity set.* `#ff49cd` / `#0ea89d` / `#ff6333`, built at
+  the same three gap centres with every tokyonight value excluded: further from
+  the palette at 17.6 but uniformly at contrast 5.8, and rejected on contrast.
+  Per-value replacements for the two borrowed colours (`#19fde5` for green1,
+  `#fccdbe` for orange) were declined the same way — they clear every threshold
+  and cost the character the set was chosen for.
+- *`palette-generate = true`.* Would derive indices 16-255 from the base sixteen
+  instead of the xterm cube. Off, as Ghostty ships it, because legacy programs
+  hardcode that cube.
+- *A background badge for the prompt* (`PROMPT_COLOR='41;30'`). Structurally
+  unique, no new colours, no truecolor dependency — and a much heavier prompt.
+  Not taken, but it is the fallback if the hexes ever prove too subtle.
+
+**Traps found, recorded where they bite.** Ghostty has no trailing comments: a
+`palette` line with one is rejected and the entry reverts to Ghostty's default
+silently in a running terminal, though `+validate-config` catches it and exits 1.
+`+show-face` prints the family, not the style, so it proves a value resolved
+rather than falling through to Noto Sans Mono, and cannot confirm the italic
+axis. Stow's `-t` is not optional here: bare `stow -R ghostty` from the repo
+targets `~/Desktop`, the stow directory's parent.
+
+**Verification.** The theme resolves byte-identically to its baseline but for
+`cursor-text`; the prompt module was exercised across all six host/terminal
+combinations with no variables leaking; the restow hint in `50-git-sync.sh` was
+read rather than trusted, and fires for a file added to an existing package, so
+fedxps will be told. CIEDE2000 was implemented for this work and checked against
+five Sharma reference vectors before any colour was judged by it.

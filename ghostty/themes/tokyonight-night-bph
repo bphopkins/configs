@@ -1,0 +1,151 @@
+# TokyoNight Night, forked for local tweaks. Created 2026-09-20.
+#
+# BASELINE: folke's own generated Ghostty theme, not Ghostty's shipped one.
+#
+#   ~/.local/share/nvim/lazy/tokyonight.nvim/extras/ghostty/tokyonight_night
+#
+# tokyonight.nvim generates that file from the same palette that colours the
+# editor (lua/tokyonight/extra/ghostty.lua), and the copy on disk sits at
+# commit cdc07ac7 — the commit nvim/lazy-lock.json pins. So the baseline is
+# the build the editor is actually running, rather than a third-party
+# transcription of the theme.
+#
+# The standing check, which is the changelog and the regression test at once:
+#
+#   diff <(grep -vE '^(#|$)' ~/.local/share/nvim/lazy/tokyonight.nvim/extras/ghostty/tokyonight_night) \
+#        <(grep -vE '^(#|$)' ~/.config/ghostty/themes/tokyonight-night-bph)
+#
+# Expect EXACTLY ONE line: `> cursor-text = #1a1b26`, ours and explained
+# below. Anything else is either a tweak of yours or upstream moving under a
+# plugin update; CHANGES says which. Keep the line order to keep that diff
+# readable.
+#
+# ⚠ GHOSTTY HAS NO TRAILING COMMENTS. A theme file is an ordinary Ghostty
+# config file, and `palette = 1=#f7768e  # red` is read as the *value*
+# "1=#f7768e  # red" — rejected, and the entry silently reverts to Ghostty's
+# built-in default, in a running terminal, with nothing on screen to say so.
+# Comments go on their own line. `ghostty +validate-config` catches it, names
+# the file and line, and exits 1. Measured 2026-09-20.
+#
+# Values set in `config` override this file, whichever order they appear in
+# (man ghostty, --theme; measured 2026-09-20). So an experiment belongs in
+# `config`, where deleting the line restores the theme, and a settled result
+# moves down here.
+#
+# User themes are searched before the shipped ones, and a theme name may not
+# contain a path separator — hence a flat name in this directory. Reload with
+# ctrl+shift+, ; the 240 xterm-cube entries (16-255) are untouched by any
+# theme and are not repeated here. `palette-generate = true` would derive them
+# from the base sixteen instead; left off, as Ghostty ships it, because legacy
+# programs hardcode the xterm cube.
+#
+# WezTerm deliberately does NOT follow this fork (2026-09-20). It keeps the
+# built-in `tokyonight_night`, which makes it both the unmodified control a
+# tweak can be judged against and a way to tell the two terminals apart when
+# both are open. Note that WezTerm's built-in agrees with Ghostty's shipped
+# theme, flattened brights and all, so it is a control against the *old*
+# baseline.
+#
+# Neovim does not read this file. Under termguicolors it emits direct RGB from
+# tokyonight.nvim's own palette, so a change here reaches the shell world and
+# stops at nvim's edge; the matching change there is an `on_colors` entry in
+# nvim/lua/plugins/colorscheme.lua.
+#
+# CHANGES
+#   2026-09-20  Forked verbatim from Ghostty's shipped 'TokyoNight Night'.
+#   2026-09-20  Rebased onto folke's generated theme. Six values moved — the
+#               bright set, 9-14; see the section below. Everything else was
+#               already identical across the two sources.
+
+
+# --- ANSI 0-7, the normal set -----------------------------------------------
+#
+# SGR 30-37 as foreground, 40-47 as background. This is what every program
+# that speaks in colour *indices* gets: bash, ls, git, grep, htop, man.
+#
+# Three of these eight are load-bearing outside this file. PROMPT_COLOR in
+# bash/.bashrc.d/30-prompt.sh names them by index on purpose, so the prompt
+# has no second source of truth: 31 is bigfed's rose, 32 fedxps's green, 33
+# nousowl's amber, and 35 is the magenta the package leaves to root. Moving
+# 1, 2, 3 or 5 moves a prompt on some machine, and moves every other red,
+# green, yellow or magenta with it.
+palette = 0=#15161e
+palette = 1=#f7768e
+palette = 2=#9ece6a
+palette = 3=#e0af68
+palette = 4=#7aa2f7
+palette = 5=#bb9af7
+palette = 6=#7dcfff
+palette = 7=#a9b1d6
+
+# --- ANSI 8-15, the bright set ----------------------------------------------
+#
+# These six (9-14) are the whole of the divergence between Ghostty's shipped
+# theme and folke's. Ghostty's copy sets them equal to 1-6; folke derives them
+# with Util.brighten — +5 lightness and +20 saturation in HSLuv — so the
+# bright set is six genuinely distinct colours rather than a duplicate of the
+# normal one. Rebased onto folke's on 2026-09-20; they now agree with what
+# Neovim puts in g:terminal_color_9-14, which had been using folke's values
+# all along.
+#
+# ⚠ This falsifies a sentence in bash/.bashrc.d/30-prompt.sh: "Brights 9-14
+# are byte-identical to 1-6 in this theme, so no bright variant offers a
+# colour the list above does not already have." True of the old baseline,
+# false now. The prompt has six more colours available to it than that file
+# assumes.
+palette = 8=#414868
+palette = 9=#ff899d
+palette = 10=#9fe044
+palette = 11=#faba4a
+palette = 12=#8db0ff
+palette = 13=#c7a9ff
+palette = 14=#a4daff
+palette = 15=#c0caf5
+
+# --- Window -----------------------------------------------------------------
+#
+# `background` is the one value that also has to agree with Neovim. Nvim
+# paints Normal over its own grid and Ghostty paints the window padding
+# around it, so a divergence shows as a rim at the window edge. tokyonight
+# night's bg is #1a1b26, the same value. `window-padding-color` is left at
+# its default of `background`, which is what keeps that rim absent.
+background = #1a1b26
+foreground = #c0caf5
+
+# --- Cursor -----------------------------------------------------------------
+#
+# Colour only. The cursor's *shape* is not settled here: Neovim drives it
+# over DECSCUSR, and `config` turns off the shell integration's `cursor`
+# feature to stop it redrawing a bar at every prompt.
+cursor-color = #c0caf5
+
+# OURS, not upstream's — folke's generator emits no cursor-text at all. It is
+# what draws the character sitting under the block cursor, in the background
+# colour, and it came in with the verbatim fork from Ghostty's shipped theme.
+# This is the one line the standing diff above is expected to print.
+cursor-text = #1a1b26
+
+# --- Selection --------------------------------------------------------------
+#
+# #283457 is the one value in this file that appears nowhere in the sixteen;
+# folke derives it as blend_bg(blue0, 0.4) and calls it bg_visual, the same
+# colour nvim paints a visual selection with. Since Ghostty 1.2 these also
+# accept `cell-foreground` / `cell-background` to invert against whatever is
+# under the selection instead of a fixed pair.
+selection-background = #283457
+selection-foreground = #c0caf5
+
+
+# --- Deliberately not set here ----------------------------------------------
+#
+# Ghostty's find-in-page (ctrl+shift+f) paints matches in #ffe082 amber and the
+# current hit in #f2a57e peach, both with black text. Neither is a TokyoNight
+# colour and no theme sets them; folke's generator emits no search keys at all.
+# Kept as Ghostty ships them, 2026-09-20, judged in use: a search hit should
+# read as the machine pointing at something rather than as ordinary coloured
+# output, and belonging to no theme is what makes it do that. Neovim's own
+# structure is the same, in different hues — Search #3d59a1 blue, CurSearch
+# #ff9e64 orange (groups/base.lua). Declined the palette versions of the four.
+#
+# Also unset: split-divider-color (Ghostty picks one) and unfocused-split-fill
+# (falls back to background). Low stakes at one shell per window.

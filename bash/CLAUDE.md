@@ -26,11 +26,18 @@ top.
   `PROMPT_HIGHLIGHT=1` pins bold, which the package otherwise decides by a
   string comparison against `DESKTOP_SESSION` — the reason bigfed and fedxps
   looked different off the same repo. `PROMPT_COLOR` then gives each box its
-  own colour (fedxps green, bigfed rose, root magenta behind an EUID guard),
-  and **the scheme spans two repos**: nousowl's amber lives in that machine's
-  own `configs/bash/.bashrc.d/30-prompt.sh`, deployed by push over ssh rather
-  than by stow, and the two halves are kept in step by hand. The file's
-  comments carry the palette and the declined alternatives.
+  own colour, and since 2026-09-20 those are **truecolor hexes off the
+  terminal palette** rather than ANSI indices: the three are machine
+  identities, and an index is by construction the same colour as everything
+  else that asks for it. fedxps `#73daca` mint, bigfed `#ff5fd1` rose,
+  nousowl `#ff9e64` orange — one per gap in the hue circle TokyoNight's
+  sixteen leave open — with root on the package's magenta behind an EUID
+  guard. Each host keeps its old index as a `$COLORTERM` fallback, so a VT
+  console still gets a colour. **The scheme spans two repos**: nousowl's half
+  lives in that machine's own `configs/bash/.bashrc.d/30-prompt.sh`, deployed
+  by push over ssh rather than by stow, and the two halves are kept in step
+  by hand. The file's comments carry the derivation, the measurements and the
+  declined alternatives.
 - `40-aliases.sh` — aliases plus functions: `sysupgrade` and `reboot-check`
   (see "Reboot verdict" below), `tl-upgrade` (within-release TeX Live update;
   resolves `tlmgr` through PATH so it survives year bumps), `reload`

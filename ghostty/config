@@ -9,6 +9,18 @@
 # appearance means stating outright what WezTerm arrives at obliquely.
 # Change one file, change the other.
 #
+# Colour is where that stops, deliberately, from 2026-09-20. The palette is
+# forked into themes/tokyonight-night-bph and WezTerm keeps the built-in
+# `tokyonight_night` unchanged. The comparison the parity existed to protect
+# closed on 2026-09-05, and the divergence now earns its keep twice over:
+# WezTerm is an unmodified control a tweak can be judged against, and the two
+# terminals are told apart at a glance with both open. Note what that control
+# is a control *for*: WezTerm's built-in agrees with Ghostty's shipped theme,
+# so since the 2026-09-20 rebase onto folke's generated palette it differs by
+# the six brights as well as by anything tweaked since. Everything else in
+# this file still tracks .wezterm.lua, with one further exception below: the
+# bold weight, dropped a tick on 2026-09-20 and likewise not mirrored.
+#
 # Two of WezTerm's settings have no Ghostty counterpart at all. They are
 # recorded in place below rather than dropped, so the gaps stay visible.
 #
@@ -89,18 +101,41 @@
 # fallback vanishes silently and the scatter returns; `tl-newyear switch`
 # checks the pin.
 #
+# BOLD IS 600, NOT 700, from 2026-09-20. Bold text was a tick heavier than
+# wanted; Source Code Pro carries Medium 500 and Semibold 600 between Regular
+# and Bold, and Semibold is the single step down. This is the *rendering* of
+# bold, not an SGR change — every bold glyph moves with it: ls directories,
+# git output, man headings, and the prompt, which is still SGR 1.
+#
+# The two families disagree on the name and both match anyway: Source Code Pro
+# advertises "Semibold", JuliaMono "SemiBold", and the one value below resolves
+# each to its own. Measured 2026-09-20 — with `font-style-bold = Semibold`,
+# `+show-face --style=bold --cp=0x22A2` reports "JuliaMono SemiBold" where it
+# previously reported "JuliaMono", so the logic-symbol fallback follows the
+# weight down instead of being left behind at 700.
+#
+# ⚠ `+show-face` prints the FAMILY, not the style, so it proves the value
+# resolved rather than falling through to Noto Sans Mono — which is what an
+# unresolvable style does here, silently. It cannot confirm the italic axis;
+# that one is judged on screen.
+#
+# NOT mirrored in .wezterm.lua, which stays at Bold. WezTerm's counterpart is a
+# font_rules entry pinning intensity="Bold" to weight="DemiBold" — its own name
+# for 600, the disagreement noted above. Add it there if the two should match
+# again.
+
 font-family = Source Code Pro
 font-family = JuliaMono
 font-style = Regular
 font-family-bold = Source Code Pro
 font-family-bold = JuliaMono
-font-style-bold = Bold
+font-style-bold = Semibold
 font-family-italic = Source Code Pro
 font-family-italic = JuliaMono
 font-style-italic = Italic
 font-family-bold-italic = Source Code Pro
 font-family-bold-italic = JuliaMono
-font-style-bold-italic = Bold Italic
+font-style-bold-italic = Semibold Italic
 
 # Points, as in WezTerm, and 12 is also Ghostty's own default. Held explicit so
 # the comparison does not rest on two defaults happening to agree.
@@ -128,13 +163,38 @@ faint-opacity = 0.5
 
 # --- Colour -----------------------------------------------------------------
 
-# Verified identical to WezTerm's built-in `tokyonight_night` on 2026-09-03:
-# all sixteen palette entries, background, foreground, cursor, cursor text and
-# both selection colours agree byte for byte, the two having descended from the
-# same upstream. Compared by dumping wezterm.color.get_builtin_schemes()
-# against /usr/share/ghostty/themes/'TokyoNight Night'. `+list-themes` also
-# carries TokyoNight, Day, Moon and Storm, covering .wezterm.lua's alternates.
-theme = TokyoNight Night
+# The palette lives in themes/tokyonight-night-bph, forked 2026-09-20 so that
+# local tweaks have a home, a dated record, and a diff against upstream. That
+# file carries the values, what each index is load-bearing for, and the
+# changelog; this line only names it. User themes are searched ahead of the
+# shipped ones, and a theme name may carry no path separator.
+#
+# Its baseline is folke's own generated theme — tokyonight.nvim's
+# extras/ghostty/tokyonight_night at the commit lazy-lock.json pins — and NOT
+# Ghostty's shipped `TokyoNight Night`, which flattens brights 9-14 into
+# copies of 1-6 where the generator derives them. Six values, rebased the same
+# day it was forked; the theme file carries the table.
+#
+# A value set HERE overrides the theme, whichever order the two appear in.
+# `man ghostty`, --theme: "Any additional colors specified via background,
+# foreground, palette, etc. will override the colors specified in the theme" —
+# confirmed both ways round on 2026-09-20. So a colour experiment belongs in
+# this file, where deleting the line restores the theme, and a settled one
+# moves down into the theme file.
+#
+# Neovim reads none of it: under termguicolors it emits direct RGB from
+# tokyonight.nvim's own palette, so the two agree by descent rather than by
+# mechanism and a tweak that should show in both is two edits.
+#
+# Provenance — verified identical to WezTerm's built-in `tokyonight_night` on
+# 2026-09-03: all sixteen palette entries, background, foreground, cursor,
+# cursor text and both selection colours agreed byte for byte, the two having
+# descended from the same upstream. Compared by dumping
+# wezterm.color.get_builtin_schemes() against
+# /usr/share/ghostty/themes/'TokyoNight Night'. `+list-themes` also carries
+# TokyoNight, Day, Moon and Storm, covering .wezterm.lua's alternates. That
+# parity is now deliberately broken; see the header.
+theme = tokyonight-night-bph
 
 # bold_brightens_ansi_colors = false. Ghostty's counterpart is `bold-color`,
 # and leaving it unset already *is* the false case: bold is a weight change and
