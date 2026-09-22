@@ -467,6 +467,39 @@ item is picked up.
 
 ---
 
+## 24. `tl-newyear` cannot create a symlink farm where none exists
+
+- [ ] Give the tool a way to add the `/usr/local/bin` symlinks on a machine that has none.
+
+Raised 2026-09-21. `switch` is the only path to the farm, and it refuses when the
+target is already the newest installed release: `current_year()` derives the
+active year from the **installed trees**, not from the symlinks, so on a machine
+with 2026 installed and zero symlinks `tl-newyear switch 2026` exits
+`already on 2026` without ever looking at whether the farm exists.
+
+That is exactly the state fedxps was in — 2025 and 2026 both installed, **0**
+symlinks, so GUI-launched apps and `ssh fedxps 'cmd'` could not find `latex` —
+and it is why the gap survived until 2026-09-21, when it was closed by hand with
+`tlmgr path add` (fedxps: 3 → 506 entries, 503 of them TeX Live; verified, 0
+broken links).
+
+⚠ **`status` could not report it either.** The symlink line is guarded on a
+non-zero count (`bin/tl-newyear` line 88), so the machine with no farm prints
+nothing rather than `-> 0`. The silent case is the broken one, which is the
+wrong way round.
+
+Two things a fix would want: a `path` subcommand — or a `switch` that accepts
+the zero-symlink case — so the farm can be created deliberately rather than as a
+side effect of a year change; and a `status` that prints `-> 0` instead of
+falling silent.
+
+Why the farm matters at all: it is what makes TeX Live reachable *outside* an
+interactive shell, since `20-path.sh` never runs there.
+`org/machines/environment-2026-09/environment-map.md` §3 has the mechanism;
+`org/machines/machines.md` `## Closed` has the fedxps closure.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,

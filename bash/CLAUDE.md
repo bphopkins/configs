@@ -11,7 +11,15 @@ top.
 
 - `00-shell-opts.sh` — shopt/set options. **Deliberately empty**, a reserved
   slot. An empty numbered module here is scaffolding, not dead code.
-- `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim).
+- `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim), and the
+  `unset BASH_ENV` that disarms Lmod (2026-09-21). Lmod arrives as a hard
+  dependency of Singular, so the package cannot be removed; its
+  `/etc/profile.d/modules.sh` points `BASH_ENV` at Lmod's init script, which
+  bash then sources at the start of **every non-interactive shell** — ~10 ms
+  a spawn, ~7% on `tests/gsync/run-all.sh`. `modules.sh` sets it only when
+  unset and `.bashrc` sources `/etc/bashrc` before this directory, so
+  unsetting here is the whole fix. `module`/`ml` are unaffected: they are
+  exported shell functions and survive into child shells on their own.
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions, duplicate-guarded. Each
   entry prepends, so **effective priority is the reverse of reading order** —
   TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is
@@ -56,11 +64,17 @@ top.
   requires `clamav` + `clamav-freshclam`). Its PUA detection flags benign
   browser/dev content — read hits skeptically.
 - `85-disk.sh` — `disk-check` / `disk-fix`. See "Disk maintenance pair" below.
-- `90-nix.sh` — nix profile loader, guarded on nix being installed.
-  **Load-bearing on bigfed** (nix since 2025-03-05; this file is the only
-  thing putting it on PATH, and it exports `NIX_SSL_CERT_FILE`, without which
-  substituter fetches fail TLS). An inert no-op elsewhere, so one file is
-  correct on every machine — same guarded-shim pattern as the bun block.
+- `90-nix.sh` — nix profile loader, guarded twice: on nix being installed, and
+  on `NIX_PROFILES` being unset. **Load-bearing on bigfed** (nix since
+  2025-03-05; this file is the only thing putting it on PATH, and it exports
+  `NIX_SSL_CERT_FILE`, without which substituter fetches fail TLS). An inert
+  no-op elsewhere, so one file is correct on every machine — same guarded-shim
+  pattern as the bun block. ⚠ The second guard is load-bearing in its own
+  right (2026-09-21): upstream's `nix.sh` is **not idempotent**, so re-sourcing
+  it in a nested shell grew PATH, MANPATH and `XDG_DATA_DIRS` without bound —
+  measured at 2, 3 and 4 copies at nesting depths 1, 2 and 3. `20-path.sh`'s
+  duplicate guards cannot reach it, because the growth happens inside a vendor
+  file this module only sources; guarding the *source* fixes all three at once.
 
 Also in the package: `.bashrc.min` / `.bash_profile.min`, stowed to `~` —
 minimal known-good rescue configs for recovering from an edit that breaks
