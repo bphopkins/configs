@@ -189,12 +189,16 @@ Standing verdicts (2026-07/08; the full investigation is
   it ever grates, the cheap answer is `notify-send` feedback, not focus).
 - Tabs vs. separate windows is Okular's own preference; toggle it through
   the GUI, never by editing `okularpartrc` (see `okular/CLAUDE.md`).
-- `okular-inverse` resolves only for a VimTeX-launched Okular. A
-  desktop-launched one inherits the session PATH (no `~/bin`), and inverse
-  search silently does nothing. A `~/.config/environment.d` PATH drop-in was
-  considered and **declined** — it would give PATH a second source of truth
-  that doesn't reproduce `20-path.sh`'s TeX-Live-first ordering. Only add it
-  against a concrete failure.
+- `okular-inverse` resolves for a desktop-launched Okular as well as a
+  VimTeX-launched one from the first login after 2026-09-23: `.bash_profile`
+  sources `20-path.sh` in the login shell GDM starts, so the session PATH
+  carries `~/bin` and `~/.local/bin` (`nvr`). Before that the desktop-launched
+  case silently did nothing — and PDFs are opened both ways (confirmed
+  2026-09-21), which is the concrete failure the old decline was waiting for.
+  A `~/.config/environment.d` PATH drop-in stays **declined**: PATH keeps one
+  author, `20-path.sh` (`DECISIONS.md`, 2026-09-23; the chain:
+  `org/machines/environment.md`). `tests/env/run.sh` pins the login shell's
+  output; the live proof is an inverse search from an Okular opened in Files.
 
 ## Claude Code configuration linkage
 

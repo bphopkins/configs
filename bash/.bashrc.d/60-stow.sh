@@ -2,6 +2,9 @@
 declare -A STOW_TARGETS=(
   [alacritty]="$HOME/.config/alacritty"
   [bash]="$HOME"
+  # systemd's user-session drop-ins; the generator reads only this directory
+  # (org/machines/environment.md, section 5), and the symlinks stow makes.
+  [environment.d]="$HOME/.config/environment.d"
   [fontconfig]="$HOME/.config/fontconfig"
   [git]="$HOME/.config/git"
   [ghostty]="$HOME/.config/ghostty"
@@ -22,7 +25,7 @@ declare -A STOW_TARGETS=(
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar mako wofi latex bin okular fontconfig)
+STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar mako wofi latex bin okular fontconfig environment.d)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 

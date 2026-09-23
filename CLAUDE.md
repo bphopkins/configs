@@ -54,6 +54,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the two rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own: the XDG single home, the private identity include, `useConfigOnly`, and how `git config --global` writes through the link)* |
+| environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own: `10-editor.conf`, `EDITOR`/`VISUAL` for the systemd user session; `50-xpadneo-sdl.conf`, the Steam hint for bigfed's pad, inert on fedxps. Constants only, PATH never; read at manager start, so a change lands at the next login)* |
 
 ## Stow Deployment
 
@@ -105,6 +106,11 @@ in-progress guards, offline handling, hints — and their scope live in
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
 
+**Run `tests/env/run.sh` after any edit to `bash/.bash_profile`, `10-env.sh`,
+`20-path.sh` or `environment.d/`.** It pins what a login shell hands the
+session and what the `environment.d` generator hands the user manager; caged in
+its own systemd scope, sandboxed under `$TMPDIR`.
+
 **Run `tests/snipgen/run.sh` after any edit to `nvim/lua/snippets/snipgen.py`
 or to `latex/french-logic/`**; the snippet libraries under
 `nvim/lua/snippets/pkg/` and `sty/` are generated, committed data, never
@@ -132,9 +138,11 @@ auto-detected year), `30` prompt (one colour per machine), `40` aliases
 (`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`, `cc`/`ccf`,
 navigation), `50` git-sync, `60` stow, `70` `ls-tasks`, `80` `clam`, `85`
 `disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed). The one empty
-module left is a reserved slot, not dead code. Everything else — module
-hazards, the reboot-verdict contract, the disk pair, the suites — is in
-`bash/CLAUDE.md`.
+module left is a reserved slot, not dead code. `.bash_profile` sources `10`
+and `20` first, for login shells — the one GDM starts included, which is how
+the desktop session gets the personal PATH and `EDITOR` (2026-09-23). Everything
+else — module hazards, the reboot-verdict contract, the disk pair, the suites —
+is in `bash/CLAUDE.md`.
 
 ## Visual Consistency
 

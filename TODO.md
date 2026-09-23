@@ -29,9 +29,14 @@ prompt colours. `90-nix.sh` is **load-bearing on bigfed**, where nix has
 been installed since 2025-03-05 and this file is the only thing putting it on PATH —
 bigfed is the machine that builds Carnap, and the Stage 3 build ran through it.
 `.bashrc.min` / `.bash_profile.min` are rescue configs.
-A `~/.config/environment.d` PATH drop-in was considered and **declined** — it would
-give PATH a second source of truth that wouldn't reproduce `20-path.sh`'s
-TeX-Live-first ordering.
+The session-PATH question closed 2026-09-23, the other way round from a drop-in:
+`.bash_profile` now sources `10-env.sh` and `20-path.sh`, so the login shell GDM
+starts carries the personal PATH, `EDITOR` and an unset `BASH_ENV` into the
+session, the way Fedora's own skeleton `.bashrc` would have. A
+`~/.config/environment.d` PATH drop-in stays **declined** — PATH keeps one
+author, `20-path.sh`; `environment.d` (its own package since the same day) holds
+constants only. Suite: `tests/env/run.sh`. Record: `DECISIONS.md`, 2026-09-23;
+map: `org/machines/environment.md`.
 
 *Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
 Carnap development even though nix isn't installed" — false when written (2026-07-26),

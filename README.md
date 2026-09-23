@@ -35,7 +35,7 @@ I would personally begin by creating the `configs` repo on GitHub with a readme 
 sudo dnf install -y stow
 cd ~/Desktop
 git clone git@github.com:bphopkins/configs.git
-mkdir -p ~/Desktop/configs/{alacritty,bash,bin,fontconfig,ghostty,git,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
+mkdir -p ~/Desktop/configs/{alacritty,bash,bin,environment.d,fontconfig,ghostty,git,latex,mako,nvim,okular,sway,swaylock,waybar,wofi,wezterm}
 ```
 
 
@@ -147,7 +147,7 @@ This simulates the action, reporting back if `stow` sees anything funny about cr
 cd ~/Desktop/configs
 
 # Ensure target directories exist
-mkdir -p ~/.config/{alacritty,ghostty,mako,nvim,sway,swaylock,waybar,wofi} ~/texmf/tex/latex ~/bin
+mkdir -p ~/.config/{alacritty,environment.d,ghostty,mako,nvim,sway,swaylock,waybar,wofi} ~/texmf/tex/latex ~/bin
 
 # Links to $HOME
 stow -nvt ~ bash
@@ -162,6 +162,7 @@ stow -nvt ~/.config/swaylock swaylock
 stow -nvt ~/.config/mako mako
 stow -nvt ~/.config/waybar waybar
 stow -nvt ~/.config/wofi wofi
+stow -nvt ~/.config/environment.d environment.d
 
 # Links to ~/texmf/tex/latex
 stow -nvt ~/texmf/tex/latex latex
@@ -194,6 +195,7 @@ stow -vt ~/.config/swaylock swaylock
 stow -vt ~/.config/mako mako
 stow -vt ~/.config/waybar waybar
 stow -vt ~/.config/wofi wofi
+stow -vt ~/.config/environment.d environment.d
 
 # Links to ~/texmf/tex/latex
 stow -vt ~/texmf/tex/latex latex
@@ -266,6 +268,7 @@ But honestly, why not just reboot?
   stow --adopt -vt ~/.config/mako mako
   stow --adopt -vt ~/.config/waybar waybar
   stow --adopt -vt ~/.config/wofi wofi
+  stow --adopt -vt ~/.config/environment.d environment.d
   stow --adopt -vt ~/texmf/tex/latex latex
   stow --adopt -vt ~/bin bin
   stow --adopt -vt ~/.config okular
@@ -285,6 +288,7 @@ But honestly, why not just reboot?
   stow -Dvt ~/.config/mako mako
   stow -Dvt ~/.config/waybar waybar
   stow -Dvt ~/.config/wofi wofi
+  stow -Dvt ~/.config/environment.d environment.d
   stow -Dvt ~/texmf/tex/latex latex
   stow -Dvt ~/bin bin
   stow -Dvt ~/.config okular
@@ -305,6 +309,13 @@ But honestly, why not just reboot?
   `ls -l ~/.config/okularpartrc` first: KConfig can save by atomic replace, which would
   turn the symlink back into a real file with no error. Fix by moving it into `okular/`
   again and restowing.
+
+- **environment.d:** the two drop-ins are read by `systemd --user` when the
+  session's user manager starts, so they land at the next login, not on restow.
+  They hold constants only (the editor, one SDL hint). PATH for the session comes
+  from `bash/.bash_profile`, which runs `10-env.sh` and `20-path.sh` in the login
+  shell GDM starts — check with `systemctl --user show-environment` after a
+  login. `tests/env/run.sh` verifies both halves without one.
 
 - **Homegrown scripts go in `bin/`, not `~/.local/bin`.** `~/.local/bin` is where pip
   and npm drop their console scripts, and they rewrite that directory on upgrade.

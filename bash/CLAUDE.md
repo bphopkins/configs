@@ -7,16 +7,33 @@ Charter for the `bash` stow package: the modular shell configuration stowed to
 (`stow -R bash`) is needed only when files are added or removed at the package
 top.
 
+`.bash_profile` sources the two environment modules, `10-env.sh` and
+`20-path.sh`, before `.bashrc` (2026-09-23). A login shell reads it, and the one
+GDM starts is a login shell whose environment the whole graphical session
+inherits — so this is how desktop-launched apps get the personal PATH and
+`EDITOR`, and how bigfed's session sheds Lmod's `BASH_ENV` (once: that manager
+lingers, and the upload never removes a variable it already holds, so the
+first deployment needs `systemctl --user unset-environment BASH_ENV` or a
+reboot). `.bashrc`'s early return still keeps `ssh host cmd` and scripts cheap. Both modules are
+idempotent, so the interactive pass re-sourcing them is a no-op. Takes effect
+at a login. **Run `tests/env/run.sh` after any edit to `.bash_profile`,
+`10-env.sh`, `20-path.sh` or `environment.d/`**: it pins the login shell's
+output and the `environment.d` generator's, caged in its own systemd scope.
+
 ## Module map (sourced in numbered order)
 
 - `00-shell-opts.sh` — shopt/set options. **Deliberately empty**, a reserved
   slot. An empty numbered module here is scaffolding, not dead code.
-- `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim), and the
-  `unset BASH_ENV` that disarms Lmod (2026-09-21). Lmod arrives as a hard
+- `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim;
+  `NPM_CONFIG_PREFIX`, which replaced the hand-made `~/.npmrc` on 2026-09-23),
+  and the `unset BASH_ENV` that disarms Lmod (2026-09-21). Lmod arrives as a hard
   dependency of Singular, so the package cannot be removed; its
   `/etc/profile.d/modules.sh` points `BASH_ENV` at Lmod's init script, which
-  bash then sources at the start of **every non-interactive shell** — ~10 ms
-  a spawn, ~7% on `tests/gsync/run-all.sh`. `modules.sh` sets it only when
+  bash then sources at the start of **every non-interactive shell that
+  inherits it**: a terminal's `bash -c` and scripts, and the GNOME session's,
+  which carries it from its own profile pass — but not `ssh host cmd`, which
+  runs no profile (measured 2026-09-21). ~10 ms a spawn, ~7% on
+  `tests/gsync/run-all.sh`. `modules.sh` sets it only when
   unset and `.bashrc` sources `/etc/bashrc` before this directory, so
   unsetting here is the whole fix. `module`/`ml` are unaffected: they are
   exported shell functions and survive into child shells on their own.
@@ -27,7 +44,9 @@ top.
   contains a working `tlmgr` (half-installed trees are skipped, so a parallel
   install in progress can't knock TeX Live off PATH). Pin an older release
   with `TEXLIVE_YEAR=<year>` — see `bin/CLAUDE.md`, TeX Live release
-  upgrades. The bun block is a guarded shim, inert until bun exists.
+  upgrades. The bun block is a guarded shim, inert until bun exists. Sourced
+  from `.bash_profile` too, so the session carries the same PATH in the same
+  order; this file is PATH's one author.
 - `30-prompt.sh` — PS1 itself still comes from `/etc/bashrc`. This module sets
   the `PROMPT_*` variables Fedora's bash-color-prompt package re-expands at
   every prompt, so an edit here lands on the next prompt with no re-source.
