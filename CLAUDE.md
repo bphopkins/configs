@@ -150,17 +150,19 @@ entirely on all three machines (`bash/CLAUDE.md`). Waybar is not on the theme
 at all: measured 2026-09-20, its five colours are `#000000`, `#ffffff`,
 `#9e9e9e`, a `#228B22` accent and the shared `#d08770` urgent.
 
-Source Code Pro 12pt font in three of the four terminals (WezTerm, Ghostty,
-Alacritty), with Ghostty's bold at Semibold 600 since 2026-09-20 where
-WezTerm's stays at Bold 700. Ghostty additionally carries JuliaMono as a
-fallback behind it, for the logic and Greek that Source Code Pro does not
-draw — the font *list* is the mechanism, and its own config explains it.
-Alacritty carries font settings only — no colorscheme, so it falls back to
-its own default palette. Ghostty began as a deliberate transcription of the
-WezTerm config, added 2026-09-03 to make the two comparable like for like;
-that comparison closed 2026-09-05, and the two have since parted on colour
-and on bold weight — both recorded in `ghostty/config`'s header, alongside
-the places they could never be made to agree.
+Source Code Pro font in three of the four terminals (WezTerm, Ghostty,
+Alacritty): 12pt in WezTerm and Alacritty, 12.5pt in Ghostty since
+2026-09-22, on trial, for a pixel-grid reason its config records. Ghostty's
+bold is Semibold 600 since 2026-09-20 where WezTerm's stays at Bold 700.
+Ghostty additionally carries JuliaMono as a fallback behind it, for the
+logic and Greek that Source Code Pro does not draw — the font *list* is the
+mechanism, and its own config explains it. Alacritty carries font settings
+only — no colorscheme, so it falls back to its own default palette. Ghostty
+began as a deliberate transcription of the WezTerm config, added 2026-09-03
+to make the two comparable like for like; that comparison closed 2026-09-05,
+and the two have since parted on colour, on bold weight and on size — all
+recorded in `ghostty/config`'s header, alongside the places they could never
+be made to agree.
 
 The desktop's single urgent colour (`#d08770`) spans four configs in four
 languages — see `sway/CLAUDE.md` before changing it.

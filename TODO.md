@@ -495,7 +495,7 @@ falling silent.
 
 Why the farm matters at all: it is what makes TeX Live reachable *outside* an
 interactive shell, since `20-path.sh` never runs there.
-`org/machines/environment-2026-09/environment-map.md` §3 has the mechanism;
+`org/machines/environment.md` §3 has the mechanism;
 `org/machines/machines.md` `## Closed` has the fedxps closure.
 
 ---

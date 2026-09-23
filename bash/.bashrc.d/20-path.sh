@@ -12,6 +12,10 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 fi
 
 # npm global binaries
+#
+# Unguarded on purpose (settled 2026-09-21): `npm install -g` is used, and
+# npm's global prefix is ~/.local/npm-global, so this directory exists and a
+# guard like bun's below would be a no-op.
 if [[ ":$PATH:" != *":$HOME/.local/npm-global/bin:"* ]]; then
   PATH="$HOME/.local/npm-global/bin:$PATH"
 fi
@@ -70,6 +74,10 @@ if [[ -n "$_tl_bin" ]]; then
   if [[ ":$MANPATH:" != *":$_tl_man:"* ]]; then
     MANPATH="$_tl_man:$MANPATH"
   fi
+  # INFOPATH is the TeX Live Guide's own line, kept although `info` itself is
+  # deliberately not installed (settled 2026-09-21): the line costs nothing,
+  # .info files are plain text, and every manual here but the Asymptote FAQ
+  # also ships as PDF or HTML under texmf-dist/doc.
   _tl_info="$_tl_root/$_tl_year/texmf-dist/doc/info"
   if [[ ":$INFOPATH:" != *":$_tl_info:"* ]]; then
     INFOPATH="$_tl_info:$INFOPATH"

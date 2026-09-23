@@ -18,8 +18,9 @@
 # is a control *for*: WezTerm's built-in agrees with Ghostty's shipped theme,
 # so since the 2026-09-20 rebase onto folke's generated palette it differs by
 # the six brights as well as by anything tweaked since. Everything else in
-# this file still tracks .wezterm.lua, with one further exception below: the
-# bold weight, dropped a tick on 2026-09-20 and likewise not mirrored.
+# this file still tracks .wezterm.lua, with two further exceptions below,
+# likewise not mirrored: the bold weight, dropped a tick on 2026-09-20, and
+# the size, raised half a point on 2026-09-22.
 #
 # Two of WezTerm's settings have no Ghostty counterpart at all. They are
 # recorded in place below rather than dropped, so the gaps stay visible.
@@ -137,14 +138,45 @@ font-family-bold-italic = Source Code Pro
 font-family-bold-italic = JuliaMono
 font-style-bold-italic = Semibold Italic
 
-# Points, as in WezTerm, and 12 is also Ghostty's own default. Held explicit so
-# the comparison does not rest on two defaults happening to agree.
+# Points, as in WezTerm. 12.5 from 2026-09-22, on trial, and NOT mirrored in
+# .wezterm.lua, which stays at 12 as the control a size can be judged against
+# -- the arrangement the palette and the bold weight already follow.
+#
+# The half point is deliberate. Glyphs scale smoothly but cells are whole
+# pixels: Ghostty rounds the advance and the line height, taking the line
+# height at FreeType's integer ppem, and light hinting snaps glyph heights to
+# the pixel grid. So a point step does not scale the text evenly. Ghostty
+# converts at 96 dpi times the desktop's display and text scaling, both 1 on
+# both machines, and Source Code Pro comes out as:
+#
+#           glyphs    cell   x-height  cell vs advance  gap
+#   12      16.00 px  10x20  8 px      +4.2%            2.71 px
+#   12.5    16.67 px  10x21  9 px       0.0%            2.41 px
+#   13      17.33 px  10x21  9 px      -3.8%            2.11 px
+#   13.5    18.00 px  11x23  9 px      +1.9%            2.80 px
+#
+# The gap is the mean white space between two like lowercase letters. 12.5 has
+# 13's 9 px x-height and 13's grid, with the cell exactly the advance the face
+# was drawn to. 13 sets the same letters 4% tighter than drawn, and 13.5 is 12
+# scaled up evenly, at the cost of about a column in eleven and a row in
+# eight. From 12 to 12.5 every column survives: bigfed's quarter tiles went
+# from 127x70 to 127x66, measured.
+#
+# The table was computed by replicating Ghostty 1.3.1's metric code
+# (font/face/freetype.zig getMetrics, font/Metrics.zig calc) against the
+# FreeType it links, which reproduces the measured 10x20 at 12. Recompute if
+# the face, a display scale or that code changes.
+#
+# ctrl+= and ctrl+- add and subtract a whole point, so from here they visit
+# 13.5 and 11.5. ctrl+0 returns to this line, and a config reload leaves a
+# zoomed terminal zoomed.
 #
 # Declined 2026-09-06, tried in use: normalising size per font by x-height.
 # JuliaMono's is 6.60 against Source Code Pro's 5.76, which put it at 10.6, and
 # that read as plainly too small — the x-heights matched, but the advance
-# narrowed 12%, so the text got denser rather than equal. 12, whatever the face.
-font-size = 12
+# narrowed 12%, so the text got denser rather than equal. One size, whatever
+# the face.
+font-size = 12.5
 
 # NO COUNTERPART (1/2) — faint text.
 #
@@ -242,9 +274,8 @@ theme = tokyonight-night-bph
 # it.
 shell-integration-features = no-cursor,ssh-env,ssh-terminfo
 
-# Both terminals arrive at a block by default. Stated outright on the same
-# principle as font-size: the comparison should not rest on two defaults
-# happening to agree.
+# Both terminals arrive at a block by default. Stated outright so the
+# comparison does not rest on two defaults happening to agree.
 cursor-style = block
 
 # The one divergence chosen rather than inherited: `cursor-style-blink` is left
