@@ -21,7 +21,9 @@ at a login. **Run `tests/env/run.sh` after any edit to `.bash_profile`,
 output and the `environment.d` generator's, caged in its own systemd scope.
 **And `tests/shell-opts/run.sh` after any edit to `00-shell-opts.sh`**: the
 same cage, interactive shells against the real system layer, a sandboxed
-history file.
+history file. **And `tests/prompt/run.sh` after any edit to `30-prompt.sh`**:
+the rendered prompt in every shape a shell here takes, through both terminal
+integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
 
 ## Module map (sourced in numbered order)
 
@@ -62,24 +64,31 @@ history file.
   upgrades. The bun block is a guarded shim, inert until bun exists. Sourced
   from `.bash_profile` too, so the session carries the same PATH in the same
   order; this file is PATH's one author.
-- `30-prompt.sh` — PS1 itself still comes from `/etc/bashrc`. This module sets
-  the `PROMPT_*` variables Fedora's bash-color-prompt package re-expands at
-  every prompt, so an edit here lands on the next prompt with no re-source.
-  `PROMPT_HIGHLIGHT=1` pins bold, which the package otherwise decides by a
+- `30-prompt.sh` — writes PS1 in full (2026-09-23): a reset, bold and the
+  machine colour on `\u@\h`, a plain colon, bold and colour on `\w`, a reset,
+  `\$ ` — the shape Fedora's bash-color-prompt package gave it, now stated
+  here. Until that date the module only filled two of the package's
+  `PROMPT_*` variables, and the prompt's shape depended on the package's
+  activation test (PS1 still Fedora's, and `COLORTERM` or a colour `TERM`);
+  the package still runs from `/etc/bashrc` and its template is overwritten,
+  since its disable switch would have to be set before `/etc/bashrc` is read
+  (`TODO.md` item 25). Bold is pinned because the package decided it by a
   string comparison against `DESKTOP_SESSION` — the reason bigfed and fedxps
-  looked different off the same repo. `PROMPT_COLOR` then gives each box its
-  own colour, and since 2026-09-20 those are **truecolor hexes off the
-  terminal palette** rather than ANSI indices: the three are machine
-  identities, and an index is by construction the same colour as everything
-  else that asks for it. fedxps `#73daca` mint, bigfed `#ff5fd1` rose,
-  nousowl `#ff9e64` orange — one per gap in the hue circle TokyoNight's
-  sixteen leave open — with root on the package's magenta behind an EUID
-  guard. Each host keeps its old index as a `$COLORTERM` fallback, so a VT
-  console still gets a colour. **The scheme spans two repos**: nousowl's half
-  lives in that machine's own `configs/bash/.bashrc.d/30-prompt.sh`, deployed
-  by push over ssh rather than by stow, and the two halves are kept in step
-  by hand. The file's comments carry the derivation, the measurements and the
-  declined alternatives.
+  looked different off the same repo. The colours are, since 2026-09-20,
+  **truecolor hexes off the terminal palette** rather than ANSI indices: the
+  three are machine identities, and an index is by construction the same
+  colour as everything else that asks for it. fedxps `#73daca` mint, bigfed
+  `#ff5fd1` rose, nousowl `#ff9e64` orange — one per gap in the hue circle
+  TokyoNight's sixteen leave open — with root on the package's magenta behind
+  an EUID guard, an unregistered host on the package's green, and each host's
+  old index as the `$COLORTERM` fallback, so a VT console still gets a
+  colour. `NO_COLOR` gives bold alone. **The scheme spans two repos**:
+  nousowl's half lives in that machine's own
+  `configs/bash/.bashrc.d/30-prompt.sh`, deployed by `./configs/install.sh`
+  over ssh rather than by stow, and the two halves are kept in step by hand.
+  The file's comments carry the derivation, the measurements and the declined
+  alternatives; the record is `DECISIONS.md`, 2026-09-23. Suite:
+  `tests/prompt/run.sh`, after any edit here.
 - `40-aliases.sh` — aliases plus functions: `sysupgrade` and `reboot-check`
   (see "Reboot verdict" below), `tl-upgrade` (within-release TeX Live update;
   resolves `tlmgr` through PATH so it survives year bumps), `reload`

@@ -116,6 +116,11 @@ It runs interactive shells — a WezTerm-shaped one and a replica of Ghostty's
 launch — against the real system layer with a fixture HOME and a sandboxed
 history file, in the same cage.
 
+**Run `tests/prompt/run.sh` after any edit to `bash/.bashrc.d/30-prompt.sh`.**
+It renders the prompt as a terminal receives it, in every shape a shell here
+takes and through both integrations, in the same cage — `tests/cage.sh`, which
+the three caged suites share since 2026-09-23.
+
 **Run `tests/snipgen/run.sh` after any edit to `nvim/lua/snippets/snipgen.py`
 or to `latex/french-logic/`**; the snippet libraries under
 `nvim/lua/snippets/pkg/` and `sty/` are generated, committed data, never

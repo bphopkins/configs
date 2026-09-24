@@ -1,19 +1,44 @@
 # 30-prompt.sh
-# Prompt configuration (PS1, PS2, PROMPT_COMMAND)
+# The prompt: PS1, written here in full
 #
-# PS1 defines the primary prompt displayed before each command.
-# PS2 defines the continuation prompt (when a command spans lines).
-# PROMPT_COMMAND, if set, runs before each prompt is displayed.
+# PS1 is the string bash re-reads before every command line: \u, \h and \w
+# stand for the user, the host and the working directory, \$ for the prompt
+# character, and the colour codes sit around them. Until 2026-09-23 this file
+# did not write it. Fedora's bash-color-prompt package
+# (/etc/profile.d/bash-color-prompt.sh, read by /etc/bashrc before this
+# directory) replaced Fedora's traditional `[\u@\h \W]\$ ` with a template of
+# PROMPT_* variables that bash re-expands at every prompt, and this file
+# filled two of them: PROMPT_HIGHLIGHT=1 for bold, PROMPT_COLOR for the
+# machine's colour. So the prompt's shape, user@host:directory$, was the
+# package's, and it appeared only where the package's activation test passed:
+# PS1 still exactly Fedora's, and COLORTERM set, or TERM ending in "color", or
+# TERM=linux. Where the test failed -- a terminal that sends TERM=xterm and no
+# COLORTERM -- the prompt stayed `[user@host dir]$ ` and both variables did
+# nothing. The package's README calls the direct use of its variables "being
+# deprecated" and its functions "subject to change until 1.0".
 #
-# PS1 itself is still the system default from /etc/bashrc. On Fedora that is
-# not a fixed string: the bash-color-prompt package
-# (/etc/profile.d/bash-color-prompt.sh) assembles it out of live PROMPT_*
-# variables, which bash re-expands at every prompt. So setting one of them
-# here -- long after profile.d has run -- takes effect on the very next
-# prompt, with no need to re-source the framework or rebuild PS1.
+# This file now assembles the same string from the same pieces, and the
+# package's variables decide nothing: setting PROMPT_COLOR at a prompt changes
+# nothing, which the suite checks. The package still runs from /etc/bashrc
+# and still sets its template, which the assignment below overwrites -- its
+# switch, bash_color_prompt_disable, would have to be set before /etc/bashrc
+# is read, and nothing here runs that early (configs/TODO.md item 25). Before
+# the change the bytes reaching the terminal were compared against the
+# package's in every shape a shell here takes: WezTerm's, Ghostty's launch
+# with both integrations' marks wrapped around the prompt, the VT console,
+# each machine's colour, an unregistered host, PROMPT_DIRTRIM -- identical in
+# all of them. A plain string expands in 7 microseconds against the template's
+# 34. Record: configs/DECISIONS.md, the entry of 2026-09-23.
+# Suite: tests/prompt/run.sh, after any edit here.
 #
-# PROMPT_HIGHLIGHT is an SGR parameter spliced in ahead of PROMPT_COLOR, and
-# 1 is bold. Left unset, the package picks for us:
+# Left to right: a reset, so a command that left the terminal bold or coloured
+# does not bleed into the prompt; bold and the machine colour on user@host; a
+# plain colon; bold and colour again on the directory; a reset; `$ ` plain.
+# That is the package's default shape with bold pinned, as both machines have
+# shown it since 2026-09-05.
+#
+# Bold is written here rather than left to a default because the package
+# decided it by a string comparison against one desktop environment's name:
 #
 #     prompt_default_highlight() {
 #         if [ "$DESKTOP_SESSION" = "gnome" ]; then
@@ -23,14 +48,15 @@
 #         fi
 #     }
 #
-# A literal string comparison against one desktop environment's name, which
-# is why the prompt came out bold under GNOME on bigfed and plain under sway
-# on fedxps -- the same repo, the same shell, two different looks, decided by
-# a package default rather than by anything here. Pinned 2026-09-05 so the two
-# machines agree and the answer stops depending on someone else's opinion
-# about desktop environments. Set it to 7 for reverse video, or comment the
-# line out to hand the decision back to the package.
-PROMPT_HIGHLIGHT=1
+# which is why the prompt came out bold under GNOME on bigfed and plain under
+# sway on fedxps -- the same repo, the same shell, two different looks. Pinned
+# 2026-09-05 so the two machines agree; part of the string itself since
+# 2026-09-23.
+#
+# NO_COLOR (https://no-color.org) is honoured since 2026-09-23: set, the
+# prompt is bold and uncoloured. The package honoured it too, and this file
+# used to defeat it by re-setting PROMPT_COLOR after the package had cleared
+# it -- an accident, never a decision. Not set on any of the three machines.
 
 
 # --- One colour per machine -------------------------------------------------
@@ -103,22 +129,27 @@ PROMPT_HIGHLIGHT=1
 # It is cheap insurance in the direction that fails safe: root's own ~/.bashrc
 # does not source this file, but `sudo -s` preserves HOME under some sudoers
 # configurations, and there the machine colour would otherwise overwrite the
-# one signal worth keeping.
+# one signal worth keeping. Inside the guard, root's PS1 is never touched.
 #
-# The default branch leaves PROMPT_COLOR as the package set it, so an
-# unregistered machine looks like fedxps rather than losing its prompt. Give a
-# new box its own line here rather than relying on that.
+# An unregistered machine takes 32, the package's own green for a user, so it
+# looks like fedxps on a console rather than losing its prompt. Give a new box
+# its own line here rather than relying on that.
+#
+# \[ and \] around each code tell readline that the bytes between them take
+# no columns, so a line being edited or redrawn does not misalign.
 if [[ $EUID -ne 0 ]]; then
   case "$HOSTNAME" in
   fedxps) _pc_rgb='38;2;115;218;202' _pc_ansi=32 ;;
   bigfed) _pc_rgb='38;2;255;95;209' _pc_ansi=31 ;;
-  *) ;;
+  *) _pc_rgb='' _pc_ansi=32 ;;
   esac
-  if [[ -n ${_pc_rgb:-} ]]; then
-    case "$COLORTERM" in
-    truecolor | 24bit) PROMPT_COLOR=$_pc_rgb ;;
-    *) PROMPT_COLOR=$_pc_ansi ;;
-    esac
-  fi
-  unset _pc_rgb _pc_ansi
+  case "$COLORTERM" in
+  truecolor | 24bit) _pc_sgr=${_pc_rgb:-$_pc_ansi} ;;
+  *) _pc_sgr=$_pc_ansi ;;
+  esac
+  [[ -n ${NO_COLOR:-} ]] && _pc_sgr=''
+  _pc_on='\[\e[1m\]'${_pc_sgr:+"\[\e[${_pc_sgr}m\]"}
+  _pc_off='\[\e[0m\]'
+  PS1=${_pc_off}${_pc_on}'\u@\h'${_pc_off}':'${_pc_on}'\w'${_pc_off}'\$ '
+  unset _pc_rgb _pc_ansi _pc_sgr _pc_on _pc_off
 fi

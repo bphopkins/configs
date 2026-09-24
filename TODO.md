@@ -75,6 +75,18 @@ nothing to save. Record: `DECISIONS.md`, the shell-options entry. Left in this
 item: B (PS1 in `30-prompt.sh`, with the nousowl twin) and C (the aliases
 against use, once the dated log has accumulated).
 
+*Session four, 2026-09-23.* B built, on his decision over a study that
+compared the two prompts byte for byte in every terminal shape first:
+`30-prompt.sh` writes PS1 itself — the package's shape, bold pinned, the
+machine colour — with the package's two variables retired and `NO_COLOR`
+honoured; nousowl's twin the same, installed by `./configs/install.sh` the
+same evening. Suite `tests/prompt/run.sh` (41 checks), and the cage prelude
+the three caged suites now share as `tests/cage.sh`. Record: `DECISIONS.md`,
+the prompt entry. Left in this item: C, once the dated log has accumulated;
+and fedxps's `tests/prompt/run.sh` once its pull carries the module (the
+module itself was rendered against fedxps's system layer over ssh the same
+evening: mint, 32 without `COLORTERM`, bold alone under `NO_COLOR`).
+
 *Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
 Carnap development even though nix isn't installed" — false when written (2026-07-26),
 since nix had been on bigfed for seventeen months by then. It was written from fedxps,
@@ -518,6 +530,11 @@ module design; or accept the cost. Not a bug. Also worth knowing from the same
 measurement: bash-preexec's `__bp_adjust_histcontrol` strips `ignorespace` at
 the first prompt, which item 3's history design routes around with
 `HISTIGNORE`.
+
+A second switch of the same kind, 2026-09-23: `bash_color_prompt_disable`.
+With `30-prompt.sh` writing PS1 itself, bash-color-prompt's template is
+assembled and overwritten at every shell start; only a slot ahead of
+`/etc/bashrc` could stop it (`DECISIONS.md`, the prompt entry).
 
 ---
 

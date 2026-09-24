@@ -19,11 +19,8 @@
 # installs itself, and history is loaded and written. Each shell reports on
 # fd 3, so the hooks' escape sequences on stdout stay out of the report.
 #
-# Caged: the suite re-executes itself inside a systemd user scope with a memory
-# ceiling, swap off, a task cap and a time cap, and stops that scope on the way
-# out (org/claude-config/rules/system-and-server-work.md). "In a cage" is read
-# from the cgroup's own memory.max, never from a variable. No user manager, no
-# run.
+# Caged: tests/cage.sh -- a systemd user scope with a memory ceiling, swap off,
+# a task cap and a time cap, stopped on the way out; no user manager, no run.
 #
 # Run from anywhere after any edit to 00-shell-opts.sh (~3 s). Last line
 # follows the tests/gsync convention: "passed: N  failed: M"; exit 0 iff
@@ -32,38 +29,8 @@ set -u
 CFG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MODULE="$CFG_ROOT/bash/.bashrc.d/00-shell-opts.sh"
 
-# --- the cage (as tests/env/run.sh) -----------------------------------------
-caged() {
-  local cg f
-  cg="$(sed -n 's/^0::\(.*\)$/\1/p' /proc/self/cgroup 2>/dev/null)"
-  [[ -n "$cg" ]] || return 1
-  f="/sys/fs/cgroup${cg}/memory.max"
-  [[ -r "$f" ]] && [[ "$(<"$f")" != max ]]
-}
-if ! caged; then
-  if ! command -v systemd-run >/dev/null 2>&1 ||
-    ! systemctl --user show -p NFailedUnits >/dev/null 2>&1; then
-    echo "shell-opts tests: no user manager to cage the run in -- not running" >&2
-    echo "passed: 0  failed: 1"
-    exit 2
-  fi
-  avail_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
-  if ((avail_kb < (512 + 1024) * 1024)); then
-    echo "shell-opts tests: less than 1.5G available; the 512M cage plus a 1G floor does not fit -- not running" >&2
-    echo "passed: 0  failed: 1"
-    exit 2
-  fi
-  unit="shell-opts-tests-$$-$RANDOM"
-  systemd-run --user --scope --quiet --unit="$unit" \
-    -p MemoryMax=512M -p MemorySwapMax=0 -p TasksMax=256 -p RuntimeMaxSec=120 \
-    -- bash "${BASH_SOURCE[0]}" "$@"
-  rc=$?
-  systemctl --user stop "$unit.scope" >/dev/null 2>&1 || true
-  exit "$rc"
-fi
-
-cg="$(sed -n 's/^0::\(.*\)$/\1/p' /proc/self/cgroup)"
-echo "cage: ${cg##*/}  MemoryMax=$(<"/sys/fs/cgroup${cg}/memory.max")  TasksMax=$(<"/sys/fs/cgroup${cg}/pids.max")"
+source "$CFG_ROOT/tests/cage.sh"
+cage shell-opts "$@"
 
 # --- the sandbox ------------------------------------------------------------
 SB="$(mktemp -d "${TMPDIR:-/tmp}/shell-opts-tests.XXXXXX")"

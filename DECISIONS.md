@@ -1793,7 +1793,9 @@ scanner rewrites only when its own files are missing, and the guard is not
 exercised in normal use. fedxps was unaffected at the time (cache last
 written 2026-09-16, matches correct) and carries the same Chrome 154; the rule
 reaches it with the next pull, and the pull alone repairs it if Chrome runs
-there first, since the rule applies at load. A scratch mistake during the
+there first, since the rule applies at load. Measured on fedxps 2026-09-23
+after that pull (dc7f62e): 2,275 faces from 2,317, and `Source Code Pro`
+resolving to its own file. A scratch mistake during the
 diagnosis wrote 705 cache files into `~/.fontconfig`, the legacy cache
 directory, for eight minutes; removed the same session, and it is why the
 first "fixed" reading was set aside.
@@ -1886,8 +1888,14 @@ suite wants it).
 **Verified.** `tests/shell-opts/run.sh` 45/45 in its cage on bigfed; a new
 interactive shell on bigfed shows the whole contract with `history -a` once
 among three elements; the module sourced on fedxps's own system layer over
-ssh (`TERM=xterm-256color`, bash 5.3.9 there too) shows the same. fedxps's
-deployment and its suite run wait for the pull.
+ssh (`TERM=xterm-256color`, bash 5.3.9 there too) shows the same. fedxps
+took the module with its pull of dc7f62e (2026-09-23, 18:20, run from its
+own keyboard before session four reached it): a fresh `bash -ic` there
+under `TERM=xterm-256color` reads the whole contract back (20000, 40000,
+`%F %T `, ignoredups, `exit:clear`, the four shopts), and
+`tests/shell-opts/run.sh` passed 45/45 in its cage over ssh. The fontconfig
+rule arrived with the same pull: `fc-match 'Source Code Pro'` resolves to
+SourceCodePro-Regular.otf and the TeX Live face count is 2,275, from 2,317.
 
 **Left open.** B and C of item 3; item 25; the `~/.local/bin` tidy and item
 10, this session's next two jobs.
@@ -1932,3 +1940,118 @@ top-level file are not named, and a commit deleting the `nvim` package still
 hints and names it. `tests/gsync/run-all.sh`: 177 checks, all passing. The
 root charter's `gpullall` bullet and the bash charter's hint paragraph no
 longer carry the caveat.
+
+## The prompt: `30-prompt.sh` owns PS1 — 2026-09-23
+
+Session four of the bash campaign built B of `TODO.md` item 3, on his decision
+taken over the study below: the module writes PS1 itself, retires the
+package's variable names, honours `NO_COLOR`, and nousowl's twin makes the
+same move.
+
+**The state before.** PS1 was Fedora's. `/etc/bashrc` set `[\u@\h \W]\$ `;
+`/etc/profile.d/bash-color-prompt.sh` (bash-color-prompt 0.7.1-3.fc44 on all
+three machines) replaced it with a template of `PROMPT_*` variables when its
+activation test passed — PS1 still one of two Fedora literals, and `COLORTERM`
+set or `TERM` ending in "color" or `linux` — and `30-prompt.sh` filled two of
+them, `PROMPT_HIGHLIGHT=1` and `PROMPT_COLOR`. So the prompt's shape was the
+package's, and it appeared only where the test passed. The README documents
+the test in outline, and says of the variables that their "direct use is
+being deprecated and should not be relied on long-term", of the functions
+that they are "subject to change until 1.0". Nine package releases from 0.4.2
+(June 2024) to 0.7.1 (June 2025); rebuilds only since.
+
+**What changed.**
+
+- `bash/.bashrc.d/30-prompt.sh` assembles PS1 from the same pieces: a reset,
+  bold and the machine colour on `\u@\h`, a plain colon, bold and colour on
+  `\w`, a reset, `\$ `. The colour table, the `COLORTERM` gate and the `EUID`
+  guard are as before; an unregistered host takes the package's green;
+  `NO_COLOR` gives bold alone; the package's two variables are no longer set.
+  Live on bigfed at once, the directory being stowed.
+- `nousowl/configs/bash/.bashrc.d/30-prompt.sh`: the same move in orange,
+  installed on nousowl by `./configs/install.sh` after a dry run (backup
+  `.config-backup-20260923-182948`, the 2026-09-11 backup pruned, the
+  login-shell proof passed). Read back over ssh: `38;2;255;158;100` with
+  `COLORTERM` forwarded, `33` without, and `PROMPT_COLOR=31` typed at a
+  prompt changes nothing.
+- `tests/prompt/run.sh`: 41 checks, caged. The rendered prompt, `${PS1@P}`,
+  is captured by a `PROMPT_COMMAND` element appended after the integrations'
+  own, so what is compared is what the terminal receives: WezTerm's shape
+  with and without `COLORTERM`; `TERM=xterm` with neither, where the package
+  stays out and the shape holds anyway; the VT console; Ghostty's launch,
+  wrapped by both integrations with its title last; `NO_COLOR`; the other
+  machine's colour and an unregistered host; a directory named with `$`; and
+  the package's variables changed at a prompt. The root branch runs in a user
+  namespace (`unshare -r`: EUID 0 without privilege) — the module leaves PS1
+  alone and the package's magenta stands.
+- `tests/cage.sh`: the cage prelude, extracted from `tests/env/run.sh` and
+  `tests/shell-opts/run.sh` once a third suite wanted it, as the
+  shell-options entry anticipated. Both re-run unchanged: 26/26, 45/45. The
+  wrap-up found the two preludes short of the rule's own list: they set the
+  ceiling, swap, tasks and time, and not `OOMPolicy=continue`, without which
+  a cage reaching its ceiling is marked failed with result `oom-kill` and the
+  desktop announces "Device memory is nearly full" (the rule's incident of
+  2026-09-22; the user manager's default is `stop`, measured). The shared
+  prelude carries it, with `TimeoutStopSec=10` and `--collect`, the set
+  `adelotype/tools/contain.py` uses, and each run's cage line now prints the
+  policy back from the unit.
+- `bash/CLAUDE.md`'s module map and suite rule; the root charter's suite rule.
+
+**Measured** (the study: the module as it was against the candidate, caged,
+in every shape a shell here takes).
+
+- Byte-identical rendered prompts in WezTerm's shape, through Ghostty's
+  launch, on the VT console (index 31), for fedxps's colour, for an
+  unregistered host, in a directory named with `$` and backticks, and with
+  `PROMPT_DIRTRIM=2`. PS1 does not grow across prompts under either: Ghostty's
+  `PS0` restore runs before bash-preexec's DEBUG-trap restore, so WezTerm's
+  check still matches and both unwrap.
+- Where they differ. `TERM=xterm` with no `COLORTERM`: the package stays out,
+  so the prompt was `[user@host dir]$ ` uncoloured and the module's colour
+  did nothing; now the usual shape in the index colour. `NO_COLOR`: coloured
+  before, because the module re-set `PROMPT_COLOR` after the package had
+  cleared it; bold alone now.
+- Expansion: the template 34 µs, the owned string 7 µs (`TERM=linux`, no
+  DEBUG trap); with bash-preexec installed the loop carries its trap, about
+  105 against 80. Against 14.5 ms of hooks a prompt, nothing.
+- `PROMPT_COLOR=31` typed at a prompt turned the package-bound prompt red at
+  once; the owned one does not move.
+- The package still runs from `/etc/bashrc` and sets its template, which
+  `30-prompt.sh` then overwrites. Its switch, `bash_color_prompt_disable`,
+  must be set before `/etc/bashrc` is read, which nothing in `~/.bashrc.d`
+  can do — the structural point of item 25, and a second candidate for
+  whatever pre-system slot that item decides.
+- Toolbox is installed on both machines with no containers, so the package's
+  container marker was not in play.
+
+**Declined.**
+
+- Keeping the binding through the two variables: the path the README
+  deprecates, with the shape still subject to the activation test.
+- Binding through the package's functions (`prompt_highlight`,
+  `prompt_color`): the documented API, "subject to change until 1.0", and
+  still under the activation test.
+- Keeping the `PROMPT_HIGHLIGHT`/`PROMPT_COLOR` names beside the owned PS1:
+  two ways of saying one thing, and a reader would take the package to be in
+  the loop.
+- Ignoring `NO_COLOR`: byte-identical to before in every case, but the
+  earlier behaviour was an accident, never a decision.
+- Disabling the package: needs the pre-system slot; the overwrite costs
+  microseconds.
+- Extending `tests/shell-opts/run.sh` instead of a sibling: one suite per
+  module keeps the charter's rule one line each.
+- Handing over nousowl's install: its installer is the one push path there
+  that runs without sudo and proves the result; run from the session after a
+  dry run.
+
+**Verified.** `tests/prompt/run.sh` 41/41; `tests/shell-opts/run.sh` 45/45
+and `tests/env/run.sh` 26/26 on the shared cage; a fresh `bash -ic` on bigfed
+renders the owned prompt, with the package's variables still set by the
+package and unused; nousowl read back as above; the module sourced on
+fedxps's own system layer over ssh (`TERM=xterm-256color`, nothing written
+there) renders mint, 32 without `COLORTERM`, bold alone under `NO_COLOR`.
+fedxps takes the module at its next pull; the prompt suite there is owed
+then.
+
+**Left open.** C of item 3, the aliases against the dated log; item 25, with
+`bash_color_prompt_disable` now on its list; fedxps's pull of this.
