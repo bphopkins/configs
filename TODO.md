@@ -16,12 +16,9 @@ Priority for the next working day: **(3)**.
 - [ ] Review the whole modular bash setup for robustness.
 
 The last remaining survey item (1 and 2 are done). The structure is sound — `.bashrc` sources
-`~/.bashrc.d/*.sh` in numbered order, and everything parses. Things a review might look
-at: whether `00-shell-opts.sh` should finally get real `shopt`/`set` options (history
-handling, `globstar`, `checkwinsize`); whether `30-prompt.sh` should go further and
-build PS1 itself, now that it colours the prompt but still inherits the string
-(2026-09-14); and whether the aliases in `40-aliases.sh` still match how the machines
-are actually used.
+`~/.bashrc.d/*.sh` in numbered order, and everything parses. Left: whether the
+aliases in `40-aliases.sh` still match how the machines are actually used (C,
+below), and fedxps's run of `tests/prompt/run.sh` (session four).
 
 **Deliberate, not oversights:** `00-shell-opts.sh` was a *reserved empty slot* until
 2026-09-23, when it took the history contract and four shell options (session three);
@@ -112,8 +109,8 @@ remove as of that date**: no key, token, JWT, IP, MAC, phone, address, student d
 third-party PII had been committed, in HEAD or in history. This item is about the
 *mechanism*, not a spill. One instance has landed since, and it is what the mechanism would
 have caught: `f5cc9df` (2026-09-03) committed nousowl's private LAN address in
-`docs/ghostty-vs-wezterm-2026-09-03.md`, redacted in the working tree 2026-09-14 but **still
-present in `HEAD` and on the public remote** until that redaction is committed. Non-routable,
+`docs/ghostty-vs-wezterm-2026-09-03.md`; the redaction was committed in `552ec83` (2026-09-15),
+so `HEAD` is clean and only the public history between those two commits carries it. Non-routable,
 so nothing to rotate and no history rewrite is warranted — but do not read the sentence above
 as a standing claim about the repo.
 

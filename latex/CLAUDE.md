@@ -15,8 +15,8 @@ artifact (prune declined 2026-08-26); not a charter — leave it alone.
   and `slim` as bundles for host classes that own theorems, hyperlinks, the
   bibliography driver, or the fonts; under beamer the package refuses loudly
   unless `structure` is off. ⚠ **Shared, snippet-coupled
-  dependency**: `dissertation/`, `teaching/live-lecture/`, and parts of
-  `teach-logic/` load the stowed copy, so edits here ripple into all of them.
+  dependency**: `dissertation/`, `teaching/live-lecture/` and other
+  documents load the stowed copy, so edits here ripple into all of them.
   The Neovim snippet files (`nvim/lua/snippets/sty/`, one per unit)
   regenerate automatically on the next Neovim start (per-file sha stamps),
   but the vimtex highlight registrations are maintained **by hand** — see

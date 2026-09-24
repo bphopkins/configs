@@ -260,8 +260,8 @@ worth keeping in view here:
 - The transcript-based measurement of which permission entries earn their
   place — and the built-in read-only command list, documented once — is
   `org/claude-config/permission-measurement.md`.
-- Two machine-local gitignore rules carry weight (`~/.config/git/ignore`,
-  kept in step by hand, not in any repo): `**/.claude/settings.local.json`
+- Two gitignore rules carry weight, in this repo's `git/ignore` (stowed to
+  `~/.config/git/ignore` since 2026-09-07): `**/.claude/settings.local.json`
   (the linked permission cache must never be committed to the repo it sits
   in) and `**/.claude/projects/` (a superseded memory location Claude wrote
   to in early 2026 — nothing stops it recurring, and in a public repo

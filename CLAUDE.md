@@ -34,15 +34,17 @@ Documentation follows the five-kinds doctrine
 
 Each package is a top-level directory; targets come from the associative
 array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
-`tests/`, and `docs/` are not packages.
+`tests/`, and `docs/` are not packages. A row carries the routing fact only:
+a package without a charter keeps its detail in its config's own comments
+(settled 2026-09-03; memory `configs-charter-index-is-routing-only`).
 
 | Package | Stow target | Charter covers |
 |---|---|---|
 | bash | `~` | module detail, git-sync guardrails + suite, reboot verdict, disk pair, the stow guard |
-| wezterm | `~` | *(no charter — the config file carries its own: pinned font faces, and the two measured latency/throughput settings)* |
-| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own: the WezTerm transcription, the chrome removal, the faint-text gap, the dual config-file trap, the JuliaMono fallback and `font-family`-as-a-list, the forked palette in `themes/`, the 600-weight bold)* |
+| wezterm | `~` | *(no charter — the config file carries its own)* |
+| ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own)* |
 | alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
-| tmux | `~/.config/tmux` | *(no charter — the config file carries its own: the XDG path choice, the status bar on sway's `$accent` #0088FF and why `fg` is restated, and the one green left on pane borders)* |
+| tmux | `~/.config/tmux` | *(no charter — the config file carries its own)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
 | swaylock | `~/.config/swaylock` | the fail-open unknown-key hazard |
@@ -53,8 +55,8 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the three rejectfont blocks |
-| git | `~/.config/git` | *(no charter — the config file carries its own: the XDG single home, the private identity include, `useConfigOnly`, and how `git config --global` writes through the link)* |
-| environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own: `10-editor.conf`, `EDITOR`/`VISUAL` for the systemd user session; `50-xpadneo-sdl.conf`, the Steam hint for bigfed's pad, inert on fedxps. Constants only, PATH never; read at manager start, so a change lands at the next login)* |
+| git | `~/.config/git` | *(no charter — the config file carries its own)* |
+| environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own)* |
 
 ## Stow Deployment
 
