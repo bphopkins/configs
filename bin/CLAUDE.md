@@ -47,8 +47,11 @@ with a conflict.
   instrument and the terminal trial are deliberately unbuilt: the trial is in
   phase one and has no shortlist yet (verdict 2026-09-15; the arc and the
   three declined mechanisms are in `DECISIONS.md`). The *binding* is
-  per-machine and outside this repo: a dconf shortcut on bigfed, `bindsym
-  $mod+x` in `sway/config` on fedxps.
+  per-machine and outside this repo: a dconf shortcut (`<Super>x`) on each
+  machine's GNOME. Under sway on fedxps `$mod+x` still runs
+  `gnome-text-editor` directly (`sway/config`, measured 2026-09-23), and by
+  his verdict of the same day it stays so: the font trial runs under GNOME
+  only, and sway keeps the plain editor.
 
 - `screens-off` — locks the session and lets GNOME power the displays down,
   bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never

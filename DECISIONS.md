@@ -1581,3 +1581,354 @@ combinations with no variables leaking; the restow hint in `50-git-sync.sh` was
 read rather than trusted, and fires for a file added to an existing package, so
 fedxps will be told. CIEDE2000 was implemented for this work and checked against
 five Sharma reference vectors before any colour was judged by it.
+
+## The session environment: `environment.d` becomes a package, and the login shell carries the rest — 2026-09-23
+
+Opened by the question of how the bash configuration should reach this repo
+properly, on the map drawn 2026-09-21/22 (`org/machines/environment.md`): the
+graphical session inherits one login shell's environment, and `.bashrc` returns
+at once for a non-interactive shell, so nothing under `~/.bashrc.d` reached the
+desktop — `EDITOR` was nano, and a desktop-launched Okular could not find
+`okular-inverse`.
+
+**What changed.**
+
+- `environment.d/` is a stow package, target `~/.config/environment.d`, holding
+  `10-editor.conf` (`EDITOR`/`VISUAL`) and `50-xpadneo-sdl.conf` (the Steam
+  hint, on both machines by decision). Both arrays in `60-stow.sh`, the index
+  row in the root charter, README §1, §4, §5 and §8.
+- `bash/.bash_profile` sources `10-env.sh` and `20-path.sh` before `.bashrc`.
+  GDM's login shell therefore carries the personal PATH (TeX Live first, in
+  `20-path.sh`'s own order), `EDITOR`, `NPM_CONFIG_PREFIX` and an unset
+  `BASH_ENV`; gnome-session uploads that to the user manager and to D-Bus, and
+  under sway it is inherited directly.
+- `10-env.sh` exports `NPM_CONFIG_PREFIX`, replacing `~/.npmrc` (one line,
+  deleted on bigfed; fedxps in the other-machine step below).
+- `tests/env/run.sh`: 26 checks, caged in a systemd scope (the first suite here
+  to be), against a fixture HOME linked the way stow links: the login shell's
+  PATH order, no duplicates or empty elements, `EDITOR`/`VISUAL`/`BASH_ENV`/
+  `NPM_CONFIG_PREFIX`, idempotence across the interactive passes, `ssh host cmd`
+  untouched, and the real generator run over the stowed symlinks.
+- The decline of a PATH drop-in, restated in five places, now reads the same
+  everywhere: declined 2026-07-26 and again 2026-09-23, PATH has one author.
+
+**Why the login shell and not a drop-in.** Fedora's skeleton `.bashrc` has no
+interactive guard and prepends `~/.local/bin:~/bin` unconditionally; GDM's
+login shell runs it, so a stock account's desktop sees both directories. The
+early return at line 4 of `.bashrc` — worth keeping, it is what makes `ssh host
+cmd` and scripts cheap — is what removed that. Sourcing the two environment
+modules from `.bash_profile` restores the stock result through the file whose
+job it is, keeps `20-path.sh` PATH's one author, and reaches sway as well as
+GNOME. `environment.d` cannot do this: it sets constants, and TeX Live's year
+is discovered.
+
+**Measured.**
+
+- The desktop callers already in place all use absolute paths: dconf shortcuts
+  for `screens-off` and `tabula` on bigfed and `tabula` on fedxps, and two
+  `.desktop` files. `okularpartrc`'s bare name was the one that did not.
+- `nvim --server … --remote-silent +7 file` ignores the `+7` (a buffer named
+  `+7` was opened), so Neovim's own remote cannot replace `nvr`. VimTeX's
+  documented `nvim --headless -c "VimtexInverseSearch %l '%f'"` can: 50–70 ms a
+  start with this config against `nvr`'s 70–80 ms, no pip package, no fixed
+  socket, and it targets the instance that owns the file. It does not
+  percent-decode, so the wrapper would stay. Deferred, not adopted: `nvr` works
+  and is on the session PATH now.
+- gnome-session's upload carries everything the login shell exports —
+  `HISTSIZE`, `LESSOPEN`, `MAIL`, `BASH_ENV`, `LMOD_CMD` all reach
+  `gnome-shell` — the only filter being systemd's validity check, the only
+  explicit unset `NOTIFY_SOCKET`. So PATH goes up: inferred from those
+  witnesses, and the logout is the proof.
+- bigfed's user manager lingers (`Linger=yes`) and has been up since boot; a
+  variable it holds survives re-logins, since the upload sets and never
+  removes. Hence the one-off `unset-environment BASH_ENV` below. fedxps does
+  not linger.
+- `BASH_ENV` is unset over ssh in both directions; bigfed's session carried it
+  (gnome-shell's environ); fedxps has no Lmod.
+- `~/.local/bin` shadows `/usr/bin` for `f2py`, `numpy-config` and `z3` on
+  bigfed (pip shims of 2025 over 2026 binaries), nothing on fedxps; nothing in
+  `bin/` collides with any system directory. The shadowing now reaches desktop
+  apps too — left for the `~/.local/bin` tidy.
+- No Fedora package provides `nvr`; it is a pip user install on both machines.
+
+**Declined.**
+
+- A `~/.config/environment.d` PATH drop-in with `~/bin` alone: `nvr` in
+  `~/.local/bin` stays unreachable, so it does not repair the failure that
+  reopened the question, and PATH gains a second writer.
+- The same with `~/.local/bin` added: reaches `nvr`, same shadowing, second
+  writer, and that directory is written by pip, npm and Claude's installer
+  without review.
+- Fixing the bridge alone (absolute paths in `okularpartrc` and for `nvr`):
+  smallest, and it matches the dconf pattern, but it leaves the general problem
+  and the stock behaviour unrestored.
+- `50-xpadneo-sdl.conf` tracked in `org/machines/bigfed/` and hand-linked on
+  bigfed only: a second mechanism for one inert line. In the package for both
+  machines instead; on fedxps the hint is consulted only when an SDL program
+  opens a joystick.
+- Replacing `nvr` with VimTeX's headless route now: its own occasion.
+
+**Verified in session.** `tests/env/run.sh` 26/26 inside its cage;
+`tests/gsync/run-all.sh` 168/168; the live drop-ins on bigfed are stow links,
+and a transient service still sees all three variables after `daemon-reload`;
+a clean login shell on bigfed (`env -i … bash -lc`) yields PATH
+`TL2026:npm-global:.local/bin:~/bin:system`, `EDITOR=nvim`, `BASH_ENV` unset,
+`okular-inverse` and `nvr` both resolving, and `npm config get prefix` correct
+without `~/.npmrc`. On fedxps the same day, over ssh: `gpullall`, `reload`,
+`stow-all` (two LINK lines), `~/.npmrc` checked and removed, `npm config get
+prefix` still right, the suite 26/26 in its cage, and `daemon-reload` put
+`SDL_JOYSTICK_HIDAPI=0` into the manager while the uploaded `EDITOR=/usr/bin/nano`
+stayed until `unset-environment EDITOR VISUAL`, after which the generator's
+`nvim` showed — the uploaded value outranks the generator's until unset.
+**The logout proof, fedxps** (2026-09-23, first login after the pull): the user
+manager and `gnome-shell` both carry `PATH=/usr/local/texlive/2026/bin/x86_64-linux:
+~/.local/npm-global/bin:~/.local/bin:~/bin:/usr/local/bin:/usr/bin`, no duplicate
+and no empty element, `EDITOR`/`VISUAL=nvim`, `NPM_CONFIG_PREFIX`, the SDL hint,
+and `MANPATH`/`INFOPATH` from `20-path.sh`; `okular-inverse`, `nvr` and `latex`
+resolve on that PATH. The manager had not restarted (an ssh session kept it
+alive), which shows the upload overwriting PATH rather than a clean start.
+**bigfed:** its logout, taken 2026-09-23 at 17:39, came out identical, as
+expected: fedxps's measurement was of the upload overwriting PATH on a manager
+that had not restarted, which is bigfed's standing state (it lingers), and
+bigfed's own clean login shell already yielded the same PATH over its sbin base
+with `BASH_ENV` unset. Measured at that login: the user manager and
+`gnome-shell` both carry
+`PATH=/usr/local/texlive/2026/bin/x86_64-linux:~/.local/npm-global/bin:~/.local/bin:~/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin`
+— the four entries over the unmerged sbin base — `EDITOR`/`VISUAL=nvim`,
+`NPM_CONFIG_PREFIX`, `MANPATH` from `20-path.sh`, and no `BASH_ENV`;
+`okular-inverse`, `nvr` and `latex` resolve on it. The one bigfed-only step,
+`systemctl --user unset-environment BASH_ENV` on the lingering manager, had
+been done earlier that day.
+
+**The other-machine step.** On fedxps, done the same day over ssh: `gpullall`,
+`reload` (a new package is item 10's blind spot — the stow hint cannot fire),
+`stow-all`, `cat ~/.npmrc` then `rm ~/.npmrc`, `npm config get prefix`,
+`~/Desktop/configs/tests/env/run.sh`, `systemctl --user daemon-reload`,
+`systemctl --user unset-environment EDITOR VISUAL`; then its logout, measured
+above. What waited for bigfed's keyboard, done the same evening (the
+**bigfed** paragraph above): `systemctl --user unset-environment BASH_ENV`,
+log out and in, then `systemctl --user show-environment | grep -E
+'^(PATH|EDITOR|BASH_ENV)='`. The inverse search from an Okular opened in Files
+is his to try; its preconditions are met, the bridge and `nvr` resolving on
+`gnome-shell`'s PATH.
+
+**Left open.** TODO item 3's remainder (shell options, PS1, aliases); the
+`~/.local/bin` tidy; the sway boot (`environment.md` §6); bigfed's `/usr/sbin`;
+items 23 and 24. Found beside the brief, not fixed: the bin charter's `tabula`
+entry says sway binds `$mod+x` to it on fedxps, while `sway/config` binds
+`$mod+x` to `gnome-text-editor`.
+
+## Ghostty's flash: a foreign fontconfig cache, and the wrapper guard — 2026-09-23
+
+Reported mid-session: `Super+T` opened a Ghostty window that vanished at once,
+while `Ctrl+Shift+N` in the running process kept working. That split named the
+cause's shape before anything was read: a fresh process gets today's on-disk
+state, a new window in the old process reuses what it loaded at start.
+
+**What was found, in the order it was found.**
+
+- The journal: every fresh Ghostty since 09:37 (09:37:34, 09:42:17, 12:18:33,
+  all launched by gsd-media-keys) logged `failed to initialize surface
+  err=error.FontconfigNoMatch`. The surviving process started 08:59:26. The
+  launcher's environment and the survivor's differ only in systemd's
+  per-invocation variables, so the change was on disk between 08:59 and 09:37.
+- `fc-match` resolved every request, `Source Code Pro`, `JuliaMono`,
+  `monospace` and `sans-serif` alike, to
+  `texmf-dist/fonts/opentype/SIL/gentium-sil/Gentium-Bold.woff`, a file with
+  no family in the cache; 42 such entries existed, exactly the `.woff` and
+  `.woff2` files under `gentium-sil` and `logix`. fontconfig scores a font
+  that lacks the requested element as a perfect match, so a nameless entry
+  wins everything.
+- Every one of the 352 files in `~/.cache/fontconfig` had been rewritten at
+  09:17:43–46. No font directory, no TeX Live tree, no package changed after
+  08:59. `plocate-updatedb` ran 09:16:54–09:17:58 and Chrome started at
+  09:17:42, its first start since its update to 154.0.8037.57 the evening
+  before.
+- A cache built in the scratchpad by the system's own `fc-cache` against the
+  same configuration matched correctly and named all 42 wrappers properly, so
+  the configuration was sound and the cache was the fault.
+- The layouts differ: Fedora's fontconfig 2.17.0 writes real `cache-9` files
+  (and `le32d4.cache-9` for 32-bit clients); the 09:17 writer wrote real
+  `cache-12` files with `cache-9`, `-10` and `-11` symlinks pointing at them,
+  and Fedora's library, looking for `cache-9`, followed the symlink and
+  accepted the file. A fontconfig with cache version 12 is newer than
+  Fedora's.
+- Chrome's binary and Brave's contain fontconfig's internal strings
+  (`FcCacheTimeValid`, `FONTCONFIG_SYSROOT`, twenty-odd "Fontconfig warning"
+  messages) beside the system library both also link; Ghostty's contains none.
+  Both browsers carry their own copy for their own scanning. Brave's ran at
+  08:52 and 09:13 without effect; Chrome's, updated the night before, wrote
+  the caches. What its scanner does with a WOFF was not pursued.
+- The `gnome-system-monitor` crash at 09:44 is unrelated: GTK tree-model code.
+
+**What changed.**
+
+- `fontconfig/conf.d/09-texlive-fonts.conf` gained a third `rejectfont`
+  block, `*.woff` and `*.woff2`. With the bad cache still in place the rule
+  alone restored every match and removed all 42 entries from `fc-list`, which
+  confirms the charter's standing claim that `selectfont` is applied when a
+  cache is loaded, not when it is written. Faces under `/usr/local/texlive`
+  go from 2,317 to 2,275; families are unchanged, since every wrapper's face
+  ships beside it as `.ttf` or `.otf`.
+- `fc-cache -f` on bigfed (4.5 s) replaced the `cache-9` symlinks with the
+  system's real files. Chrome's `cache-12` files and the `-10`/`-11` symlinks
+  were left: Chrome reads its own and would recreate them.
+- `fontconfig/CLAUDE.md` (three blocks, the new figure, the one case where
+  `fc-cache -f` is the remedy) and the root index row.
+
+**Declined.**
+
+- Rejecting the two directories by full path: would carry the pinned year and
+  would not cover a wrapper TeX Live adds elsewhere. The suffix globs cover
+  every `<dir>` and keep the year on one line.
+- Dropping the TeX Live `<dir>`s: the package's whole purpose.
+- Deleting Chrome's cache files: it would rewrite them at its next start.
+- An upstream report: recorded here instead, per standing rule.
+
+**Verified.** After the rebuild, `Super+T` opened five windows between 12:42
+and 12:43 with Chrome started four times in between; the journal shows each
+one starting its shell and no `FontconfigNoMatch`. Chrome's starts wrote
+nothing: no file in `~/.cache/fontconfig` is newer than the rebuild, so its
+scanner rewrites only when its own files are missing, and the guard is not
+exercised in normal use. fedxps was unaffected at the time (cache last
+written 2026-09-16, matches correct) and carries the same Chrome 154; the rule
+reaches it with the next pull, and the pull alone repairs it if Chrome runs
+there first, since the rule applies at load. A scratch mistake during the
+diagnosis wrote 705 cache files into `~/.fontconfig`, the legacy cache
+directory, for eight minutes; removed the same session, and it is why the
+first "fixed" reading was set aside.
+
+Settled the same afternoon, beside this and unrelated to it: sway's `$mod+x`
+on fedxps keeps `gnome-text-editor` rather than calling `tabula` (his call,
+2026-09-23; `bin/CLAUDE.md` carries the verdict). The bash session itself
+built nothing after the incident: its picture of the interactive half and his
+decisions on the shell-options slot are in `TODO.md` item 3 and in the brief
+for the next session, which builds them.
+
+## The shell-options slot: the history contract, and what `HISTFILESIZE` counts — 2026-09-23
+
+Session three of the bash campaign built what session two decided (`TODO.md`
+item 3, the session-two postscript): `00-shell-opts.sh`, the reserved empty
+slot since the modular layout began, now states everything about history and
+sets four shell options. Deployed on bigfed the same afternoon; fedxps takes
+it at its next pull.
+
+**What changed.**
+
+- `bash/.bashrc.d/00-shell-opts.sh`: `HISTSIZE=20000`, `HISTFILESIZE=40000`,
+  `HISTTIMEFORMAT='%F %T '`, `HISTCONTROL=ignoredups`,
+  `HISTIGNORE='exit:clear'`, `histappend` restated, `history -a` appended to
+  `PROMPT_COMMAND` as an array element behind a guard for `reload`, and
+  `globstar`, `checkjobs`, `no_empty_cmd_completion`, `histverify`. Every
+  measurement and every declined option is in the file's comments.
+- `tests/shell-opts/run.sh`: 45 checks, caged like `tests/env/run.sh`,
+  against a fixture HOME and a sandboxed history file. Its shells read their
+  commands from a file with `bash -i`, so prompts run and bash-preexec
+  installs — `bash -ic` shows no prompt and neither loads nor writes history,
+  so it tests a shell no terminal has. Covers a WezTerm-shaped shell and a
+  replica of Ghostty's launch.
+- The root index and `bash/CLAUDE.md`'s module map; `TODO.md` item 3; the
+  memory `configs-intentional-not-stale`.
+
+**Measured, and one premise corrected.** The decision was for 20,000 entries,
+written as `HISTFILESIZE=20000`. Built that way the file would have held
+10,000: assigned during startup — where every module assignment is —
+`HISTFILESIZE` counts *lines*, the `#<epoch>` stamp lines included (a file of
+20,010 dated entries, 40,020 lines, kept 20,000 lines and 10,000 entries).
+The same assignment typed at a prompt counts entries and skips the stamps,
+one short (30 dated entries under a limit of 20 kept 19; from an rc file,
+10). The split is by when the assignment runs, not by file size (checked at a
+prompt from 941 bytes to 103 KB: entries every time). So the limit is written
+as 40,000 lines, which is 20,000 dated entries at steady state, and more
+while the old file's 1,000 undated lines remain. `HISTSIZE` counts entries
+either way (1,500 dated entries under `HISTSIZE=1000` loaded 1,000).
+
+- The trim runs at every shell start, never at exit. The exit-time save is
+  skipped when nothing is left to save, and the per-prompt write leaves
+  nothing: 20,000 entries plus a session's three came back from exit at
+  20,003, and the next start cut the file to the limit. Measured beside it
+  and not explained: with histappend and no per-prompt write, bash 5.3's
+  exit-time trim fired for undated session lines and not for dated ones.
+- Cost at a terminal shell's start (bigfed, `bash -i` to exit, WezTerm's
+  shape, 30 runs each): 106 ms empty; +3.5 ms at 10,000 dated entries; +6.5
+  at 20,000 undated; +7.4 at 20,000 dated (40,000 lines); +9.6 at 40,000
+  undated. Entries drive it more than lines; session two's +9 at 20,000
+  stands.
+- `history -a` itself: 14 µs a prompt with one new entry, 2 µs with none
+  (1,000 appends over a 20,000-entry list).
+- Undated entries stay undated in the file; `history` shows each with the
+  time the shell that loaded them started, not blank — bash stamps every
+  entry on load and the file's own stamp overrides it where there is one.
+  (The brief had them showing undated.)
+- Ghostty's PS0 hook runs `HISTTIMEFORMAT='' builtin history 1` in the
+  current shell before each command; the entries written after it still
+  carry stamps. Pinned by the suite.
+- The `history -a` element sits at index 2, after systemd's context hook and
+  before Ghostty's; bash-preexec's rewrite of element 0 leaves it alone, and
+  `__bp_interactive_mode` stays last. Two sources of `~/.bashrc` leave one
+  element; the guard removed, two.
+- `HISTIGNORE`'s one side effect: a hook that learns the running command from
+  `history 1` — Ghostty's window title, WezTerm's `WEZTERM_PROG` — shows the
+  previous command while `clear` or `exit` runs, for as long as they take.
+
+**Declined** (session two, his answers of 2026-09-23): `erasedups` (the log
+becomes a set: 247 and 172 distinct lines out of 1,000); `ignorespace` (dead,
+bash-preexec strips it at the first prompt); `lithist`; `autocd` and
+`cdspell` (offered, not taken); `history -n` (other windows' commands would
+interleave into this one's recall); `lsa`, `ls`, `cd ..` in `HISTIGNORE`.
+Session three, while building: a trap on EXIT to force an exit-time trim
+(clever, where the start-time trim already bounds the file); extending
+`tests/env/run.sh` rather than adding a sibling (that suite is about the
+login shell's output, this one about the interactive shell's — the cage
+prelude is now in two files and could become `tests/cage.sh` when a third
+suite wants it).
+
+**Verified.** `tests/shell-opts/run.sh` 45/45 in its cage on bigfed; a new
+interactive shell on bigfed shows the whole contract with `history -a` once
+among three elements; the module sourced on fedxps's own system layer over
+ssh (`TERM=xterm-256color`, bash 5.3.9 there too) shows the same. fedxps's
+deployment and its suite run wait for the pull.
+
+**Left open.** B and C of item 3; item 25; the `~/.local/bin` tidy and item
+10, this session's next two jobs.
+
+## 10. `gpullall`'s restow hint sees a *new* stow package — COMPLETE 2026-09-23
+
+Found 2026-09-03 by exercising the workflow end to end: a `configs` pull on
+bigfed that added the new `ghostty` package printed only
+`[HINT] configs: bash files changed — run: source ~/.bashrc`, and never
+mentioned `stow-all`. Open as `TODO.md` item 10 until this day; closed by
+session three of the bash campaign.
+
+**The gap.** The post-pull hint classification (`_gsync_pull_hints` in
+`50-git-sync.sh`) built its package list, `is_pkg`, from `STOW_ORDER` **as
+loaded in the running shell**. A brand-new package is by definition absent
+from that array, because the pull that added it has only just updated
+`60-stow.sh` on disk. So `ghostty/config` classified as "not in a stow
+package", `pkg_hit` stayed empty, and the hint could not fire. The same
+in-memory-versus-disk trap `stow-all` itself has, one layer up, in the tool
+built to warn about it — and missing exactly the case that matters: the hint
+was reliable for changes to *existing* packages and structurally blind to a
+*new* one, the only case where forgetting to restow fails silently. It did
+not bite only because adding a package means editing `60-stow.sh`, which
+lives in `bash/`, so the re-source hint fired — luck, not design, and
+followed literally it left the new package unlinked. The suite never caught
+it because `test-gsync.sh` and `test-audit.sh` both source the current
+`60-stow.sh`, so `STOW_ORDER` was always fully populated, and every
+stow-hint assertion added files to an existing package.
+
+**The fix.** `is_pkg` is now the repo's top-level directories on disk, read
+after the pull, minus the named non-packages `docs`, `tests`, `wallpapers`
+and any dotdir, unioned with `STOW_ORDER`. The union keeps a package the pull
+deleted, which by then lives only in the array. It degrades in the right
+direction: an unrecognised directory yields a spurious hint at worst, never a
+missing one. Scoped to the `configs` repo; the `org` call path is unchanged.
+
+**Tests.** Nine checks added to `test-gsync.sh` section 9: a commit adding
+`newpkg/config` fires the stow hint and names `newpkg` — both fail against
+the pre-fix code, verified by running the new suite against HEAD's
+`50-git-sync.sh` in a scratch tree — `docs/`, `tests/`, `wallpapers/` and a
+top-level file are not named, and a commit deleting the `nvim` package still
+hints and names it. `tests/gsync/run-all.sh`: 177 checks, all passing. The
+root charter's `gpullall` bullet and the bash charter's hint paragraph no
+longer carry the caveat.

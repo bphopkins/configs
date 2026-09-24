@@ -52,7 +52,7 @@ array in `bash/.bashrc.d/60-stow.sh` (the source of truth). `wallpapers/`,
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
-| fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the two rejectfont blocks |
+| fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the three rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own: the XDG single home, the private identity include, `useConfigOnly`, and how `git config --global` writes through the link)* |
 | environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own: `10-editor.conf`, `EDITOR`/`VISUAL` for the systemd user session; `50-xpadneo-sdl.conf`, the Steam hint for bigfed's pad, inert on fedxps. Constants only, PATH never; read at manager start, so a change lands at the next login)* |
 
@@ -91,9 +91,9 @@ in-progress guards, offline handling, hints — and their scope live in
 
 - `gpullall` — ff-only pull of every repo in `REPOS_DESKTOP` (which spans
   *all* the Desktop repos, not just this one), with follow-up hints when a
-  `configs` pull needs a re-source, restow, or lockfile restore — but the
-  restow hint is blind to a *newly added* package (`TODO.md` item 10), so a
-  pull that brings one still needs `stow-all` by hand
+  `configs` pull needs a re-source, restow, or lockfile restore — the restow
+  hint reads the package list from the repo's directories on disk, so a
+  *newly added* package is reported too (item 10, closed 2026-09-23)
 - `gpushall [-m MSG]` — stages everything (`git add -A`, vetting newly added
   paths), commits as `{hostname}: {YYYY-MM-DD HH:MM:SS}`, rebases, pushes
 - `gpull <name>...` / `gpush [-m MSG] <name>...` — the same for named repos
@@ -110,6 +110,11 @@ in-progress guards, offline handling, hints — and their scope live in
 `20-path.sh` or `environment.d/`.** It pins what a login shell hands the
 session and what the `environment.d` generator hands the user manager; caged in
 its own systemd scope, sandboxed under `$TMPDIR`.
+
+**Run `tests/shell-opts/run.sh` after any edit to `bash/.bashrc.d/00-shell-opts.sh`.**
+It runs interactive shells — a WezTerm-shaped one and a replica of Ghostty's
+launch — against the real system layer with a fixture HOME and a sandboxed
+history file, in the same cage.
 
 **Run `tests/snipgen/run.sh` after any edit to `nvim/lua/snippets/snipgen.py`
 or to `latex/french-logic/`**; the snippet libraries under
@@ -133,16 +138,16 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 ## Bash Configuration
 
 Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order — `00`
-shell-opts (reserved-empty), `10` env, `20` path (TeX-Live-first ordering,
-auto-detected year), `30` prompt (one colour per machine), `40` aliases
-(`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`, `cc`/`ccf`,
-navigation), `50` git-sync, `60` stow, `70` `ls-tasks`, `80` `clam`, `85`
-`disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed). The one empty
-module left is a reserved slot, not dead code. `.bash_profile` sources `10`
-and `20` first, for login shells — the one GDM starts included, which is how
-the desktop session gets the personal PATH and `EDITOR` (2026-09-23). Everything
-else — module hazards, the reboot-verdict contract, the disk pair, the suites —
-is in `bash/CLAUDE.md`.
+shell-opts (the history contract — 20,000 dated entries, written after every
+command — and four shopts, since 2026-09-23), `10` env, `20` path
+(TeX-Live-first ordering, auto-detected year), `30` prompt (one colour per
+machine), `40` aliases (`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`,
+`cc`/`ccf`, navigation), `50` git-sync, `60` stow, `70` `ls-tasks`, `80`
+`clam`, `85` `disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed).
+`.bash_profile` sources `10` and `20` first, for login shells — the one GDM
+starts included, which is how the desktop session gets the personal PATH and
+`EDITOR` (2026-09-23). Everything else — module hazards, the reboot-verdict
+contract, the disk pair, the suites — is in `bash/CLAUDE.md`.
 
 ## Visual Consistency
 

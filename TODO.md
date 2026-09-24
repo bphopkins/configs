@@ -23,8 +23,9 @@ build PS1 itself, now that it colours the prompt but still inherits the string
 (2026-09-14); and whether the aliases in `40-aliases.sh` still match how the machines
 are actually used.
 
-**Deliberate, not oversights:** `00-shell-opts.sh` is a *reserved empty slot*, not a
-dead file; `30-prompt.sh` was the other until 2026-09-14, when it took the per-machine
+**Deliberate, not oversights:** `00-shell-opts.sh` was a *reserved empty slot* until
+2026-09-23, when it took the history contract and four shell options (session three);
+`30-prompt.sh` was the other until 2026-09-14, when it took the per-machine
 prompt colours. `90-nix.sh` is **load-bearing on bigfed**, where nix has
 been installed since 2025-03-05 and this file is the only thing putting it on PATH —
 bigfed is the machine that builds Carnap, and the Stage 3 build ran through it.
@@ -37,6 +38,42 @@ session, the way Fedora's own skeleton `.bashrc` would have. A
 author, `20-path.sh`; `environment.d` (its own package since the same day) holds
 constants only. Suite: `tests/env/run.sh`. Record: `DECISIONS.md`, 2026-09-23;
 map: `org/machines/environment.md`.
+
+*Session two, 2026-09-23.* The picture of the interactive half was drawn and
+measured (the brief for session three carries it; its durable home is proposed
+as a section of `org/machines/environment.md`), and the shell-options half was
+**decided, and built by session three the same day** (postscript below). `00-shell-opts.sh` owns
+the history contract: 20,000 entries in memory and file (+9 ms a window open,
+measured; +53 ms at 100,000, and the file's size drives the cost more than the
+memory limit does), timestamps `%F %T`, `exit` and `clear` ignored (27–32 % of
+both files today), a write after every command as a `PROMPT_COMMAND` *array
+element* (the form systemd's and Ghostty's hooks use; bash-preexec rewrites only
+element 0), `histappend` and `ignoredups` restated so that nothing about
+history is inherited from the login shell any more (today `HISTSIZE=1000` reaches
+a terminal only by inheritance: `ssh fedxps bash -i` shows it unset), and
+`globstar`, `checkjobs`, `no_empty_cmd_completion`, `histverify`. Declined:
+`erasedups`, `lithist`, `autocd`, `cdspell`, and `ignorespace`, which
+bash-preexec strips at the first prompt (`ignoreboth` came back as
+`ignoredups:`, measured). For `30-prompt.sh`: bash-color-prompt 0.7.1 activates
+on an undocumented test (PS1 equal to one of two Fedora literals, and COLORTERM
+or a colour TERM), and its README calls its functions "subject to change until
+1.0"; building PS1 here is about eight lines plus the nousowl twin — recommended,
+own session. For `40-aliases.sh`, measured on 1,000 undated lines a machine
+(bigfed/fedxps): `lsa` 135/136, `cc` 83/35, `sysupgrade` 23/37, `dissertate`
+10/44; six aliases never typed on either (`home`, `teaching`, `logic`, `teach`,
+`nousowl`, `tl-upgrade`); `cd` followed by `lsa` 84/69 times, the habit a
+listing-after-`cd` would serve better than any named shortcut. Nothing pruned:
+no dates, and the bar is proof. Opened beside it: item 25.
+
+*Session three, 2026-09-23.* The shell-options slot built, tested
+(`tests/shell-opts/run.sh`, caged) and deployed. One premise corrected while
+building: assigned at startup, `HISTFILESIZE` counts *lines*, stamp lines
+included — the same assignment typed at a prompt counts entries — so the file
+limit is `40000` for the 20,000 dated entries chosen, and the trim happens at
+every shell start, never at exit, which the per-command write leaves with
+nothing to save. Record: `DECISIONS.md`, the shell-options entry. Left in this
+item: B (PS1 in `30-prompt.sh`, with the nousowl twin) and C (the aliases
+against use, once the dated log has accumulated).
 
 *Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
 Carnap development even though nix isn't installed" — false when written (2026-07-26),
@@ -119,58 +156,6 @@ symlinks into this repo, so anything a tool writes under those paths lands in th
 tree with no further step. All are clean today.
 
 ---
-
-## 10. `gpullall`'s restow hint cannot see a *new* stow package
-
-- [ ] Build the package list for the post-pull hint from the repo's directories
-  on disk rather than from the in-memory `STOW_ORDER`, and add a regression test
-  that adds a new package directory and asserts the `stow-all` hint fires.
-
-Found 2026-09-03 by exercising the workflow end to end: a `configs` pull on
-bigfed that added the new `ghostty` package printed only
-`[HINT] configs: bash files changed — run: source ~/.bashrc`, and never
-mentioned `stow-all`.
-
-**The gap, precisely.** In the post-pull hint classification loop
-(`50-git-sync.sh`, around line 311):
-
-```
-local -A is_pkg=() pkg_hit=()
-if declare -p STOW_ORDER >/dev/null 2>&1; then
-  for p in "${STOW_ORDER[@]}"; do is_pkg[$p]=1; done
-fi
-...
-[[ -n "${is_pkg[${p%%/*}]:-}" ]] && pkg_hit[${p%%/*}]=1
-```
-
-`is_pkg` comes from `STOW_ORDER` **as loaded in the running shell**. A brand-new
-package is by definition absent from that array, because the pull that added it
-has only just updated `60-stow.sh` on disk. So `ghostty/config` classified as
-"not in a stow package", `pkg_hit` stayed empty, and the hint could not fire.
-
-This is the same in-memory-versus-disk trap `stow-all` itself has — documented
-in the root charter — reappearing one layer up, in the tool built to warn about
-it. And it misses **exactly** the case that matters: the hint is reliable for
-changes to *existing* packages and structurally blind to a *new* one, which is
-the only case where forgetting to restow fails silently.
-
-**Why it did not bite.** Adding a package requires editing `60-stow.sh`, which
-lives in `bash/`, so `bash_hit` fired and produced the re-source hint. That
-coupling is luck, not design, and the hint says `source ~/.bashrc` and stops —
-followed literally, the new package is never linked.
-
-**Why the suite did not catch it.** `test-gsync.sh:129` and `test-audit.sh:10`
-both `source` the current `60-stow.sh`, so `STOW_ORDER` is always fully
-populated, and every stow-hint assertion adds files to an *existing* package
-(`bash/.bashrc.d/95-added.sh`, `test-audit.sh:249`). No test has ever introduced
-a new package directory.
-
-**Proposed fix.** Populate `is_pkg` from the repo's top-level directories after
-the pull — every entry except the known non-packages (`docs`, `tests`,
-`wallpapers`, `.git`) — optionally unioned with `STOW_ORDER`. It degrades in the
-right direction: an unrecognised directory yields a spurious hint at worst,
-never a missing one. Run `tests/gsync/run-all.sh` after.
-
 
 ## 12. The fontconfig duplicate-rejection over-rejects
 
@@ -505,6 +490,37 @@ interactive shell, since `20-path.sh` never runs there.
 
 ---
 
+## 25. WezTerm's shell hooks run in every terminal, and nothing of ours runs before the system half
+
+- [ ] Decide whether `/etc/profile.d/wezterm.sh`'s hooks should be skipped in
+  terminals that are not WezTerm, and where such a switch could live.
+
+Measured on bigfed 2026-09-23, in a replica of Ghostty's launch (bash campaign,
+session two). `wezterm.sh` keys only on `TERM` not being `linux` or `dumb`, so
+it installs bash-preexec (a DEBUG trap and a rewrite of `PROMPT_COMMAND`) and
+five hooks in every interactive shell, Ghostty included. Per prompt: 14.5 ms
+for all of `PROMPT_COMMAND`, of which the WezTerm user-variable report is 9.6 ms
+(about a dozen process spawns: `id`, the hostname, four `base64` subshells) and
+its directory report 3.4 ms (one spawn of the `wezterm` binary); systemd's
+context report 0.8 ms; Ghostty's own hook 0.04 ms. Per command besides: the
+`PS0` hooks 2.5 ms and bash-preexec's DEBUG-trap subshell 2.3 ms. About 20 ms a
+command cycle, two thirds of it WezTerm's script doing work Ghostty ignores
+(OSC 1337 user variables) or duplicates (OSC 133 prompt marks and OSC 7
+directory reports — the continuation prompt is marked twice). Below perception,
+but the heaviest thing in the chain.
+
+The structural point: the switches WezTerm provides (`WEZTERM_SHELL_SKIP_ALL`,
+`_USER_VARS`, `_SEMANTIC_ZONES`, `_CWD`) must be set before `/etc/bashrc`
+sources `profile.d`, which `.bashrc` does at line 7, and no module in
+`~/.bashrc.d` runs before that. Options, undecided: a line in `.bashrc` ahead
+of `/etc/bashrc` keyed on `TERM_PROGRAM`; a pre-system slot, which changes the
+module design; or accept the cost. Not a bug. Also worth knowing from the same
+measurement: bash-preexec's `__bp_adjust_histcontrol` strips `ignorespace` at
+the first prompt, which item 3's history design routes around with
+`HISTIGNORE`.
+
+---
+
 ## Notes
 
 - From the 2026-08-09 git-sync audit (item 4's gpushall question), two observations,
@@ -564,6 +580,10 @@ are in `DECISIONS.md` under the same item numbers.
 - **9. live-server root wrapper** — explicit directories at both ends plus
   `last_root`; simpler shapes measured lossy. Closed 2026-08-22 → `DECISIONS.md`
   item 9.
+- **10. `gpullall`'s restow hint cannot see a new stow package** — the hint's
+  package list now comes from the repo's directories on disk, unioned with
+  `STOW_ORDER`; nine checks added, two of them failing against the old code.
+  Closed 2026-09-23 → `DECISIONS.md` item 10.
 - **11. Per-window cgroup scopes after the Ghostty launcher change** — confirmed:
   one process per window means the window *is* the cgroup, so `linux-cgroup =
   always` stays declined. The item's *reasoning* needed correcting — `systemd-oomd`

@@ -300,6 +300,18 @@ reboot-check() {
 # Only dnf is consulted: flatpaks are sandboxed userspace, so they can never
 # oblige a reboot -- at most restarting the app.
 #
+# This is the ONLY updater by decision (2026-09-23). GNOME Software's automatic
+# download (org.gnome.software download-updates, Fedora's default) is off on
+# both machines: with it on, GNOME Software downloaded every update in the
+# background, staged it as an offline transaction and armed it for the next
+# reboot; this command then applied the same updates online, dnf printed
+# "A pending offline transaction initiated by dnf5daemon-server will be
+# invalidated", and the next reboot went through the offline-update target and
+# failed there (7 of 128 boots on bigfed since May, 12 GB of staged rpms never
+# cleaned; on fedxps the armed update once ran on its own, 60 packages on
+# 2026-08-01). If that warning line ever appears again, the setting is back on.
+# Record: org/machines/machines.md, the offline-updates item of 2026-09-23.
+#
 # The unalias is load-bearing, not defensive tidiness. `sysupgrade` was an alias
 # until 2026-08-08, and aliases expand at PARSE time: in a shell that still has
 # the old one in memory, `reload` expands the `sysupgrade` in the line below and

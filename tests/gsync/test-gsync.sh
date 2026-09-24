@@ -161,6 +161,36 @@ check "hints: lockfile mod => Lazy restore" contains "$out" 'Lazy! restore'
 check "hints: lockfile mod => no stow hint" [ "${out//stow-all/}" = "$out" ]
 out="$(_gsync_pull_hints notconfigs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: lockfile only for configs"    [ -z "$out" ]
+# a NEW package directory (item 10, fixed 2026-09-23): the pull that adds it
+# has only just rewritten 60-stow.sh on disk, so the STOW_ORDER this shell
+# loaded cannot name it; the list must come from the repo's directories.
+# Against the pre-fix code the first two checks fail. docs/, tests/,
+# wallpapers/ and a top-level file are not packages and must not be named.
+old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
+mkdir -p "$SANDBOX/hintrepo/newpkg" "$SANDBOX/hintrepo/docs" "$SANDBOX/hintrepo/tests" "$SANDBOX/hintrepo/wallpapers"
+echo d > "$SANDBOX/hintrepo/newpkg/config"
+echo e > "$SANDBOX/hintrepo/docs/note.md"
+echo f > "$SANDBOX/hintrepo/tests/t.sh"
+echo g > "$SANDBOX/hintrepo/wallpapers/w.png"
+echo h > "$SANDBOX/hintrepo/TOPLEVEL.md"
+git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c6
+[[ " ${STOW_ORDER[*]} " != *" newpkg "* ]] || echo "SETUP-FAIL: newpkg is in STOW_ORDER"
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
+check "hints: new package dir => stow hint"     contains "$out" "stow-all"
+check "hints: new package dir named"            contains "$out" "newpkg"
+check "hints: docs/ is not a package"           [ "${out//docs/}" = "$out" ]
+check "hints: tests/ is not a package"          [ "${out//tests/}" = "$out" ]
+check "hints: wallpapers/ is not a package"     [ "${out//wallpapers/}" = "$out" ]
+check "hints: top-level file is not a package"  [ "${out//TOPLEVEL/}" = "$out" ]
+check "hints: no bash hint for that commit"     [ "${out//source ~\/.bashrc/}" = "$out" ]
+# a package the pull DELETED: gone from disk, still in the loaded STOW_ORDER
+# (the union), and its removed files need a restow as much as added ones.
+old="$(git -C "$SANDBOX/hintrepo" rev-parse HEAD)"
+git -C "$SANDBOX/hintrepo" rm -qr nvim
+git -C "$SANDBOX/hintrepo" commit -qm c7
+out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
+check "hints: deleted package => stow hint"     contains "$out" "stow-all"
+check "hints: deleted package named"            contains "$out" "nvim"
 # the queue/flush contract: nothing prints until the flush, the flush empties
 # the queue, and an identical hint queued twice prints once.
 out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old")"

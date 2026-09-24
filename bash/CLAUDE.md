@@ -19,11 +19,26 @@ idempotent, so the interactive pass re-sourcing them is a no-op. Takes effect
 at a login. **Run `tests/env/run.sh` after any edit to `.bash_profile`,
 `10-env.sh`, `20-path.sh` or `environment.d/`**: it pins the login shell's
 output and the `environment.d` generator's, caged in its own systemd scope.
+**And `tests/shell-opts/run.sh` after any edit to `00-shell-opts.sh`**: the
+same cage, interactive shells against the real system layer, a sandboxed
+history file.
 
 ## Module map (sourced in numbered order)
 
-- `00-shell-opts.sh` — shopt/set options. **Deliberately empty**, a reserved
-  slot. An empty numbered module here is scaffolding, not dead code.
+- `00-shell-opts.sh` — the history contract and four shell options
+  (2026-09-23; a reserved empty slot until then). History: 20,000 entries in
+  memory and on disk — `HISTFILESIZE=40000`, because assigned at startup the
+  file limit counts lines, two per dated entry — `%F %T` timestamps, `exit`
+  and `clear` ignored, `ignoredups`, and a `history -a` after every command
+  as a `PROMPT_COMMAND` *array element*, the form that survives bash-preexec
+  (it rewrites element 0 at the first prompt). The file is trimmed at every
+  shell start and never at exit, which has nothing left to save. Options:
+  `globstar`, `checkjobs`, `no_empty_cmd_completion`, `histverify`. The
+  file's comments carry the measurements and the declined options
+  (`erasedups`, `ignorespace` — dead under bash-preexec — `lithist`,
+  `autocd`, `cdspell`, `history -n`). ⚠ `~/.bash_history` now carries a
+  `#<epoch>` line per entry: count commands by skipping `#` lines. Suite:
+  `tests/shell-opts/run.sh`.
 - `10-env.sh` — environment variables (`EDITOR`/`VISUAL` = nvim;
   `NPM_CONFIG_PREFIX`, which replaced the hand-made `~/.npmrc` on 2026-09-23),
   and the `unset BASH_ENV` that disarms Lmod (2026-09-21). Lmod arrives as a hard
@@ -181,13 +196,13 @@ Guardrails, shared by the single- and all-repo variants:
   rebase that integrated remote changes — that changed `bash/` files,
   added/removed files in a stow package, or touched `nvim/lazy-lock.json`
   prints the required follow-up (`source ~/.bashrc`, `stow-all`,
-  `nvim --headless "+Lazy! restore" +qa`). ⚠ **The stow hint sees only
-  *existing* packages.** Its package list is built from `STOW_ORDER` as loaded
-  in the running shell, and a brand-new package is by definition not in it yet —
-  the pull that added it has only just rewritten `60-stow.sh` on disk. So the
-  one case where forgetting to restow fails silently is the one case the hint
-  cannot report. Observed 2026-09-03 when the `ghostty` package arrived on
-  bigfed; diagnosis and fix in `TODO.md` item 10. The change list is parsed
+  `nvim --headless "+Lazy! restore" +qa`). The stow hint's package list is
+  the repo's top-level directories on disk (minus `docs`, `tests`,
+  `wallpapers`) unioned with `STOW_ORDER`, so a brand-new package — absent
+  from the array this shell loaded, since the pull has only just rewritten
+  `60-stow.sh` — is reported like any other (blind to it until 2026-09-23;
+  found 2026-09-03 when `ghostty` arrived on bigfed; `DECISIONS.md` item 10).
+  The change list is parsed
   NUL-delimited, so non-ASCII filenames can't silently defeat it. **Hints are
   consolidated (2026-08-22)**: queued during the run and printed as one block
   after the summary; the queue is `local` to each command, the flush sits
@@ -205,7 +220,7 @@ To add a new repo, append its path to `REPOS_DESKTOP` — note it spans *all*
 the Desktop repos, not just this one. Commit messages follow
 `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`.
 
-**Regression suite:** `tests/gsync/run-all.sh` (168 checks in four suites,
+**Regression suite:** `tests/gsync/run-all.sh` (177 checks in four suites,
 sandboxed under `$TMPDIR`, no network). Run it after **any** edit to
 `50-git-sync.sh`. Each suite also runs standalone and tests the checkout it
 lives in; `tests/gsync/README.md` has suite scope and the harness conventions
@@ -217,7 +232,11 @@ new suites must follow (`passed: N  failed: M` last line, registration in
 `sysupgrade` (dnf upgrade + autoremove + flatpak update/uninstall-unused —
 mark keepers with `dnf mark user <pkg>`, autoremove runs `-y`) ends by
 printing whether the upgrade earned a reboot; `reboot-check` runs the same
-verdict standalone, unprivileged. The signal is `dnf needs-restarting` from
+verdict standalone, unprivileged. It is the only updater: GNOME Software's
+automatic download (`org.gnome.software download-updates`) is off on both
+machines since 2026-09-23, after it had been staging and arming the same
+updates in the background; the function's comment carries the story and the
+warning line that means it is back on. The signal is `dnf needs-restarting` from
 **`dnf5-plugins`** — and ⚠ the dependency is on a version new enough to have
 `--json`: on an older Fedora (43's 5.2.18.0) the package is present yet the
 check reports `[WARN] Reboot status unknown` forever, and installing

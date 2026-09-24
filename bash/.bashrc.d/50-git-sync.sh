@@ -307,6 +307,24 @@ _gsync_pull_hints() {
     < <(git -C "$repo" diff --name-status -z "$old" HEAD 2>/dev/null)
   ((${#toks[@]})) || return 0
   local -A is_pkg=() pkg_hit=()
+  # The package list is the repo's top-level directories on disk, unioned
+  # with STOW_ORDER as loaded in this shell. On disk, because a pull that
+  # adds a package has only just rewritten 60-stow.sh there, and the array in
+  # memory cannot name it -- the one case where forgetting to restow fails
+  # silently was the one case this hint could not report (found 2026-09-03
+  # when ghostty arrived; fixed 2026-09-23, TODO item 10). The union keeps a
+  # package the pull deleted, which by then lives only in the array. The
+  # non-packages are named here; an unknown directory yields a spurious hint
+  # at worst, never a missing one.
+  if [[ "$name" == configs ]]; then
+    for p in "$repo"/*/; do
+      [[ -d "$p" ]] || continue
+      p="${p%/}"
+      p="${p##*/}"
+      case "$p" in docs | tests | wallpapers | .*) continue ;; esac
+      is_pkg[$p]=1
+    done
+  fi
   if declare -p STOW_ORDER >/dev/null 2>&1; then
     for p in "${STOW_ORDER[@]}"; do is_pkg[$p]=1; done
   fi
