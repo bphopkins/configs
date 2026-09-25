@@ -42,15 +42,15 @@ breaks and nothing disappears. The third is a guard, not a snapshot.
   Fedora packages stay installed: on fedxps `dejavu-sans-fonts` had arrived only
   as a Thunderbird dependency and left with it on 2026-09-07, leaving no DejaVu
   at all until it was reinstalled by name — a family in this list must be
-  user-installed (`dnf mark user`), never a dependency. Measured 2026-09-07: the
-  premise already fails for part of several directories on both machines —
-  DejaVu Sans Mono and Serif, Montserrat Alternates, Open Sans Condensed, STIX
-  Math and the RIT set have no other source anywhere, and on fedxps neither do
-  Latin Modern Math and MnSymbol. `TODO.md` item 12 has the family list and
-  the options. Note that `texlive-lm` and
-  `mnsymbol` are *Fedora* packages installing to `/usr/share/fonts/` — the
-  RPM TeX Live tree at `/usr/share/texlive/` is otherwise inert, since
-  kpathsea's search path never mentions it.
+  user-installed (`dnf mark user`), never a dependency. Measured 2026-09-07
+  and again 2026-09-25: the premise fails for part of several directories on
+  both machines — DejaVu Serif, Montserrat Alternates, Open Sans Condensed,
+  STIX Math, the RIT set and Noto's weights outside Regular to Bold have no
+  other source anywhere, and on fedxps neither do Latin Modern Math and
+  MnSymbol. `TODO.md` item 12 has the family list and the options.
+  Note that `texlive-lm` and `mnsymbol` are *Fedora* packages installing to
+  `/usr/share/fonts/` — the RPM TeX Live tree at `/usr/share/texlive/` is
+  otherwise inert, since kpathsea's search path never mentions it.
 - **Symbol fonts (38 globs)** suppress 246 families with no language coverage
   at all: `drm` dozenal digits, GregorioTeX chant, lilyglyphs, chess, Braille,
   icon sets, printer's flowers. Verified to drop zero language-bearing faces.

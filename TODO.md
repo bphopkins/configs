@@ -7,7 +7,7 @@ their original numbers because other docs reference them; completed items and
 their full post-mortems live in `DECISIONS.md` under those same numbers
 (tracker/record split 2026-08-26 — the ## Closed ledger below is the index).
 
-Priority for the next working day: **(3)**.
+Priority for the next working day: **(26)**, then **(7)**.
 
 ---
 
@@ -18,7 +18,9 @@ Priority for the next working day: **(3)**.
 The last remaining survey item (1 and 2 are done). The structure is sound — `.bashrc` sources
 `~/.bashrc.d/*.sh` in numbered order, and everything parses. Left: whether the
 aliases in `40-aliases.sh` still match how the machines are actually used (C,
-below), and fedxps's run of `tests/prompt/run.sh` (session four).
+below), once the dated log has accumulated. On 2026-09-25 fedxps's log held 98
+dated entries, about 59 a day since 2026-09-23 18:22, against the 1,000
+undated lines a machine that session two counted.
 
 **Deliberate, not oversights:** `00-shell-opts.sh` was a *reserved empty slot* until
 2026-09-23, when it took the history contract and four shell options (session three);
@@ -79,10 +81,11 @@ machine colour — with the package's two variables retired and `NO_COLOR`
 honoured; nousowl's twin the same, installed by `./configs/install.sh` the
 same evening. Suite `tests/prompt/run.sh` (41 checks), and the cage prelude
 the three caged suites now share as `tests/cage.sh`. Record: `DECISIONS.md`,
-the prompt entry. Left in this item: C, once the dated log has accumulated;
-and fedxps's `tests/prompt/run.sh` once its pull carries the module (the
-module itself was rendered against fedxps's system layer over ssh the same
-evening: mint, 32 without `COLORTERM`, bold alone under `NO_COLOR`).
+the prompt entry. Left in this item: C, once the dated log has accumulated.
+fedxps's `tests/prompt/run.sh` passed 41/41 on 2026-09-25, its pull having
+carried the module (the module itself had been rendered against fedxps's
+system layer over ssh the evening of session four: mint, 32 without
+`COLORTERM`, bold alone under `NO_COLOR`).
 
 *Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
 Carnap development even though nix isn't installed" — false when written (2026-07-26),
@@ -157,6 +160,18 @@ against.
   growing it has a cost. A separate command can also be run on demand and against repos
   that are not being pushed.
 
+**Two questions to settle first (raised 2026-09-25), neither decided:**
+
+- **What the patterns are for.** The one instance above is a private LAN address, added
+  by an `M` to an already-tracked doc, and nothing in the pattern list under *Shape of the
+  remedy* matches an address. Either private-address patterns go in, with fixtures showing
+  they stay quiet on this repo's legitimate text, or the scan stays credentials-only and
+  the sentence saying it would have caught that instance is corrected.
+- **When it runs.** `gpushall` stages, commits and pushes in one step, so a scan run only
+  on its own schedule finds a secret after the public remote already has it. The recorded
+  preference makes the scan a separate command; this question is when that command runs,
+  and whether anything runs it between staging and pushing.
+
 **Worth folding in while there:** `GSYNC_MAX_MB` is env-overridable, so a stray value in
 the environment silently relaxes the size guard (a non-numeric one already warns and falls
 back to 25; a numeric one does not). And the audit's other standing note — `~/.bashrc.d`,
@@ -172,36 +187,51 @@ Found 2026-09-07 in the home-directory audit, after `dejavu-sans-fonts` left
 fedxps as a Thunderbird dependency and took the only visible DejaVu Sans with
 it. `fontconfig/conf.d/09-texlive-fonts.conf` block (1) rejects whole TeX Live
 directories on the premise that Fedora packages the same families. Measured at
-the family level on both machines (`fc-scan` of each rejected directory, then
-`fc-list ":family=…"` for every family it yields), the premise fails for part
-of several directories:
+the family level on both machines on 2026-09-07 and again on 2026-09-25
+(`fc-scan` of each rejected directory, then `fc-list ":family=…"` for every
+family name it yields), the premise fails for part of several directories:
 
-- **Invisible on both machines:** DejaVu Sans Mono and DejaVu Serif (Fedora
-  splits DejaVu into three packages and only `dejavu-sans-fonts` is installed),
+- **Invisible on both machines:** DejaVu Serif (Fedora splits DejaVu into
+  three packages, and `dejavu-serif-fonts` is the one not installed),
   Montserrat Alternates, Open Sans Condensed and Condensed Light, STIX Math
   (the `stix` directory is STIX 1; Fedora's `stix-fonts` is STIX Two), and
   fifteen RIT Malayalam families (Fedora has only Meera New and Rachana).
+- **Weights missing on both machines** (2026-09-25): Noto Sans and Noto Serif
+  from Thin to Light and from ExtraBold to Black. The installed Noto packages
+  are the variable ones, which span Regular to Bold (fontconfig weight
+  80–200), and block (1) rejects TeX Live's static files for the rest. The
+  same loop also flags the static files' per-weight family names
+  (`Noto Sans Medium`, `Atkinson Hyperlegible Mono ExBd` and the like) for
+  weights the Fedora packages do draw, under the main family name.
 - **Invisible on fedxps only:** Latin Modern Math and MnSymbol (bigfed has the
   `texlive-lm-math` and `texlive-mnsymbol` rpms; fedxps has Latin Modern
   *text* from a user font dir, `~/.local/share/fonts/latinmodern`, and nothing
   for math), Courier 10 Pitch, and FontAwesome 4 (bigfed has
   `fontawesome4-fonts`).
 
+DejaVu Sans Mono is visible on both machines: `dejavu-sans-mono-fonts` came in
+with `bin/tabula`'s install list on 2026-09-15 (user-installed on both,
+measured 2026-09-25).
+
 Three ways out, not decided:
 
 1. **Narrow the globs to the files whose families Fedora provides** — reject
-   `DejaVuSans*.ttf` but not Mono/Serif, `Montserrat-*` but not the Alternates,
-   and drop `stix`, `courierten` and `rit-fonts` from the list. Keeps the
-   package machine-independent; the snapshot needs re-measuring after each TeX
-   Live release.
+   `DejaVuSans*.ttf` (Sans, Sans Condensed and Sans Mono) but not Serif,
+   `Montserrat-*` but not the Alternates, `OpenSans-*` but not
+   `OpenSansCondensed-*`, Noto Sans and Noto Serif from Regular to Bold but not
+   the lighter and heavier weights, and drop `stix`, `courierten` and
+   `rit-fonts` from the list. Keeps the package machine-independent; the
+   snapshot needs re-measuring after each TeX Live release.
 2. **Install the Fedora packages the premise assumes, on both machines** —
-   `dejavu-sans-mono-fonts`, `dejavu-serif-fonts`, `texlive-lm-math`,
-   `texlive-mnsymbol`, each `dnf mark user`. Makes the premise true and settles
-   the Latin Modern two-mechanisms question in the rpm direction (the user font
-   dir on fedxps then goes). STIX 1, Open Sans Condensed, Montserrat Alternates
-   and the RIT set have no Fedora package, so those globs still need option 1.
-3. **Accept** the missing families as unused. DejaVu Sans Mono argues against
-   this: it is a common monospace fallback.
+   `dejavu-serif-fonts`, `texlive-lm-math`, `texlive-mnsymbol`, and the static
+   `google-noto-sans-fonts` and `google-noto-serif-fonts`, which carry the five
+   missing weights (their file lists, 2026-09-25), each `dnf mark user`. Makes
+   the premise true and settles the Latin Modern two-mechanisms question in the
+   rpm direction (the user font dir on fedxps then goes). STIX 1, Open Sans
+   Condensed, Montserrat Alternates and the RIT set have no Fedora package, so
+   those globs still need option 1.
+3. **Accept** the missing families as unused. The common monospace fallback,
+   DejaVu Sans Mono, has been present since 2026-09-15 (above).
 
 The measurement is one loop; rerun it on both machines before and after any
 change, and after each TeX Live release. Cross-listed in
@@ -349,7 +379,8 @@ thing to design for: a scratch cache root is cold, and the `\begin{` checks
 would then pay VimTeX's kpsewhich scan in every instance (356 ms on the
 fixture, one package in its table), so copy the live `~/.cache/vimtex` into the
 scratch root per run rather than starting empty. The suite's README records why
-each check exists; record the hygiene there.
+each check exists; record the hygiene there. Do it in item 26's pass, which
+cages the same suite.
 
 ---
 
@@ -428,7 +459,8 @@ Ghostty 1.3.x with TERM=xterm-ghostty (works after switching to
 TERM=xterm-256color)". Reported at Claude Code 2.1.123 against Ghostty 1.3.1,
 regression traced to ~2.1.119, whose changelog carries "Fixed multi-line paste
 losing newlines in terminals using kitty keyboard protocol sequences inside
-bracketed paste". Closed as **not planned**; present here at 2.1.273. Their
+bracketed paste". Closed as **not planned**; present here at 2.1.273 on
+2026-09-15 and untested since, fedxps running 2.1.282 by 2026-09-25. Their
 diagnosis is that Claude Code takes a kitty-protocol-aware paste tokenisation
 path when TERM is `xterm-ghostty`, and that path mangles the paste.
 
@@ -532,6 +564,56 @@ A second switch of the same kind, 2026-09-23: `bash_color_prompt_disable`.
 With `30-prompt.sh` writing PS1 itself, bash-color-prompt's template is
 assembled and overwritten at every shell start; only a slot ahead of
 `/etc/bashrc` could stop it (`DECISIONS.md`, the prompt entry).
+
+---
+
+## 26. Twelve of the fifteen suites run without a cage
+
+- [ ] Give every suite under `tests/` its own systemd scope, as
+  `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
+  it does not run"), each with a budget measured for it.
+
+Found 2026-09-25. Three suites are caged, all through `tests/cage.sh` and all
+written 2026-09-23: `env`, `prompt`, `shell-opts`. The other twelve start no
+scope, and nothing in their directories mentions one: `claude`,
+`context-check`, `desktop`, `disk`, `french-logic`, `gsync`, `live-server`,
+`nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`, `term-bench`. Four
+of them are the run-after-an-edit suites the root `CLAUDE.md` names (`claude`,
+`context-check`, `gsync`, `snipgen`), so until this lands that charter and the
+rule disagree about them. `desktop` is the suite the rule's incident came from:
+on 2026-08-13 its nested sway spawned a Waybar that grew to 9.2 GB, and the OOM
+kill took down the WezTerm scope it had been placed in, closing every window
+there (the comment above its bar-stripping `sed`). The spawn point is stripped;
+the suite still runs uncaged. And a Claude Code session measured on fedxps the
+same day ran inside its terminal window's own scope,
+`app-gnome-ghostty-<pid>.scope`, with `memory.max` at `max`, so a runaway in
+any of the twelve, run from such a session, lands where that incident did.
+
+**One budget does not fit them.** `cage` hard-codes `MemoryMax=512M`,
+`MemorySwapMax=0`, `TasksMax=256`, `RuntimeMaxSec=120`, `TimeoutStopSec=10` and
+`OOMPolicy=continue`, and refuses to start under 1.5G available. By their own
+headers `nvim-latency` takes about 150 s and `french-logic --recensus` about
+3 min, both past the time cap, and no suite's memory or task peak is on
+record. So: give `cage` a per-suite budget; measure each suite's peaks (the
+scope's `memory.peak` and `pids.peak`, and its wall time) on both machines;
+set each ceiling with enough headroom that a routine run never reaches it,
+since the rule wants a deliberate kill announced first. Three cases want more
+than the two-line prelude:
+
+- **Python entry points.** `cage` re-executes a bash suite. `nvim-latency`'s
+  `bench.py`, and its `verify.py` when run directly as its README shows, want
+  a bash wrapper or the Python counterpart the rule names,
+  `adelotype/tools/contain.py`.
+- **Root children.** `disk/live-drill.sh` loop-mounts a 4G btrfs image under
+  sudo; whether the processes sudo starts stay in the scope wants checking
+  before its cage is trusted.
+- **`term-bench`** is a set of instruments run by hand inside the terminal
+  they measure, and `capture-nvim` runs a real nvim session. Cage them like
+  the rest, and confirm the cage leaves their timings alone.
+
+Fold item 20 into the same pass: it is `nvim-latency`'s other gap against the
+standard the caged suites meet, since its runs still write into the live
+VimTeX cache, the blink frecency store, shada and undo history.
 
 ---
 
