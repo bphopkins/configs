@@ -2225,3 +2225,38 @@ before (measured in five cases).
   is GNOME-only.
 - `tests/desktop/run.sh` predates `tests/cage.sh` and runs uncaged; on
   bigfed its binary check fails on `brightnessctl`, as it did before.
+
+## tabula retired: adelotype takes `<Super>x` — 2026-09-29
+
+tabula was phase one of the font trial (2026-09-15, above): a scratchpad
+that wore a random face, stateless by design, with a ranking instrument
+declined until a shortlist existed. The instrument that replaced it grew
+outside this repo — `~/Desktop/adelotype`, bigfed-only, replicated by
+Syncthing rather than git — and its charter had said since 2026-09-27 that
+tabula retires when a launcher replaces its keybinding. On 2026-09-29 he
+chose to rebind and retire in one step, and `bin/tabula` is deleted.
+
+- The key is per-machine dconf and outside this repo, as it always was:
+  `custom7` on bigfed, rebound by adelotype's own `tools/launcher.sh bind`,
+  which sets the slot only when it holds tabula, adelotype, the plain editor
+  or nothing; `unbind` puts `gnome-text-editor --new-window` back, the
+  command tabula had replaced. fedxps kept the plain editor on `<Super>x`
+  throughout (2026-09-23, above), so nothing changes there beyond the stow
+  link going with the file at the next restow. [Annotated the same day: it
+  does not go. Stow 2.4.1 walks the package, and a link whose package file
+  is gone is never visited, so `stow -R` leaves `~/bin/tabula` dangling —
+  measured with `stow -n -R -v` on bigfed, where it was removed by hand.
+  fedxps needs the same `rm ~/bin/tabula` after its next pull; tracked in
+  `org/machines/machines.md`.]
+- Kept: the 2026-09-15 entry, the arc and its three declined mechanisms —
+  all three are now built or superseded in adelotype (exposure logging with
+  a weighted draw is its draw; the ranking is its results; the terminal
+  venue is still open there), which is the record of why they were declined
+  here and taken there. The sway verdict of 2026-09-23 stands: `$mod+x` runs
+  `gnome-text-editor` under sway, and the trial runs under GNOME only.
+- Its font-install list, the one package manifest this repo had for the
+  monospace faces, went with the file; adelotype's `fonts/inventory.json`
+  and `fonts/registry.json` are the inventory now, and `TODO.md`'s font
+  item names the packages it needs on its own.
+
+Record on the adelotype side: `adelotype/DECISIONS.md`, 2026-09-29.

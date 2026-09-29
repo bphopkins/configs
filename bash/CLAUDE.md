@@ -9,12 +9,14 @@ top.
 
 `.bash_profile` sources the two environment modules, `10-env.sh` and
 `20-path.sh`, before `.bashrc` (2026-09-23). A login shell reads it, and the one
-GDM starts is a login shell whose environment the whole graphical session
-inherits — so this is how desktop-launched apps get the personal PATH and
-`EDITOR`, and how bigfed's session sheds Lmod's `BASH_ENV` (once: that manager
-lingers, and the upload never removes a variable it already holds, so the
-first deployment needs `systemctl --user unset-environment BASH_ENV` or a
-reboot). `.bashrc`'s early return still keeps `ssh host cmd` and scripts cheap. Both modules are
+GDM starts for a **GNOME** session is a login shell whose environment the whole
+graphical session inherits — so that is how desktop-launched apps get the
+personal PATH and `EDITOR` there, and how bigfed's session sheds Lmod's
+`BASH_ENV` (once: that manager lingers, and the upload never removes a
+variable it already holds, so the first deployment needs
+`systemctl --user unset-environment BASH_ENV` or a reboot). A **sway** session
+gets no login shell from GDM and none of this (measured on both machines,
+2026-09-28 and 29; the gap is `TODO.md` item 29). `.bashrc`'s early return still keeps `ssh host cmd` and scripts cheap. Both modules are
 idempotent, so the interactive pass re-sourcing them is a no-op. Takes effect
 at a login. **Run `tests/env/run.sh` after any edit to `.bash_profile`,
 `10-env.sh`, `20-path.sh` or `environment.d/`**: it pins the login shell's
@@ -62,8 +64,8 @@ integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
   install in progress can't knock TeX Live off PATH). Pin an older release
   with `TEXLIVE_YEAR=<year>` — see `bin/CLAUDE.md`, TeX Live release
   upgrades. The bun block is a guarded shim, inert until bun exists. Sourced
-  from `.bash_profile` too, so the session carries the same PATH in the same
-  order; this file is PATH's one author.
+  from `.bash_profile` too, so a GNOME session carries the same PATH in the
+  same order (a sway session does not: item 29); this file is PATH's one author.
 - `30-prompt.sh` — writes PS1 in full (2026-09-23): a reset, bold and the
   machine colour on `\u@\h`, a plain colon, bold and colour on `\w`, a reset,
   `\$ ` — the shape Fedora's bash-color-prompt package gave it, now stated

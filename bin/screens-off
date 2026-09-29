@@ -47,10 +47,11 @@
 # explicit graphical session id for the lock — bare `loginctl lock-session`
 # locks the *calling* session, which over SSH is the wrong one.
 #
-# GNOME only. As with tabula, the *binding* is per-machine dconf, outside this
-# repo. ⚠ On fedxps this blanks and locks but does not leave the box reachable:
-# fedxps is a laptop configured to suspend, and bigfed's reachable-while-dark
-# state comes from `sleep-inactive-ac-type` being 'nothing' underneath.
+# GNOME only. The *binding* is per-machine dconf, outside this repo, as
+# adelotype's <Super>x is. ⚠ On fedxps this blanks and locks but does not
+# leave the box reachable: fedxps is a laptop configured to suspend, and
+# bigfed's reachable-while-dark state comes from `sleep-inactive-ac-type`
+# being 'nothing' underneath.
 
 set -euo pipefail
 

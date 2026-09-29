@@ -672,6 +672,11 @@ standing decline (`DECISIONS.md`, 2026-09-23: PATH keeps one author,
 `20-path.sh`), so a fix starts sway from a login shell; whatever it is
 reaches fedxps as well.
 
+fedxps measured 2026-09-29, logged into sway through GDM: the same chain
+(`gdm-wayland-session --handle-registration sway`), Waybar and the user manager
+on the system-default PATH, `EDITOR` present only because `environment.d` sets
+it. One fix, both machines. Record: `org/machines/environment.md` §6.
+
 ---
 
 ## Notes

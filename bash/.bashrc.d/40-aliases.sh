@@ -367,8 +367,10 @@ alias french-logic='cd ~/Desktop/configs/latex/french-logic && nvim'
 alias homepage='cd ~/Desktop/bphopkins.net && nvim'
 alias teach='cd ~/Desktop/teaching && nvim'
 alias nousowl='cd ~/Desktop/nousowl.net && nvim'
+# Claude Code launchers. `--effort max` is session-only and is the one author of
+# the chat's effort; workers a chat dispatches take their own effort from the
+# agent definitions (2026-09-29). A bare `claude` falls to the level saved in
+# settings.json. `[1m]` is redundant for these models on the Anthropic API,
+# kept for symmetry; quoted because [1m] is a glob pattern.
 alias cc='claude --model "opus[1m]" --effort max'
-# 'fable' alone resolves to claude-fable-5 (standard context); the bracketed
-# form is the 1M-context variant, and is what settings.json already selects
-# for a bare `claude`. Quoted because [1m] is a glob pattern.
 alias ccf='claude --model "fable[1m]" --effort max'

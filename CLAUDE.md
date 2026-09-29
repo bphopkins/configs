@@ -155,8 +155,9 @@ machine), `40` aliases (`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`,
 `cc`/`ccf`, navigation), `50` git-sync, `60` stow, `70` `ls-tasks`, `80`
 `clam`, `85` `disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed).
 `.bash_profile` sources `10` and `20` first, for login shells — the one GDM
-starts included, which is how the desktop session gets the personal PATH and
-`EDITOR` (2026-09-23). Everything else — module hazards, the reboot-verdict
+starts for a GNOME session included, which is how that session gets the
+personal PATH and `EDITOR` (2026-09-23); a sway session gets no login shell,
+see `bash/CLAUDE.md` and `TODO.md` item 29. Everything else — module hazards, the reboot-verdict
 contract, the disk pair, the suites — is in `bash/CLAUDE.md`.
 
 ## Visual Consistency

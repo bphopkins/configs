@@ -31,28 +31,14 @@ with a conflict.
   `bph_autosave`, sets `nomodifiable`, parks the cursor on a `\command`
   already in the text. Why the cost exists: `nvim/CLAUDE.md` → the
   cold-cache stall.
-- `tabula` — opens GNOME Text Editor in a randomly chosen monospace font,
-  bound to `<Super>x` in place of `gnome-text-editor --new-window`. The point
-  is exposure: the scratchpad is low-stakes enough to wear an unfamiliar face,
-  which the terminal is not. Two things to know before editing it. The font is
-  one GSettings key (`org.gnome.TextEditor custom-font`), which is
-  application-global and so re-fonts every open window, not just the new one;
-  and `use-system-font` must be false or the key is ignored in silence, which
-  is why the script sets it defensively every run. The rotation is a plain
-  table at the top — comment a line out to prune it, which is the intended way
-  to converge. Sizes are a flat 12; two normalisations were tried and dropped,
-  and the header records why. **Fonts are system packages and do not sync,
-  while the table does, and `fc-match` substitutes in silence**, so run `tabula
-  --verify` on **both** machines after any font install; it walks the table and
-  exits non-zero on a family that resolves to something else. The ranking
-  instrument and the terminal trial are deliberately unbuilt: the trial is in
-  phase one and has no shortlist yet (verdict 2026-09-15; the arc and the
-  three declined mechanisms are in `DECISIONS.md`). The *binding* is
-  per-machine and outside this repo: a dconf shortcut (`<Super>x`) on each
-  machine's GNOME. Under sway on either machine `$mod+x` still runs
-  `gnome-text-editor` directly (`sway/config`, measured 2026-09-23), and by
-  his verdict of the same day it stays so: the font trial runs under GNOME
-  only, and sway keeps the plain editor.
+- `tabula` — **retired 2026-09-29** and deleted: the font trial it opened
+  (2026-09-15) is `~/Desktop/adelotype`, which took its `<Super>x` on bigfed
+  through its own `tools/launcher.sh bind` (record: `adelotype/DECISIONS.md`,
+  2026-09-29; tabula's arc and its three declined mechanisms stay in
+  `DECISIONS.md`, 2026-09-15). Its binding was per-machine dconf and outside
+  this repo, and fedxps's `<Super>x` kept `gnome-text-editor` throughout.
+  Standing from 2026-09-23: under sway on either machine `$mod+x` runs
+  `gnome-text-editor` directly, and the font trial runs under GNOME only.
 
 - `screens-off` — locks the session and lets GNOME power the displays down,
   bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never
@@ -74,12 +60,12 @@ with a conflict.
   chord release cannot revert GNOME's blank. Two provisions make it work over
   SSH from fedxps as well as locally: it defaults `DBUS_SESSION_BUS_ADDRESS`,
   and it locks an explicitly looked-up graphical session, since bare `loginctl
-  lock-session` would lock the SSH session instead. GNOME only. As with
-  `tabula`, the *binding* is per-machine dconf and outside this repo; the
-  placement follows `sway/config`'s law, a session op at `$mod+Ctrl+letter`,
-  beside `$mod+Ctrl+l` for lock. Verified end to end 2026-09-06: typed, chord,
-  and SSH-from-fedxps invocations all blanked, held dark, stayed locked, and
-  woke to the lock screen on a Bluetooth key.
+  lock-session` would lock the SSH session instead. GNOME only. The
+  *binding* is per-machine dconf and outside this repo, as adelotype's
+  `<Super>x` is; the placement follows `sway/config`'s law, a session op at
+  `$mod+Ctrl+letter`, beside `$mod+Ctrl+l` for lock. Verified end to end
+  2026-09-06: typed, chord, and SSH-from-fedxps invocations all blanked, held
+  dark, stayed locked, and woke to the lock screen on a Bluetooth key.
 - `sway-split` — `$mod+v` as a toggle, and Waybar's marker for it:
   `toggle` sets `splitv` on the focused window or cancels it; `status` and
   `watch` print the marker. Called by path from `sway/config` and

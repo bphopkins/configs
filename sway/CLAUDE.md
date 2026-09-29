@@ -47,9 +47,9 @@ notification-related work).
   `$mod+Ctrl+r`. It matched the border until 2026-09-28, which hid the state;
   the unfocused classes keep indicators equal to their borders.
 - **A sway session's PATH lacks `~/bin` and `~/.local/bin`**: GDM starts
-  sway with no login shell, so `20-path.sh` never runs (measured
-  2026-09-28). Bindings name homegrown scripts by path (`~/bin/…`); the gap
-  itself is `TODO.md` item 29.
+  sway with no login shell, so `20-path.sh` never runs (measured on bigfed
+  2026-09-28 and on fedxps 2026-09-29). Bindings name homegrown scripts by
+  path (`~/bin/…`); the gap itself is `TODO.md` item 29.
 - **The move bindings start with `split none`**, so one press moves a window
   set with `$mod+v`, dropping its pending split; on any other window the
   prefix fails harmlessly and the move is unchanged (measured 2026-09-28).
