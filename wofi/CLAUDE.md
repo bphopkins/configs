@@ -1,7 +1,8 @@
 # CLAUDE.md — wofi package
 
 Charter for `wofi/` (`config` + `style.css`), stowed to `~/.config/wofi`;
-`$mod+a` runs `wofi --show drun`.
+`$mod+d` runs `wofi --show drun` (d for drun; `$mod+a`, GNOME's app-grid key,
+until 2026-09-28).
 
 wofi is GTK3 — the same narrow CSS dialect as Waybar (no `ch` units, no
 `font-variant-numeric`, `"tnum" 1` rejected) and the same parse-check before

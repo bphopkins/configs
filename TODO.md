@@ -567,14 +567,15 @@ assembled and overwritten at every shell start; only a slot ahead of
 
 ---
 
-## 26. Twelve of the fifteen suites run without a cage
+## 26. Twelve of the sixteen suites run without a cage
 
 - [ ] Give every suite under `tests/` its own systemd scope, as
   `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
   it does not run"), each with a budget measured for it.
 
 Found 2026-09-25. Three suites are caged, all through `tests/cage.sh` and all
-written 2026-09-23: `env`, `prompt`, `shell-opts`. The other twelve start no
+written 2026-09-23: `env`, `prompt`, `shell-opts`. *(A fourth, `sway-split`,
+was caged from its start, 2026-09-28.)* The other twelve start no
 scope, and nothing in their directories mentions one: `claude`,
 `context-check`, `desktop`, `disk`, `french-logic`, `gsync`, `live-server`,
 `nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`, `term-bench`. Four
@@ -614,6 +615,62 @@ than the two-line prelude:
 Fold item 20 into the same pass: it is `nvim-latency`'s other gap against the
 standard the caged suites meet, since its runs still write into the live
 VimTeX cache, the blink frecency store, shada and undo history.
+
+---
+
+## 27. Under sway, bigfed loses what GNOME does for its power button and idle
+
+- [ ] Decide what bigfed's sway session should do about the power button, idle
+  displays and `screens-off`, and by what mechanism, since one sway config
+  serves both machines.
+
+Found 2026-09-28, the day sway went on trial on bigfed (`DECISIONS.md`,
+2026-09-28). Under GNOME, gnome-settings-daemon holds logind's power-key
+inhibitor and applies `power-button-action` 'nothing', turns the displays off
+at `idle-delay` 900, and `screens-off` locks and lets GNOME blank them
+(`org/machines/bigfed/bigfed.md`, "Power and sleep"). Under sway none of that
+runs, measured: nothing holds the inhibitor, so logind's
+`HandlePowerKey=poweroff` stands and the power button powers bigfed off—the
+machine that must stay reachable over SSH (`HandleSuspendKey=suspend` stands
+likewise); the displays never turn off, because the config's no-idle-timer
+posture was decided for fedxps; and `screens-off` works only under GNOME. Idle
+suspend stays off (`IdleAction=ignore`). A fix in `sway/config` reaches the
+laptop too, whose power button is a laptop's, so its fedxps effect is named
+before it lands (`sway/CLAUDE.md`), or the fix finds a per-machine mechanism.
+
+---
+
+## 28. The desktop suite's binary check fails on bigfed
+
+- [ ] Decide how `tests/desktop/run.sh`'s binary check treats hardware a
+  machine lacks. Today it fails on bigfed for `brightnessctl`, which the
+  brightness keys call and bigfed, with no backlight, has no use for: skip it
+  where `/sys/class/backlight` is empty, or install it there.
+
+Found 2026-09-28. With `wofi` and `mako` installed on bigfed that day, the
+suite runs all 24 checks there, and this is the one failure. The binding
+stays: fedxps uses it. Caging the suite is item 26, and the charter's
+hand-run nested-sway example (`sway/CLAUDE.md`, "Verifying a change") wants
+the same cage.
+
+---
+
+## 29. A sway session's PATH lacks `~/bin` and `~/.local/bin`
+
+- [ ] Decide how a sway session gets the personal PATH.
+
+Found 2026-09-28 on bigfed. GDM starts sway directly (`gdm-wayland-session
+… sway`), with no login shell, so `.bash_profile` never sources
+`20-path.sh`: the session PATH is the system default,
+`/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin` (read from Waybar's
+environment). Everything sway launches inherits it — bindings, and apps
+started from wofi — so `okular-inverse` (in `~/bin`, calling `nvr` in
+`~/.local/bin`) fails again from an Okular opened on the desktop, the
+failure `bin/CLAUDE.md` records as fixed for GNOME. Meanwhile bindings name
+`~/bin` scripts by path (`sway-split`). An `environment.d` PATH drop-in is a
+standing decline (`DECISIONS.md`, 2026-09-23: PATH keeps one author,
+`20-path.sh`), so a fix starts sway from a login shell; whatever it is
+reaches fedxps as well.
 
 ---
 

@@ -58,6 +58,13 @@ window#waybar {
   padding: 0 10px;
 }
 
+/* On screen but not focused: on bigfed, the workspace showing on the other
+   monitor, since the one bar lists both (all-outputs in waybar/config).
+   Placed before .focused so the focused rule wins where both apply. */
+#workspaces button.visible {
+  color: @fg;
+}
+
 #workspaces button.focused,
 #workspaces button.active {
   color: @fg;
@@ -71,6 +78,16 @@ window#waybar {
 
 #workspaces button:hover {
   background: rgba(255,255,255,0.06);
+}
+
+/* The $mod+v marker (custom/split in waybar/config), shown only while the
+   focused window is set for the next window to open below or beside it. A
+   filled block in the bar's accent, because the border cue alone was too easy
+   to miss (2026-09-28). */
+#custom-split {
+  background: @accent;
+  color: @fg;
+  padding: 0 10px;
 }
 
 /* Right-side modules */

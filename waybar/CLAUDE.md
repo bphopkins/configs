@@ -40,7 +40,26 @@ Conventions carrying the bar's behavior:
   any format requires a `format-icons` array — this bar is deliberately all
   plain text (no icon font installed), so `{icon}` was dropped rather than
   fed.
-- `"device": "intel_backlight"` is hardcoded — harmless, sway is fedxps-only.
+- `"device": "intel_backlight"` is hardcoded—harmless on bigfed, where the
+  backlight and battery modules disable themselves at start (Waybar's log
+  says so).
+- **One bar on bigfed** (2026-09-28): `output` excludes the MSI by make,
+  model and serial, so the bar sits on the Samsung alone and every other
+  screen, fedxps's included, keeps its own. `all-outputs` lets the one bar
+  list both monitors' workspaces, and `button.visible` marks the one showing
+  on the other screen; on fedxps with a second screen attached, each bar then
+  lists every workspace (accepted). Two bars cost something: the focused
+  button's 3-px underline makes its bar 27 px tall and the other 24, so the
+  bars traded heights whenever focus crossed monitors and every tiled window
+  re-laid.
+- **The `$mod+v` marker** (`custom/split`, 2026-09-28): `~/bin/sway-split
+  watch` prints ↓ or → while the focused window is set for the next one to
+  open below or beside it, and nothing otherwise, which hides the module. It
+  re-reads sway's tree on window, workspace, binding and tick events, titles
+  filtered out, and `$mod+v` sends the tick. Waybar stops a continuous module
+  by signalling the script alone (measured), so the script's trap stops its
+  own event stream; without it, every reload left one behind. Suite:
+  `tests/sway-split/run.sh`.
 - The urgent workspace and `#battery.critical` use `#d08770` — one of the
   four coupled urgent-colour sites (`sway/CLAUDE.md`).
 

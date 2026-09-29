@@ -20,16 +20,18 @@ the tier tables.
 | chord | does |
 |---|---|
 | `$mod+h/j/k/l`, arrows | move focus left / down / up / right |
+| `$mod+a` | focus the parent container (select the whole column) |
+| `$mod+z` | focus back down to the child |
+| `$mod+v` | the next window opens below this one; again to cancel (a green ↓ in the bar while set) |
 | `$mod+1` … `$mod+0` | go to workspace 1–10 |
 | `$mod+Tab` | bounce to the previously focused workspace |
 | `$mod+space` | swap focus between the tiling and floating layers |
 | `$mod+minus` | show the scratchpad (cycles if several; press again to re-hide) |
-| `$mod+Return`, `$mod+t` | terminal (WezTerm) |
-| `$mod+a` | app menu (wofi) |
+| `$mod+Return`, `$mod+t` | terminal (Ghostty) |
+| `$mod+d` | app menu (wofi) |
 | `$mod+b` | Brave |
 | `$mod+c` | Chrome |
-| `$mod+d` | Nautilus at `~/Desktop` |
-| `$mod+f` | Nautilus |
+| `$mod+f` | Nautilus at `~/Desktop` |
 | `$mod+x` | text editor (GNOME Text Editor) |
 | `$mod+w` | toggle Waybar |
 | `$mod+m` | toggle the touchpad |
@@ -43,25 +45,30 @@ windows included.
 
 | chord | does |
 |---|---|
-| `$mod+Shift+h/j/k/l`, arrows | move the window left / down / up / right (an orthogonal move restacks the layout) |
+| `$mod+Shift+h/j/k/l`, arrows | move the window left / down / up / right (an orthogonal move restacks the layout; a pending `$mod+v` split is dropped) |
 | `$mod+Shift+1` … `0` | send the window to workspace 1–10 |
 | `$mod+Shift+minus` | stash the window in the scratchpad |
 | `$mod+Shift+space` | toggle the window between tiling and floating |
 | `$mod+Shift+f` | toggle the window fullscreen |
 
-## `$mod+Ctrl` — the session
+## `$mod+Ctrl` — the enclosures, and the session
 
 | chord | does |
 |---|---|
+| `$mod+Ctrl+r` | rotate the container around the window: a row becomes a column, and back |
 | `$mod+Ctrl+l` | lock the screen (swaylock) |
 | `$mod+Ctrl+c` | reload this config |
 
-## `$mod+$alt` — the workspace row
+## `$mod+$alt` — the workspaces, as the monitors stand
 
 | chord | does |
 |---|---|
-| `$mod+$alt+h/l`, Left/Right | walk to the previous / next existing workspace |
+| `$mod+$alt+h/l`, Left/Right | walk to the previous / next existing workspace on this monitor |
 | `$mod+$alt+Shift+h/l`, Left/Right | the same walk, carrying the focused window |
+| `$mod+$alt+k/j`, Up/Down | focus the monitor above / below |
+| `$mod+$alt+Shift+k/j`, Up/Down | carry the focused window (or a selected column) there |
+
+On bigfed, workspaces 1–5 live on the Samsung and 6–0 on the MSI above it.
 
 ## Key families — they override the tiers on their own key
 

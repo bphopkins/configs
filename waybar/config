@@ -2,9 +2,36 @@
   "layer": "top",
   "position": "top",
 
-  "modules-left":   ["sway/workspaces"],
+  // On bigfed the bar sits on the Samsung alone: a leading ! excludes the MSI,
+  // named by make, model and serial as sway names it (waybar(5), "output").
+  // Every other screen keeps its bar, so fedxps is unaffected. Two bars had a
+  // cost: the focused workspace's 3px underline makes its bar 27 px tall and
+  // the other 24, so the bars traded heights whenever focus crossed monitors
+  // and every tiled window on both re-laid (waybar's log, 2026-09-28).
+  "output": "!Microstep MSI MAG341CQ MA0H050010368",
+
+  "modules-left":   ["sway/workspaces", "custom/split"],
   "modules-center": ["clock"],
   "modules-right":  ["tray", "pulseaudio", "backlight", "battery"],
+
+  // all-outputs: the one bar lists both monitors' workspaces, and style.css
+  // marks the one showing on the other screen (button.visible). On fedxps
+  // this shows only with a second screen attached, where each bar then lists
+  // every workspace -- accepted 2026-09-28.
+  "sway/workspaces": { "all-outputs": true },
+
+  // The $mod+v marker: a down arrow while the focused window is set for the
+  // next one to open below it, a right arrow for beside (after $mod+Ctrl+r),
+  // hidden otherwise. sway-split prints it at start and again after every
+  // sway event that can change it, woken by a tick from $mod+v itself;
+  // restart-interval brings it back if the event stream ever breaks. By
+  // path, because a sway session's PATH lacks ~/bin.
+  "custom/split": {
+    "exec": "~/bin/sway-split watch",
+    "return-type": "json",
+    "restart-interval": 5,
+    "hide-empty-text": true
+  },
 
   // 24-hr, seconds shown. "interval" is load-bearing: it defaults to 60, which
   // polls once a minute on the minute -- so %S rendered as "00" forever and the

@@ -1,6 +1,7 @@
 # CLAUDE.md — bin package
 
-Charter for `bin/`, stowed to `~/bin` (on PATH via `20-path.sh`). This is the
+Charter for `bin/`, stowed to `~/bin` (on PATH via `20-path.sh`, except in
+a sway session's own PATH—`TODO.md` item 29). This is the
 home for homegrown executables, and since 2026-09-07 `~/bin` holds nothing
 else: **pip/npm-installed console scripts stay in `~/.local/bin`** — their
 package managers rewrite them on upgrade — and launchers for locally installed
@@ -48,7 +49,7 @@ with a conflict.
   phase one and has no shortlist yet (verdict 2026-09-15; the arc and the
   three declined mechanisms are in `DECISIONS.md`). The *binding* is
   per-machine and outside this repo: a dconf shortcut (`<Super>x`) on each
-  machine's GNOME. Under sway on fedxps `$mod+x` still runs
+  machine's GNOME. Under sway on either machine `$mod+x` still runs
   `gnome-text-editor` directly (`sway/config`, measured 2026-09-23), and by
   his verdict of the same day it stays so: the font trial runs under GNOME
   only, and sway keeps the plain editor.
@@ -79,6 +80,11 @@ with a conflict.
   beside `$mod+Ctrl+l` for lock. Verified end to end 2026-09-06: typed, chord,
   and SSH-from-fedxps invocations all blanked, held dark, stayed locked, and
   woke to the lock screen on a Bluetooth key.
+- `sway-split` — `$mod+v` as a toggle, and Waybar's marker for it:
+  `toggle` sets `splitv` on the focused window or cancels it; `status` and
+  `watch` print the marker. Called by path from `sway/config` and
+  `waybar/config`, since a sway session's PATH lacks `~/bin`. Suite:
+  `tests/sway-split/run.sh` (31 checks, caged, mutation-tested).
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC
@@ -202,6 +208,9 @@ Standing verdicts (2026-07/08; the full investigation is
   author, `20-path.sh` (`DECISIONS.md`, 2026-09-23; the chain:
   `org/machines/environment.md`). `tests/env/run.sh` pins the login shell's
   output; the live proof is an inverse search from an Okular opened in Files.
+  A sway session misses all of this: GDM starts sway with no login shell, so
+  there the desktop-launched case fails as before (measured 2026-09-28;
+  `TODO.md` item 29).
 
 ## Claude Code configuration linkage
 

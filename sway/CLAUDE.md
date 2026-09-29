@@ -3,28 +3,36 @@
 Charter for `sway/` (stowed to `~/.config/sway`), and the coordinating
 charter for the desktop suite — waybar, swaylock, mako, wofi each carry their
 own small charter for what binds when their files are touched. Records:
-`DECISIONS.md` items 5 and 6.
+`DECISIONS.md` items 5 and 6, and the entry of 2026-09-28.
 
-**Sway is a `fedxps`-only environment (confirmed 2026-08-13).** bigfed runs a
-multi-monitor setup sway does not suit and never boots it — cross-machine
-drift is not a concern for the five desktop packages, and laptop-specific
-settings need no guard. `fedxps` dual-boots GNOME and Sway: **check which
+**Sway runs on both machines:** fedxps, and bigfed on trial since 2026-09-28,
+on its two monitors. One config serves both, so **before changing anything,
+tell him what it does on fedxps**—he decides with that in hand (his standing
+requirement, 2026-09-28). Lines keyed to a monitor's make, model and serial
+apply only where that monitor is plugged in (a line naming an absent one is
+ignored, tested); bindings and global settings – gaps, orientation, borders,
+fonts – reach both, and a bigfed-only global would need a per-machine include
+that does not exist yet. Either machine may be in GNOME or Sway: **check which
 compositor is live before testing** (`pgrep -x gnome-shell` /
 `pgrep -x sway`; `swaymsg` fails confusingly under GNOME). Most work here can
-be done from GNOME against `sway --validate` plus a headless nested sway
-(below) — everything except what needs a real seat (locking, lid behaviour,
-cursor- and notification-related work).
+be done against `sway --validate` plus a headless nested sway (below)—
+everything except what needs a real seat (locking, lid behaviour, cursor- and
+notification-related work).
 
 ## The config
 
 - **Binding grammar**: stated at the top of `config` itself, an explicit law
-  since 2026-08-22 — the modifier names what the action acts on (you / the
-  focused window / the session), with key-family overrides and a closed
-  promotion list. Read it before adding a binding. Every motion is bound for
-  both vim keys and arrows, deliberately. `$mod+b` is a launcher (Brave), not
-  upstream's split; `$mod+v` is free; the container tier (splits,
-  focus parent/child) was dropped 2026-08-22 — revival chords in the config's
-  Layout section, full account `DECISIONS.md` item 6.
+  since 2026-08-22—the modifier names what the action acts on (you / the
+  focused window / the enclosures and the session / the workspaces as the
+  monitors stand), with key-family overrides and a closed promotion list.
+  Read it before adding a binding. Every motion is bound for both vim keys and
+  arrows, deliberately. The tree tier returned 2026-09-28 on keys that follow
+  upstream where upstream fits the grammar: `$mod+a`/`$mod+z` focus
+  parent/child, `$mod+v` splitv as a toggle (`bin/sway-split`, with a
+  marker in Waybar), `$mod+Ctrl+r` rotate. splith and
+  tabbed/stacking stay unbound on purpose, and the declined alternatives are
+  listed in `DECISIONS.md` 2026-09-28—don't re-propose them. The app menu is
+  `$mod+d`, parting from GNOME's Super+A on purpose.
 - **`README.md`** is a hand-maintained quick-reference card — a courtesy, not
   a contract: `config` is authoritative, the card may lag or be deleted at
   will, and the suite deliberately does not check the two against each other
@@ -33,6 +41,19 @@ cursor- and notification-related work).
   is dodger blue (`$accent #0088FF`), Waybar's active workspace forest green.
   `$forest #228B22` sits unused in `config` so the old accent can be swapped
   back in one word — don't clean it up.
+- **The split cue is white**: `client.focused`'s indicator, which sway paints
+  on the edge where the next window will open while the focused window sits
+  alone in its container—the bottom edge after `$mod+v`, the right edge after
+  `$mod+Ctrl+r`. It matched the border until 2026-09-28, which hid the state;
+  the unfocused classes keep indicators equal to their borders.
+- **A sway session's PATH lacks `~/bin` and `~/.local/bin`**: GDM starts
+  sway with no login shell, so `20-path.sh` never runs (measured
+  2026-09-28). Bindings name homegrown scripts by path (`~/bin/…`); the gap
+  itself is `TODO.md` item 29.
+- **The move bindings start with `split none`**, so one press moves a window
+  set with `$mod+v`, dropping its pending split; on any other window the
+  prefix fails harmlessly and the move is unchanged (measured 2026-09-28).
+  It looks redundant and is not.
 - **One urgent colour across the desktop**: `#d08770` in four places and four
   config languages — sway `client.urgent`, Waybar's urgent workspace +
   `#battery.critical`, mako's `[urgency=critical]` border, swaylock's

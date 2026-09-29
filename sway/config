@@ -2,19 +2,26 @@
 # Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
 # Apply changes with `swaymsg reload` or $mod+Ctrl+c.
 #
-# Binding grammar (adopted 2026-08-22, DECISIONS.md item 6). The modifier names
-# what the action acts on -- to place or recall a binding, ask what it acts on:
+# Binding grammar (adopted 2026-08-22, DECISIONS.md item 6; widened 2026-09-28
+# for the tree tier and the monitor axis). The modifier names what the action
+# acts on -- to place or recall a binding, ask what it acts on:
 #
 #   $mod          you: your attention and your instruments. Move focus
-#                 (hjkl/arrows), visit workspaces (1-0, Tab), summon things
-#                 (launchers, menu, scratchpad show), toggle your equipment
-#                 (w bar, m touchpad).
+#                 (hjkl/arrows), climb and descend the tree (a parent,
+#                 z child), visit workspaces (1-0, Tab), summon things
+#                 (launchers, menu, scratchpad show) and aim the next one
+#                 (v: it opens below), toggle your equipment (w bar,
+#                 m touchpad).
 #   $mod+Shift    the focused window: move it (hjkl/arrows), send it (1-0),
 #                 stash it (minus), toggle its state (f fullscreen,
 #                 space floating).
-#   $mod+Ctrl     the session: l lock, c reload.
-#   $mod+$alt     the workspace row: walk it (left/right); +Shift carries the
-#                 focused window along, so Shift keeps its meaning composed.
+#   $mod+Ctrl     the enclosures: the container around the window (r rotates
+#                 it, a row into a column and back) and the session around
+#                 everything (l lock, c reload).
+#   $mod+$alt     the workspaces, as the monitors stand: walk this monitor's
+#                 row (left/right), step to the monitor above or below
+#                 (up/down); +Shift carries the focused window along, so
+#                 Shift keeps its meaning composed.
 #
 # Two clauses complete the law:
 #
@@ -30,13 +37,12 @@
 #     default home for a new window verb is Shift; promotion is earned by
 #     daily frequency and recorded here.
 #
-# Placing a new binding: an app -> $mod+mnemonic letter ($mod+v is
-# deliberately free). A window verb -> $mod+Shift+letter. A session op ->
-# $mod+Ctrl+letter. A machine action -> a button on the $mod+Shift+Escape nag
-# before it ever claims a chord. Hardware with no XF86 key -> a bare-tier
-# toggle letter (m, the touchpad, is the precedent). The container tier
-# (splits, focus parent/child, layouts) is deliberately absent -- see the
-# Layout section.
+# Placing a new binding: an app -> $mod+mnemonic letter. A window verb ->
+# $mod+Shift+letter. An op on the container around the window, or on the
+# session -> $mod+Ctrl+letter. A machine action -> a button on the
+# $mod+Shift+Escape nag before it ever claims a chord. Hardware with no XF86
+# key -> a bare-tier toggle letter (m, the touchpad, is the precedent). Tabbed
+# and stacking layouts stay unbound -- see the Layout section.
 #
 # Both vim keys and arrow keys are bound for every motion, on purpose -- the
 # parity is maintained deliberately, so add arrow variants to any new motion.
@@ -61,8 +67,8 @@ set $right l
 
 # Two terminals, deliberately, for the Ghostty/WezTerm comparison begun
 # 2026-09-03: $term is the one under daily test, $term2 the other, one keystroke
-# away. Sway runs only on fedxps, so this file's choice does not bind bigfed
-# even though it syncs there. Findings in docs/ghostty-vs-wezterm-2026-09-03.md.
+# away. Since 2026-09-28 sway runs on bigfed too, so the choice binds both
+# machines. Findings in docs/ghostty-vs-wezterm-2026-09-03.md.
 # --gtk-single-instance=false so each press spawns its own process and so
 # lands in working-directory; new windows/tabs/splits raised from inside one
 # still inherit. Reasoning in ghostty/config's Window section.
@@ -78,9 +84,36 @@ set $menu wofi --show drun
 # typo in this path fails loudly at load.
 output * bg ~/Desktop/configs/wallpapers/monarch1080dark.png fill
 
-# Additional outputs are auto-enabled and arranged left-to-right in connection
-# order. To pin one:  output HDMI-A-1 resolution 1920x1080 position 1920,0
-# Output names come from `swaymsg -t get_outputs`.
+# bigfed's two monitors, matched by make, model and serial (as `swaymsg -t
+# get_outputs` reports them), so these lines apply only where those monitors
+# are plugged in: a line naming an absent monitor is ignored (tested
+# 2026-09-28), which leaves fedxps untouched. Port names are not stable here --
+# the Samsung was HDMI-A-2 in the 2026-08-05 firmware inventory and is DP-3 now.
+# The arrangement and modes are GNOME's (~/.config/monitors.xml): the MSI
+# above the Samsung, 862 px in from its left edge, both at 60 Hz with adaptive
+# sync. 60 Hz is deliberate -- cooler, and nothing here needs more; left to
+# itself sway picks 120 and 100 Hz. The GPU's memory clock sits at its top
+# level, 35 W, at either rate under sway (measured 2026-09-28). Any other
+# output is auto-enabled and placed left to right in connection order.
+set $samsung "Samsung Electric Company C49RG9x H1AK500000"
+set $msi     "Microstep MSI MAG341CQ MA0H050010368"
+output $msi     position 862 0  mode 3440x1440@60.016Hz adaptive_sync on
+output $samsung position 0 1440 mode 5120x1440@59.977Hz adaptive_sync on
+
+# Workspaces 1-5 live on the Samsung and 6-10 on the MSI, so on bigfed a
+# workspace number also names a monitor: $mod+Shift+6 sends a window up to the
+# MSI. A pin naming an absent monitor is ignored, so on fedxps every workspace
+# opens on the laptop's screen as before (tested 2026-09-28).
+workspace 1  output $samsung
+workspace 2  output $samsung
+workspace 3  output $samsung
+workspace 4  output $samsung
+workspace 5  output $samsung
+workspace 6  output $msi
+workspace 7  output $msi
+workspace 8  output $msi
+workspace 9  output $msi
+workspace 10 output $msi
 
 
 ### Input configuration
@@ -139,15 +172,19 @@ input type:touchpad {
 #
 # Launchers
 #
+    # $mod+d is the app menu: d for drun, wofi's mode for it, and upstream's
+    # launcher key besides. It sat on $mod+a -- GNOME's Super+A app grid --
+    # until 2026-09-28, when a went to focus parent; the one key where this
+    # file and GNOME now part. $mod+f is files, opening at ~/Desktop; the
+    # home-folder launcher went the same day.
     bindsym $mod+Return exec $term
     bindsym $mod+t      exec $term
     bindsym $mod+Shift+Return exec $term2
     bindsym $mod+Shift+t      exec $term2
-    bindsym $mod+a      exec $menu
     bindsym $mod+b      exec brave-browser
     bindsym $mod+c      exec google-chrome-stable
-    bindsym $mod+d      exec nautilus --new-window ~/Desktop
-    bindsym $mod+f      exec nautilus --new-window
+    bindsym $mod+d      exec $menu
+    bindsym $mod+f      exec nautilus --new-window ~/Desktop
     bindsym $mod+x      exec gnome-text-editor
 
 #
@@ -182,22 +219,30 @@ input type:touchpad {
     bindsym $mod+Up     focus up
     bindsym $mod+Right  focus right
 
-    # focus parent / focus child are deliberately unbound: the container tier
-    # went unused and was dropped 2026-08-22. The reasoning and the revival
-    # chords are recorded in the Layout section below.
+    # The tree: a climbs toward the root, z comes back down toward the windows
+    # (z sits under a). a is upstream's, in both sway's and i3's defaults;
+    # focus child has no upstream key. See the Layout section.
+    bindsym $mod+a focus parent
+    bindsym $mod+z focus child
 
 #
 # Moving windows
 #
-    bindsym $mod+Shift+$left  move left
-    bindsym $mod+Shift+$down  move down
-    bindsym $mod+Shift+$up    move up
-    bindsym $mod+Shift+$right move right
+    # Each move first drops a pending $mod+v split (`split none`), so one press
+    # always moves the window. Left to itself sway spends the first press on a
+    # set window lifting it out of its invisible column, and moves nothing
+    # unless a column is beside it (measured 2026-09-28). On a window that is
+    # not set, `split none` fails harmlessly and the move is exactly as before
+    # (measured in five cases). Not redundant: keep the prefix.
+    bindsym $mod+Shift+$left  split none; move left
+    bindsym $mod+Shift+$down  split none; move down
+    bindsym $mod+Shift+$up    split none; move up
+    bindsym $mod+Shift+$right split none; move right
 
-    bindsym $mod+Shift+Left   move left
-    bindsym $mod+Shift+Down   move down
-    bindsym $mod+Shift+Up     move up
-    bindsym $mod+Shift+Right  move right
+    bindsym $mod+Shift+Left   split none; move left
+    bindsym $mod+Shift+Down   split none; move down
+    bindsym $mod+Shift+Up     split none; move up
+    bindsym $mod+Shift+Right  split none; move right
 
 #
 # Workspaces
@@ -216,6 +261,21 @@ input type:touchpad {
     bindsym $mod+$alt+Shift+$right move container to workspace next_on_output; workspace next_on_output
     bindsym $mod+$alt+Shift+Left   move container to workspace prev_on_output; workspace prev_on_output
     bindsym $mod+$alt+Shift+Right  move container to workspace next_on_output; workspace next_on_output
+
+    # The other monitor, on the same modifier: up/down, because on bigfed the
+    # MSI stands above the Samsung. +Shift carries the focused window -- or the
+    # column selected with $mod+a -- and follows it, like the row walk above.
+    # One press, where a directional move out of a row first restacks the
+    # workspace (measured 2026-09-28). On a single screen, as on fedxps, these
+    # do nothing (measured).
+    bindsym $mod+$alt+$up    focus output up
+    bindsym $mod+$alt+$down  focus output down
+    bindsym $mod+$alt+Up     focus output up
+    bindsym $mod+$alt+Down   focus output down
+    bindsym $mod+$alt+Shift+$up    move container to output up; focus output up
+    bindsym $mod+$alt+Shift+$down  move container to output down; focus output down
+    bindsym $mod+$alt+Shift+Up     move container to output up; focus output up
+    bindsym $mod+$alt+Shift+Down   move container to output down; focus output down
 
     # Bounce back to the previously focused workspace. The third motion the
     # $alt prev/next pair leaves missing: those two walk the row, this one
@@ -248,40 +308,44 @@ input type:touchpad {
     bindsym $mod+Shift+0 move container to workspace number 10
 
 #
-# Layout -- deliberately empty: the container tier is unbound
+# Layout -- the tree tier, revived for bigfed 2026-09-28
 #
-    # Sway's middle tier -- the containers between window and workspace -- goes
-    # unused in this workflow, and its bindings are absent on purpose, not
-    # forgotten. Two dated decisions:
+    # Sway's middle tier: the containers between window and workspace. It was
+    # dropped 2026-08-22, when one or two windows per workspace on the laptop
+    # left focus parent nothing to select but the workspace itself. bigfed's
+    # 5120-px Samsung restores the premise: columns of stacked windows are the
+    # natural arrangement there, and a column is a thing to act on whole. With
+    # one selected ($mod+a), a new window opens as a new column beside it, and
+    # $mod+$alt+Shift+up/down carries the column to the other monitor intact
+    # (both measured 2026-09-28).
     #
-    # * Tabbed/stacking layouts, unbound 2026-08-13: the keybindings were
-    #   clunky and the feature went unused, since every application that needs
-    #   tabs here brings its own (WezTerm, browsers, Okular). Separate from
-    #   `workspace_layout default` below, which only governs how *new*
-    #   workspaces start.
+    # Keys are upstream's where upstream coheres with the grammar above: a for
+    # focus parent and v for splitv, in both sway's and i3's defaults. z, for
+    # focus child, has no upstream key; it sits under a. The pair is bound in
+    # the Focus section. r keeps one meaning across tiers, reshape: $mod+r
+    # resizes the window, $mod+Ctrl+r rotates the container around it -- also
+    # the repair when an orthogonal move has restacked a row into a column
+    # (measured). Upstream's $mod+e for the toggle carries no mnemonic here.
     #
-    # * splith/splitv ($mod+Ctrl+h/v) and focus parent/child ($mod+p,
-    #   $mod+Shift+p), dropped 2026-08-22 once their use-cases were laid out:
-    #   splits had never been pressed intentionally, parent/child never at
-    #   all. With one or two windows per workspace -- the norm on this
-    #   laptop's 13" panel -- a workspace stays a flat row of leaves, and the
-    #   group that focus parent would select coincides with the workspace
-    #   itself. Supersedes the 2026-08-13 decision that kept the split pair
-    #   on Ctrl+h/v.
+    # Deliberately unbound:
     #
-    # What stays reachable without any of it, measured in a nested sway
-    # 2026-08-22: new windows tile side by side on their own, and an
-    # orthogonal $mod+Shift+j/k move still builds stacked layouts implicitly
-    # -- two 640x720 columns became two full-width 1280x360 rows on one `move
-    # down`. (Also where the occasional accidental vertical split always came
-    # from.)
+    # * splith. Its only clean partner for v is upstream sway's b, which is
+    #   Brave's. $mod+v then $mod+Ctrl+r builds the same tree (measured), and
+    #   a row already opens new windows side by side.
     #
-    # If tree work ever becomes real -- plausibly a big-screen sway on bigfed,
-    # where three-plus windows per workspace and deliberate arrangements would
-    # be the norm -- revive the tier as: splits back on $mod+Ctrl+h/v, focus
-    # parent/child on the bare (attention) tier, layout ops on Ctrl letters.
-    # $mod+Ctrl then widens from "the session" to "the enclosures: the
-    # container around the window and the session around everything".
+    # * Tabbed and stacking layouts, unbound 2026-08-13: every application
+    #   that needs tabs here brings its own (the terminals, browsers, Okular).
+    #   Separate from `workspace_layout default` below, which only governs how
+    #   *new* workspaces start.
+    #
+    # The declined alternatives are recorded in DECISIONS.md, 2026-09-28.
+    # $mod+v is a toggle: sway-split (bin/) runs splitv on the focused window,
+    # or cancels the state if it is already set, and wakes Waybar's marker.
+    # Called by path, because a sway session's PATH lacks ~/bin: GDM starts
+    # sway without a login shell (measured 2026-09-28). Suite:
+    # tests/sway-split/run.sh.
+    bindsym $mod+v      exec ~/bin/sway-split toggle
+    bindsym $mod+Ctrl+r layout toggle split
 
 #
 # Scratchpad
@@ -397,7 +461,15 @@ set $accent #0088FF
 set $urgent #d08770
 
 # Format: border  background  text  indicator  child_border
-client.focused          $accent  #000000 #ffffff $accent $accent
+#
+# The focused indicator is white: it is the split cue. Sway paints it on the
+# edge where the next window will open, only while the focused window sits
+# alone in its container -- the bottom edge after $mod+v, the right edge after
+# $mod+Ctrl+r -- and it clears once a window lands there or the window is
+# lifted out (measured 2026-09-28). Until then it matched the border, so the
+# state could not be seen. A lone window on a workspace has no border at all
+# (smart_borders), so no cue there.
+client.focused          $accent  #000000 #ffffff #ffffff $accent
 client.focused_inactive #5f676a  #000000 #ffffff #5f676a #5f676a
 client.unfocused        #434c5e  #000000 #ffffff #434c5e #434c5e
 client.urgent           $urgent  #000000 #ffffff $urgent $urgent

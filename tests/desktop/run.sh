@@ -72,6 +72,8 @@ for b in $(grep -hE '^\s*bindsym.*\sexec\s' "$CFG_ROOT/sway/config" \
          "$term_bin" "$menu_bin" swayidle swaylock swaynag grim slurp wl-copy; do
   [ -z "$b" ] && continue
   case "$b" in \$*|"") continue;; esac
+  # A binding may name a script by path: a sway session's PATH lacks ~/bin.
+  b="${b/#\~/$HOME}"
   have "$b" || missing="$missing $b"
 done
 check "every binary named by a binding exists" [ -z "$missing" ]

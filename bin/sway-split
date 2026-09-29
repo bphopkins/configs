@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# sway-split -- make $mod+v a toggle, and show Waybar when it is set.
+#
+# $mod+v (sway's splitv) puts the focused window alone in a new column, so
+# the next window opens below it. Left to itself that state is invisible and
+# has no cancel; this script gives it both (configs DECISIONS.md, 2026-09-28).
+#
+#   sway-split toggle   set the state on the focused window, or cancel it
+#   sway-split status   print Waybar's marker for the focused window, once
+#   sway-split watch    print it now, and again after every sway event that
+#                       can change it (waybar/config, custom/split)
+#
+# "Set" means the focused window sits alone in its container, so the next
+# window opens below it (a column) or beside it (a row, after $mod+Ctrl+r);
+# for a window alone on its workspace, the workspace itself is vertical.
+# Cancelling runs sway's own `split none`, which cannot undo the workspace
+# case (measured); there `splith` puts the workspace back to a row, by the
+# same path $mod+v took (`layout splith` would wrap the window instead,
+# measured).
+#
+# Reads sway's JSON tree (`swaymsg -t get_tree`), a documented IPC contract.
+# The toggle wakes the watcher with a sway tick event rather than a signal, so
+# nothing outside the running sway is touched. Title changes are filtered out
+# of the event stream: they are frequent and cannot change the state.
+# Suite: tests/sway-split/run.sh.
+set -u
+
+# One object for the focused node: its state and the command that cancels it.
+STATE_JQ='
+def focus_of($p):
+  (if .focused then {type, pt: $p.type, pl: $p.layout, pn: ($p.nodes | length)} else empty end),
+  (. as $n | (.nodes[]?, .floating_nodes[]?) | focus_of($n));
+([focus_of({type: "", layout: "", nodes: []})] | .[0]) as $f
+| if $f == null or $f.type != "con" then {state: "none", cancel: null}
+  elif $f.pt == "con" and $f.pn == 1 and $f.pl == "splitv" then {state: "below", cancel: "split none"}
+  elif $f.pt == "con" and $f.pn == 1 and $f.pl == "splith" then {state: "beside", cancel: "split none"}
+  elif $f.pt == "workspace" and $f.pn == 1 and $f.pl == "splitv" then {state: "below", cancel: "splith"}
+  else {state: "none", cancel: null} end'
+
+state() { swaymsg -t get_tree | jq -c "$STATE_JQ"; }
+
+marker() {
+  state | jq -c '
+    if .state == "below" then {text: "\u2193", tooltip: "The next window opens below", class: "below"}
+    elif .state == "beside" then {text: "\u2192", tooltip: "The next window opens beside", class: "beside"}
+    else {text: ""} end'
+}
+
+case "${1:-}" in
+  toggle)
+    cmd="$(state | jq -r '.cancel // "splitv"')" || exit 1
+    swaymsg -- "$cmd" >/dev/null
+    swaymsg -t send_tick sway-split >/dev/null
+    ;;
+  status)
+    marker
+    ;;
+  watch)
+    marker || exit 1
+    # Two exits, so no part of the event stream outlives Waybar. When Waybar
+    # stops this script it signals this process only (measured 2026-09-28):
+    # the trap then stops the children. The stream runs in the background
+    # because bash holds a trap until a foreground pipeline ends, which this
+    # one never does; `wait` returns on the signal. If the script is killed
+    # outright instead, Waybar's pipe closes, the next write fails, and the
+    # loop exits, taking the stream down after it.
+    trap 'pkill -TERM -P $$ 2>/dev/null; exit 0' TERM HUP INT
+    swaymsg -t subscribe -m '["window","workspace","binding","tick"]' |
+      jq --unbuffered -c 'select(.change != "title")' |
+      while read -r _; do marker || exit 0; done &
+    wait
+    ;;
+  *)
+    echo "usage: sway-split toggle|status|watch" >&2
+    exit 2
+    ;;
+esac

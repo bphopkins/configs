@@ -101,7 +101,9 @@ place. Run it after touching sway, waybar, swaylock, mako or wofi.
 - *Clipboard persistence* (`wl-clip-persist` / `cliphist`) — has never actually been a
   problem in practice, and is not worth running a daemon for.
 - *Multi-monitor bindings* — sway has never been used with multiple monitors; the one
-  attempt was on `bigfed`, which has been abandoned as a sway machine.
+  attempt was on `bigfed`, which has been abandoned as a sway machine. *(Premise
+  lapsed 2026-09-28: bigfed runs sway on trial, and a monitor axis was added. See the
+  entry of that date.)*
 - *`for_window` floating rules* — no misbehaving dialog was ever demonstrated, so there is
   nothing to fix yet. The `inhibit_idle fullscreen` half only applies if idle timers are
   ever adopted, which they are not.
@@ -153,6 +155,8 @@ day: an orthogonal `$mod+Shift+j/k` move still builds stacked layouts implicitly
 where accidental vertical splits always came from. Revival chords are recorded in the
 config's Layout section — plausibly relevant if a big-screen sway ever lands on
 bigfed, where three-plus windows per workspace would make the tree earn its keep.
+*(Revived 2026-09-28 for bigfed, on upstream-aligned keys rather than the chords
+recorded here. See the entry of that date.)*
 
 **Declined** (asked and answered, do not re-propose):
 
@@ -163,7 +167,8 @@ bigfed, where three-plus windows per workspace would make the tree earn its keep
   reason: the override clause makes it lawful where it sits.
 - *Rehoming `focus child`* to `$mod+i`, an out/in pair on `o`/`i`, or scope brackets —
   mooted by dropping the tier; the `o`/`i` out/in pair is the idiom-pure shape if the
-  pair ever returns on letters.
+  pair ever returns on letters. *(When the pair returned, 2026-09-28, it took
+  upstream's `a`, with `z` beneath it.)*
 - *A standalone reboot chord* — the nag button plus `reboot` in a terminal cover it.
 - *A `tests/desktop` check pinning `sway/README.md` to the config's binding set* —
   declined 2026-08-22, same day the quick-reference card was added: the README is a
@@ -399,7 +404,8 @@ so nothing changes in `nvim/lua/plugins/live-server.lua`.
   had every key validated against their man pages first, because an unrecognised key
   makes swaylock **exit** — i.e. no lock at all, a fail-open direction. Also learned and
   recorded: **sway is `fedxps`-only**; `bigfed` never boots it, which moots the
-  cross-machine caveats in these packages. @done(2026-08-13)
+  cross-machine caveats in these packages. *(No longer so from 2026-09-28: see the
+  entry of that date.)* @done(2026-08-13)
 - [x] Inspected `sway/config` end to end and restructured it for readability, plus two
   defect fixes (opened item 5 for the deferred tiers). **Verification:** `sway --validate`
   clean, and — because validate provably does *not* check `bindsym` command bodies — all
@@ -2055,3 +2061,167 @@ then.
 
 **Left open.** C of item 3, the aliases against the dated log; item 25, with
 `bash_color_prompt_disable` now on its list; fedxps's pull of this.
+
+## Sway on bigfed: the tree tier returns, with a monitor axis — 2026-09-28
+
+He logged in to Sway on bigfed, which item 5 had recorded as abandoned for
+sway, having come to judge it a very good window manager for the desk's two
+monitors: a Samsung C49RG9 (5120×1440, primary) with an MSI MAG341CQ
+(3440×1440) above it, 862 px in from its left edge, as GNOME's
+`monitors.xml` has them. Three asks: focus parent/child restored as core
+bindings, a way to move windows between monitors, and Waybar off the second
+monitor. A standing requirement came with them: **any change to the shared
+config that alters sway on fedxps is named before it is made**, now the
+opening rule of `sway/CLAUDE.md`.
+
+**What changed.**
+
+- `sway/config`: the monitors, keyed by make, model and serial, in GNOME's
+  arrangement and at its modes: 60 Hz with adaptive sync on both, his
+  deliberate choice of 2026-09-07 (cooler, and nothing needs more), where sway
+  left to itself picks 120 and 100 Hz. Workspaces 1–5 pinned to the Samsung
+  and 6–10 to the MSI;
+  focus parent `$mod+a`, focus child `$mod+z`, splitv `$mod+v`, layout toggle
+  split `$mod+Ctrl+r`; `$mod+$alt+k/j/↑/↓` to focus the monitor above or
+  below, `+Shift` to carry the focused window or a selected column there and
+  follow it. The app menu moved from `$mod+a` to `$mod+d`, Nautilus at
+  `~/Desktop` from `$mod+d` to `$mod+f`, and the home-folder launcher went.
+  The grammar header widens `$mod+Ctrl` to "the enclosures", as item 6's
+  revival note foresaw, and `$mod+$alt` to "the workspaces, as the monitors
+  stand".
+- `waybar/config`, `waybar/style.css`: one bar, on the Samsung, with
+  `output` excluding the MSI by identifier; `all-outputs`, so it lists both
+  monitors' workspaces; `button.visible` for the one showing on the other
+  monitor.
+- `sway/CLAUDE.md`, `waybar/CLAUDE.md`, `wofi/CLAUDE.md`, `sway/README.md`.
+- On bigfed, outside the repo: `wofi` and `mako` installed. The app menu had
+  never worked there under sway, and nothing displayed notifications.
+
+**What reaches fedxps**, stated before the change and accepted: `$mod+a` is
+now focus parent, `$mod+d` the menu, `$mod+f` Nautilus at `~/Desktop`;
+`$mod+z`, `$mod+v` and `$mod+Ctrl+r` are new; the monitor chords are present
+but inert on one screen; with a second screen attached, every bar lists every
+workspace. Everything keyed to a monitor never applies there.
+
+**Measured**, in caged headless nested sways laid out like the desk, and on
+the live session.
+
+- A tiled `move` crosses to the adjacent monitor only when nothing is left to
+  pass in its own workspace. Along the row it moves a slot a press and
+  crosses from the end; across it, the first press restacks the workspace –
+  C out of [A|B|C] lands above a wrapped [A|B] – and only the second crosses.
+  `move container to output up` crosses in one press and takes a selected
+  column along intact.
+- `focus <dir>` crosses at a workspace's edge; `focus output <dir>` jumps
+  directly, and coming back finds the window focus left.
+- With a column selected, a new window opens as a new column beside it. From
+  a selected column, a direction key lands on a window, which makes
+  `focus child` the weaker half; sway's default config binds only
+  `focus parent`.
+- `splitv` then `layout toggle split` builds the tree `splith` builds.
+- `output` and `workspace … output` lines naming an absent monitor are
+  ignored. The full new config on a single headless screen behaved as fedxps
+  does now: the screen at 0,0, workspace 1 first, all ten on that screen. The
+  monitor chords do nothing on one screen.
+- Waybar on both monitors traded bar heights whenever focus crossed between
+  them: the focused workspace's 3-px underline makes its bar 27 px and the
+  other 24. Fourteen trades in the session's first six minutes, each re-laying
+  every tiled window on both monitors.
+- The GPU's memory clock sits at its top level (875 MHz), 35 W steady, at
+  sway's own 120 + 100 Hz and at the pinned 60 Hz with adaptive sync alike.
+- Live, after the reload: GNOME's layout, modes and adaptive sync on both
+  monitors; one Waybar, on the Samsung alone, listing the MSI's workspace in
+  white beside the focused one. The desktop suite on bigfed: 23 pass, and
+  one fails on `brightnessctl`, which bigfed has no backlight to use.
+
+**Keys.** Checked against sway 1.11's installed default config and i3's: `a`
+focus parent in both; `v` split vertical and `e` layout toggle split in both;
+split horizontal `b` in sway, `h` in i3; no focus child in either (i3 leaves
+`$mod+d` commented out, clashing with its own launcher); `d` the launcher in
+both. Adopted where upstream fits the grammar: `a`, `v`, `d`. `z` for focus
+child, because it sits under `a`. `Ctrl+r` for the toggle, so `r` means
+reshape on both tiers: `$mod+r` resizes the window, `$mod+Ctrl+r` rotates its
+container. bspwm calls its version of the operation rotate.
+
+**The split cue**, the same day. `$mod+v` changes nothing on screen: it puts
+the focused window alone in a new column, and pressing it again changes
+nothing more. Sway marks that state by painting the indicator on the edge
+where the next window will open (bottom after `$mod+v`, right after
+`$mod+Ctrl+r`), but the indicator had matched the border, so the state was
+invisible—and it changes what moves do (measured): a sideways press with
+room first lifts the window out of its column and moves it only on the
+second; a sideways press at the row's end does nothing, and the state stays;
+a down press takes it out of the row, restacking the workspace. The focused
+indicator is now white; the unfocused classes keep theirs equal to their
+borders. Sway's own undo, `split none`, was left unbound; the next paragraph
+puts it behind `$mod+v`.
+
+**`$mod+v` becomes a toggle, with a marker**, the same day. The state had no
+cancel (Esc belongs to the applications), and the white cue, 3 px at the
+bottom of a 1413-px window, went unseen. `bin/sway-split` now serves
+`$mod+v`: on a window already set it cancels — sway's `split none`, or
+`splith` for a window alone on its workspace, where `split none` cannot act
+and `layout splith` would wrap the window (both measured) — and otherwise it
+sets `splitv`. Waybar's `custom/split` runs it as a watcher printing ↓ or →
+while the focused window is set, hidden otherwise, refreshed on sway's
+window, workspace, binding and tick events with titles filtered out; `$mod+v`
+sends the tick. Measured live: set, marker shown, cancel, marker gone, layout
+restored exactly; and Waybar stops a continuous module by signalling the
+script alone, which orphaned its event stream at every reload until a trap
+was added. `tests/sway-split/run.sh`: 31 checks, caged, mutation-tested
+against seven broken copies; the one dropping the title filter, an
+efficiency rather than a behaviour, survives. The marker's refresh after
+`$mod+Ctrl+r`, `$mod+a` and `$mod+z` rests on sway sending the binding event
+once the command has run: its source says so, no key injector was at hand to
+show it, and his keypresses confirmed it live. Found along the way: a sway session's PATH
+lacks `~/bin` and `~/.local/bin`, since GDM starts sway with no login shell,
+so the script is called by path (`TODO.md` item 29).
+
+**Moves drop a pending split**, the same day. Sway spent the first sideways
+press on a set window lifting it out of its invisible column and moved
+nothing, unless a column stood beside it, which the window joined at once;
+at a row's end the press did nothing at all. That read as a bug. The eight
+move bindings now start with `split none`: one press moves any window, a set
+one losing its pending split, and a window that is not set moves exactly as
+before (measured in five cases).
+
+**Declined** (asked and answered, do not re-propose):
+
+- *`$mod+s` for splith, "side by side"*: asymmetric with `v` where the pair
+  should be symmetric, as `a`/`z` is; the letter was forced. `s` stays free.
+- *`$mod+Ctrl+v` / `$mod+Ctrl+s`*, explicit layouts for the enclosing
+  container: fell with `s`.
+- *`$mod+e` for the toggle*: upstream's letter, with no mnemonic here.
+- *Brave off `b`*, to take sway's splith key: it costs a daily launcher's
+  mnemonic, for the one key sway and i3 disagree on.
+- *`o`/`i`, out/in*, item 6's letters for the pair: superseded by upstream's
+  `a` with `z` beneath it.
+- *Parent/child on `$mod+$alt+k/j`*: that axis went to the monitors, which
+  physically stand up and down.
+- *Nautilus at `~/Desktop` on `$mod+n`*: `f`, for files, instead. Even in
+  GNOME he uses only the Desktop launcher, so the home-folder one went.
+- *Connector names for the monitors*: they move (the Samsung was HDMI-A-2 on
+  2026-08-05, DP-3 now) and could match a screen plugged into fedxps. The
+  identifiers publish the monitors' serial numbers; he judged that harmless.
+- *Forest green for the split cue*: a clear hue, but it is Waybar's focus
+  accent, which the charter keeps apart from sway's on purpose.
+- *`$mod+Ctrl+v` for `split none`, with 6-px borders*: no script, but the cue
+  stays at the window's edge, every laptop border thickens, and it cannot
+  undo the lone-window case.
+- *`$mod+v` opening the app menu, the next window below, Esc undoing the
+  split*: no lingering state, but no way left to set a window and then move
+  an existing one in below it.
+- *Carrying the pending split with a moved window*: it needs the script on
+  every move key, about 15 ms each, and a window entering a column nests a
+  level deeper.
+
+**Left open.**
+
+- `exec nm-applet` fails at every bigfed login (not installed; bigfed is
+  wired), harmless.
+- Under sway, bigfed's power button powers it off: logind's
+  `HandlePowerKey=poweroff` stands, since nothing takes the inhibitor GNOME
+  takes (measured). The monitors never power down on idle, and `screens-off`
+  is GNOME-only.
+- `tests/desktop/run.sh` predates `tests/cage.sh` and runs uncaged; on
+  bigfed its binary check fails on `brightnessctl`, as it did before.
