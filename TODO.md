@@ -628,7 +628,10 @@ VimTeX cache, the blink frecency store, shada and undo history.
   2026-09-30: the button opens the machine nag on both machines (a
   session-lifetime inhibitor in `sway/config`), and bigfed keeps no idle
   timer either — Caffeine is always on there under GNOME, and nothing turns
-  off unless he says so. The per-machine mechanism exists (`hosts/`).
+  off unless he says so. The suspend key, which that inhibitor leaves to
+  logind, meets logind's refusal of every suspend on bigfed since 2026-10-01
+  (`org/machines/bigfed/bigfed.md`, "Power and sleep"); the key press itself
+  is untested. The per-machine mechanism exists (`hosts/`).
 
 Found 2026-09-28, the day sway went on trial on bigfed (`DECISIONS.md`,
 2026-09-28). Under GNOME, gnome-settings-daemon holds logind's power-key
