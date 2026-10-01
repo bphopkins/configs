@@ -2,8 +2,16 @@
 @define-color bg     #000000;   /* bar background */
 @define-color fg     #ffffff;   /* default text */
 @define-color muted  #9e9e9e;   /* inactive workspace text */
-@define-color accent #228B22;   /* active/accent */
+@define-color accent #0088FF;   /* the desktop's one accent, sway's dodger blue (2026-09-29) */
+@define-color forest #228B22;   /* the bar's former accent, kept for a one-word swap */
 @define-color urgent #d08770;   /* urgent */
+/* The battery's charge state, a tint on its value (2026-09-30): pale red on
+   battery, pale green on the mains -- charging, and holding at fedxps's 80
+   percent cap, which Waybar calls plugged. Both are light against black and
+   read beside the white neighbours; a fainter pair, #ffd6d6 / #d6ffd6, is the
+   alternative if these shout. */
+@define-color chg    #b3ffb3;
+@define-color dis    #ffb3b3;
 
 /* Whole bar */
 window#waybar {
@@ -21,6 +29,12 @@ window#waybar {
      designed face, so this is not a synthesised bold. Delete this line to go
      back to the clock being the only bold element. */
   font-weight: 600;
+  /* The size is named here, not inherited from GNOME's interface font
+     (gsettings font-name, Adwaita Sans 11 today), so the bar's 24 px and its
+     20 px rhythm belong to this file on both machines. pt, not px, so GNOME's
+     text-scaling-factor -- the accessibility knob -- still reaches it
+     (2026-09-30). */
+  font-size: 11pt;
 }
 
 /* Center clock */
@@ -50,12 +64,61 @@ window#waybar {
   font-feature-settings: "tnum";
 }
 
-/* Workspaces (left) */
+/* The box: one unit for every module on the bar (2026-09-30). Rounded, inset
+   2px from the bar's edges -- 20 px tall in the 24 px bar -- with 8 px of
+   padding either side of its content and 4 px between neighbours. It is
+   transparent unless the module carries a state, when it fills: the focused
+   or urgent workspace, the split marker, the binding mode, a critical
+   battery. Both corners are built from the same box, so the cells of any two
+   neighbours are 20 px apart on either side and the first and last cell
+   edges sit 10 px from the screen's edge; the ink inside measures 21-23 and
+   10-11 px, the glyphs' own side bearings making up the difference. The
+   tray's `spacing` in waybar/config (20) is this rule's 8 + 4 + 8; change it
+   with the padding or the margins. The right-hand slots are selected by
+   position (Waybar wraps every module in a `widget` node, as its own default
+   stylesheet relies on), so a module added there gets the box without being
+   named here. */
+#workspaces button,
+#custom-split,
+#mode,
+.modules-right > widget > * {
+  margin: 2px 2px;
+  padding: 0 8px;
+  border-radius: 4px;
+  /* GTK's theme gives a button a minimum height that, with the margins, would
+     grow the bar from 24 to 30 px (measured 2026-09-29), and a minimum content
+     width of 16 px that made a one-digit button 32 px wide rather than 25
+     (measured 2026-09-30). Both are zeroed: the box is its label plus padding. */
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Workspaces (left): colour only; the box is the shared rule above, so the
+   focused fill below changes nothing but colour. */
 #workspaces button {
   color: @muted;
   background: transparent;
   border: none;
-  padding: 0 10px;
+  /* Adwaita's button:hover adds a text-shadow to the numeral -- a dark echo
+     above it in the dark variant Waybar runs (it follows GNOME's
+     color-scheme), a white one below it in the light -- and a 1 px inset
+     line along the top of the box; and its flat-button hover carries a 500 ms
+     transition, which made a clicked workspace fill half a second late. This
+     sheet set none of them, so the theme's showed through (rendered
+     2026-09-30). */
+  box-shadow: none;
+  text-shadow: none;
+  transition: none;
+}
+
+/* Under the pointer: a faint wash. It sits before the state rules below on
+   purpose: GTK weighs `:hover` and `.focused` equally, so whichever is later
+   wins where both apply, and with this rule last a clicked workspace showed
+   the wash instead of its fill until the pointer left the button
+   (2026-09-30). Placed here, a filled button -- focused or urgent -- stays
+   filled under the pointer, and the wash shows only on an unfilled one. */
+#workspaces button:hover {
+  background: rgba(255,255,255,0.06);
 }
 
 /* On screen but not focused: on bigfed, the workspace showing on the other
@@ -65,10 +128,13 @@ window#waybar {
   color: @fg;
 }
 
-#workspaces button.focused,
-#workspaces button.active {
+/* The focused workspace fills its whole box: legible at a glance, where the
+   3px underline it replaced was not (2026-09-29). Without the underline the
+   bar keeps one height whichever workspace is focused. (.active, once listed
+   beside .focused, is never set by sway/workspaces; 2026-09-30.) */
+#workspaces button.focused {
   color: @fg;
-  border-bottom: 3px solid @accent;   /* subtle highlight */
+  background: @accent;
 }
 
 #workspaces button.urgent {
@@ -76,38 +142,50 @@ window#waybar {
   background: @urgent;
 }
 
-#workspaces button:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-/* The $mod+v marker (custom/split in waybar/config), shown only while the
-   focused window is set for the next window to open below or beside it. A
-   filled block in the bar's accent, because the border cue alone was too easy
-   to miss (2026-09-28). */
+/* The split marker (custom/split in waybar/config; $mod+Shift+v and
+   $mod+Shift+b), shown only while the focused window is set for the next
+   window to open below or beside it. A filled block, because the edge cue
+   alone was too easy to miss (2026-09-28); white, the colour sway paints that
+   edge in, so the two cues read as one (2026-09-29). */
 #custom-split {
-  background: @accent;
-  color: @fg;
-  padding: 0 10px;
+  background: @fg;
+  color: @bg;
 }
 
-/* Right-side modules */
-#backlight, #pulseaudio, #battery, #tray {
-  color: @fg;
-  margin: 0 6px;
+/* The binding mode (sway/mode in waybar/config), shown only while a mode
+   other than the default holds the keyboard -- resize, after $mod+r -- and
+   hidden otherwise. It fills in the urgent colour, as sway's own bar paints
+   its mode indicator in its urgent red: until Return, Escape or $mod+r, the
+   keys do something else (2026-09-30). Black on it, as the critical battery. */
+#mode {
+  background: @urgent;
+  color: @bg;
 }
-/* The tray used to carry a wider margin (10px) because an icon has no glyph
-   sidebearing and so sits visually closer than a text module. That compensation
-   is now double-counted: the right-hand formats pad to a fixed field width
-   ({volume:>3}), which puts up to two leading spaces -- ~18px at this font --
-   between the icon and the digits. So the tray uses the shared margin, and drops
-   its right margin entirely -- that is the side facing the padded number, and
-   the padding is already doing the separating. */
-#tray { margin-right: 0; }
+
+/* Right-side modules: colour only; their box is the shared rule above, and
+   their values take their natural width (waybar/config). Until 2026-09-30 the
+   formats padded each value to a fixed field ({volume:>3}), which put up to
+   two blank 9 px cells inside the label, so the visible gap between two
+   modules swung between 12 and 30 px with the digit count of the value beside
+   it, and the tray carried a special-cased margin to compensate (measured
+   2026-09-30). Now a value crossing a digit boundary moves the modules to its
+   left by one 9 px cell, once; the clock, centred as its own widget, stays. */
+#backlight, #pulseaudio, #battery, #tray { color: @fg; }
 #pulseaudio.muted { opacity: 0.6; }
 
-/* Battery thresholds. The class names come from "states" in waybar/config
-   (warning: 20, critical: 10); @urgent is the same colour sway, mako and
-   swaylock use for their own bad-news states, so this reads as one signal. */
-#battery.warning  { color: @urgent; }
-#battery.critical { color: @bg; background: @urgent; font-weight: 700; }
-#battery.charging { color: @accent; }
+/* The charge state: pale red on battery, pale green on the mains (charging,
+   plugged at the cap, full). The status classes come from Waybar's own status
+   for the battery (waybar/config); these sit before the thresholds so that
+   those win where both apply. */
+#battery.discharging { color: @dis; }
+#battery.charging, #battery.plugged, #battery.full { color: @chg; }
+
+/* Battery thresholds, while discharging only -- the condition the
+   notifications in waybar/config fire on (on-discharging-*); until 2026-09-30
+   a laptop plugged in at 8 percent kept the urgent fill. The state classes
+   come from "states" there (warning: 20, critical: 10); @urgent is the same
+   colour sway, mako and swaylock use for their own bad-news states, so this
+   reads as one signal. Critical fills its box: the same pill as an urgent
+   workspace. */
+#battery.warning.discharging  { color: @urgent; }
+#battery.critical.discharging { color: @bg; background: @urgent; font-weight: 700; }

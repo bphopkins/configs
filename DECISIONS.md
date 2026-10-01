@@ -94,7 +94,11 @@ unverified, and moot while every app in use is native Wayland.)
 It guards the four silent-catastrophic failure modes this work uncovered (waybar CSS typo
 kills the bar; unknown swaylock key means no lock; `sway --validate` skips binding command
 bodies; mako/wofi unknown keys), plus the cross-config wiring that nothing else holds in
-place. Run it after touching sway, waybar, swaylock, mako or wofi.
+place. Run it after touching sway, waybar, swaylock, mako or wofi. *[Annotated
+2026-09-30: swaylock stops reading its config at the bad line and locks with the lines
+above it (`load_config` returns 0, every release since 1.4), so the key check guards the
+look, not the lock (`swaylock/CLAUDE.md`); and Waybar does log the CSS error, on its
+stdout under `gdm-wayland-session`.]*
 
 **Considered and DECLINED 2026-08-13** (asked and answered, do not re-propose):
 
@@ -402,7 +406,9 @@ so nothing changes in `nvim/lua/plugins/live-server.lua`.
   `ignore-timeout=1` so a sender asking to persist forever cannot override that, and a
   `[urgency=critical]` section giving persistence back where it belongs. Both configs
   had every key validated against their man pages first, because an unrecognised key
-  makes swaylock **exit** — i.e. no lock at all, a fail-open direction. Also learned and
+  makes swaylock **exit** — i.e. no lock at all, a fail-open direction. *[Annotated
+  2026-09-30: not so in swaylock 1.8.6 — `load_config` stops at the bad line and returns
+  0, so swaylock locks with the rest of the file ignored; read in the source.]* Also learned and
   recorded: **sway is `fedxps`-only**; `bigfed` never boots it, which moots the
   cross-machine caveats in these packages. *(No longer so from 2026-09-28: see the
   entry of that date.)* @done(2026-08-13)
@@ -2158,7 +2164,9 @@ puts it behind `$mod+v`.
 
 **`$mod+v` becomes a toggle, with a marker**, the same day. The state had no
 cancel (Esc belongs to the applications), and the white cue, 3 px at the
-bottom of a 1413-px window, went unseen. `bin/sway-split` now serves
+bottom of a 1413-px window, went unseen *[2 px in fact: a trailing comment had
+voided the configured 3 since 2025-11-09, found 2026-09-30, when he kept the
+2]*. `bin/sway-split` now serves
 `$mod+v`: on a window already set it cancels — sway's `split none`, or
 `splith` for a window alone on its workspace, where `split none` cannot act
 and `layout splith` would wrap the window (both measured) — and otherwise it
@@ -2175,7 +2183,9 @@ efficiency rather than a behaviour, survives. The marker's refresh after
 once the command has run: its source says so, no key injector was at hand to
 show it, and his keypresses confirmed it live. Found along the way: a sway session's PATH
 lacks `~/bin` and `~/.local/bin`, since GDM starts sway with no login shell,
-so the script is called by path (`TODO.md` item 29).
+so the script is called by path (`TODO.md` item 29). *[The key moved to
+`$mod+Shift+v` on 2026-09-29, with `$mod+Shift+b` for beside; `$mod+v` is
+free. See "Sway: five criticisms", that date.]*
 
 **Moves drop a pending split**, the same day. Sway spent the first sideways
 press on a set window lifting it out of its invisible column and moved
@@ -2189,6 +2199,8 @@ before (measured in five cases).
 
 - *`$mod+s` for splith, "side by side"*: asymmetric with `v` where the pair
   should be symmetric, as `a`/`z` is; the letter was forced. `s` stays free.
+  [Taken 2026-09-29 by the tab fold, and freed again that evening when the
+  fold moved to `$mod+Shift+s`; see "Sway: five criticisms", that date.]
 - *`$mod+Ctrl+v` / `$mod+Ctrl+s`*, explicit layouts for the enclosing
   container: fell with `s`.
 - *`$mod+e` for the toggle*: upstream's letter, with no mnemonic here.
@@ -2204,7 +2216,9 @@ before (measured in five cases).
   2026-08-05, DP-3 now) and could match a screen plugged into fedxps. The
   identifiers publish the monitors' serial numbers; he judged that harmless.
 - *Forest green for the split cue*: a clear hue, but it is Waybar's focus
-  accent, which the charter keeps apart from sway's on purpose.
+  accent, which the charter keeps apart from sway's on purpose. [The two
+  accents became one on 2026-09-29; the cue stays white, and the bar's
+  marker went white to match.]
 - *`$mod+Ctrl+v` for `split none`, with 6-px borders*: no script, but the cue
   stays at the window's edge, every laptop border thickens, and it cannot
   undo the lone-window case.
@@ -2254,9 +2268,508 @@ chose to rebind and retire in one step, and `bin/tabula` is deleted.
   venue is still open there), which is the record of why they were declined
   here and taken there. The sway verdict of 2026-09-23 stands: `$mod+x` runs
   `gnome-text-editor` under sway, and the trial runs under GNOME only.
+  [Superseded the same evening: see the next entry.]
 - Its font-install list, the one package manifest this repo had for the
   monospace faces, went with the file; adelotype's `fonts/inventory.json`
   and `fonts/registry.json` are the inventory now, and `TODO.md`'s font
   item names the packages it needs on its own.
 
-Record on the adelotype side: `adelotype/DECISIONS.md`, 2026-09-29.
+Record on the adelotype side: `adelotype/DECISIONS.md`, 2026-09-29. *[That
+record moved into the private layer beside adelotype's charter on 2026-09-30.]*
+
+## `$mod+x` runs adelotype under sway, on both machines — 2026-09-29
+
+Reversed the same evening the entry above was written. fedxps runs sway, and
+adelotype went to both machines that day (one log file per machine, fedxps a
+full Syncthing peer), so a key that opened the plain editor there would have
+opened it beside an instrument he now uses on both. `sway/config` binds
+`$mod+x` to `bash ~/Desktop/adelotype/tools/launcher.sh run` and
+`$mod+Shift+x` to `gnome-text-editor`; the launcher shows a refusal to start
+or a crash as a desktop notification, since a key gives the server no
+terminal to say it in, and a stop by pid as nothing. Under GNOME the key
+stays per-machine dconf, set by `tools/launcher.sh bind` on each machine,
+which finds the slot by the key it holds rather than by number. The "GNOME
+only" note in `bin/CLAUDE.md` is retired. Reasoning, the declined
+alternatives and the cut-over: `adelotype/DECISIONS.md`, "Two machines —
+2026-09-29" *[in the private layer since 2026-09-30]*.
+
+## Sway folds: tabs on `$mod+t`, the terminal on Return alone — 2026-09-29
+
+He asked how sway's tabs work, having never used them, and what bringing them
+back would touch, given that his focus bindings were not to move. A nested
+headless sway 1.11 answered the first question by measurement and a set of
+renders in his own palette the second; a runtime `bindsym` then gave him the
+key for an evening with no change to the repo. The verdict came within the
+hour: he loves tabs. The stacking he was shown he called grotesque; see below.
+
+**The model, as measured.** A tab bar is not a new object but one of the four
+layouts a container can take — the row collapsed to a strip of titles (T in
+sway's tree notation), as a stack is the column collapsed to a pile of them
+(S). The tabs are ordinary windows, so every existing binding works inside a
+fold unchanged: `$mod+h/l` walk the tabs and wrap at the ends when nothing
+lies beyond, else leave; `$mod+j/k` step out and return to the fold's last
+active tab; `$mod+Shift+h/l` reorder and, past the ends, carry the window out
+and set it beside the fold; a window moved sideways into a fold joins at that
+end, one moved up or down into it lands after the last active tab; `$mod+a`
+selects the whole fold and a move then carries it whole; `$mod+v` inside a tab
+splits within the tab; `$mod+q` on a tab passes focus to a neighbour and the
+fold survives, down to one tab; `$mod+Ctrl+r` unfolds either shape to the
+split it came from, and on a one-tab fold the move bindings' `split none`
+prefix dissolves it. `layout tabbed` on a window sitting directly on the
+workspace wraps every window there into the fold (`workspace_wrap_children`,
+sway/commands/layout.c). In 1.11 a bare `layout toggle` is
+`toggle_split_layout`, identical to `layout toggle split` — the man page's
+"cycles through stacking, tabbed and the last split layout" is stale against
+the source. Clicking a title focuses it, scrolling across the strip steps
+through the tabs without wrapping, and a title is a drag handle for its
+window under `tiling_drag`'s default (sway/input/seatop_default.c).
+
+**What changed.**
+
+- `$mod+t` binds `layout toggle tabbed split` [moved to `$mod+s` later the
+  same evening; see the next entry]: a split becomes tabs and tabs a split
+  again, and a stack becomes tabs. It sits on the bare tier beside
+  `v`, read as an act of attention — what you look at — with the container's
+  shape still Ctrl's (`$mod+Ctrl+r`); the header's placing rule says so. The
+  terminal launchers `$mod+t` and `$mod+Shift+t` went; Ghostty is
+  `$mod+Return` and WezTerm `$mod+Shift+Return`, and he means to use Return
+  alone under GNOME too (bigfed's GNOME shortcut is per-machine dconf,
+  outside this repo).
+- The strip is the first title bar this config has ever drawn, so two dormant
+  things surfaced. The background fields of `client.focused` and
+  `client.focused_inactive`, black until now and invisible, become the accent
+  and `#5f676a`: rendered in the live palette the strip was black with white
+  text in every state, the active tab marked by a 1 px outline while the fold
+  had focus and by nothing once it lost it. `font pango:Source Code Pro 10`
+  is named, where before the strip would have followed fontconfig's monospace
+  alias (Bitstream Vera Sans Mono on fedxps). Neither shows anywhere but
+  inside a fold; both machines look as they did until one exists.
+- The 2026-08-13 verdict that left tabbed and stacking unbound ("every
+  application that needs tabs here brings its own") is superseded. Its
+  premise stands — Ghostty and Brave keep their tabs — but a sway fold groups
+  *windows* of any application under his own keys, and it fits the
+  one-window-per-task habit the 2026-09-05 note records better than terminal
+  tabs do.
+
+**Stacking.** Shown as a two- or three-terminal fold across the whole 1920-px
+laptop workspace, a stack is a pile of near-empty black rows, and he called
+it grotesque. It is the collapsed column, and its virtue is width per title: a
+tab gets the fold's width divided by the number of tabs, a stacked row the
+whole width. At 10 pt that is about 8 px a character, so a full-width laptop
+fold of three shows some 78 characters a tab, a half-width one 38, and a
+480-px column of five shows 11 — rendered, that is five unreadable slivers
+against a legible table of contents. Its cost is height, 25 px a window
+against 25 px for the whole strip. On the laptop he seldom has a container
+narrow or crowded enough for the strip to cut a title short, which is why the
+virtue never showed; bigfed's columns are where it would.
+
+**Method.** The probes and renders ran on a headless nested sway under
+`tests/cage.sh`, with the palette lines copied from the live config and
+`grim` run inside the nested session; a runtime `swaymsg bindsym` and two
+runtime `client.*` lines carried the trial in the live session, all three
+undone by a reload, since `load_main_config` builds a fresh config and frees
+the old one. Nothing reached the repo until he had used the key.
+
+**Declined** (asked and answered, do not re-propose):
+
+- *`$mod+Ctrl+t`*, the trial key, as the permanent home: the Ctrl tier is the
+  enclosure's, but folding is about attention, and `v` is the precedent for a
+  layout act on the bare tier. *[Annotated 2026-09-30: both reasons fell later
+  that night, when folds became window verbs and `v` moved to Shift; the
+  decline stands on the new ground that a window verb takes Shift.]*
+- *A promotion from the Ctrl tier*, recorded beside `q` and `r`: it claims a
+  daily frequency one evening cannot attest.
+- *`workspace_layout tabbed`*: every workspace one fold, splitting the
+  opt-in. It alters what every new window does on both machines and inverts
+  `$mod+v`'s premise; the config's own comment declines it.
+- *Leaving the palette*: the active tab of an unfocused fold could not be
+  told from the others.
+- *Leaving the font to the alias*: it differs by machine.
+
+**Open the same evening:** the key for stacking. Measured candidates, with
+`t` fixed as above:
+
+| body of `$mod+s` | from a split | from tabs | from a stack |
+|---|---|---|---|
+| `layout toggle stacking split` | stack | stack | split |
+| `layout toggle tabbed stacking split` | tabs | stack | split |
+| `layout toggle stacking tabbed` | stack | stack | tabs |
+| `layout toggle all` | the other split | split | tabs |
+
+Only the first gives every one of the six transitions in a single press.
+[Settled the same evening: see the next entry.]
+
+## The fold key is `$mod+s`; stacking waits — 2026-09-29
+
+Settled the same evening, over the entry above. No key for stacking: he never
+has more than three windows on a workspace, four quadrants at the most, and
+only for a while, so a strip never cuts a title and the stack's one virtue has
+nothing to work on. It stays `layout stacking` by hand, the measured
+candidates for its key are in the table above, and the question returns if
+his habits change. The tab fold moved from `$mod+t` to `$mod+s`, which he
+finds ergonomically better and still easy to remember; `s` had been kept free
+since the 2026-09-28 record declined it for splith. `$mod+t` is now free —
+it is not returned to the terminal, since Return alone is the habit he wants,
+under GNOME as much as here. The header, the Layout section, the charter and
+the card say `s`; the desktop suite passed and the live session was reloaded.
+
+**Declined:** the one-key cycle `layout toggle tabbed stacking split` on
+`$mod+s`, his own suggestion, withdrawn once the table showed it reaches a
+stack from a split only through tabs; and `$mod+s` as the stacking toggle,
+which fell with stacking itself.
+
+[Superseded later the same evening: the fold moved to `$mod+Shift+s`; see
+the next entry.]
+
+## Sway: five criticisms — the menu toggles, the focused box, one accent, shaping verbs on Shift — 2026-09-29
+
+Later the same evening he brought five criticisms of the configuration at
+once, asking that the thinking start rather than that everything be done.
+Two were defects with one canonical fix each and were applied on sight; the
+other three were design questions, studied and put to him as a batch.
+
+**The menu is a toggle.** `$mod+d` ran `wofi --show drun` and every press
+opened another copy, since sway's binding fires whether or not the launcher
+has the keyboard. The binding is now `pkill -x wofi || wofi --show drun`:
+pkill's exit status is the test, so a press closes an open menu and opens
+one otherwise. wofi has no single-instance option of its own. His stated
+principle: a key like this is an on/off toggle.
+
+**The focused workspace fills its box.** The 3-px green underline was too
+nonchalant to find at a glance. The button is now a rounded box, inset 2 px
+from the bar's edges at his choice (a full-height fill was shown first; he
+asked for the chip), filled in the accent with white numerals as the tab
+title is. The underline had been 3 px of bar height, so its removal re-laid
+every tiled window on the laptop; the inset then had to be fought for, since
+GTK's theme gives a button a minimum height that the margins pushed past the
+bar, until `min-height: 0` let the box be the label's 20 px, and the split
+marker got the same box so that its appearing changes nothing:
+
+| bar | px |
+|---|---|
+| with the underline, focused workspace | 27 |
+| filled box, full height | 24 |
+| inset box, 3 px margins, before `min-height: 0` | 30 |
+| inset box, 2 px margins, marker hidden or showing | 24 |
+
+**One accent.** The inventory across the six desktop configs showed the two
+accents split by component: dodger blue on the compositor's own surfaces
+(sway's border and tab title, mako's border, swaylock's ring) and forest
+green on the bar and the launcher (focused workspace, split marker, battery
+charging; wofi's border and selected row). One job, where you are, was
+therefore painted in two hues, while the urgent colour already showed the
+alternative: one hue, four configs, one meaning. He asked whether two were
+needed and chose one, the blue he already read as primary. Waybar and wofi
+now define `@accent #0088FF`, each keeping `@forest #228B22` beside it for
+the one-word swap the sway config already had; the split marker in the bar
+went white, the colour sway paints the window's edge in for the same state,
+so the two cues read as one; the battery's charging colour went, since the
+`+` in its format already says it *[reversed 2026-09-30: the charge state
+returned as a tint on the value, and the `+` went]*. The root charter's line on Waybar's five
+colours and the sway charter's "two bars don't share an accent" bullet are
+rewritten.
+
+**The shaping verbs moved to the Shift tier.** He wanted a horizontal split
+beside the vertical one, ideally on `$mod+Shift+v` and `$mod+Shift+h`, and
+wondered whether the recent bare-tier keys belonged on Shift. `$mod+Shift+h`
+is move-left, on the vim key and the arrow alike, and the move keys were not
+to be touched, so the pair is `$mod+Shift+v` below and `$mod+Shift+b`
+beside — `b` is upstream sway's letter for splith, and reads as beside; on
+the Shift tier it does not collide with Brave on the bare `b`. The grammar's
+own test settled item five: focus parent and child act on attention and stay
+on the bare tier; a split wraps the focused window and aims its next
+neighbour, and a fold sets the layout around it, so both are window verbs
+and now sit on Shift, `$mod+Shift+s` for tabs. The bare tier keeps
+attention, launchers and equipment; `v`, `s` and `t` are free there.
+`bin/sway-split` gained `below` and `beside`: each sets its state, cancels
+on a second press of the same key, and flips on the other, because sway
+changes a singleton container's layout in place (measured); on a window
+alone on its workspace, beside is the row it already has and shows no
+marker. `toggle` stays as the original single key. The suite grew from 31
+checks to 42. One naming trap, stated once: sway's `splitv` opens the next
+window below, which vim calls a horizontal split, and `splith` beside, vim's
+vertical; the config uses sway's names.
+
+**Declined** (asked and answered, do not re-propose):
+
+- *`$mod+Shift+h` for splith*: move-left, on both key sets.
+- *Keeping `$mod+v` and `$mod+s`, recorded as promotions beside `q` and `r`,
+  with `$mod+v` cycling off, below, beside, off*: no new chord, but beside
+  two presses away, and a promotion claims a frequency one day cannot
+  attest.
+- *Shift for the splits only, tabs staying on `$mod+s`*: the verbs split
+  across tiers for no reason the grammar could state.
+- *Two accents by role*, blue for the tiling and the lock, green for the bar
+  and launcher, written down as such: coherent, but two hues for one job.
+- *Forest green everywhere*: he reads the blue as primary.
+- *TokyoNight's blue `#7aa2f7` everywhere*: the terminals' theme blue, but
+  white text on it is too faint, so every fill would need black numerals.
+- *A full-height filled box*: shown first; he chose the inset chip.
+- *Black numerals on the fill*: higher contrast than white on dodger blue,
+  but it would part from the tab title's white on blue.
+- *Moving `$mod+a` and `$mod+z` to Shift*, raised by him once the fold had
+  gone there: declined. They move attention and pass the grammar's test
+  where they are; frequency is per machine while placement is shared, and
+  the tree tier came back for bigfed's columns; and rarity is no demotion,
+  the grammar's one valve being promotion, which lifts a window verb up. If
+  the fold's chord proves to bite, the answer is promoting `s` to the bare
+  tier, as `q` and `r` were, on a week's measured frequency; `s` is free.
+  Settled the same night; the config carries one sentence at each site.
+
+**Also settled the same night:** the two second launchers, `$mod+Shift+Return`
+for WezTerm and `$mod+Shift+x` for the plain editor, had no clause in the
+grammar. The header now has a third: a second launcher on a letter takes
+Shift, where Shift means the other one and the window tier lends the chord.
+
+**Method.** Each change was made in the repo and reloaded live — sway by
+`swaymsg reload`, Waybar's style by SIGUSR2, wofi reading its files at
+launch — so he judged the box and the colours on screen. `tests/desktop`
+and `tests/sway-split` pass; bigfed was set aside for the evening at his
+word, its effects to be looked at there.
+
+## Waybar: one box spaces both corners — 2026-09-30
+
+He asked whether anything could be done about the right side of the bar,
+whose spacing was "uneven and unpredictable" whatever ended up there, and
+then, with ten workspaces opened for the purpose, for the upper-right corner
+to be brought into balance with the upper-left, adding that the workspace
+buttons could be narrower and that he no longer remembered why they were the
+width they were.
+
+**Two causes, neither a margin.** The right-hand formats had padded each
+value into a fixed field since 2026-08-13 (`{volume:>3}`), on the clock's
+reasoning that a value changing digit count must not shove its neighbours.
+That padding is blank cells inside the label, 9 px each at Source Code Pro
+Semibold 11, so the visible gap between two modules was the stylesheet's
+12 px plus whatever the value beside it left empty, and the tray had been
+given a special-cased zero right margin to compensate. On the left, Adwaita
+gives every button `min-width: 16px` of content, so a one-digit workspace
+was 32 px wide where its padding says 25; that minimum was the width he
+could not account for, and it had never been chosen. Measured from a grim
+capture of the strip with its ink columns clustered, the before column with
+volume 0 %, backlight 5 % and battery 64 % (all three at 100 % would have
+read 6, 12, 12 on the right):
+
+| distance, px | before | after |
+|---|---|---|
+| workspace digit to digit | 29 | 22 |
+| tray icon to tray icon | 11 | 22 |
+| network icon to volume | 27 | 23 |
+| volume to backlight | 31 | 21 |
+| backlight to battery | 22 | 21 |
+| first digit from the left edge | 14 | 11 |
+| last digit from the right edge | 6 | 10 |
+| one-digit workspace button | 32 | 25 |
+
+**The fix is one box.** The pill of 2026-09-29 (above) became the unit for
+the whole bar: one rule, inset 2 px, padding 8 px, radius 4 px, min-height
+and min-width zeroed, applied to the workspace buttons, the split marker
+and, by position (`.modules-right > widget > *`, the wrapper node Waybar's
+own default stylesheet selects), to every right-hand slot, so a module added
+there is spaced without being named. Values take their natural width. Both
+corners are then the same construction: ink 20 px apart between any two
+neighbours, 10 px from either screen edge, and the filled states – the
+focused or urgent workspace, the split marker, a critical battery – the same
+pill *[the cells; the ink measures 21-23 and 10-11 px, as the table above
+shows — annotated 2026-09-30]*. The tray's `spacing` went from 8 to 20 to keep the rhythm, and its
+icons from 16 to 14 px at his choice: the digits are 10 px tall, a chat
+client's full-bleed square stood 1.6 times their height and the network
+glyph drew 11; at 14 the glyph draws 9 px on the digits' baseline. The
+trade accepted: a value crossing a digit boundary moves the modules to its
+left by one cell, once, a few times a day at most; the clock, Waybar's
+centre widget, does not move (its centre measured 959.0 px before and
+after). The fixed fields had not bought stillness anyway, since plugging in
+appends ` +` and shifts everything by two cells.
+
+**Declined** (asked and answered, do not re-propose):
+
+- *Character-count slots without blank glyphs*, `min-length` with
+  `align: 1.0`, which every module's man page documents and the charter had
+  not known of: the slot is still empty on its left, so the gaps swing
+  exactly as before.
+- *Visible boxes on the right*, a faint fill on each module so that the eye
+  reads box rhythm and fixed slots look intended: the one way to have even
+  gaps and zero movement at once, at the price of a visual element on a bar
+  that is black, white and one accent.
+- *Waybar's bar-level `spacing`*: a GtkBox spacing on all three groups, so
+  it would also part the split marker from the workspace row.
+- *Tightening the padding to 6 or 7 px*: offered with the numbers (button
+  21 or 23, ink 16 or 18 apart, on both sides); he kept 8.
+- *Icons at 12 px*: the square would match the digits' height, but the
+  network bars lose a step of their gradation.
+
+**Method.** Edited in the repo, parse-checked, reloaded by SIGUSR2, and
+measured again after each reload with a scratch script that captures the
+strip and clusters its ink columns; `tests/desktop` passes its 24 after each
+edit, run inside a systemd scope by hand since that suite does not source
+`tests/cage.sh`. The bar was hidden by `$mod+w` when the session began, so
+the first figures were computed from Pango's metrics and confirmed once he
+showed it. Seen in passing and left alone: a VPN client's tray item
+registered without an icon Waybar can find (the icon lives in the app's
+Python package, not in an icon theme), so it draws nothing; a user-local
+copy under `~/.local/share/icons` would make it appear. bigfed has not been
+looked at; it runs the same files, with no battery or backlight and its own
+tray.
+
+## The desktop suite audited: 28 workers, 152 findings, and the batch that followed — 2026-09-30
+
+He asked for a battery of ten to thirty Opus workers to attack the sway suite
+— "hardened from a technical standpoint ... little kinks I may or may not have
+experienced yet" — open to keybinding policy and to the i3/sway idiom he had
+built the config without, and named four additions while it ran: a colour for
+the battery's charge state, a fixed place for the Wi-Fi icon in the tray,
+rofi, and the official pieces (swaylock, swayidle).
+
+**Method.** Fourteen reviewers, one per dimension — sway's directives and
+binding bodies; the session chain; power, lid and lock; Waybar; mako, wofi
+and swaylock; sway-split and the suites; the documentation; the i3/sway
+idiom; binding policy against GNOME; input; outputs and the page-flip
+errors; the two-machine mechanism; media and capture; failure paths — each
+followed by a skeptic that re-derived every finding from man page, source or
+a caged nested sway and listed what the reviewer missed. All Opus 5.5 at
+xhigh, read-only against the live session; 2 h 11 min; 152 findings, 112
+confirmed, 40 confirmed with the fix or an effect corrected, none refuted, 43
+added by the skeptics; 251 things checked and found sound. Two faults in the
+method, both recorded: the brief's nested-sway socket path exceeded the 107
+bytes a Unix socket holds, so sway truncated it and every nested sway bound
+one path until a worker caught it and the method was corrected (a relative
+socket in the work directory, an identity check on `loaded_config_file_name`;
+every earlier nested measurement graded inferred and re-measured), and a
+spend-limit pause killed five workers mid-run, which the harness restarted.
+A 29th worker rebuilt the two suites afterwards, and one finished worker was
+resumed by a note of mine, which cost a run: 29 workers and about 11 M
+tokens in all.
+The report, with every fix's fedxps effect and the decisions put to him:
+`docs/sway-audit-2026-09-30/`; the workers' raw output stays out of the
+public repo.
+
+**Found.** The power button powered either machine off at one press under
+sway (nothing held logind's inhibitor; GNOME's daemon does). Every chord
+repeated while held (a held `$mod+q` closed window after window). `$mod+q`
+after `$mod+a` closed the whole selection. The borders had been 2 px since
+the first commit: a trailing comment reached sway as extra words and voided
+the configured 3. sway 1.11 alone forces a sticky tap-drag lock; right-click
+used corner areas where GNOME uses a two-finger press; key repeat ran at
+sway's 600/25 against GNOME's 500/33. Brightness-down reached a dark 0 (six
+overshoots in the journal); volume-up had no ceiling. The documented swaylock
+hazard was wrong (a bad key truncates the look; the lock holds), while the
+real holes were swayidle dying unrestarted, GNOME's `Super+l` meaning
+focus-right here, and nothing answering logind's Lock signal. The eDP-1
+page-flip errors are the open i915 cursor-plane race, confirmed against the
+trackers. Resize mode was invisible and a trap. Four suite checks were
+vacuous (the urgent grep, the swayidle pin, the binding-body loop when the
+nested sway dies, the strip that missed `exec_always` and still spawned
+swaybg and an X display); the suite ran uncaged. Images opened in Brave or
+GIMP under sway (GNOME's default-app list applies only under GNOME).
+`$mod+Shift+x` did nothing while a Text Editor window existed. Waybar's tray
+order is registration order replayed newest-first at every style reload, so
+no option pins it. sway does not respawn a dead Waybar, though two documents
+said so. Fourteen documents had drifted.
+
+**Changed**, the fedxps effects named first and the batch accepted:
+`--no-repeat` on every one-shot binding and the rule in the header; a
+session-lifetime `handle-power-key` inhibitor and `XF86PowerOff` on the
+machine nag; a guard on `$mod+q` (kill only a window); the borders written as
+the 2 px he sees; `drag_lock disabled`, `click_method clickfinger`, repeat
+500/33; `wpctl` with `-l 1.0` for the volume keys; `brightnessctl -q -c
+backlight` (a 5 percent floor was tried and removed the same evening at his
+word: he blanks the panel by stepping to 0, and nothing in that harms it);
+`lock 'swaylock -f'` on swayidle; the resize mode
+left by `$mod+r` and shown by a `sway/mode` pill; `focus_on_window_activation
+smart`; `client.focused_tab_title` and an orange-filled urgent tab; a
+`--inhibited` twin of `$mod+Escape`; the Escape nags and the power key as
+toggles; `$mod+n` dismisses a notification; `bindsym button2 kill` on a tab
+title; three-finger swipes walk the workspaces; `$alt+Print` captures the
+focused window; captures go to `~/Pictures/Screenshots` with a notification,
+the clipboard variant through a temporary file, slurp's outline in the
+accent; `$mod+m` reports its state; `--new-window` for the editor; `output
+eDP-1 max_render_time 10` on trial; `adaptive_sync` dropped from bigfed's
+lines pending his word (its record keeps VRR off); the machine layer
+`include hosts/$(uname -n).conf` with two header-only files; the session
+file `sway/wayland-session.desktop` and its upload line; Waybar's battery
+tinted by state, warning and critical scoped to discharging, `{timeTo}`, the
+hover shadows and transition zeroed, the dead `.active` selector gone, the
+font size pinned, the tray reversed; wofi on `multi-contains`, alphabetical,
+overlay; swaylock's `ignore-empty-password`, `indicator-caps-lock` and a white
+"Cleared"; sway-split leaves floating windows alone; the desktop suite caged
+and rebuilt; the charters, card, trackers and this record corrected
+(annotated, never rewritten); the default-apps link and two GNOME chords
+(`Super+Return` for the terminals, `Super+Ctrl+l` locks too) on fedxps, and
+the same link and chords on bigfed over SSH the same evening, where he also
+installed rofi.
+
+**Decided, with reasons.** The power button asks rather than doing nothing:
+his grammar sends machine actions to the nag, and a key that does nothing at
+all is a puzzle. Kill only a window: the selection is one key under q. 2 px:
+what he looked at was right. The machine layer now: the mechanism was
+measured end to end and costs one line and two files, and it is where any
+bigfed-only global goes. No idle timer on bigfed either: Caffeine is always
+on there under GNOME, and nothing turns off unless he says so; `screens-off`
+on demand is the open remainder (draft below). clickfinger and 500/33: a
+finger and a held key should mean the same thing under both desktops.
+`multi-contains` and A-Z: the named app must lead, and a list he scans should
+hold still. `smart` activation: i3's default, and a link should not turn the
+chip orange while its window sits in view. Screenshots beside GNOME's; the
+Print layout kept. `$mod+n` plain dismiss; notifications stay top-right,
+overlay, with icons. The root-owned session file, against his system-files
+preference, because GDM offers no user-level hook and the only one it
+prefers is the declined PATH drop-in. The bar's font pinned: the geometry
+belongs to the sheet. Tray: the cheap half now; the icon-less applet route is
+refuted (nm-applet turns its icon on by itself on Wayland), and the route
+through a system-owned 802.1x password is deferred. Tint pair A, judged on
+sight. The page-flip line on trial, counted per day. VRR off until he says he
+re-enabled it. No brightness floor, at his word: stepping to 0 is how he
+blanks the panel by hand; the suite skips brightnessctl where there is no
+backlight (item 28 closes). Workspace-level
+folds keep their wrapper; 10-px resize steps stay.
+
+**Declined** (asked and answered): `focus_follows_mouse no` — he keeps the
+pointer; any xkb remapping — he would rather not think about it; dropping
+`$mod+m` — used a lot; Waybar under a systemd unit — it collides with the
+deliberate `swaybar_command`, and a stow package cannot ship a systemd
+drop-in directory anyway (a repo pitfall now); a swayidle unit — with the
+default KillMode a restart while locked kills the locker; `full-at: 80`;
+Waybar's `ipc` with `bar mode toggle` (SIGUSR1 stays); `xwayland force`;
+`hide_cursor`; Alt+Tab or Alt+F4 in sway; `grim -T` window capture (no
+protocol in 1.11). Open on his word: the Files pair in GNOME (d and f are
+swapped between the desktops), media keys (whether the keyboards have them),
+Zulip at sway login, a polkit agent, udiskie, Qt's platform theme, the
+docked-lid pair and wl-mirror (long term, his answer), the rofi trial (config
+drafted; `sudo dnf install rofi` first), bigfed's own verification of the
+batch (`TODO.md` item 30).
+
+**`screens-off` under sway, a draft** — not built; measure on bigfed first,
+then land in `sway/hosts/bigfed.conf`. A second swayidle whose one timeout
+never fires by itself and whose commands power the monitors off and, on the
+next input, back on: `exec swayidle timeout 315360000 'swaymsg "output *
+power off"' resume 'swaymsg "output * power on"'`. The chord, a session op on
+the Ctrl tier beside `l`: `bindsym $mod+Ctrl+b exec sh -c 'swaylock -f; sleep
+1; pkill -USR1 -x swayidle'` — SIGUSR1 makes swayidle fire its timeouts at
+once, and the sleep waits out the chord's own key releases, which count as
+activity and would resume the displays immediately (the trap the bigfed
+record documents for GNOME). The shared swayidle has no timeouts, so the
+signal walks an empty list there. On fedxps the chord would do nothing unless
+the lines were shared.
+
+**rofi, the same evening.** After one press of the trial key he made rofi
+the menu: `$mod+d`, with wofi on `$mod+Shift+d` as the second launcher by
+the header's third clause, and the week's trial declined by him ("let's make
+rofi the primary"). A stow package `rofi/` holds `config.rasi` and
+`theme.rasi`; the first draft had laid a partial sheet over rofi's built-in
+theme, which bled through as cream rows and a dashed rule when rendered
+beside wofi in a caged nested sway, so the sheet is now whole, loaded by
+`@theme`, and matched to wofi's: black, white, the muted grey, the one
+accent, Source Code Pro, a 3 px border, no rounding. rofi's parser is
+silent on an unknown option, a missing theme and a syntax error alike, so
+the desktop suite checks the options against `rofi -dump-config`'s own list
+and the sheet's colour names in `rofi -dump-theme`'s output, and every
+`@colour` the sheet uses against its own `*` block, and rofi's accent
+beside the other five (51 checks).
+`disable-history` keeps the list A-Z as wofi's is; `matching normal` is
+wofi's `multi-contains`. TODO item 31 closes. Open for a later session: the
+modes rofi was chosen for (window, ssh, dmenu scripts), each as it earns a
+key. His verdict after the switch: "rofi opens faster and cleaner than
+wofi. It almost immediately seems to feel better." wofi stays on Shift as
+the second launcher until a later session decides whether it earns its
+package.
+

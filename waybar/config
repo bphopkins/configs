@@ -7,10 +7,16 @@
   // Every other screen keeps its bar, so fedxps is unaffected. Two bars had a
   // cost: the focused workspace's 3px underline makes its bar 27 px tall and
   // the other 24, so the bars traded heights whenever focus crossed monitors
-  // and every tiled window on both re-laid (waybar's log, 2026-09-28).
+  // and every tiled window on both re-laid (waybar's log, 2026-09-28). The
+  // underline went on 2026-09-29 (the focused button is filled instead), so
+  // a bar is 24 px whichever workspace is focused, measured on fedxps; the
+  // one bar stays.
   "output": "!Microstep MSI MAG341CQ MA0H050010368",
 
-  "modules-left":   ["sway/workspaces", "custom/split"],
+  // sway/mode: hidden in the default mode, "resize" in the urgent fill while
+  // $mod+r's mode holds the keys (style.css, #mode). Last on the left, so
+  // nothing already showing moves when it appears (2026-09-30).
+  "modules-left":   ["sway/workspaces", "custom/split", "sway/mode"],
   "modules-center": ["clock"],
   "modules-right":  ["tray", "pulseaudio", "backlight", "battery"],
 
@@ -20,10 +26,11 @@
   // every workspace -- accepted 2026-09-28.
   "sway/workspaces": { "all-outputs": true },
 
-  // The $mod+v marker: a down arrow while the focused window is set for the
-  // next one to open below it, a right arrow for beside (after $mod+Ctrl+r),
-  // hidden otherwise. sway-split prints it at start and again after every
-  // sway event that can change it, woken by a tick from $mod+v itself;
+  // The split marker: a down arrow while the focused window is set for the
+  // next one to open below it ($mod+Shift+v), a right arrow for beside
+  // ($mod+Shift+b, or $mod+Ctrl+r), hidden otherwise. sway-split prints it at
+  // start and again after every sway event that can change it, woken by a
+  // tick from the keys themselves;
   // restart-interval brings it back if the event stream ever breaks. By
   // path, because a sway session's PATH lacks ~/bin.
   "custom/split": {
@@ -33,41 +40,82 @@
     "hide-empty-text": true
   },
 
+  // sway's binding mode, shown only outside the default mode. swaybar shows
+  // it unasked (sway-bar(5), binding_mode_indicator); Waybar only when listed.
+  // It learns the mode from mode events alone, so a Waybar started while a
+  // mode is already on shows nothing until the next mode change.
+  "sway/mode": { "tooltip": false },
+
   // 24-hr, seconds shown. "interval" is load-bearing: it defaults to 60, which
   // polls once a minute on the minute -- so %S rendered as "00" forever and the
   // seconds field looked frozen. 1 makes it actually tick.
   "clock": {
     "interval": 1,
-    "format": "{:%Y-%m-%d %T}"
+    "format": "{:%Y-%m-%d %T}",
+    // No tooltip: 0.15 builds it from tooltip-format alone, which is unset
+    // here, so it carried nothing and was rebuilt every second (2026-09-30).
+    "tooltip": false
   },
 
+  // The right-hand values take their natural width (2026-09-30). The fixed
+  // fields they had before ({percent:>3}) padded with blank cells inside the
+  // label, 9 px each at this font, so the visible gap between two modules
+  // depended on the digit count of the value beside it. Spacing is the
+  // stylesheet's job -- the shared box in style.css -- and a value crossing a
+  // digit boundary now shifts the modules to its left by one cell, once.
+  // No floor on the bar's own scroll either: 0 switches the backlight off,
+  // which he does by hand, and a step up brings it back (2026-09-30).
   "backlight": {
     "device": "intel_backlight",
-    "format": "{percent:>3}%"
+    "format": "{percent}%",
+    "tooltip": false
   },
 
-  "pulseaudio": { "format": "{volume:>3}%", "tooltip": false },
+  "pulseaudio": { "format": "{volume}%", "tooltip": false },
 
-  // states -> CSS classes (#battery.warning / #battery.critical) in style.css.
-  // events -> commands run on entering a state; this is waybar's own documented
-  // mechanism, so low-battery notifications need no daemon or timer of their own.
-  // The critical one is urgency=critical, which mako is configured to keep on
-  // screen until dismissed -- exactly the case where persisting is correct.
+  // states -> CSS classes (#battery.warning / #battery.critical) in style.css;
+  // a state matches at the value or below (waybar-states(5)), so the texts
+  // say "or less". events -> commands run on entering a state; this is
+  // waybar's own documented mechanism, so low-battery notifications need no
+  // daemon or timer of their own. The critical one is urgency=critical, which
+  // mako is configured to keep on screen until dismissed -- exactly the case
+  // where persisting is correct.
   //
   // No {icon}: that placeholder needs a "format-icons" array of glyphs from an
   // icon font, which was never defined here, so it rendered as nothing. The rest
-  // of this bar is plain text, so the battery is too. Charging is marked "+".
+  // of this bar is plain text, so the battery is too. The charge state is a
+  // colour, not a mark (style.css, 2026-09-30): Waybar puts the status on the
+  // module as a class -- charging, discharging, full, and plugged, its own
+  // word for a battery holding on the mains, which is fedxps at its 80
+  // percent cap ("Not charging" in sysfs). The "+" that format-charging drew
+  // until 2026-09-30 vanished exactly there.
+  //
+  // {timeTo} says which way and how long -- "Empty in 3 h 5 min", "Full in
+  // 40 min" -- and names the status when there is no estimate ("Plugged"
+  // at the cap), where {time} left "()".
   "battery": {
     "interval": 30,
     "states": { "warning": 20, "critical": 10 },
-    "format": "{capacity:>3}%",
-    "format-charging": "{capacity:>3}% +",
-    "tooltip-format": "{capacity}%  ({time})",
+    "format": "{capacity}%",
+    "tooltip-format": "{capacity}%  {timeTo}",
     "events": {
-      "on-discharging-warning":  "notify-send -u normal 'Battery low' 'Below 20 percent.'",
-      "on-discharging-critical": "notify-send -u critical 'Battery critical' 'Below 10 percent -- plug in.'"
+      "on-discharging-warning":  "notify-send -u normal 'Battery low' 'At 20 percent or less.'",
+      "on-discharging-critical": "notify-send -u critical 'Battery critical' 'At 10 percent or less -- plug in.'"
     }
   },
 
-  "tray": { "icon-size": 16, "spacing": 8 }
+  // Icons 20 px apart, the same distance the shared box in style.css puts
+  // between any two neighbours' ink (8 + 4 + 8), so the tray keeps the bar's
+  // rhythm instead of clustering. 14 px, not the usual 16: the digits beside
+  // them are 10 px tall, and at 16 a full-bleed icon (a chat client's square)
+  // stood 1.6 times their height while the network glyph drew 11 px; at 14
+  // the glyph sits level with the digits (measured 2026-09-30).
+  //
+  // reverse-direction: items pack from the right, so the one registered first
+  // at login -- nm-applet's Wi-Fi icon, started by sway/config -- sits
+  // rightmost, beside the values, and apps started later (Zulip) join to its
+  // left. Waybar's watcher keeps its list newest-first and replays it at
+  // every style reload, so after such a reload the order flips until the next
+  // login; no option pins it (Waybar 0.15.0 sni/watcher.cpp, tray.cpp; 2026-09-30).
+  "tray": { "icon-size": 14, "spacing": 20, "reverse-direction": true }
 }

@@ -7,9 +7,13 @@
 # sites are a bare `swaylock -f`; everything cosmetic lives here.
 #
 # Syntax (man 1 swaylock): long option names with no leading dashes, `=` for
-# options that take an argument, bare name for flags. Colours are RRGGBB or
-# RRGGBBAA. An unrecognised key makes swaylock exit, which would mean NO LOCK
-# rather than a broken lock -- so keep keys verified against `man 1 swaylock`.
+# options that take an argument, bare name for flags, and no trailing spaces
+# (swaylock keeps them, and a flag with one is unrecognised). Colours are
+# RRGGBB or RRGGBBAA. swaylock stops reading this file at the first key it
+# does not know and locks with the lines above it; everything below silently
+# reverts to its defaults (load_config in main.c, checked 2026-09-30). The
+# one line that would mean no lock is `version`, which exits. So keep keys
+# verified against `man 1 swaylock`.
 #
 # Palette is deliberately the same as sway/config's:
 #   background #000000   accent (ring) #0088FF   text #ffffff
@@ -17,14 +21,20 @@
 #   wrong      #d08770   (Waybar's @urgent, so a failed unlock reads as the same
 #                         signal the bar uses for an urgent window)
 
-# Flat black, matching the client.* backgrounds in sway/config. Deliberately not
-# the wallpaper: a lock screen that depends on a file path gains a failure mode
-# for no security benefit.
+# Flat black, the desktop's ground (sway's unfocused window background, the
+# bar, the launcher; a fold's strip paints the accent and grey over it since
+# 2026-09-29). Deliberately not the wallpaper: a lock screen that depends on a
+# file path gains a failure mode for no security benefit.
 color=000000
 
 indicator-radius=100
 indicator-thickness=8
 show-failed-attempts
+
+# An Enter with nothing typed does nothing. Without this it submits an empty
+# password: about 2 s of "Verifying" (pam_faildelay), then "Wrong" on the
+# orange ring for 3 s, and a failed attempt on the counter (2026-09-30).
+ignore-empty-password
 
 # Keep the ring on screen instead of only revealing it on the first keypress.
 # Without this a locked machine is indistinguishable from a powered-off one,
@@ -58,17 +68,24 @@ inside-wrong-color=000000AA
 line-wrong-color=00000000
 text-wrong-color=ffffff
 
-# Input cleared
+# Input cleared -- after Esc, a clearing chord, or the 10-s silent wipe of a
+# half-typed password, the case where seeing the word matters most. White:
+# upstream's black default was made for its orange clear fill and drew
+# "Cleared" black on black here (2026-09-30).
 ring-clear-color=ffffff
 inside-clear-color=000000AA
 line-clear-color=00000000
-text-clear-color=000000
+text-clear-color=ffffff
 
 # Caps Lock is on -- worth shouting about, since it is the usual reason a
-# correct password is rejected.
+# correct password is rejected. The colours below apply only with
+# indicator-caps-lock set; without it swaylock showed the words "Caps Lock" on
+# the ordinary blue ring and five of these six keys never took effect
+# (2026-09-30). The highlights differ from the ring so keypresses still show.
+indicator-caps-lock
 ring-caps-lock-color=d08770
 inside-caps-lock-color=000000AA
 line-caps-lock-color=00000000
 text-caps-lock-color=ffffff
-caps-lock-key-hl-color=d08770
-caps-lock-bs-hl-color=d08770
+caps-lock-key-hl-color=ffffff
+caps-lock-bs-hl-color=000000

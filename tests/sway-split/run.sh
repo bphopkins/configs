@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression suite for bin/sway-split: $mod+v as a toggle, and the Waybar
+# Regression suite for bin/sway-split: the split keys as toggles, and the Waybar
 # marker that shows it. Written 2026-09-28 with the script (configs
 # DECISIONS.md, the entry of that date).
 #
@@ -27,6 +27,13 @@ cage sway-split "$@"
 SPLIT="${SWAY_SPLIT:-$CFG_ROOT/bin/sway-split}"
 SB="$(mktemp -d "${TMPDIR:-/tmp}/sway-split-tests.XXXXXX")"
 export SWAYSOCK="$SB/sway.sock"
+# A Unix socket path holds 107 bytes; sway and swaymsg cut a longer SWAYSOCK
+# short without a word, and every run under that TMPDIR would share one
+# socket, each new run taking over the last one's (measured 2026-09-30).
+[ "${#SWAYSOCK}" -le 107 ] || {
+  rmdir "$SB"
+  echo "sway-split tests: socket path over 107 bytes -- run with a shorter TMPDIR" >&2
+  echo "passed: 0  failed: 1"; exit 2; }
 cleanup() { swaymsg exit >/dev/null 2>&1; sleep 0.5; rm -rf "$SB"; }
 trap cleanup EXIT
 
@@ -104,6 +111,25 @@ check "marker: beside" is "$(marker)" beside
 toggle
 check "toggle cancels beside too" is "$(tree)" "H[A B]"
 
+echo "== below and beside, one key each (2026-09-29)"
+below()  { "$SPLIT" below; }
+beside() { "$SPLIT" beside; }
+below
+check "below sets a column of one" is "$(tree)" "H[A V[B]]"
+check "marker: below" is "$(marker)" below
+beside
+check "beside flips it to a row of one" is "$(tree)" "H[A H[B]]"
+check "marker: beside" is "$(marker)" beside
+below
+check "below flips it back" is "$(tree)" "H[A V[B]]"
+below
+check "below again cancels" is "$(tree)" "H[A B]"
+beside
+check "beside from unset" is "$(tree)" "H[A H[B]]"
+beside
+check "beside again cancels" is "$(tree)" "H[A B]"
+check "marker gone after the pair" is "$(marker)" none
+
 echo "== a selected column: the next window below the whole column"
 toggle; spawn D; sw '[app_id=B] focus'; sw 'focus parent'
 check "column selected, not set: no marker" is "$(marker)" none
@@ -121,13 +147,21 @@ check "marker: below" is "$(marker)" below
 toggle
 check "toggle puts the workspace back to a row" is "$(tree)" "H[Z]"
 check "marker gone" is "$(marker)" none
+"$SPLIT" beside
+check "beside on a lone window: the row it already has" is "$(tree)" "H[Z]"
+check "no marker for it" is "$(marker)" none
 
-echo "== a floating window"
+echo "== a floating window: left alone"
 sw 'floating enable'
-before="$(tree)/$(marker)"
+# The floating layer, which the workspace's representation leaves out: a
+# wrapped floating window shows only here (2026-09-30).
+layer() { swaymsg -t get_tree | jq -c '[..|objects|select(.type=="floating_con")|{layout, n: (.nodes|length)}]'; }
+before="$(tree)/$(marker)/$(layer)"
 check "floating: no marker" is "$(marker)" none
 toggle; toggle
-check "two toggles leave a floating window as it was" is "$(tree)/$(marker)" "$before"
+check "two toggles leave a floating window as it was" is "$(tree)/$(marker)/$(layer)" "$before"
+"$SPLIT" below
+check "below leaves a floating window unwrapped" is "$(tree)/$(marker)/$(layer)" "$before"
 
 # --- watch -----------------------------------------------------------------------
 echo "== watch: the marker follows the state"

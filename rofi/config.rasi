@@ -1,0 +1,43 @@
+/* rofi -- stow-managed from ~/Desktop/configs/rofi/config.rasi.
+   Edit it here, not at ~/.config/rofi/config.rasi (that is a symlink into
+   this repo). Invoked from sway/config as `$menu` ($mod+d, a toggle: a
+   second press closes it), defined as `rofi -show drun`; wofi, the launcher
+   this replaced on 2026-09-30, keeps $mod+Shift+d as the second one.
+
+   Syntax (man 1 rofi, man 5 rofi-theme): a `configuration { }` block of the
+   command-line options in kebab case, then a theme statement. The look lives
+   in theme.rasi, loaded whole in place of rofi's built-in theme. Check a
+   change with `rofi -config rofi/config.rasi -dump-config` (no display
+   needed), which tests/desktop/run.sh runs after edits.
+
+   Deliberately plain, as wofi was: a list you scroll and type into. drun
+   only (the .desktop entries, the set GNOME's app grid shows); no icons; no
+   per-app actions; no window, run, ssh or combi mode yet -- those are what
+   rofi was chosen for over wofi, to be added as they earn a key. */
+
+configuration {
+    modes: [ drun ];
+
+    /* Every typed word must appear somewhere in the entry's name or
+       metadata, in any case: the app named by the query ranks first, and
+       "sys mon" finds System Monitor. (rofi's `fuzzy` matches subsequences
+       over all of it and ranks loosely, the fault wofi's fuzzy had.) */
+    matching: "normal";
+    case-sensitive: false;
+
+    /* Name only in the list: the default format appends the generic name in
+       small italics, which doubles the line's width for nothing. */
+    drun-display-format: "{name}";
+
+    /* No per-app actions (they roughly triple the list) and no icons: the
+       rest of this desktop is text. */
+    drun-show-actions: false;
+    show-icons: false;
+
+    /* The empty list is A-Z and stays so, as wofi's does since 2026-09-30:
+       with history on, rofi would float the most-launched entries to the top
+       and the list would reorder itself with use. */
+    disable-history: true;
+}
+
+@theme "theme"

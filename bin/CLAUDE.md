@@ -1,7 +1,8 @@
 # CLAUDE.md — bin package
 
 Charter for `bin/`, stowed to `~/bin` (on PATH via `20-path.sh`, except in
-a sway session's own PATH—`TODO.md` item 29). This is the
+a sway session started without `sway/wayland-session.desktop` installed—
+`TODO.md` item 29). This is the
 home for homegrown executables, and since 2026-09-07 `~/bin` holds nothing
 else: **pip/npm-installed console scripts stay in `~/.local/bin`** — their
 package managers rewrite them on upgrade — and launchers for locally installed
@@ -33,12 +34,13 @@ with a conflict.
   cold-cache stall.
 - `tabula` — **retired 2026-09-29** and deleted: the font trial it opened
   (2026-09-15) is `~/Desktop/adelotype`, which took its `<Super>x` on bigfed
-  through its own `tools/launcher.sh bind` (record: `adelotype/DECISIONS.md`,
+  through its own `tools/launcher.sh bind` (record: adelotype's private `DECISIONS.md`,
   2026-09-29; tabula's arc and its three declined mechanisms stay in
   `DECISIONS.md`, 2026-09-15). Its binding was per-machine dconf and outside
   this repo, and fedxps's `<Super>x` kept `gnome-text-editor` throughout.
-  Standing from 2026-09-23: under sway on either machine `$mod+x` runs
-  `gnome-text-editor` directly, and the font trial runs under GNOME only.
+  Since 2026-09-29 `$mod+x` under sway runs adelotype on both machines too,
+  from `sway/config`, with the plain editor on `$mod+Shift+x`; under GNOME
+  the key is adelotype's own `tools/launcher.sh bind`, per machine.
 
 - `screens-off` — locks the session and lets GNOME power the displays down,
   bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never
@@ -66,11 +68,15 @@ with a conflict.
   `$mod+Ctrl+letter`, beside `$mod+Ctrl+l` for lock. Verified end to end
   2026-09-06: typed, chord, and SSH-from-fedxps invocations all blanked, held
   dark, stayed locked, and woke to the lock screen on a Bluetooth key.
-- `sway-split` — `$mod+v` as a toggle, and Waybar's marker for it:
-  `toggle` sets `splitv` on the focused window or cancels it; `status` and
-  `watch` print the marker. Called by path from `sway/config` and
+- `sway-split` — `$mod+Shift+v` and `$mod+Shift+b` as toggles, and Waybar's
+  marker for them: `below` and `beside` set the focused window so the next
+  opens there, cancel on a second press of the same key and flip on the
+  other; `toggle`, the original single key, sets below or cancels either;
+  `status` and `watch` print the marker. A floating window is left alone
+  (state `off`; until 2026-09-30 the keys wrapped it invisibly, with no
+  marker and no cancel). Called by path from `sway/config` and
   `waybar/config`, since a sway session's PATH lacks `~/bin`. Suite:
-  `tests/sway-split/run.sh` (31 checks, caged, mutation-tested).
+  `tests/sway-split/run.sh` (43 checks, caged; mutation-tested).
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC
@@ -194,8 +200,10 @@ Standing verdicts (2026-07/08; the full investigation is
   author, `20-path.sh` (`DECISIONS.md`, 2026-09-23; the chain:
   `org/machines/environment.md`). `tests/env/run.sh` pins the login shell's
   output; the live proof is an inverse search from an Okular opened in Files.
-  A sway session misses all of this: GDM starts sway with no login shell, so
-  there the desktop-launched case fails as before (measured 2026-09-28;
+  A sway session misses all of this until `sway/wayland-session.desktop` is
+  installed: GDM starts sway with no login shell, so there the
+  desktop-launched case fails as before (measured 2026-09-28; the session
+  file, which re-execs sway through a login shell, is drafted 2026-09-30 —
   `TODO.md` item 29).
 
 ## Claude Code configuration linkage

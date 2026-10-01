@@ -3,18 +3,20 @@
 # Apply changes with `swaymsg reload` or $mod+Ctrl+c.
 #
 # Binding grammar (adopted 2026-08-22, DECISIONS.md item 6; widened 2026-09-28
-# for the tree tier and the monitor axis). The modifier names what the action
+# for the tree tier and the monitor axis, and 2026-09-29 for the shaping verbs
+# on Shift and the third clause). The modifier names what the action
 # acts on -- to place or recall a binding, ask what it acts on:
 #
 #   $mod          you: your attention and your instruments. Move focus
-#                 (hjkl/arrows), climb and descend the tree (a parent,
-#                 z child), visit workspaces (1-0, Tab), summon things
-#                 (launchers, menu, scratchpad show) and aim the next one
-#                 (v: it opens below), toggle your equipment (w bar,
-#                 m touchpad).
+#                 (hjkl/arrows, space between the tiling and floating
+#                 layers), climb and descend the tree (a parent, z child),
+#                 visit workspaces (1-0, Tab), summon things (launchers,
+#                 menu, scratchpad show), clear a notification (n), toggle
+#                 your equipment (w bar, m touchpad).
 #   $mod+Shift    the focused window: move it (hjkl/arrows), send it (1-0),
 #                 stash it (minus), toggle its state (f fullscreen,
-#                 space floating).
+#                 space floating), split it (v: the next opens below,
+#                 b: beside) and fold it with its siblings (s: tabs).
 #   $mod+Ctrl     the enclosures: the container around the window (r rotates
 #                 it, a row into a column and back) and the session around
 #                 everything (l lock, c reload).
@@ -23,33 +25,54 @@
 #                 (up/down); +Shift carries the focused window along, so
 #                 Shift keeps its meaning composed.
 #
-# Two clauses complete the law:
+# Three clauses complete the law:
 #
 #   * Key families override the table on their own key. Escape means LEAVING,
 #     graded by weight: $mod+Escape ends the session, +Shift reaches the
-#     machine (poweroff/reboot nag). Print means capture; XF86* means
-#     hardware. The clause is forced by Print regardless (Shift+Print is a
-#     capture variant, no window involved), so Escape's gradient rides it for
-#     free.
+#     machine (poweroff/reboot nag), and with a window holding the keyboard
+#     it leaves that capture instead. Print means capture; XF86* means
+#     hardware (the power key opens the machine nag). The mouse is its own
+#     family: $mod with a drag handles the window under the pointer, moving
+#     it (left) or resizing it (right), tiled or floating, and a middle
+#     click on a fold's tab title closes that window. The clause is forced
+#     by Print regardless (Shift+Print is a capture variant, no window
+#     involved), so Escape's gradient rides it for free.
 #
 #   * Promotions are a stated, closed list: q kill and r resize are window
 #     verbs sitting one tier light because they are pressed all day. The
 #     default home for a new window verb is Shift; promotion is earned by
 #     daily frequency and recorded here.
 #
-# Placing a new binding: an app -> $mod+mnemonic letter. A window verb ->
+#   * A second launcher on a letter takes Shift: Return is Ghostty and
+#     Shift+Return WezTerm, x adelotype and Shift+x the plain editor, d rofi
+#     and Shift+d wofi. Shift there means the other one; the window tier
+#     lends the chord (2026-09-29).
+#
+# Placing a new binding: an app -> $mod+mnemonic letter, and a second app on
+# the same letter -> its Shift. A window verb ->
 # $mod+Shift+letter. An op on the container around the window, or on the
 # session -> $mod+Ctrl+letter. A machine action -> a button on the
 # $mod+Shift+Escape nag before it ever claims a chord. Hardware with no XF86
-# key -> a bare-tier toggle letter (m, the touchpad, is the precedent). Tabbed
-# and stacking layouts stay unbound -- see the Layout section.
+# key -> a bare-tier toggle letter (m, the touchpad, is the precedent). A split
+# or a fold shapes the focused window's place, so it is a window verb ->
+# $mod+Shift+letter (v, b, s); the shape of the container around it stays
+# Ctrl's (r). The Layout section has the case.
 #
 # Both vim keys and arrow keys are bound for every motion, on purpose -- the
 # parity is maintained deliberately, so add arrow variants to any new motion.
 #
 # Caution when editing: `sway --validate` does NOT check the command body of a
 # bindsym. A typo there passes validation and fails silently at runtime. Verify
-# bindings by running the command directly: `swaymsg -- <the command>`.
+# bindings by running the command directly: `swaymsg -- <the command>` -- with
+# one reservation. Sway rewrites a body in two passes before sh sees it.
+# Loading this file un-escapes backslash escapes (\" \\ \n \t), which swaymsg
+# does not, so a body with a backslash behaves differently pasted to swaymsg
+# than fired from a key (\@ is left alone, and sh drops the backslash). And
+# every $name that begins with a defined variable is replaced, at load and
+# again at each press, swaymsg included, so '$$name' is no escape; '${name}'
+# survives both passes. The desktop suite runs every non-exec body against a
+# nested sway loaded from this file, which is the check that sees the file's
+# own pass (measured 2026-09-30).
 #
 # Read `man 5 sway` for a complete reference.
 
@@ -65,16 +88,20 @@ set $down j
 set $up k
 set $right l
 
-# Two terminals, deliberately, for the Ghostty/WezTerm comparison begun
-# 2026-09-03: $term is the one under daily test, $term2 the other, one keystroke
-# away. Since 2026-09-28 sway runs on bigfed too, so the choice binds both
-# machines. Findings in docs/ghostty-vs-wezterm-2026-09-03.md.
+# Two terminals, deliberately: $term is Ghostty, the daily one since the
+# comparison of 2026-09-03 closed on 2026-09-05
+# (docs/ghostty-vs-wezterm-2026-09-03.md), and $term2 WezTerm, one keystroke
+# away for what Ghostty cannot do. Since 2026-09-28 sway runs on bigfed too,
+# so the choice binds both machines.
 # --gtk-single-instance=false so each press spawns its own process and so
 # lands in working-directory; new windows/tabs/splits raised from inside one
 # still inherit. Reasoning in ghostty/config's Window section.
 set $term ghostty --gtk-single-instance=false
 set $term2 wezterm
-set $menu wofi --show drun
+# The app menu: rofi since 2026-09-30 (its package, rofi/, holds the why),
+# with wofi behind it on Shift as the second launcher.
+set $menu  rofi -show drun
+set $menu2 wofi --show drun
 
 
 ### Output configuration
@@ -86,19 +113,43 @@ output * bg ~/Desktop/configs/wallpapers/monarch1080dark.png fill
 
 # bigfed's two monitors, matched by make, model and serial (as `swaymsg -t
 # get_outputs` reports them), so these lines apply only where those monitors
-# are plugged in: a line naming an absent monitor is ignored (tested
-# 2026-09-28), which leaves fedxps untouched. Port names are not stable here --
-# the Samsung was HDMI-A-2 in the 2026-08-05 firmware inventory and is DP-3 now.
-# The arrangement and modes are GNOME's (~/.config/monitors.xml): the MSI
-# above the Samsung, 862 px in from its left edge, both at 60 Hz with adaptive
-# sync. 60 Hz is deliberate -- cooler, and nothing here needs more; left to
-# itself sway picks 120 and 100 Hz. The GPU's memory clock sits at its top
-# level, 35 W, at either rate under sway (measured 2026-09-28). Any other
-# output is auto-enabled and placed left to right in connection order.
+# are plugged in: a line naming an absent monitor is ignored, at start and at
+# reload (tested 2026-09-28 and 2026-09-30), which leaves fedxps untouched.
+# Port names are not stable here -- the Samsung was HDMI-A-2 in the 2026-08-05
+# firmware inventory and is DP-3 now. The arrangement and modes are GNOME's
+# (~/.config/monitors.xml): the MSI above the Samsung, 862 px in from its
+# left edge, both at 60 Hz. 60 Hz is deliberate -- cooler, and nothing here
+# needs more; left to itself sway picks 120 and 100 Hz. The GPU's memory
+# clock sits at its top level, 35 W, at either rate under sway (measured
+# 2026-09-28). Adaptive sync is off since 2026-09-30: bigfed's record keeps
+# VRR off after two amdgpu hangs (2026-08-06) pending a controlled re-trial,
+# which the 2026-09-28 lines had contradicted; `adaptive_sync on` returns to
+# both lines when that trial passes. Any other output is auto-enabled and
+# placed in a row: one plugged in later goes to the right of those already
+# on, while screens present when sway starts are placed newest first, so on
+# fedxps a display attached at login lands left of the panel and takes
+# workspace 1 (measured on a nested sway, 2026-09-30).
 set $samsung "Samsung Electric Company C49RG9x H1AK500000"
 set $msi     "Microstep MSI MAG341CQ MA0H050010368"
-output $msi     position 862 0  mode 3440x1440@60.016Hz adaptive_sync on
-output $samsung position 0 1440 mode 5120x1440@59.977Hz adaptive_sync on
+output $msi     position 862 0  mode 3440x1440@60.016Hz
+output $samsung position 0 1440 mode 5120x1440@59.977Hz
+
+# fedxps's own panel, the one output named by its connector: eDP-1 is the
+# laptop's built-in port, and bigfed has none, so no other screen matches it.
+# With max_render_time off, sway composites the moment a frame has been
+# shown, and on i915 that commit can reach the kernel before the previous
+# commit's record of the switched-off cursor plane is closed. The pointer is
+# off whenever Ghostty hides it for typing, a video hides it, or a screen
+# share draws it into the stream. The kernel then refuses the commit (EBUSY),
+# the journal logs "Page-flip failed on output eDP-1", and the screen keeps
+# the old frame until the next redraw (i915 kernel issue 13410; wlroots
+# issue 3507 and MR 5454, open as of 2026-09-30). Compositing 10 ms before
+# the refresh leaves the kernel some 6 ms to close that record, and lets a
+# client's new frame reach the screen up to one refresh sooner; a frame that
+# takes sway longer than 10 ms to composite shows one refresh late. On trial
+# from 2026-09-30: the journal's count of that error per day says whether
+# it works.
+output eDP-1 max_render_time 10
 
 # Workspaces 1-5 live on the Samsung and 6-10 on the MSI, so on bigfed a
 # workspace number also names a monitor: $mod+Shift+6 sends a window up to the
@@ -118,17 +169,52 @@ workspace 10 output $msi
 
 ### Input configuration
 
-# This block is LIVE, not an example. Devices can also be addressed
-# individually rather than by type -- see `man 5 sway-input`.
+# The touchpad, set as GNOME sets it on the same laptop
+# (org.gnome.desktop.peripherals.touchpad, read 2026-09-30), so a finger
+# means the same thing under both. The block began as upstream's example and
+# is live; it parts from that example where GNOME does:
+#   click_method clickfinger -- GNOME's 'fingers': a press with two fingers
+#     anywhere is a right click, three a middle one. Left unset, libinput
+#     uses button areas, the bottom-right corner for right. middle_emulation
+#     went with the areas: under clickfinger it does nothing, and GNOME has
+#     it off.
+#   drag_lock disabled -- a tap-drag ends when the finger lifts, as under
+#     GNOME. sway 1.11 alone forces enabled_sticky, where the button stays
+#     held until another tap (swaywm/sway#8758, reverted upstream in 1.12);
+#     stated, it holds whatever the release.
+# Comments sit on lines of their own throughout this file: sway takes # as a
+# comment only at the start of a line and hands a trailing one to the command
+# as more arguments (2026-09-30). dwt is disable-while-typing; tap is tap to
+# click. Devices can also be addressed one by one -- see `man 5 sway-input`.
 input type:touchpad {
-    dwt enabled                 # disable-while-typing
-    tap enabled                 # tap to click
+    dwt enabled
+    tap enabled
     natural_scroll enabled
-    middle_emulation enabled
+    click_method clickfinger
+    drag_lock disabled
+}
+
+# Key repeat as GNOME has it: delay 500 ms, and repeat-interval 30 ms, which
+# mutter hands clients as 1000/30 = 33 keys a second. sway's own defaults are
+# 600 ms and 25. Held bindings repeat at this pace too (man 5 sway,
+# --no-repeat, and the rule under Key bindings). The values must stay
+# digits: sway reads a word here as 0, which turns repeat off.
+input type:keyboard {
+    repeat_delay 500
+    repeat_rate 33
 }
 
 
 ### Key bindings
+
+# Held keys repeat: once a key has been held for the repeat delay sway runs
+# its binding again at the repeat rate (500 ms, then 33 a second: the
+# keyboard block above) unless the binding carries --no-repeat (man 5 sway,
+# bindsym). Motions, the walks, the carries along a row, volume, brightness
+# and the resize keys repeat on purpose; every toggle, every launcher and
+# every verb that would go on to the next window -- kill, send, stash --
+# carries --no-repeat, so a long press does one thing (2026-09-30). A new
+# binding follows the same split.
 
 #
 # Session, power, and the bar
@@ -136,7 +222,10 @@ input type:touchpad {
     # Reload re-reads this config: a session op, so Ctrl tier, c = config. It
     # sat on $mod+Shift+c (upstream's default) until 2026-08-22; only the
     # modifier moved, so that Shift could mean the focused window and nothing
-    # else.
+    # else. A reload does not refuse a file with a bad line: sway skips that
+    # line, applies the rest, and raises its own red nag, whose first button,
+    # "Exit sway", ends the session at one click; only an unreadable file is
+    # refused (measured on a nested sway, 2026-09-30). Validate first.
     bindsym $mod+Ctrl+c reload
 
     # swaynag gotcha: only -z/-Z buttons dismiss the nag; -b/-B run their action
@@ -144,15 +233,37 @@ input type:touchpad {
     # renames it, which is how "Cancel" below is made to actually cancel.
     # Use -B rather than -b: -b routes the action through $TERMINAL when that
     # variable is set, which is not wanted for either of these.
-    bindsym $mod+Escape exec swaynag -t warning -s 'Cancel' \
+    # swaynag reads no keys, only the pointer, and it has no single-instance
+    # guard. Either Escape chord closes whatever nag is open -- its own, the
+    # other's, sway's config-error nag -- and the next press opens its own:
+    # pkill's status decides, as on $mod+d (2026-09-30).
+    bindsym --no-repeat $mod+Escape exec pkill -x swaynag || swaynag -t warning -s 'Cancel' \
         -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' \
         -B 'Yes, exit sway' 'swaymsg exit'
+
+    # The same chord while a window holds a keyboard-shortcuts inhibitor (a VM
+    # viewer, a remote desktop, a page that has locked the keyboard): sway
+    # grants inhibitors unasked (seat shortcuts_inhibitor defaults to
+    # enable), and then every chord in this file goes to that window. This
+    # twin is exempt and takes the keys back, as Super+Escape does under
+    # GNOME; it is live only while an inhibitor is (man 5 sway, --inhibited;
+    # 2026-09-30).
+    bindsym --inhibited --no-repeat $mod+Escape shortcuts_inhibitor disable
 
     # Machine actions share this one nag rather than each claiming a chord
     # (Escape family: leaving, graded -- the session on $mod+Escape, the
     # machine one key heavier). Reboot joined as a second button 2026-08-22,
     # settling a parked $mod+Shift+r idea that predated the nag.
-    bindsym $mod+Shift+Escape exec swaynag -t warning -s 'Cancel' \
+    bindsym --no-repeat $mod+Shift+Escape exec pkill -x swaynag || swaynag -t warning -s 'Cancel' \
+        -m 'Shut down or reboot?' \
+        -B 'Poweroff' 'systemctl poweroff' \
+        -B 'Reboot' 'systemctl reboot'
+
+    # The power key opens the same nag, now that logind leaves the key to
+    # sway (the inhibitor under Includes and startup). Until 2026-09-30 one
+    # press powered the machine off with no question, on both machines. Not
+    # --locked: nothing draws over the lock screen.
+    bindsym --no-repeat XF86PowerOff exec pkill -x swaynag || swaynag -t warning -s 'Cancel' \
         -m 'Shut down or reboot?' \
         -B 'Poweroff' 'systemctl poweroff' \
         -B 'Reboot' 'systemctl reboot'
@@ -161,50 +272,97 @@ input type:touchpad {
     # is `focus right` ($right = l) -- the same collision that moved the exit
     # binding off $mod+Shift+l on 2025-11-10.)
     # Appearance is in the swaylock package, not inline -- see swaylock/config.
-    bindsym $mod+Ctrl+l exec swaylock -f
+    bindsym --no-repeat $mod+Ctrl+l exec swaylock -f
 
-    # Toggle Waybar. Sway's own bar hiding (`mode hide`) does not work here
-    # because Waybar ignores sway's bar protocol and reads its own config, so
-    # the toggle goes through Waybar's SIGUSR1 handler instead. See ### Status
-    # bar below for why Waybar is launched as sway's bar in the first place.
-    bindsym $mod+w exec killall -SIGUSR1 waybar
+    # Toggle Waybar. Sway's own bar hiding (`mode hide`) is dead here because
+    # Waybar's `ipc` option is off, so it ignores the bar protocol and reads
+    # its own config; the toggle goes through Waybar's SIGUSR1 handler
+    # instead. See ### Status bar below for why Waybar is launched as sway's
+    # bar in the first place.
+    bindsym --no-repeat $mod+w exec killall -SIGUSR1 waybar
+
+    # Notifications: dismiss the newest one on screen, a press each. The
+    # keyboard's way to a critical one -- the battery at 10 percent -- which
+    # otherwise waits for a click. Your attention, so the bare tier; n, as
+    # GNOME's Super+n reaches its notifications (2026-09-30).
+    bindsym --no-repeat $mod+n exec makoctl dismiss
 
 #
 # Launchers
 #
-    # $mod+d is the app menu: d for drun, wofi's mode for it, and upstream's
-    # launcher key besides. It sat on $mod+a -- GNOME's Super+A app grid --
-    # until 2026-09-28, when a went to focus parent; the one key where this
-    # file and GNOME now part. $mod+f is files, opening at ~/Desktop; the
-    # home-folder launcher went the same day.
-    bindsym $mod+Return exec $term
-    bindsym $mod+t      exec $term
-    bindsym $mod+Shift+Return exec $term2
-    bindsym $mod+Shift+t      exec $term2
-    bindsym $mod+b      exec brave-browser
-    bindsym $mod+c      exec google-chrome-stable
-    bindsym $mod+d      exec $menu
-    bindsym $mod+f      exec nautilus --new-window ~/Desktop
-    bindsym $mod+x      exec gnome-text-editor
+    # $mod+d is the app menu: d for drun, the launchers' name for the
+    # .desktop list, and upstream's launcher key besides. It sat on $mod+a --
+    # GNOME's Super+A app grid --
+    # until 2026-09-28, when a went to focus parent. $mod+f is files, opening
+    # at ~/Desktop; the home-folder launcher went the same day. (GNOME's own
+    # map on the same machines is per-machine dconf and parts from this file
+    # on several keys; the record of 2026-09-30 lists them.)
+    # Terminals answer to Return alone since 2026-09-29, so that Return becomes
+    # the one habit, under GNOME as well: $mod+t and Shift+t went, and t is
+    # free. WezTerm stays on Shift+Return.
+    bindsym --no-repeat $mod+Return exec $term
+    bindsym --no-repeat $mod+Shift+Return exec $term2
+    bindsym --no-repeat $mod+b      exec brave-browser
+    bindsym --no-repeat $mod+c      exec google-chrome-stable
+    # A toggle since 2026-09-29: a second press closes the menu that the first
+    # opened, where before each press opened another copy. pkill's exit status
+    # is the test -- 0 when it found one to close, so the launch runs only when
+    # none was open. -x matches the process name whole, never a command line.
+    # rofi since 2026-09-30, wofi behind it on Shift (the third clause).
+    bindsym --no-repeat $mod+d      exec pkill -x rofi || $menu
+    bindsym --no-repeat $mod+Shift+d exec pkill -x wofi || $menu2
+    bindsym --no-repeat $mod+f      exec nautilus --new-window ~/Desktop
+    # adelotype, the typeface scratchpad, since 2026-09-29 on both machines;
+    # under GNOME its tools/launcher.sh binds the same key. The plain editor
+    # keeps the key with Shift: --new-window, as GNOME's key had it, because
+    # Text Editor is single-instance and, launched bare while a window is
+    # open, only re-presents that window, which sway does not act on -- the
+    # key appeared to do nothing (measured on a nested sway, 2026-09-30).
+    bindsym --no-repeat $mod+x      exec bash ~/Desktop/adelotype/tools/launcher.sh run
+    bindsym --no-repeat $mod+Shift+x exec gnome-text-editor --new-window
 
 #
 # Windows
 #
-    bindsym $mod+q kill
+    # q closes the focused window, and only a window. Sway's bare `kill`
+    # closes the focused container and all its children (sway(5)), so after
+    # $mod+a on a workspace whose windows sit straight on it, every window
+    # there would close -- and a is the key under q. Only a window carries a
+    # pid in the tree, so that is the test. The jq program holds no string
+    # literal on purpose: sway un-escapes a config line once before storing
+    # it, so an escaped quote meant for the shell would arrive bare (measured
+    # 2026-09-30). Not `[con_id=__focused__ ...] kill`: with a workspace
+    # focused that criterion matches every window on every workspace
+    # (measured).
+    bindsym --no-repeat $mod+q exec sh -c 'swaymsg -t get_tree | jq -e "[.. | objects | select(.focused == true)] | first | .pid" >/dev/null && swaymsg -q kill'
 
     # Make the focused window fullscreen
-    bindsym $mod+Shift+f fullscreen
+    bindsym --no-repeat $mod+Shift+f fullscreen
 
     # Toggle the focused window between tiling and floating
-    bindsym $mod+Shift+space floating toggle
+    bindsym --no-repeat $mod+Shift+space floating toggle
 
     # Swap focus between the tiling area and the floating area
-    bindsym $mod+space focus mode_toggle
+    bindsym --no-repeat $mod+space focus mode_toggle
 
     # Drag floating windows with $mod + left mouse button, resize with $mod +
     # right. Despite the name this also works on tiled windows. `inverse` swaps
     # the two buttons.
     floating_modifier $mod normal
+
+    # A middle click on a fold's tab title closes that window, as on a browser
+    # tab. Mouse bindings fire only over a title bar unless flagged (man 5
+    # sway, bindsym), and only folds draw titles here, so a middle click
+    # inside a window still pastes (measured on a nested sway, 2026-09-30).
+    # A three-finger tap on a strip is a middle click too.
+    bindsym button2 kill
+
+    # A window asking to come forward -- a link opened into a running browser,
+    # a notification clicked -- takes focus when it is already on screen and
+    # is marked urgent otherwise (i3's default; sway's own is urgent alone,
+    # which turned the focused workspace's chip orange while the window sat
+    # in view; measured 2026-09-30).
+    focus_on_window_activation smart
 
 #
 # Focus
@@ -221,14 +379,16 @@ input type:touchpad {
 
     # The tree: a climbs toward the root, z comes back down toward the windows
     # (z sits under a). a is upstream's, in both sway's and i3's defaults;
-    # focus child has no upstream key. See the Layout section.
+    # focus child has no upstream key. See the Layout section. Both stay on
+    # the bare tier however rarely pressed: they move attention, as hjkl do
+    # (settled 2026-09-29; DECISIONS.md, that date).
     bindsym $mod+a focus parent
     bindsym $mod+z focus child
 
 #
 # Moving windows
 #
-    # Each move first drops a pending $mod+v split (`split none`), so one press
+    # Each move first drops a pending $mod+Shift+v/b split (`split none`), so one press
     # always moves the window. Left to itself sway spends the first press on a
     # set window lifting it out of its invisible column, and moves nothing
     # unless a column is beside it (measured 2026-09-28). On a window that is
@@ -254,6 +414,14 @@ input type:touchpad {
     bindsym $mod+$alt+Left   workspace prev_on_output
     bindsym $mod+$alt+Right  workspace next_on_output
 
+    # Three-finger swipes walk this monitor's workspaces, as GNOME's do on the
+    # same touchpad: the content follows the fingers, so a swipe left brings
+    # in the next one. The same commands as the walk above, so they skip
+    # unopened numbers and wrap at the ends (GNOME stops there). Two-finger
+    # scrolling still reaches the app. Inert without a touchpad (2026-09-30).
+    bindgesture swipe:3:left  workspace next_on_output
+    bindgesture swipe:3:right workspace prev_on_output
+
     # Same, carrying the focused window along. `move container` does not follow
     # focus, hence the second command in each chain. Verified correct including
     # the case where the move empties (and so destroys) the current workspace.
@@ -267,20 +435,21 @@ input type:touchpad {
     # column selected with $mod+a -- and follows it, like the row walk above.
     # One press, where a directional move out of a row first restacks the
     # workspace (measured 2026-09-28). On a single screen, as on fedxps, these
-    # do nothing (measured).
+    # do nothing (measured). The carries are --no-repeat: held, they would
+    # bounce the window between the monitors at the repeat rate.
     bindsym $mod+$alt+$up    focus output up
     bindsym $mod+$alt+$down  focus output down
     bindsym $mod+$alt+Up     focus output up
     bindsym $mod+$alt+Down   focus output down
-    bindsym $mod+$alt+Shift+$up    move container to output up; focus output up
-    bindsym $mod+$alt+Shift+$down  move container to output down; focus output down
-    bindsym $mod+$alt+Shift+Up     move container to output up; focus output up
-    bindsym $mod+$alt+Shift+Down   move container to output down; focus output down
+    bindsym --no-repeat $mod+$alt+Shift+$up    move container to output up; focus output up
+    bindsym --no-repeat $mod+$alt+Shift+$down  move container to output down; focus output down
+    bindsym --no-repeat $mod+$alt+Shift+Up     move container to output up; focus output up
+    bindsym --no-repeat $mod+$alt+Shift+Down   move container to output down; focus output down
 
     # Bounce back to the previously focused workspace. The third motion the
     # $alt prev/next pair leaves missing: those two walk the row, this one
     # returns to wherever you just were regardless of distance.
-    bindsym $mod+Tab workspace back_and_forth
+    bindsym --no-repeat $mod+Tab workspace back_and_forth
 
     # Jump to a workspace by number. Workspaces can carry any name, not just
     # numbers; 1-10 is simply the default scheme.
@@ -296,16 +465,16 @@ input type:touchpad {
     bindsym $mod+0 workspace number 10
 
     # Send the focused window to a workspace by number
-    bindsym $mod+Shift+1 move container to workspace number 1
-    bindsym $mod+Shift+2 move container to workspace number 2
-    bindsym $mod+Shift+3 move container to workspace number 3
-    bindsym $mod+Shift+4 move container to workspace number 4
-    bindsym $mod+Shift+5 move container to workspace number 5
-    bindsym $mod+Shift+6 move container to workspace number 6
-    bindsym $mod+Shift+7 move container to workspace number 7
-    bindsym $mod+Shift+8 move container to workspace number 8
-    bindsym $mod+Shift+9 move container to workspace number 9
-    bindsym $mod+Shift+0 move container to workspace number 10
+    bindsym --no-repeat $mod+Shift+1 move container to workspace number 1
+    bindsym --no-repeat $mod+Shift+2 move container to workspace number 2
+    bindsym --no-repeat $mod+Shift+3 move container to workspace number 3
+    bindsym --no-repeat $mod+Shift+4 move container to workspace number 4
+    bindsym --no-repeat $mod+Shift+5 move container to workspace number 5
+    bindsym --no-repeat $mod+Shift+6 move container to workspace number 6
+    bindsym --no-repeat $mod+Shift+7 move container to workspace number 7
+    bindsym --no-repeat $mod+Shift+8 move container to workspace number 8
+    bindsym --no-repeat $mod+Shift+9 move container to workspace number 9
+    bindsym --no-repeat $mod+Shift+0 move container to workspace number 10
 
 #
 # Layout -- the tree tier, revived for bigfed 2026-09-28
@@ -313,14 +482,15 @@ input type:touchpad {
     # Sway's middle tier: the containers between window and workspace. It was
     # dropped 2026-08-22, when one or two windows per workspace on the laptop
     # left focus parent nothing to select but the workspace itself. bigfed's
-    # 5120-px Samsung restores the premise: columns of stacked windows are the
-    # natural arrangement there, and a column is a thing to act on whole. With
+    # 5120-px Samsung restores the premise: columns of windows are the natural
+    # arrangement there, and a column is a thing to act on whole. With
     # one selected ($mod+a), a new window opens as a new column beside it, and
     # $mod+$alt+Shift+up/down carries the column to the other monitor intact
     # (both measured 2026-09-28).
     #
     # Keys are upstream's where upstream coheres with the grammar above: a for
-    # focus parent and v for splitv, in both sway's and i3's defaults. z, for
+    # focus parent, in both sway's and i3's defaults, and v and b for the
+    # splits, sway's letters, one tier up. z, for
     # focus child, has no upstream key; it sits under a. The pair is bound in
     # the Focus section. r keeps one meaning across tiers, reshape: $mod+r
     # resizes the window, $mod+Ctrl+r rotates the container around it -- also
@@ -329,74 +499,129 @@ input type:touchpad {
     #
     # Deliberately unbound:
     #
-    # * splith. Its only clean partner for v is upstream sway's b, which is
-    #   Brave's. $mod+v then $mod+Ctrl+r builds the same tree (measured), and
-    #   a row already opens new windows side by side.
+    # * stacking, 2026-09-29: the column's fold, `layout stacking`, earns its
+    #   place in a narrow, crowded container, where a strip would cut every
+    #   title short. He never has more than three or four windows on a
+    #   workspace, and only for a while, so a strip never does; return to it
+    #   if that changes.
     #
-    # * Tabbed and stacking layouts, unbound 2026-08-13: every application
-    #   that needs tabs here brings its own (the terminals, browsers, Okular).
-    #   Separate from `workspace_layout default` below, which only governs how
-    #   *new* workspaces start.
+    # The declined alternatives are recorded in DECISIONS.md, 2026-09-28 and
+    # 2026-09-29.
     #
-    # The declined alternatives are recorded in DECISIONS.md, 2026-09-28.
-    # $mod+v is a toggle: sway-split (bin/) runs splitv on the focused window,
-    # or cancels the state if it is already set, and wakes Waybar's marker.
-    # Called by path, because a sway session's PATH lacks ~/bin: GDM starts
-    # sway without a login shell (measured 2026-09-28). Suite:
-    # tests/sway-split/run.sh.
-    bindsym $mod+v      exec ~/bin/sway-split toggle
-    bindsym $mod+Ctrl+r layout toggle split
+    # Folds, 2026-09-29 (DECISIONS.md, that date). tabbed and stacking
+    # are the other two shapes a container can take: the row collapsed to a
+    # strip of titles (T in the tree), the column collapsed to a pile of them
+    # (S). One window shows; the rest wait behind their titles. The tabs are
+    # ordinary windows, so every binding above works unchanged inside a
+    # fold: h/l walk the tabs, wrapping at the ends when nothing lies beyond
+    # and leaving otherwise, j/k step out, Shift+hjkl
+    # reorder and carry out, a selects the whole fold, Shift+v splits inside a
+    # tab. $mod+Shift+s folds the container around the focused window into
+    # tabs and unfolds it again; if that chord proves to bite, the valve is
+    # promotion to the bare tier, as q and r had, on measured frequency, and
+    # s is free there (2026-09-29). $mod+Ctrl+r unfolds
+    # a fold to the split it came from. On a window sitting directly on the
+    # workspace, sway wraps every window there into the fold, and that wrapper
+    # forgets the split it came from: a column unfolds as a row, and one
+    # $mod+Ctrl+r restores it; once one window is left in the wrapper the bar
+    # shows a stray beside until $mod+Shift+b (measured 2026-09-30). All measured
+    # on a nested sway 1.11, 2026-09-29, where a bare
+    # `layout toggle` proved the same as `toggle split`, whatever the man
+    # page says of it.
+    # $mod+Shift+v and $mod+Shift+b are toggles: sway-split (bin/) sets the
+    # focused window so the next opens below or beside it, cancels the state
+    # on a second press of the same key, flips it on the other, and wakes
+    # Waybar's marker. On a window alone on its workspace, beside is the row
+    # it already has, so no marker shows (2026-09-29; the single key of
+    # 2026-09-28 was $mod+v). Called by path, because a sway session's PATH
+    # lacks ~/bin: GDM starts sway without a login shell (measured
+    # 2026-09-28). Suite: tests/sway-split/run.sh.
+    bindsym --no-repeat $mod+Shift+v exec ~/bin/sway-split below
+    bindsym --no-repeat $mod+Shift+b exec ~/bin/sway-split beside
+    bindsym --no-repeat $mod+Shift+s layout toggle tabbed split
+    bindsym --no-repeat $mod+Ctrl+r  layout toggle split
 
 #
 # Scratchpad
 #
     # The scratchpad is a bag of holding for windows: send one away, get it back
     # later. With several inside, `scratchpad show` cycles through them.
-    bindsym $mod+Shift+minus move scratchpad
-    bindsym $mod+minus scratchpad show
+    bindsym --no-repeat $mod+Shift+minus move scratchpad
+    bindsym --no-repeat $mod+minus scratchpad show
 
 #
 # Hardware and media
 #
     # --locked keeps these working while swaylock is up, so volume and
-    # brightness stay adjustable on a locked machine.
-    bindsym --locked XF86AudioMute        exec pactl set-sink-mute \@DEFAULT_SINK@ toggle
-    bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume \@DEFAULT_SINK@ -5%
-    bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume \@DEFAULT_SINK@ +5%
-    bindsym --locked XF86AudioMicMute     exec pactl set-source-mute \@DEFAULT_SOURCE@ toggle
+    # brightness stay adjustable on a locked machine. (Inside the resize mode
+    # they are dead, as every binding outside the mode is.)
+    # wpctl, PipeWire's own tool, because it takes a ceiling: -l 1.0 stops
+    # the raise key at 100 percent, as GNOME's keys stop here
+    # (allow-volume-above-100-percent is false) and as Waybar's scroll does
+    # (max-volume, default 100); a level already above 100 percent comes down
+    # to 100 on the next raise. pactl, upstream's choice, added 5 percent
+    # with no ceiling, on into software gain. The steps are the same 5
+    # percent, on the cubic scale the bar shows (2026-09-30).
+    bindsym --locked --no-repeat XF86AudioMute exec wpctl set-mute \@DEFAULT_AUDIO_SINK@ toggle
+    bindsym --locked XF86AudioLowerVolume exec wpctl set-volume \@DEFAULT_AUDIO_SINK@ 5%-
+    bindsym --locked XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 \@DEFAULT_AUDIO_SINK@ 5%+
+    bindsym --locked --no-repeat XF86AudioMicMute exec wpctl set-mute \@DEFAULT_AUDIO_SOURCE@ toggle
 
-    bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
-    bindsym --locked XF86MonBrightnessUp   exec brightnessctl set 5%+
+    # Brightness-down reaches 0, on purpose: that switches the panel's backlight
+    # off, which is how he blanks the laptop by hand, and one press up brings
+    # it back (his word, 2026-09-30, when a 5 percent floor had been tried for
+    # an evening). Nothing in it harms the panel. -c backlight pins the class,
+    # so a machine with no backlight fails instead of dimming an LED; -q keeps
+    # each press out of the journal.
+    bindsym --locked XF86MonBrightnessDown exec brightnessctl -q -c backlight set 5%-
+    bindsym --locked XF86MonBrightnessUp   exec brightnessctl -q -c backlight set 5%+
 
-    # Toggle the trackpad.
-    bindsym $mod+m input type:touchpad events toggle enabled disabled
+    # Toggle the touchpad, and say which way it went: otherwise the pointer
+    # simply stops, and m sits just below j. The word is sway's own
+    # (send_events in `swaymsg -t get_inputs`), "absent" where there is no
+    # touchpad. Exec first on purpose: tests/desktop runs every binding body
+    # that does not start with exec against its nested sway. A quote the
+    # shell must see escaped takes three backslashes here: sway un-escapes a
+    # config line once before storing it (measured 2026-09-30). A reload
+    # ($mod+Ctrl+c) also turns a disabled touchpad back on.
+    bindsym --no-repeat $mod+m exec sh -c 'swaymsg -q input type:touchpad events toggle enabled disabled; s=$(swaymsg -t get_inputs | jq -r "[.[] | select(.type == \\\"touchpad\\\") | .libinput.send_events] | first // \\\"absent\\\""); notify-send -u low "Touchpad: $s"'
 
 #
 # Screenshots
 #
-    # Whole screen -> file, landing in ~/Pictures as YYYYMMDD_HHhMMmSSs_grim.png.
-    #
-    # Measured 2026-08-13, because the man page misleads here: grim honours
-    # $GRIM_DEFAULT_DIR, but the **$XDG_PICTURES_DIR environment variable is
-    # ignored** -- setting it to a scratch directory still wrote to ~/Pictures.
-    # grim reads the pictures directory from ~/.config/user-dirs.dirs instead, so
-    # the man page's "falls back first to $XDG_PICTURES_DIR" names the value, not
-    # the variable. Two consequences: `export XDG_PICTURES_DIR=...` would do
-    # nothing, and exporting GRIM_DEFAULT_DIR from bash/.bashrc.d would not reach
-    # this binding either -- sway's children inherit the *session* environment,
-    # not an interactive shell's. Redirecting it would mean naming a path here.
-    bindsym Print exec grim
+    # Every capture ends in a notification saying where it went (low urgency:
+    # 3 s, the muted border), with the image as its icon, as GNOME's do. Files
+    # land in Pictures/Screenshots, GNOME's folder, so both sessions' captures
+    # sit together, named in grim's own format; the name is made here because
+    # grim chooses its default name without printing it. xdg-user-dir reads
+    # ~/.config/user-dirs.dirs, the file grim reads for its default directory
+    # (DECISIONS.md item 5). Two captures in the same second share a name, and
+    # the second replaces the first. --no-repeat: held, Print took 25 shots a
+    # second (2026-09-30).
+    bindsym --no-repeat Print exec sh -c 'd=$(xdg-user-dir PICTURES)/Screenshots && mkdir -p "$d" && f=$d/$(date +%Y%m%d_%Hh%Mm%Ss)_grim.png && grim "$f" && notify-send -u low -i "$f" "Screenshot saved" "$f"'
 
-    # Region -> clipboard, and region -> file. slurp prints the geometry; Esc
-    # cancels it.
+    # Region -> clipboard, and region -> file. slurp prints the geometry, its
+    # outline in the desktop's accent (no # before the hex: inside $(...) it
+    # would start a shell comment); Esc, or a click without a drag, cancels
+    # it: exit 1, nothing printed.
     #
     # The guard is not decoration. Written the obvious way as
     # `grim -g "$(slurp)" - | wl-copy`, cancelling the selection leaves an empty
     # geometry, grim fails, and wl-copy still runs with nothing on stdin -- which
     # silently WIPES the clipboard. Testing both the exit status and the string
-    # means a cancelled screenshot changes nothing at all.
-    bindsym Shift+Print exec sh -c 'g=$(slurp) && [ -n "$g" ] && grim -g "$g" - | wl-copy'
-    bindsym $mod+Print  exec sh -c 'g=$(slurp) && [ -n "$g" ] && grim -g "$g"'
+    # means a cancelled screenshot changes nothing at all. For the same reason
+    # the clipboard binding captures to a temporary file and copies only after
+    # grim succeeds: through a pipe, any grim failure after a good selection
+    # would wipe the clipboard the same way (measured 2026-09-30).
+    bindsym --no-repeat Shift+Print exec sh -c 'g=$(slurp -c 0088FF) && [ -n "$g" ] && t=$(mktemp) && { grim -g "$g" "$t" && wl-copy -t image/png < "$t" && notify-send -u low "Screenshot copied" "$g"; rm -f "$t"; }'
+    bindsym --no-repeat $mod+Print  exec sh -c 'g=$(slurp -c 0088FF) && [ -n "$g" ] && d=$(xdg-user-dir PICTURES)/Screenshots && mkdir -p "$d" && f=$d/$(date +%Y%m%d_%Hh%Mm%Ss)_grim.png && grim -g "$g" "$f" && notify-send -u low -i "$f" "Screenshot saved" "$f"'
+
+    # The focused window alone, as GNOME's Alt+Print takes it: its content,
+    # without the border (window_rect inside rect, sway-ipc(7)); with a
+    # column or fold selected by $mod+a, the whole of it. grim -T, which would
+    # capture a window by its own buffer, needs a protocol sway 1.11 does not
+    # offer (measured 2026-09-30).
+    bindsym --no-repeat $alt+Print exec sh -c 'set -- $(swaymsg -t get_tree | jq ".. | select(.focused?) | if .pid then (.rect.x + .window_rect.x, .rect.y + .window_rect.y, .window_rect.width, .window_rect.height) else (.rect.x, .rect.y, .rect.width, .rect.height) end") && [ "$#" = 4 ] && [ "$3" -gt 0 ] && d=$(xdg-user-dir PICTURES)/Screenshots && mkdir -p "$d" && f=$d/$(date +%Y%m%d_%Hh%Mm%Ss)_grim.png && grim -g "$1,$2 $3x$4" "$f" && notify-send -u low -i "$f" "Screenshot saved" "$f"'
 
 #
 # Resize mode
@@ -413,22 +638,33 @@ mode "resize" {
     bindsym Up     resize shrink height 10px
     bindsym Right  resize grow width 10px
 
-    # Return to default mode
+    # Return to default mode -- and $mod+r again, so the chord that entered
+    # leaves as well (i3's default config binds its entry key inside the mode;
+    # sway's dropped it), a toggle like $mod+d. Waybar shows "resize" while
+    # the mode holds the keys (waybar/config, sway/mode).
     bindsym Return mode "default"
     bindsym Escape mode "default"
+    bindsym $mod+r mode "default"
 }
-bindsym $mod+r mode "resize"
+bindsym --no-repeat $mod+r mode "resize"
 
 
 ### Status bar
 
 # Waybar is launched as sway's bar rather than via `exec_always waybar`. The
-# trade-off, deliberately taken: sway respawns Waybar if it dies and there is no
-# duplicate-process problem on reload, but sway's own bar settings (position,
-# mode, hidden_state, colors, font) are dead config here -- Waybar ignores the
-# bar protocol and reads ~/.config/waybar/config instead. So do not add settings
-# to this block expecting them to take effect; change Waybar's own config.
-# Sway appends `-b bar-0` to this command; Waybar ignores an unmatched bar id.
+# trade-off, deliberately taken: a reload replaces Waybar instead of stacking
+# a second one (sway closes the old bar's connection and starts a fresh bar),
+# and brings back a bar that has died -- $mod+Ctrl+c after a crash, or once a
+# bad style.css is fixed -- but sway does not restart a bar that dies on its
+# own: it stays gone until the next reload (sway 1.11 sway/config/bar.c:
+# nothing restarts it; 2026-09-30). The command runs without a shell, as one
+# word: an argument here ('waybar -l debug') is exec'd as a file of that
+# name, and the session has no bar, silently. Sway's own bar settings
+# (position, mode, hidden_state, colors, font) are dead config here --
+# Waybar reads ~/.config/waybar/config and, with its `ipc` option off,
+# ignores the bar protocol. So do not add settings to this block expecting
+# them to take effect; change Waybar's own config. Sway appends `-b bar-0`
+# to this command; Waybar ignores the id while `ipc` is off.
 # Visibility is toggled with $mod+w -- see "Session, power, and the bar" above.
 bar {
     swaybar_command waybar
@@ -437,21 +673,36 @@ bar {
 
 ### Appearance
 
-# No titlebars; a thicker outline carries the focus signal instead.
-default_border pixel 3              # tiling windows: border, no titlebar
-default_floating_border pixel 3     # floating windows too
+# No titlebars on windows; a 2-px outline carries the focus signal. The one
+# place a title is drawn is the strip of a fold (tabs, a stack), where the
+# title is the tab itself. Two, deliberately (2026-09-30): the file said 3
+# from the first commit, but a trailing comment on each line reached sway as
+# extra words and default_border then kept its own 2 -- the width he had
+# looked at all along, and judged right; the lines now say what is drawn.
+# Tiling windows: border, no titlebar.
+default_border pixel 2
+# Floating windows too.
+default_floating_border pixel 2
 
 # Hide borders when a workspace holds only one tiled window.
 smart_borders on
 
-# Start new workspaces in split layout (no tab bar).
+# New workspaces start as a row; a fold is made by hand ($mod+Shift+s), never by
+# default.
 workspace_layout default
 
+# The strip of a fold is set in this font, and nothing else here is. Named, so
+# the strip stops following fontconfig's monospace alias, which differs by
+# machine (Bitstream Vera Sans Mono on fedxps, 2026-09-29); the terminals use
+# the same face. Checked at runtime and rendered on a nested sway that day.
+font pango:Source Code Pro 10
+
 # Palette.
-# $accent is the live one: dodger blue. $forest is the retired forest-green
-# accent, kept so it can be swapped back by changing a single word below. Note
-# that Waybar is still on forest green (waybar/style.css), so the two
-# deliberately differ.
+# $accent is the live one: dodger blue, the desktop's one accent since
+# 2026-09-29 -- Waybar and wofi define the same value, each keeping a forest
+# define beside it. It means where you are, or what is selected. $forest is
+# the retired forest-green accent, kept so it can be swapped back by changing
+# a single word below.
 set $forest #228B22
 set $accent #0088FF
 
@@ -464,55 +715,123 @@ set $urgent #d08770
 #
 # The focused indicator is white: it is the split cue. Sway paints it on the
 # edge where the next window will open, only while the focused window sits
-# alone in its container -- the bottom edge after $mod+v, the right edge after
-# $mod+Ctrl+r -- and it clears once a window lands there or the window is
-# lifted out (measured 2026-09-28). Until then it matched the border, so the
+# alone in its container -- the bottom edge after $mod+Shift+v, the right
+# edge after $mod+Shift+b or $mod+Ctrl+r -- and it clears once a window lands
+# there or the window is lifted out (measured 2026-09-28). Until then it
+# matched the border, so the
 # state could not be seen. A lone window on a workspace has no border at all
 # (smart_borders), so no cue there.
-client.focused          $accent  #000000 #ffffff #ffffff $accent
-client.focused_inactive #5f676a  #000000 #ffffff #5f676a #5f676a
+#
+# background and text are drawn only in a fold's strip, since windows have no
+# title bars. The focused title sits on the accent, the active title of an
+# unfocused fold on grey, every other title white on black, so the active tab
+# reads in both states (rendered on a nested sway, 2026-09-29).
+client.focused          $accent  $accent #ffffff #ffffff $accent
+client.focused_inactive #5f676a  #5f676a #ffffff #5f676a #5f676a
 client.unfocused        #434c5e  #000000 #ffffff #434c5e #434c5e
-client.urgent           $urgent  #000000 #ffffff $urgent $urgent
+# urgent's background is the urgent colour too, so an urgent tab in a fold
+# fills orange like the bar's urgent pill; on black it showed only a 1-px
+# outline (measured 2026-09-30).
+client.urgent           $urgent  $urgent #ffffff $urgent $urgent
+# focused_tab_title colours the tab of a fold that holds a split while focus
+# is inside that split; unset, it fell back to focused_inactive, grey, the
+# look of a fold without focus (rendered on a nested sway, 2026-09-30). Three
+# colours only: sway warns that indicator and child_border have no effect
+# for this class.
+client.focused_tab_title $accent  $accent #ffffff
 
 
 ### Deliberate omissions
 #
 # Recorded so they are not mistaken for oversights and "fixed" later:
 #
-# * No idle timers and no screen blanking. The screen stays on until dimmed by
-#   hand, because sway sessions here are long stretches of focused work. This is
-#   the same posture as leaving Caffeine on under GNOME. Note that the swayidle
-#   line under "Includes and startup" is NOT a timer -- it has no `timeout`
-#   clause at all, only `before-sleep`, so it can never blank or lock mid-work.
+# * No idle timers and no screen blanking, on either machine. The screen stays
+#   on until dimmed by hand, because sway sessions here are long stretches of
+#   focused work. This is the same posture as leaving Caffeine on under GNOME,
+#   which he does on bigfed too (confirmed 2026-09-30: nothing turns off
+#   unless he says so; his `screens-off` command is the on-demand form,
+#   GNOME-only so far). Note that the swayidle line under "Includes and
+#   startup" is NOT a timer -- it has no `timeout` clause at all, only
+#   `before-sleep` and `lock`, so it can never blank or lock mid-work.
 #
 #   The hole this deliberately leaves closed as of 2026-08-13: logind's default
 #   HandleLidSwitch=suspend applies, so closing the lid suspends, and before
 #   2026-08-13 reopening it returned straight to an unlocked desktop (verified
-#   by test). The before-sleep hook now locks first.
-#
-# * No tabbed or stacking container layouts -- see the Layout section above.
+#   by test). The before-sleep hook now locks first. With a second screen
+#   attached logind ignores the lid instead (HandleLidSwitchDocked=ignore), so
+#   a docked lid close neither suspends nor locks and the closed panel stays
+#   an output; the bindswitch pair for that waits on a docked habit (record,
+#   2026-09-30).
 
 
 ### Includes and startup
 
 include /etc/sway/config.d/*
 
-# Lock the screen before the machine suspends -- and ONLY that. There is no
-# `timeout` clause, so this never blanks or locks during work; see "Deliberate
-# omissions" above. Without it, logind's HandleLidSwitch=suspend meant closing
-# the lid and reopening returned straight to an unlocked desktop.
+# This machine's own layer: hosts/<hostname>.conf beside this file, stowed
+# with it (the hostname is fedxps or bigfed). What a monitor's serial or an
+# input's identifier can key stays above, inert where that hardware is
+# absent; a layer holds only what cannot be keyed that way -- a global, a
+# startup exec, a chord one machine alone should have -- and adds, never
+# rebinds. sway runs include paths through wordexp, so $(uname -n) is
+# evaluated here, at every load and reload, after every setting above. A
+# missing layer is silent (sway logs it only at debug level), so
+# tests/desktop/run.sh checks that this machine's is linked, and validates
+# each layer inlined, since `sway --validate` passes an error inside an
+# included file. Relative on purpose: a test copy of this file elsewhere
+# finds no layer beside it and loads none (2026-09-30).
+include hosts/$(uname -n).conf
+
+# The session file (sway/wayland-session.desktop, installed by hand as
+# /usr/local/share/wayland-sessions/sway.desktop) starts sway from a login
+# shell, so sway and everything it launches inherit the personal PATH. This
+# hands the same PATH to the user manager and to D-Bus, for what starts as a
+# service instead -- a DBusActivatable app opened from wofi (Nautilus, Loupe,
+# Ghostty's entry) and the user units -- as gnome-session does under GNOME.
+# Without the session file sway's PATH is the system's, and this changes
+# nothing (TODO.md item 29).
+exec dbus-update-activation-environment --systemd PATH
+
+# Lock the screen before the machine suspends, and when logind is asked to
+# lock the session (`loginctl lock-session`, or any Handle*=lock action) --
+# and ONLY then. There is no `timeout` clause, so this never blanks or locks
+# during work; see "Deliberate omissions" above, which also records the lid
+# hole this closes.
 #
 # `-w` (swayidle) plus `-f` (swaylock) is the pairing the swayidle man page
 # prescribes: -f detaches only once the screen is actually locked, and -w makes
 # swayidle hold logind's inhibitor until then, so the machine cannot suspend
 # with the desktop still visible. logind caps that wait at InhibitDelayMaxSec
-# (5s here); swaylock comes up well inside it.
+# (5s here); swaylock comes up well inside it. Nothing restarts swayidle if
+# it dies (it exits on its own if its D-Bus connection drops), and a shut lid
+# then suspends unlocked: sway/CLAUDE.md holds the gauge and the restore line.
 #
 # `exec`, not `exec_always`: a reload must not spawn a second swayidle.
-exec swayidle -w before-sleep 'swaylock -f'
+exec swayidle -w before-sleep 'swaylock -f' lock 'swaylock -f'
 
-# NetworkManager secret agent -- pulls 802.1x creds from gnome-keyring.
-# Fedora's /etc/xdg/autostart/nm-applet.desktop is meant to autostart it
-# under Sway via sway-xdg-autostart.target, but doesn't reliably fire here.
-# `exec`, not `exec_always`, so a reload does not stack up applets.
+# The power button opens the machine nag (Session, power, and the bar)
+# instead of powering the machine off. logind acts on the key itself --
+# HandlePowerKey=poweroff, a clean shutdown on one press, no confirmation --
+# unless some process holds its handle-power-key inhibitor.
+# gnome-settings-daemon holds it under GNOME, where power-button-action is
+# 'nothing' on both machines; under sway nothing did (measured 2026-09-28 on
+# bigfed, 2026-09-30 on fedxps). The holder lives exactly as long as sway:
+# swaymsg waits on sway's IPC and exits with it, on a clean exit and on a
+# crash, releasing the inhibitor. Not `sleep infinity`: sway starts each exec
+# in its own session and never reaps it, and logind here leaves a closed
+# session's processes running, so that holder would outlive the session.
+# logind honours the lock only while this session is the active one: at a
+# console or the greeter the button powers off as before. `exec`, not
+# `exec_always`: one holder per session.
+exec systemd-inhibit --what=handle-power-key --mode=block --who=sway --why='power key: see sway/config' swaymsg -t subscribe '["shutdown"]'
+
+# NetworkManager secret agent -- pulls 802.1x creds from gnome-keyring -- and
+# the tray icon. Started here because nothing runs XDG autostart under sway:
+# sway-systemd ships the snippet that would (95-xdg-desktop-autostart.conf)
+# in /usr/share/sway-systemd, not /etc/sway/config.d, so
+# sway-xdg-autostart.target never starts. Enabling it would start every
+# entry systemd makes a unit for -- nm-applet a second time among them -- a
+# separate decision (2026-09-30). `exec`, not `exec_always`, so a reload does
+# not stack up applets. Not installed on bigfed: one harmless "command not
+# found" line per login there.
 exec nm-applet --indicator

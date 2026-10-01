@@ -47,10 +47,11 @@ a package without a charter keeps its detail in its config's own comments
 | tmux | `~/.config/tmux` | *(no charter — the config file carries its own)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
-| swaylock | `~/.config/swaylock` | the fail-open unknown-key hazard |
-| waybar | `~/.config/waybar` | GTK3 CSS dialect + parse-check, format-width conventions |
+| swaylock | `~/.config/swaylock` | the unknown-key truncation hazard, the way back from a lockout |
+| waybar | `~/.config/waybar` | GTK3 CSS dialect + parse-check, the one box that spaces the bar |
 | mako | `~/.config/mako` | timeout semantics, reload |
-| wofi | `~/.config/wofi` | launcher keys, same GTK3 dialect |
+| wofi | `~/.config/wofi` | the second launcher since 2026-09-30, same GTK3 dialect |
+| rofi | `~/.config/rofi` | the app menu since 2026-09-30: a whole theme sheet, a silent parser and the two checks that cover it |
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
@@ -131,6 +132,10 @@ hand-edited (`nvim/CLAUDE.md`, Snippets).
 **Run `tests/sway-split/run.sh` after any edit to `bin/sway-split`.** Caged;
 it drives a nested headless sway, never the live one.
 
+**Run `tests/desktop/run.sh` after any edit to `sway/`, `waybar/`, `mako/`,
+`wofi/`, `rofi/` or `swaylock/`.** Caged since 2026-09-30 (`tests/cage.sh`); it drives
+a nested headless sway on a short private socket, never the live one.
+
 `tests/term-bench/` holds the terminal-comparison harnesses — flood throughput,
 SGR-density and SGR-encoding sweeps, a **repaint** bench replaying a recording of
 a real nvim session, and round-trip latency idle *and under load* — plus a README
@@ -171,8 +176,11 @@ theme rather than the one Ghostty ships, which flattens the bright set into a
 copy of the normal set. WezTerm keeps the shipped built-in unchanged, as the
 control a tweak can be judged against. The shell prompt is off the palette
 entirely on all three machines (`bash/CLAUDE.md`). Waybar is not on the theme
-at all: measured 2026-09-20, its five colours are `#000000`, `#ffffff`,
-`#9e9e9e`, a `#228B22` accent and the shared `#d08770` urgent.
+at all: its five colours are `#000000`, `#ffffff`, `#9e9e9e`, the desktop's
+one accent `#0088FF` (sway's; wofi's since 2026-09-29, forest green `#228B22`
+before; mako's and swaylock's since they were written, 2026-08-13) and the
+shared `#d08770` urgent, plus two pale tints on the battery value since
+2026-09-30, `#ffb3b3` on battery and `#b3ffb3` on the mains.
 
 Source Code Pro font in three of the four terminals (WezTerm, Ghostty,
 Alacritty): 12pt in WezTerm and Alacritty, 12.5pt in Ghostty since
@@ -218,6 +226,10 @@ languages — see `sway/CLAUDE.md` before changing it.
   stow's ignore list (the reproduced defaults + `CLAUDE\.md`) does **not**
   cover `*.bak`/`*.save` — `.gitignore` keeps such backups off the remote;
   stow does not keep them out of `~/.config`.
+- **A stow package cannot ship a systemd drop-in or `.wants` directory into
+  `~/.config/systemd/user`**: stow folds a new directory into a relative
+  symlink, which systemd 259 silently skips (measured 2026-09-30). Target the
+  directory itself, as `environment.d` does.
 - **`latex/mod-cv/` shadows TeX Live's moderncv** — see `latex/CLAUDE.md`.
 - **`french-logic.sty` is a shared, snippet-coupled dependency** — editing it
   affects the dissertation/teaching repos; see `latex/CLAUDE.md` before

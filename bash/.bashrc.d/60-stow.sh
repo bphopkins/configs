@@ -1,4 +1,8 @@
 # --- Stow packages -> targets ---
+# A systemd drop-in or .wants dir must be a real directory: systemd 259 skips
+# one that is a relative symlink, which is what stow's folding makes of a new
+# subdirectory (src/shared/unit-file.c; measured 2026-09-30). Target such a
+# dir itself, as environment.d does.
 declare -A STOW_TARGETS=(
   [alacritty]="$HOME/.config/alacritty"
   [bash]="$HOME"
@@ -12,6 +16,7 @@ declare -A STOW_TARGETS=(
   [latex]="$HOME/texmf/tex/latex"
   [mako]="$HOME/.config/mako"
   [nvim]="$HOME/.config/nvim"
+  [rofi]="$HOME/.config/rofi"
   # okular ships a single file that lives directly in ~/.config, so the target is
   # ~/.config itself rather than a subdirectory. Stow only links what the package
   # contains, so this does not put ~/.config under stow's control generally.
@@ -25,7 +30,7 @@ declare -A STOW_TARGETS=(
 )
 
 # Stable run order (optional, but nicer output)
-STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar mako wofi latex bin okular fontconfig environment.d)
+STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar mako wofi rofi latex bin okular fontconfig environment.d)
 
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 

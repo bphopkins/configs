@@ -567,7 +567,7 @@ assembled and overwritten at every shell start; only a slot ahead of
 
 ---
 
-## 26. Twelve of the sixteen suites run without a cage
+## 26. Eleven of the sixteen suites run without a cage
 
 - [ ] Give every suite under `tests/` its own systemd scope, as
   `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
@@ -575,17 +575,19 @@ assembled and overwritten at every shell start; only a slot ahead of
 
 Found 2026-09-25. Three suites are caged, all through `tests/cage.sh` and all
 written 2026-09-23: `env`, `prompt`, `shell-opts`. *(A fourth, `sway-split`,
-was caged from its start, 2026-09-28.)* The other twelve start no
+was caged from its start, 2026-09-28; a fifth, `desktop`, since 2026-09-30,
+on the stock budget, which it fits twentyfold: about 23 MiB and 17 tasks,
+measured.)* The other eleven start no
 scope, and nothing in their directories mentions one: `claude`,
-`context-check`, `desktop`, `disk`, `french-logic`, `gsync`, `live-server`,
+`context-check`, `disk`, `french-logic`, `gsync`, `live-server`,
 `nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`, `term-bench`. Four
 of them are the run-after-an-edit suites the root `CLAUDE.md` names (`claude`,
 `context-check`, `gsync`, `snipgen`), so until this lands that charter and the
 rule disagree about them. `desktop` is the suite the rule's incident came from:
 on 2026-08-13 its nested sway spawned a Waybar that grew to 9.2 GB, and the OOM
 kill took down the WezTerm scope it had been placed in, closing every window
-there (the comment above its bar-stripping `sed`). The spawn point is stripped;
-the suite still runs uncaged. And a Claude Code session measured on fedxps the
+there (the comment above its bar-stripping `sed`). *(Caged 2026-09-30, with
+every spawn point stripped or disabled.)* And a Claude Code session measured on fedxps the
 same day ran inside its terminal window's own scope,
 `app-gnome-ghostty-<pid>.scope`, with `memory.max` at `max`, so a runaway in
 any of the twelve, run from such a session, lands where that incident did.
@@ -618,11 +620,15 @@ VimTeX cache, the blink frecency store, shada and undo history.
 
 ---
 
-## 27. Under sway, bigfed loses what GNOME does for its power button and idle
+## 27. `screens-off` under sway on bigfed (the power button and idle halves closed 2026-09-30)
 
-- [ ] Decide what bigfed's sway session should do about the power button, idle
-  displays and `screens-off`, and by what mechanism, since one sway config
-  serves both machines.
+- [ ] Build and measure an on-demand `screens-off` for sway on bigfed (the
+  draft in `DECISIONS.md`, 2026-09-30), then land it in
+  `sway/hosts/bigfed.conf`. The power button and the idle displays closed
+  2026-09-30: the button opens the machine nag on both machines (a
+  session-lifetime inhibitor in `sway/config`), and bigfed keeps no idle
+  timer either — Caffeine is always on there under GNOME, and nothing turns
+  off unless he says so. The per-machine mechanism exists (`hosts/`).
 
 Found 2026-09-28, the day sway went on trial on bigfed (`DECISIONS.md`,
 2026-09-28). Under GNOME, gnome-settings-daemon holds logind's power-key
@@ -637,21 +643,6 @@ posture was decided for fedxps; and `screens-off` works only under GNOME. Idle
 suspend stays off (`IdleAction=ignore`). A fix in `sway/config` reaches the
 laptop too, whose power button is a laptop's, so its fedxps effect is named
 before it lands (`sway/CLAUDE.md`), or the fix finds a per-machine mechanism.
-
----
-
-## 28. The desktop suite's binary check fails on bigfed
-
-- [ ] Decide how `tests/desktop/run.sh`'s binary check treats hardware a
-  machine lacks. Today it fails on bigfed for `brightnessctl`, which the
-  brightness keys call and bigfed, with no backlight, has no use for: skip it
-  where `/sys/class/backlight` is empty, or install it there.
-
-Found 2026-09-28. With `wofi` and `mako` installed on bigfed that day, the
-suite runs all 24 checks there, and this is the one failure. The binding
-stays: fedxps uses it. Caging the suite is item 26, and the charter's
-hand-run nested-sway example (`sway/CLAUDE.md`, "Verifying a change") wants
-the same cage.
 
 ---
 
@@ -677,7 +668,53 @@ fedxps measured 2026-09-29, logged into sway through GDM: the same chain
 on the system-default PATH, `EDITOR` present only because `environment.d` sets
 it. One fix, both machines. Record: `org/machines/environment.md` §6.
 
+**2026-09-30: the fix is drafted.** `sway/wayland-session.desktop`, tracked
+and installed by hand as `/usr/local/share/wayland-sessions/sway.desktop`,
+re-execs sway through a login shell (GDM starts a session with no shell and
+offers no user-level hook; the login shell under GNOME is gnome-session's own
+re-exec, not GDM's), and `exec dbus-update-activation-environment --systemd
+PATH` in `sway/config` hands the PATH to D-Bus-activated apps and the user
+units. Open until installed on both machines and a sway terminal shows
+`~/bin` on `PATH`. Closure list, the sites that state the gap:
+`sway/CLAUDE.md` (setup and PATH bullets), `bin/CLAUDE.md` (the header and
+the okular-inverse paragraph), `CLAUDE.md`, `bash/CLAUDE.md`,
+`environment.d/10-editor.conf`, `org/machines/environment.md` §6, this item.
+
 ---
+
+## 30. Tonight's desktop changes are unverified on bigfed
+
+- [ ] Check on bigfed, under sway: the bar's focused-workspace chip and the
+  split marker keep the bar at 24 px (their box is `min-height: 0` plus 2 px
+  margins, sized to the label under fedxps's GTK theme); a fold's strip is set
+  in Source Code Pro; `$mod+Shift+v`/`b`/`s` behave in a column as the suite
+  says; the accent reads the same on the Samsung.
+- [ ] Added 2026-09-30, the one box that now spaces the whole bar: a one-digit
+  workspace button is 25 px wide (the theme's 16 px button minimum is zeroed),
+  the right-hand modules' cells sit 20 px apart and 10 px from the screen's
+  edge (the ink 21-23 and 10-11 px, as on fedxps) with whatever bigfed's tray
+  holds, and the battery and backlight modules it lacks leave no gap (shown
+  offscreen in GTK, not yet on the Samsung). Record: `DECISIONS.md`,
+  2026-09-30.
+- [ ] Also from 2026-09-29: `$mod+x` runs adelotype and `$mod+Shift+x` the
+  plain editor (`--new-window` since 2026-09-30); neither has run on bigfed.
+- [ ] Added 2026-09-30, the audit's batch (`DECISIONS.md`, that date): run
+  `stow-all` there for the `hosts/` layer, then reload and check that the
+  power button opens the nag (`systemd-inhibit --list` names sway), that
+  `wpctl` answers the volume keys, that the desktop suite passes with `jq`,
+  `wezterm` and the adelotype launcher present and `brightnessctl` skipped,
+  that the bar stays 24 px with the pinned 11 pt and shows the `resize` pill,
+  that both monitors run without adaptive sync (his word restores it), the
+  tray's order, and the session file's install. Done there over SSH on
+  2026-09-30: the default-apps link, the GNOME chords, and rofi's install.
+  The pull adds the `rofi/` stow package, so `source ~/.bashrc` before
+  `stow-all`.
+
+Found 2026-09-29, when tabs, the one accent, the menu toggle and the Shift-tier
+shaping verbs all landed from fedxps in one evening and he set bigfed aside
+for it ("take what we're doing as fine on bigfed"). Everything reaches bigfed
+through the shared config; nothing was measured there. Record:
+`DECISIONS.md`, the three entries of 2026-09-29.
 
 ## Notes
 
@@ -695,7 +732,7 @@ it. One fix, both machines. Record: `org/machines/environment.md` §6.
 - Desktop typography under Sway, surveyed 2026-08-13. The bar and the launcher were
   brought in line; the rest was **deliberately left alone**. There is no XSettings daemon under sway, so GTK3 apps read gsettings
   directly (`Adwaita Sans 11`) and agree with each other — but anything shipping its own
-  stylesheet does not participate. `wofi` ($mod+a) *was* the worst outlier — no config at
+  stylesheet does not participate. `wofi` ($mod+d since 2026-09-28; $mod+a then) *was* the worst outlier — no config at
   all, running on compiled-in defaults — and got its own stow package the same day
   (palette + Source Code Pro matching Waybar; see `wofi/CLAUDE.md`). mako and swaylock still
   fall back to their own defaults for fonts, which has not mattered in practice. Judged too big to
@@ -713,10 +750,28 @@ it. One fix, both machines. Record: `org/machines/environment.md` §6.
   background). ~3.6 MB of the repo's 9.2 MB is this directory, which is not a stow
   package.
 
+## 32. The page-flip line on trial
+
+- [ ] Count `Page-flip failed on output eDP-1` per day before and after
+  `output eDP-1 max_render_time 10` (2026-09-30): 127, 86, 27 and 46 in the
+  four boots before it. Keep the line if the count falls; drop it if not, and
+  record either way. `journalctl --user -b -N --no-pager | grep -c 'Page-flip
+  failed'` for boot -N.
+
+---
+
 ## Closed
 
 One line per closed item — verdict, date, pointer. Full notes and post-mortems
 are in `DECISIONS.md` under the same item numbers.
+
+- **31. The rofi trial** — adopted at first use: rofi on `$mod+d`, wofi on
+  `$mod+Shift+d`, the package `rofi/` with a whole theme sheet. Closed
+  2026-09-30 → `DECISIONS.md`, the audit entry (the rofi paragraph).
+- **28. The desktop suite's binary check on bigfed** — the brightness keys pin
+  the backlight class (`-c backlight`), and the suite skips `brightnessctl`
+  where `/sys/class/backlight` is empty. Closed 2026-09-30 → `DECISIONS.md`,
+  the audit entry of that date.
 
 - **1. Git-sync overhaul** — collapsed into shared per-repo helpers with vetting and
   guards; 153-check suite. Closed 2026-07-26 → `DECISIONS.md`, Done ledger.

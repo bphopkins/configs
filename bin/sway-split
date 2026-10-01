@@ -1,29 +1,39 @@
 #!/usr/bin/env bash
-# sway-split -- make $mod+v a toggle, and show Waybar when it is set.
+# sway-split -- make the split keys toggles, and show Waybar when one is set.
 #
-# $mod+v (sway's splitv) puts the focused window alone in a new column, so
-# the next window opens below it. Left to itself that state is invisible and
-# has no cancel; this script gives it both (configs DECISIONS.md, 2026-09-28).
+# splitv puts the focused window alone in a new column, so the next window
+# opens below it; splith, alone in a new row, so it opens beside. Left to
+# itself that state is invisible and has no cancel; this script gives it both
+# (configs DECISIONS.md, 2026-09-28; the pair of keys, 2026-09-29).
 #
-#   sway-split toggle   set the state on the focused window, or cancel it
+#   sway-split below    $mod+Shift+v: set the focused window so the next opens
+#                       below it; cancel on a second press; flip from beside
+#   sway-split beside   $mod+Shift+b: the same, beside
+#   sway-split toggle   the original single key: set below, or cancel either
 #   sway-split status   print Waybar's marker for the focused window, once
 #   sway-split watch    print it now, and again after every sway event that
 #                       can change it (waybar/config, custom/split)
 #
 # "Set" means the focused window sits alone in its container, so the next
-# window opens below it (a column) or beside it (a row, after $mod+Ctrl+r);
-# for a window alone on its workspace, the workspace itself is vertical.
-# Cancelling runs sway's own `split none`, which cannot undo the workspace
-# case (measured); there `splith` puts the workspace back to a row, by the
-# same path $mod+v took (`layout splith` would wrap the window instead,
-# measured).
+# window opens below it (a column) or beside it (a row, after $mod+Shift+b or
+# $mod+Ctrl+r); for a window alone on its workspace, the workspace itself is
+# vertical. A floating window is left alone ("off"): sway would wrap it in a
+# floating container, where the next window opens floating below it, with no
+# marker and no cancel (measured 2026-09-30). Cancelling runs sway's own
+# `split none`, which cannot undo the workspace case (measured); there
+# `splith` puts the workspace back to a row, by the same path splitv took
+# (`layout splith` would wrap the window instead, measured).
 #
 # Reads sway's JSON tree (`swaymsg -t get_tree`), a documented IPC contract.
 # The toggle wakes the watcher with a sway tick event rather than a signal, so
 # nothing outside the running sway is touched. Title changes are filtered out
 # of the event stream: they are frequent and cannot change the state.
 # Suite: tests/sway-split/run.sh.
-set -u
+#
+# pipefail: a tree that cannot be read fails `state`, so the watcher exits 1,
+# which Waybar logs and clears, rather than 0, which it would pass over in
+# silence (measured 2026-09-30).
+set -u -o pipefail
 
 # One object for the focused node: its state and the command that cancels it.
 STATE_JQ='
@@ -31,7 +41,8 @@ def focus_of($p):
   (if .focused then {type, pt: $p.type, pl: $p.layout, pn: ($p.nodes | length)} else empty end),
   (. as $n | (.nodes[]?, .floating_nodes[]?) | focus_of($n));
 ([focus_of({type: "", layout: "", nodes: []})] | .[0]) as $f
-| if $f == null or $f.type != "con" then {state: "none", cancel: null}
+| if $f == null or $f.type == "floating_con" then {state: "off", cancel: null}
+  elif $f.type != "con" then {state: "none", cancel: null}
   elif $f.pt == "con" and $f.pn == 1 and $f.pl == "splitv" then {state: "below", cancel: "split none"}
   elif $f.pt == "con" and $f.pn == 1 and $f.pl == "splith" then {state: "beside", cancel: "split none"}
   elif $f.pt == "workspace" and $f.pn == 1 and $f.pl == "splitv" then {state: "below", cancel: "splith"}
@@ -48,7 +59,17 @@ marker() {
 
 case "${1:-}" in
   toggle)
-    cmd="$(state | jq -r '.cancel // "splitv"')" || exit 1
+    cmd="$(state | jq -r 'if .state == "off" then empty else .cancel // "splitv" end')"
+    [ -n "$cmd" ] || exit 0
+    swaymsg -- "$cmd" >/dev/null
+    swaymsg -t send_tick sway-split >/dev/null
+    ;;
+  below|beside)
+    # Set that state, cancel it on a second press, or flip the other one:
+    # sway changes a singleton container's layout in place (measured).
+    split=splitv; [ "$1" = beside ] && split=splith
+    cmd="$(state | jq -r --arg w "$1" --arg s "$split" 'if .state == "off" then empty elif .state == $w then .cancel else $s end')"
+    [ -n "$cmd" ] || exit 0
     swaymsg -- "$cmd" >/dev/null
     swaymsg -t send_tick sway-split >/dev/null
     ;;
@@ -71,7 +92,7 @@ case "${1:-}" in
     wait
     ;;
   *)
-    echo "usage: sway-split toggle|status|watch" >&2
+    echo "usage: sway-split below|beside|toggle|status|watch" >&2
     exit 2
     ;;
 esac

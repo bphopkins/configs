@@ -1,6 +1,8 @@
 # wofi -- stow-managed from ~/Desktop/configs/wofi/config.
 # Edit it here, not at ~/.config/wofi/config (that is a symlink into this repo).
-# Invoked from sway/config as `$menu` ($mod+a), defined as `wofi --show drun`.
+# Invoked from sway/config as `$menu2` ($mod+Shift+d, a toggle: a second press
+# closes it), defined as `wofi --show drun`: the second launcher since
+# 2026-09-30, behind rofi on $mod+d (rofi/).
 #
 # Syntax (man 5 wofi): snake_case key=value, one per line, `#` comments. Most
 # keys are the wofi(1) command-line flags in snake case. Every key below was
@@ -13,19 +15,33 @@
 # as opposed to `run` which lists raw executables on PATH.
 show=drun
 
-# A tall, narrow list reads better than a wide one for scanning names.
+# A tall, narrow list reads better than a wide one for scanning names. The
+# height is inert while lines is set: wofi sizes the window from lines
+# (twelve rows plus the search field) whenever lines is positive (2026-09-30).
 width=520
 height=460
 lines=12
 columns=1
 location=center
 
+# The empty list is A-Z, stable and the same on both machines. The default
+# lists the entries in ~/.cache/wofi-drun first, ordered by launch count, so
+# the list reordered itself with use, and the rest in disk order
+# (2026-09-30). After a search, ties break A-Z.
+sort_order=alphabetical
+
 prompt=Applications
 
-# Search behaviour. `contains` (the default) only matches a literal substring;
-# fuzzy lets "gimp" find "GNU Image Manipulation Program" and tolerates typos.
-# insensitive because nobody wants to hold Shift to find "Firefox".
-matching=fuzzy
+# Search behaviour. drun searches each entry's name and its metadata -- the
+# .desktop path, the executable, the comment, categories and keywords -- so a
+# substring finds GIMP from "gimp". multi-contains wants every
+# space-separated word somewhere in that text and ranks by how early the words
+# match; the name comes first, so the app named by the query leads, and
+# "sys mon" finds System Monitor. fuzzy, a subsequence over that much text,
+# matched most of the list and ranked Neovim above Files for "files", and
+# Enter runs the first row (measured 2026-09-30). insensitive because nobody
+# wants to hold Shift to find "Firefox".
+matching=multi-contains
 insensitive=true
 
 # No icons -- the rest of this desktop (Waybar especially) is deliberately
@@ -43,6 +59,9 @@ no_actions=true
 # regardless.
 hide_scroll=true
 
-# Layer-shell overlay rather than a normal tiled window, so opening the
-# launcher never rearranges the workspace behind it.
+# Layer-shell rather than a normal tiled window, so opening the launcher never
+# rearranges the workspace behind it -- and on the overlay layer, so it also
+# shows over a fullscreen window. On the default top layer sway draws it
+# beneath one while still giving it the keyboard (2026-09-30).
 normal_window=false
+layer=overlay

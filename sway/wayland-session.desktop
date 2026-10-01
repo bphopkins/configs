@@ -1,0 +1,22 @@
+# sway/wayland-session.desktop -- installed by hand, once per machine, as
+# /usr/local/share/wayland-sessions/sway.desktop, where it replaces Fedora's
+# entry of the same name (GDM takes the first file of a name along its data
+# dirs, where /usr/local/share precedes /usr/share). GDM starts a session's
+# command with no shell; gnome-session re-execs itself through `$SHELL -l`,
+# and this does the same for sway, so ~/.bash_profile runs and sway inherits
+# the PATH 20-path.sh builds (TODO.md item 29). Single quotes only in Exec:
+# GDM wraps the command in double quotes without escaping, so a double quote
+# splits it; the quotes are outside the desktop-entry spec (desktop-file-
+# validate rejects them), which GDM does not apply -- it reads Exec as a raw
+# string and shell-parses it. A copy, not a link: the greeter cannot read
+# /home/bph. Stow links this file inertly into ~/.config/sway, where sway
+# reads only `config`. Install:
+#   sudo install -D -m 0644 ~/Desktop/configs/sway/wayland-session.desktop /usr/local/share/wayland-sessions/sway.desktop
+# Undo: sudo rm /usr/local/share/wayland-sessions/sway.desktop
+[Desktop Entry]
+Name=Sway
+Comment=An i3-compatible Wayland compositor, started from a login shell
+Exec=bash -l -c 'exec /usr/bin/sway'
+TryExec=/usr/bin/sway
+Type=Application
+DesktopNames=sway;wlroots

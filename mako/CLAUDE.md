@@ -15,7 +15,14 @@ Charter for `mako/config`, stowed to `~/.config/mako`.
   first notification. There is no `exec` line in `sway/config`; don't add
   one.
 - It does **not** watch its config: apply changes with `makoctl reload`
-  (exit 0 means accepted).
+  (exit 0 means accepted; on a parse failure mako keeps the old config and
+  makoctl exits 1). ⚠ **A bad value stops mako starting** at the next login
+  — a colour without its `#`, a timeout with a unit, a misspelt criteria
+  header — and the only symptom is that no notification ever appears, the
+  critical battery warning included. The key check cannot see that;
+  `tests/desktop/run.sh` runs mako's own parser on a copy since 2026-09-30.
+- `$mod+n` dismisses the newest notification (`makoctl dismiss`; 2026-09-30),
+  the keyboard's way to a critical one that otherwise waits for a click.
 
-Keys are validated against the installed man page by `tests/desktop/run.sh` —
-run it after edits.
+Keys and values are validated by `tests/desktop/run.sh` (caged) — run it
+after edits.
