@@ -40,7 +40,9 @@ Conventions carrying the bar's behavior:
   apart between any two neighbours in both corners and 10 px from either edge
   of the screen; the ink inside measures 21-23 and 10-11 px, the glyphs' own
   bearings, by screenshotting the strip and clustering its ink columns
-  (annotated 2026-09-30).
+  (annotated 2026-09-30). One deliberate break in that rhythm (2026-10-01):
+  a 16 px margin after the workspace buttons sets the state pills that follow
+  them, the split marker and the binding mode, apart from the row.
   Values take their natural width: the fixed `{capacity:>3}` fields of
   2026-08-13 put blank 9 px cells inside the label, and the visible gaps swung
   with the digit count. A value crossing a digit boundary moves the modules to
@@ -99,16 +101,33 @@ Conventions carrying the bar's behavior:
   instead, and a bar is 24 px whichever workspace is focused (measured on
   fedxps) – but the one bar stays.
 - **The split marker** (`custom/split`, 2026-09-28; the keys `$mod+Shift+v`
-  and `$mod+Shift+b` since 2026-09-29): `~/bin/sway-split
-  watch` prints ↓ or → while the focused window is set for the next one to
-  open below or beside it, and nothing otherwise, which hides the module. It
-  re-reads sway's tree on window, workspace, binding and tick events, titles
-  filtered out, and the keys send the tick. It is white, as sway's edge cue
-  for the same state is. Waybar stops a continuous module
-  by signalling the script alone (measured), so the script's trap stops its
-  own event stream; without it, every reload left one behind. Suite:
-  `tests/sway-split/run.sh`.
-- The urgent workspace and `#battery.critical` use `#d08770` — one of the
-  four coupled urgent-colour sites (`sway/CLAUDE.md`).
+  and `$mod+Shift+b` since 2026-09-29): `~/bin/sway-split watch` prints
+  `↓ below` or `→ beside` while the focused window is set for the next one
+  to open below or beside it, and nothing otherwise, which hides the module.
+  It re-reads sway's tree on window, workspace, binding and tick events,
+  titles filtered out, and the keys send the tick. It fills in the urgent
+  colour, as the `resize` pill and sway's split edge do (2026-10-01; white
+  before, matching the then-white edge): a pending split waits on you before
+  you go on. The word joined the arrow the same day: a lone glyph in a box
+  the size of a workspace button read as one more workspace. Waybar stops a
+  continuous module by signalling the script alone (measured), so the
+  script's trap stops its own event stream; without it, every reload left
+  one behind. Suite: `tests/sway-split/run.sh`. Record: `DECISIONS.md`,
+  2026-10-01.
+- The urgent workspace, `#battery.critical`, the `resize` pill and the split
+  marker use `#d08770`; this sheet is one of the four coupled urgent-colour
+  configs (`sway/CLAUDE.md`).
+- **Seeing a change before it goes live** (2026-10-01): start Waybar
+  yourself in a caged, headless nested sway (`sway/CLAUDE.md`, "The whole
+  file", bar block stripped as it says), with a minimal config of its own:
+  the left modules and the clock, no tray, a `custom/split` whose `exec`
+  prints a fixed marker, and `-s` naming this `style.css`. Watch its RSS and
+  stop it well short of the cage's 512M: the 9.2 GB nested Waybar of
+  2026-08-13 ran the full config, spawned by the bar block, uncaged, and no
+  cause is on record. Five starts this way, in three runs, peaked at
+  56-59 MiB. Bars given as a JSON array stack down the output, one per
+  variant, each bar's `name` a class on `window#waybar` for its overrides; a
+  background one step off black per bar (`#000001`, `#000002`) is invisible
+  and lets one `grim` capture be cut into strips.
 
 Run `tests/desktop/run.sh` after any edit here (caged since 2026-09-30).

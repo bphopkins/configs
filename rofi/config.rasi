@@ -18,12 +18,30 @@
 configuration {
     modes: [ drun ];
 
-    /* Every typed word must appear somewhere in the entry's name or
-       metadata, in any case: the app named by the query ranks first, and
-       "sys mon" finds System Monitor. (rofi's `fuzzy` matches subsequences
-       over all of it and ranks loosely, the fault wofi's fuzzy had.) */
-    matching: "normal";
+    /* Fuzzy: the typed letters in order, in any case, anywhere in an entry's
+       name, generic name, command, categories or keywords (drun's default
+       fields), so "sysmon" finds System Monitor and "libwri" LibreOffice
+       Writer. Chosen 2026-10-01 and kept until it misleads; the way back is
+       the one word "normal", which wants each typed word whole ("sys mon").
+       Its known stray, measured: a query that names no app can rank a loose
+       match first -- "pdf" put Rygel Preferences above Document Viewer, which
+       "normal" lists alone. */
+    matching: "fuzzy";
     case-sensitive: false;
+
+    /* Rank what matched. With sort off, rofi's default, a query only
+       filters, and the matches keep the empty list's A-Z order: "system"
+       kept the 18 entries that carry the word anywhere, most through a
+       System category, with Alacritty selected and System Monitor 15th,
+       below the twelve rows on screen (rendered 2026-10-01). fzf scores the
+       query against the name -- word starts and unbroken runs of letters
+       count most -- so the app named by the query leads; levenshtein, the
+       default method, measures edit distance to the whole name and puts
+       short names first (WezTerm above System Monitor for "system"). Only a
+       typed query is sorted: the empty list stays A-Z. tests/desktop/run.sh
+       pins both lines. */
+    sort: true;
+    sorting-method: "fzf";
 
     /* Name only in the list: the default format appends the generic name in
        small italics, which doubles the line's width for nothing. */

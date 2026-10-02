@@ -56,8 +56,8 @@ chord is held; motions, walks, volume, brightness and resize keys repeat.
 | `$mod+Shift+minus` | stash the window in the scratchpad |
 | `$mod+Shift+space` | toggle the window between tiling and floating |
 | `$mod+Shift+f` | toggle the window fullscreen |
-| `$mod+Shift+v` | the next window opens below this one; again to cancel; from beside, flips (↓ on a white block in the bar while set; floating windows are left alone) |
-| `$mod+Shift+b` | the next window opens beside this one; again to cancel; from below, flips (→ on a white block in the bar while set) |
+| `$mod+Shift+v` | the next window opens below this one; again to cancel; from beside, flips (↓ below on an orange block in the bar, and an orange bottom edge, while set; floating windows are left alone) |
+| `$mod+Shift+b` | the next window opens beside this one; again to cancel; from below, flips (→ beside on an orange block in the bar, and an orange right edge, while set) |
 | `$mod+Shift+s` | fold the windows here into tabs, one showing at a time; again to unfold |
 
 ## `$mod+Ctrl` — the enclosures, and the session

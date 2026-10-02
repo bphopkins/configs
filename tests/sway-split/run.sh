@@ -71,6 +71,7 @@ spawn() { # $1 = app id; returns once the window is in the tree
 sw()     { swaymsg -q -- "$1" 2>/dev/null; }
 tree()   { swaymsg -t get_workspaces | jq -r '.[] | select(.focused) | .representation'; }
 marker() { "$SPLIT" status | jq -r '.class // "none"'; }
+label()  { "$SPLIT" status | jq -r '.text'; }
 toggle() { "$SPLIT" toggle; }
 is()     { [ "$1" = "$2" ] || { echo "     got: $1   want: $2"; return 1; }; }
 
@@ -117,9 +118,11 @@ beside() { "$SPLIT" beside; }
 below
 check "below sets a column of one" is "$(tree)" "H[A V[B]]"
 check "marker: below" is "$(marker)" below
+check "its text names the direction (2026-10-01)" is "$(label)" $'↓ below'
 beside
 check "beside flips it to a row of one" is "$(tree)" "H[A H[B]]"
 check "marker: beside" is "$(marker)" beside
+check "its text names the direction" is "$(label)" $'→ beside'
 below
 check "below flips it back" is "$(tree)" "H[A V[B]]"
 below

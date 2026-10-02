@@ -50,10 +50,13 @@ def focus_of($p):
 
 state() { swaymsg -t get_tree | jq -c "$STATE_JQ"; }
 
+# The marker names its direction beside the arrow (2026-10-01): a lone glyph
+# sat in a box the size of a workspace button, right after them, and read as
+# one more workspace.
 marker() {
   state | jq -c '
-    if .state == "below" then {text: "\u2193", tooltip: "The next window opens below", class: "below"}
-    elif .state == "beside" then {text: "\u2192", tooltip: "The next window opens beside", class: "beside"}
+    if .state == "below" then {text: "\u2193 below", tooltip: "The next window opens below", class: "below"}
+    elif .state == "beside" then {text: "\u2192 beside", tooltip: "The next window opens beside", class: "beside"}
     else {text: ""} end'
 }
 

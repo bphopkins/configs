@@ -524,7 +524,10 @@ input type:keyboard {
     # workspace, sway wraps every window there into the fold, and that wrapper
     # forgets the split it came from: a column unfolds as a row, and one
     # $mod+Ctrl+r restores it; once one window is left in the wrapper the bar
-    # shows a stray beside until $mod+Shift+b (measured 2026-09-30). All measured
+    # shows a stray beside until $mod+Shift+b (measured 2026-09-30). Where the
+    # fold began with $mod+Shift+v on a window alone on its workspace, that
+    # press leaves the workspace's own below showing, until $mod+Shift+v
+    # (measured 2026-10-01). All measured
     # on a nested sway 1.11, 2026-09-29, where a bare
     # `layout toggle` proved the same as `toggle split`, whatever the man
     # page says of it.
@@ -708,25 +711,30 @@ set $accent #0088FF
 
 # $urgent is shared with the rest of the desktop on purpose: Waybar's urgent
 # workspace, mako's critical border, and swaylock's wrong-password ring all use
-# this same colour, so "something needs you" looks identical everywhere.
+# this same colour, so "something needs you" looks identical everywhere. Needs
+# you means waiting on you before you go on: an alert, or a state to leave --
+# the resize mode, and since 2026-10-01 a pending split (the edge below, and
+# Waybar's marker).
 set $urgent #d08770
 
 # Format: border  background  text  indicator  child_border
 #
-# The focused indicator is white: it is the split cue. Sway paints it on the
-# edge where the next window will open, only while the focused window sits
-# alone in its container -- the bottom edge after $mod+Shift+v, the right
-# edge after $mod+Shift+b or $mod+Ctrl+r -- and it clears once a window lands
-# there or the window is lifted out (measured 2026-09-28). Until then it
-# matched the border, so the
-# state could not be seen. A lone window on a workspace has no border at all
-# (smart_borders), so no cue there.
+# The focused indicator is the split cue, in $urgent since 2026-10-01 (white
+# from 2026-09-28): a pending split waits on you, as the resize mode does.
+# Sway paints it on the edge where the next window will open, only while the
+# focused window sits alone in its container -- the bottom edge after
+# $mod+Shift+v, the right edge after $mod+Shift+b or $mod+Ctrl+r -- and it
+# clears once a window lands there or the window is lifted out (measured
+# 2026-09-28). Until 2026-09-28 it matched the border, so the state could not
+# be seen. A lone window on a workspace has no border at all (smart_borders),
+# so no cue there. An urgent window takes $urgent on its whole frame; the split
+# cue is one edge of the focused window.
 #
 # background and text are drawn only in a fold's strip, since windows have no
 # title bars. The focused title sits on the accent, the active title of an
 # unfocused fold on grey, every other title white on black, so the active tab
 # reads in both states (rendered on a nested sway, 2026-09-29).
-client.focused          $accent  $accent #ffffff #ffffff $accent
+client.focused          $accent  $accent #ffffff $urgent $accent
 client.focused_inactive #5f676a  #5f676a #ffffff #5f676a #5f676a
 client.unfocused        #434c5e  #000000 #ffffff #434c5e #434c5e
 # urgent's background is the urgent colour too, so an urgent tab in a fold

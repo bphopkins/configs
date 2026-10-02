@@ -70,7 +70,8 @@ window#waybar {
    transparent unless the module carries a state, when it fills: the focused
    or urgent workspace, the split marker, the binding mode, a critical
    battery. Both corners are built from the same box, so the cells of any two
-   neighbours are 20 px apart on either side and the first and last cell
+   neighbours are 20 px apart on either side, save the gap after the
+   workspace buttons (#workspaces, below), and the first and last cell
    edges sit 10 px from the screen's edge; the ink inside measures 21-23 and
    10-11 px, the glyphs' own side bearings making up the difference. The
    tray's `spacing` in waybar/config (20) is this rule's 8 + 4 + 8; change it
@@ -142,13 +143,25 @@ window#waybar {
   background: @urgent;
 }
 
+/* A gap after the workspace buttons (2026-10-01), so the state pills that
+   follow them -- the split marker, the binding mode -- stand apart from the
+   row instead of reading as one more workspace: 20 px between the boxes
+   there, against 4 px between any other two neighbours. When neither pill
+   shows, nothing follows the buttons and the gap is blank bar. */
+#workspaces {
+  margin-right: 16px;
+}
+
 /* The split marker (custom/split in waybar/config; $mod+Shift+v and
    $mod+Shift+b), shown only while the focused window is set for the next
    window to open below or beside it. A filled block, because the edge cue
-   alone was too easy to miss (2026-09-28); white, the colour sway paints that
-   edge in, so the two cues read as one (2026-09-29). */
+   alone was too easy to miss (2026-09-28). In the urgent colour since
+   2026-10-01, as the binding mode below and sway's split edge are: a pending
+   split waits on you before you go on, as the resize mode does. White from
+   2026-09-29, when it matched the then-white edge. Black on it, as on the
+   mode pill. */
 #custom-split {
-  background: @fg;
+  background: @urgent;
   color: @bg;
 }
 

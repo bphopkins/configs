@@ -3,8 +3,8 @@
 Charter for `sway/` (stowed to `~/.config/sway`), and the coordinating
 charter for the desktop suite — waybar, swaylock, mako, wofi, rofi each carry
 their own small charter for what binds when their files are touched. Records:
-`DECISIONS.md` items 5 and 6, the entries of 2026-09-28 and 2026-09-29, and
-the audit of 2026-09-30.
+`DECISIONS.md` items 5 and 6, the entries of 2026-09-28 and 2026-09-29, the
+audit of 2026-09-30, and the split cue's entry of 2026-10-01.
 
 **Sway runs on both machines:** fedxps, and bigfed on trial since 2026-09-28,
 on its two monitors. One config serves both, so **before changing anything,
@@ -75,19 +75,23 @@ notification-related work).
   is Waybar's, wofi's, rofi's, mako's border and swaylock's ring too (mako
   and swaylock blue since 2026-08-13, rofi since 2026-09-30), meaning where
   you are or what is selected; the suite pins all six sites (2026-09-30).
-  `#d08770` keeps meaning needs-you. `$forest #228B22` sits unused in
-  `config`, and `@forest` in the three launcher and bar sheets, so the old
-  green can be swapped back in one word — don't clean them up; mako and
-  swaylock would need the same swap by hand. The bar's split marker is white,
-  as sway's edge cue for the same state is.
-- **The split cue is white**: `client.focused`'s indicator, which sway paints
-  on the edge where the next window will open while the focused window sits
-  alone in its container—the bottom edge after `$mod+Shift+v`, the right
-  edge after `$mod+Shift+b` or `$mod+Ctrl+r`. It matched the border until
-  2026-09-28, which hid the state; the unfocused classes keep indicators
-  equal to their borders. Borders are 2 px, stated so since 2026-09-30 (a
-  trailing comment had voided the configured 3 since the first commit, and
-  he kept the 2 he had looked at).
+  `#d08770` keeps meaning needs-you: waiting on you before you go on, an
+  alert or a state to leave (the resize mode; a pending split since
+  2026-10-01, its edge and its bar marker both). `$forest #228B22` sits
+  unused in `config`, and `@forest` in the three launcher and bar sheets, so
+  the old green can be swapped back in one word — don't clean them up; mako
+  and swaylock would need the same swap by hand.
+- **The split cue is the urgent colour** (2026-10-01; white from
+  2026-09-28): `client.focused`'s indicator, which sway paints on the edge
+  where the next window will open while the focused window sits alone in its
+  container—the bottom edge after `$mod+Shift+v`, the right edge after
+  `$mod+Shift+b` or `$mod+Ctrl+r`. It matched the border until 2026-09-28,
+  which hid the state; the unfocused classes keep indicators equal to their
+  borders. Borders are 2 px, stated so since 2026-09-30 (a trailing comment
+  had voided the configured 3 since the first commit, and he kept the 2 he
+  had looked at). A wider frame on a set window, 4 px while set, ran live
+  and was declined 2026-10-01 (`DECISIONS.md`, that date); don't re-propose
+  it.
 - **A fold's strip is the only title bar here**: `font` and the background
   and text fields of `client.*` draw nowhere else, so a change to them shows
   only inside tabs and stacks. Preview one as the 2026-09-29 entry did – a
@@ -107,10 +111,11 @@ notification-related work).
   2026-09-28). It looks redundant and is not.
 - **One urgent colour across the desktop**: `#d08770` in four configs and four
   config languages — sway `client.urgent` (border and, since 2026-09-30, an
-  urgent tab's fill), Waybar's urgent workspace, `#battery.critical` and the
-  `resize` mode pill, mako's `[urgency=critical]` border, swaylock's
-  wrong-password ring. Deliberately not derived from one another; changing it
-  means changing all four. The suite pins the drawn keys.
+  urgent tab's fill) and, since 2026-10-01, `client.focused`'s indicator, the
+  split edge; Waybar's urgent workspace, `#battery.critical`, the `resize`
+  mode pill and the split marker; mako's `[urgency=critical]` border,
+  swaylock's wrong-password ring. Deliberately not derived from one another;
+  changing it means changing all four. The suite pins the drawn keys.
 - **Waybar is launched as sway's bar** (`bar { swaybar_command waybar }`) — a
   reload replaces it rather than duplicating it, but sway does not restart
   it if it dies: a Waybar that exits stays gone until `$mod+Ctrl+c` (sway
@@ -235,7 +240,7 @@ the body gap:
   when that variable is set.
 
 **Regression suite:** `tests/desktop/run.sh` (caged since 2026-09-30; its
-header counts its checks, 51 today; about 4 s) — validates the config and each
+header counts its checks, 52 today; about 4 s) — validates the config and each
 machine layer inlined, rejects duplicate chords mode-aware and with sorted
 modifiers, checks every binary a binding names (inside `sh -c` bodies too),
 executes every non-exec binding command against a nested sway and fails if
@@ -243,8 +248,8 @@ that sway stops answering, parses both GTK3 stylesheets and the Waybar JSON,
 runs mako's own parser, validates every swaylock/mako/wofi key and wofi's
 selectors against the installed man pages, and pins the cross-config wiring at
 the keys that draw it: the `#d08770` urgent sites, the `#0088FF` accent in
-all five files, the exact swayidle line, the bare `swaylock -f` call sites,
+all six files, the exact swayidle line, the bare `swaylock -f` call sites,
 the MSI identifier in both configs, and agreement between the two
-`60-stow.sh` arrays, and rofi's options and theme against rofi's own
-dumps, since its parser is silent. Run it after editing **any** of the six
-desktop configs or a machine layer.
+`60-stow.sh` arrays, and rofi's options, theme and ranking (sort on, by
+fzf) against rofi's own dumps, since its parser is silent. Run it after
+editing **any** of the six desktop configs or a machine layer.

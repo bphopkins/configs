@@ -26,9 +26,10 @@
   // every workspace -- accepted 2026-09-28.
   "sway/workspaces": { "all-outputs": true },
 
-  // The split marker: a down arrow while the focused window is set for the
-  // next one to open below it ($mod+Shift+v), a right arrow for beside
-  // ($mod+Shift+b, or $mod+Ctrl+r), hidden otherwise. sway-split prints it at
+  // The split marker: a down arrow and the word "below" while the focused
+  // window is set for the next one to open below it ($mod+Shift+v), a right
+  // arrow and "beside" for beside ($mod+Shift+b, or $mod+Ctrl+r), hidden
+  // otherwise (the words since 2026-10-01). sway-split prints it at
   // start and again after every sway event that can change it, woken by a
   // tick from the keys themselves;
   // restart-interval brings it back if the event stream ever breaks. By

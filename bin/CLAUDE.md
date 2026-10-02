@@ -76,7 +76,7 @@ with a conflict.
   (state `off`; until 2026-09-30 the keys wrapped it invisibly, with no
   marker and no cancel). Called by path from `sway/config` and
   `waybar/config`, since a sway session's PATH lacks `~/bin`. Suite:
-  `tests/sway-split/run.sh` (43 checks, caged; mutation-tested).
+  `tests/sway-split/run.sh` (45 checks, caged; mutation-tested).
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC

@@ -2766,10 +2766,163 @@ and the sheet's colour names in `rofi -dump-theme`'s output, and every
 `@colour` the sheet uses against its own `*` block, and rofi's accent
 beside the other five (51 checks).
 `disable-history` keeps the list A-Z as wofi's is; `matching normal` is
-wofi's `multi-contains`. TODO item 31 closes. Open for a later session: the
+wofi's `multi-contains`. *[Annotated 2026-10-01: the same entries match,
+but only wofi ranks them; rofi kept its matches A-Z until `sort` went on.
+The entry of that date.]* TODO item 31 closes. Open for a later session: the
 modes rofi was chosen for (window, ssh, dmenu scripts), each as it earns a
 key. His verdict after the switch: "rofi opens faster and cleaner than
 wofi. It almost immediately seems to feel better." wofi stays on Shift as
 the second launcher until a later session decides whether it earns its
 package.
+
+## rofi's search ranks: `sort` with fzf, and fuzzy matching on trial — 2026-10-01
+
+A day after the switch he found rofi's search worse than wofi's:
+"certainly not fuzzy find", and on typing "system" for System Monitor,
+"it's as if it doesn't even search or narrow down the options."
+
+**Cause.** rofi's `sort` is off by default, and without it a query only
+filters: the matches keep the empty list's order, A-Z since
+`disable-history`. drun tests each typed word against the name, generic
+name, command, categories and keywords, so "system" kept 18 of the 57
+entries, most through a `System` category (every terminal, Logs,
+Software), and A-Z put System Monitor 15th, below the twelve rows on
+screen, with Alacritty selected for Enter. Typing s, sy, sys changed
+nothing at the top. The 2026-09-30 entry's "`matching normal` is wofi's
+`multi-contains`" held for which entries match and not for their order:
+wofi ranks its matches by how early the typed words fall in a search text
+that begins with the name (`multi_contains_sort`, wofi 1.5.3
+`src/match.c`), so there the app named by the query leads.
+
+**Method.** Both launchers rendered with the live configs on a caged
+headless nested sway (`tests/cage.sh`; a minimal config with no exec,
+bar, swaybg, swaynag or Xwayland), each query preset with rofi's
+`-filter` or wofi's `--search`, the screen taken with `grim` and read
+back. The mechanism read in rofi 2.0.0's source: `source/view.c`,
+`filter_elements`, sorts a query only when `sort` is on, keyed on the
+completion string, which drun makes the name, and never sorts an empty
+input; `source/helper.c` holds the fzf scorer. Four quirks, for the next
+such probe: the first client drawn straight after the nested sway starts
+came out black, twice, so wait a second; give the probe rofi its own
+`-pid`, since rofi takes an exclusive lock on the default pid file, the
+live menu's, and exits while another copy holds it; `-filter text` is
+refused ("needs to be set with a string not a Cursor"), so that query
+went unrendered; and wofi's `--search` preset can leave its list
+scrolled, which hid System Monitor, ranked first, above the twelve rows
+until `--lines 24` showed the whole list.
+
+**Measured**, the top row (rofi on its default fields, wofi on its own
+config):
+
+| typed | rofi before | sort, levenshtein | sort, fzf | fuzzy, sort, fzf | wofi |
+|---|---|---|---|---|---|
+| system | Alacritty (System Monitor 15th) | WezTerm (System Monitor 9th) | System Monitor | System Monitor | System Monitor |
+| sys | Alacritty | Logs (System Monitor 12th) | System Monitor | System Monitor | System Monitor |
+| files | Disk Usage Analyzer | Files | Files | Files | Files |
+| sysmon | nothing | nothing | nothing | System Monitor | nothing |
+
+Whole words (`normal`) against fuzzy, both sorted by fzf, over 22 queries:
+the same top row in 18 of the 20 where both found anything; fuzzy alone
+found "sysmon" and "libwri"; "ff" led with KDiff3 under whole words and
+with FontForge under fuzzy; "pdf" listed Document Viewer alone under
+whole words, and fuzzy put Rygel Preferences above it. Fuzzy pads the
+tail: "fire" lists Firefox alone under whole words, six entries under
+fuzzy. Two letters can still rank loosely under fzf ("sy", measured under
+whole words, puts Start Syncthing above System Monitor); "sys" settles
+it. Sorting left the empty list A-Z, as the source says.
+
+**Changed**, its effect on fedxps named before the change, and the same
+on bigfed: the order of a typed query's list, and under fuzzy which
+entries it holds; nothing else. `rofi/config.rasi` gains `sort: true` and
+`sorting-method: "fzf"`, `matching` goes to `"fuzzy"`, and the comment
+that had promised a ranking gives the measured reasons instead;
+`rofi/CLAUDE.md` carries the verdict; `tests/desktop/run.sh` reads rofi's
+own dump of the file for both lines (52 checks; deleting `sort: true`, or
+setting the method to `normal`, fails that check alone on a copy of the
+tree), and `sway/CLAUDE.md` counts it. Rendered from the repo file
+afterwards: the empty list A-Z, System Monitor first for "system", "sys"
+and "sysmon", Files first for "files", Rygel Preferences first for "pdf".
+
+**Decided.** fzf over levenshtein, which ranks short names first. Fuzzy
+over the recommended whole words, at his word: "I was thinking fuzzy find
+is ideal, at least until I find a problem with it; if I find a problem
+with fuzzy find I will switch to whole words." The way back is the one
+word `"normal"`, and the "pdf" stray is the first known problem. Offered
+and not taken up: dropping `categories` from `drun-match-fields`, which
+cuts "system" from 18 rows to 4 under whole words (System Monitor, Files,
+Htop, Volume Control) at the price of category words as searches; wofi
+searched categories too.
+
+## The split cue: the marker names its direction, both cues take the urgent colour, a wide frame declined — 2026-10-01
+
+He asked why, after a split, a fold, an unfold and closing the window the
+split had made room for, he was "left in split mode again", "just another
+thing to keep track of", and whether that was sway's doing or his config's.
+
+**Cause, measured** on a caged headless nested sway 1.11, with
+`bin/sway-split` and the bindings' own commands. The split makes a
+container, and the fold and the unfold change only its layout (V, T, V; its
+sway id unchanged throughout). A close removes the window and any container
+left empty, and nothing else (`container_reap_empty`, sway 1.11
+`sway/tree/view.c` and `container.c`; i3 keeps the same rule in
+`src/con.c`), so the window is back in exactly the state its split made.
+Sway dissolves a one-child container only on request, `split none`. The
+marker reads the tree and keeps no memory of a key press, so it lights on any
+path into the state. A fold made on a window sitting straight on the
+workspace leaves two layers after the close: the fold's wrapper (beside) over
+the workspace's own vertical layout (below), cleared by `$mod+Shift+b` and
+then `$mod+Shift+v`; the comment in `sway/config` that named only the first
+press was completed the same day.
+
+**Method.** Every candidate rendered at fedxps's geometry (1920 × 1080,
+scale 1) on caged nested sways with the live stylesheet and palette, Waybar
+itself started there with a minimal config and a memory watchdog
+(`waybar/CLAUDE.md`), and compared on a private board.
+
+**Changed**, its effect on fedxps named before each change, the same on
+bigfed:
+
+- The marker says `↓ below` or `→ beside` (`bin/sway-split`). One thin glyph
+  in a box the size of a workspace button, set right after them, had read as
+  one more workspace. Measured against it: ⇓, cramped at 11 pt; ▼, which
+  reads as a caret, its partner ▶ as play; the glyph at 13 pt, which grows
+  the bar from 24 to 27 px whenever the marker shows. Two checks pin the
+  text (`tests/sway-split/run.sh`, 45 checks; both fail against the old
+  script).
+- The marker and sway's split edge, `client.focused`'s indicator, take the
+  urgent colour; both had been white (2026-09-28 and 2026-09-29). His
+  reasoning: "They're both 'urgent' in the sense that they demand something
+  of me before I proceed with anything else." Needs-you widens to match:
+  waiting on you before you go on, an alert or a state to leave, the resize
+  mode and now a pending split. The case for white was put first and
+  measured: against the black bar white is 21:1 and the urgent colour 7.4:1;
+  beside an urgent workspace the orange marker and the alert read as one
+  group; with resize on, two orange pills differ only in their words. A first
+  argument for white, that a state set often and on purpose would wear out
+  the alarm colour, was withdrawn when he pointed out that it would take the
+  colour from resize as well. The suite's urgent pins now cover the split
+  edge and both pills; each, undone alone in a copy of the tree, fails its
+  own check.
+- A 16 px margin after the workspace buttons sets the state pills that
+  follow them, the split marker and the binding mode, apart from the row:
+  20 px between the boxes there, 4 px between any other two neighbours.
+
+**Declined** (asked and answered, do not re-propose):
+
+- *A wide frame on a set window*: 4 px while set, widened and restored by
+  `sway-split`'s watcher on every path into and out of the state, and kept
+  while focus is elsewhere so that focus passing never resizes it. Built,
+  checked on a nested sway (15 checks), run live on fedxps at his word
+  ("let me see for a minute"), declined after the minute and taken out the
+  same day. Sway 1.11 paints the indicator at the frame's own width
+  (`sway/tree/container.c`, the indicator branch), so a wider edge alone
+  does not exist.
+- *The whole frame white while set*, by swapping sway's one focused colour
+  at runtime, and *every frame at 3 px*: rendered, not chosen.
+
+**Left open.** Unverified on bigfed: `TODO.md` item 30. Offered in passing
+and not taken up: clearing a pending split automatically when a close leaves
+a window alone. Sway has no option for it; `sway-split`'s watcher could run
+`split none`, at the cost of dissolving bigfed's columns down to their last
+window.
 

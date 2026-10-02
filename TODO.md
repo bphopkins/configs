@@ -712,6 +712,13 @@ the okular-inverse paragraph), `CLAUDE.md`, `bash/CLAUDE.md`,
   2026-09-30: the default-apps link, the GNOME chords, and rofi's install.
   The pull adds the `rofi/` stow package, so `source ~/.bashrc` before
   `stow-all`.
+- [ ] Added 2026-10-01, the split cue: after the pull, a reload
+  (`$mod+Ctrl+c`), then `$mod+Shift+v` on a window beside another. The bar
+  shows `↓ below` in the urgent fill, 20 px clear of the workspace buttons
+  (as `resize` is when it shows alone), the window's bottom edge is the
+  urgent colour, and the bar stays 24 px. Rendered on a nested sway and live
+  on fedxps; not yet seen on the Samsung. Record: `DECISIONS.md`,
+  2026-10-01.
 
 Found 2026-09-29, when tabs, the one accent, the menu toggle and the Shift-tier
 shaping verbs all landed from fedxps in one evening and he set bigfed aside

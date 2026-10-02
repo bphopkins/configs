@@ -62,6 +62,11 @@
 #     drifted, in swaylock; GTK3-invalid CSS, malformed JSON, the clock's
 #     interval at 60, the accent define and button.urgent's fill drifted, in
 #     waybar; wofi dropped from STOW_TARGETS.
+#   rofi, 2026-10-01: `sort: true` deleted, and sorting-method set to
+#     normal, each failing the ranking check alone.
+#   the split cue, 2026-10-01: client.focused's indicator back to white, and
+#     #custom-split's and #mode's fills off @urgent, each failing its urgent
+#     check alone.
 #   the suite itself: `swaymsg exit` before the body loop (NO REPLY); an
 #     exec_always line, the /etc include, the bar block and `xwayland
 #     disable` each surviving the strip (the copy check fails, and no sway
@@ -69,7 +74,7 @@
 #     mako's probe made always to pass (its anti-vacuity check); the nested
 #     sway left running (the cage check).
 #
-# 51 checks on fedxps on 2026-09-30: 47, and two for each host layer (its
+# 52 checks on fedxps on 2026-10-01: 48, and two for each host layer (its
 # inlined validation, its chords).
 #
 # Run from anywhere after editing any of the five configs or a host layer
@@ -573,6 +578,11 @@ def main(cmd, args):
         for path, n, block, words in statements(args[1:]):
             if words[0] == 'client.' + args[0] and len(words) > 1:
                 print(var_replace(words[1], SVARS))
+    elif cmd == 'clientcol':              # CLASS N FILE...: its Nth colour (1 = border), resolved
+        i = int(args[1])
+        for path, n, block, words in statements(args[2:]):
+            if words[0] == 'client.' + args[0] and len(words) > i:
+                print(var_replace(words[i], SVARS))
     elif cmd == 'cssprop':                # FILE SELECTOR PROPERTY: its values
         for sels, props in css_rules(args[0]):
             if ' '.join(args[1].split()) in sels and args[2] in props:
@@ -986,6 +996,17 @@ if have rofi; then
     [ -z "$undef" ] || { echo "     undefined in theme.rasi's * block:$undef"; return 1; }
   }
   check "every @colour in rofi/theme.rasi is defined in its * block" rofi_refs_ok
+  # A query is ranked only with sort on: off, rofi's default, it keeps the
+  # empty list's A-Z order, and "system" left System Monitor 15th, below the
+  # rows on screen. fzf is the method that ranks by the name (DECISIONS.md,
+  # 2026-10-01). Dropping either line raises nothing, so read rofi's own dump.
+  rofi_ranks() {
+    local d
+    d="$(env -u WAYLAND_DISPLAY -u DISPLAY rofi -config "$CFG_ROOT/rofi/config.rasi" -dump-config 2>/dev/null)"
+    grep -qE '^[[:space:]]*sort:[[:space:]]*true;' <<<"$d" || { echo "     sort is not on"; return 1; }
+    grep -qE '^[[:space:]]*sorting-method:[[:space:]]*"fzf";' <<<"$d" || { echo "     sorting-method is not fzf"; return 1; }
+  }
+  check "rofi ranks a query (sort on, by fzf)" rofi_ranks
 else
   skipit "rofi missing (rofi checks skipped)"
 fi
@@ -1024,11 +1045,14 @@ mako_border() { # $1 = section ("" for the globals): its border-color
 }
 swaylock_key() { sed -n "s/^$1=//p" "$CFG_ROOT/swaylock/config" | tail -n 1; }
 css_define()   { sed -nE "s/^@define-color $2[[:space:]]+(#[0-9A-Fa-f]+);.*/\1/p" "$1"; }
-urgent_sway()     { is_colour "$URGENT" "$(swayconf client urgent "$MAIN")"; }
+urgent_sway()     { is_colour "$URGENT" "$(swayconf client urgent "$MAIN")" &&
+                    is_colour "$URGENT" "$(swayconf clientcol focused 4 "$MAIN")"; }
 accent_sway()     { is_colour "$ACCENT" "$(swayconf var accent "$MAIN")" &&
                     is_colour "$ACCENT" "$(swayconf client focused "$MAIN")"; }
 urgent_waybar()   { is_colour "$URGENT" "$(css_define "$CSS_W" urgent)" &&
-                    css_uses "$CSS_W" '#workspaces button.urgent' background @urgent; }
+                    css_uses "$CSS_W" '#workspaces button.urgent' background @urgent &&
+                    css_uses "$CSS_W" '#custom-split' background @urgent &&
+                    css_uses "$CSS_W" '#mode' background @urgent; }
 accent_waybar()   { is_colour "$ACCENT" "$(css_define "$CSS_W" accent)" &&
                     css_uses "$CSS_W" '#workspaces button.focused' background @accent; }
 accent_wofi()     { is_colour "$ACCENT" "$(css_define "$CSS_O" accent)" &&
@@ -1046,8 +1070,8 @@ css_uses() { # $1 = sheet, $2 = selector, $3 = property, $4 = the define its val
   v="$(swayconf cssprop "$1" "$2" "$3" | tail -n 1)"
   case " $v " in *" $4 "*) ;; *) say "$2 { $3: ${v:-(unset)} }"; return 1;; esac
 }
-check "urgent colour #$URGENT drawn in sway/config (client.urgent)" urgent_sway
-check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent)" urgent_waybar
+check "urgent colour #$URGENT drawn in sway/config (client.urgent, the split edge)" urgent_sway
+check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent, the split and mode pills)" urgent_waybar
 check "urgent colour #$URGENT drawn in mako/config ([urgency=critical] border)" urgent_mako
 check "urgent colour #$URGENT drawn in swaylock/config (ring-wrong-color)" urgent_swaylock
 check "accent #$ACCENT drawn in sway/config (\$accent, client.focused)" accent_sway
