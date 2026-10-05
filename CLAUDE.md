@@ -132,6 +132,14 @@ hand-edited (`nvim/CLAUDE.md`, Snippets).
 **Run `tests/sway-split/run.sh` after any edit to `bin/sway-split`.** Caged;
 it drives a nested headless sway, never the live one.
 
+**Run `tests/sway-pointer/run.sh` after any edit to `bin/sway-pointer`.** Caged;
+stub-based: no compositor is started or addressed, the device lists are the
+two machines' saved ones.
+
+**Run `tests/screens-off/run.sh` after any edit to `bin/screens-off`.** Caged;
+stub-based: no compositor is addressed, no session locked, no display
+touched; mutation-tested against seventeen breaks (2026-10-03).
+
 **Run `tests/desktop/run.sh` after any edit to `sway/`, `waybar/`, `mako/`,
 `wofi/`, `rofi/` or `swaylock/`.** Caged since 2026-09-30 (`tests/cage.sh`); it drives
 a nested headless sway on a short private socket, never the live one.

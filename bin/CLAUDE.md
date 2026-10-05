@@ -42,32 +42,39 @@ with a conflict.
   from `sway/config`, with the plain editor on `$mod+Shift+x`; under GNOME
   the key is adelotype's own `tools/launcher.sh bind`, per machine.
 
-- `screens-off` — locks the session and lets GNOME power the displays down,
-  bound to `<Super><Ctrl>b` on bigfed. It exists because bigfed never
-  suspends: it must answer SSH over the LAN and the tailnet whenever it is
-  left alone, so the displays are the only thing that may turn off, and this
-  reaches that state on the way out of the chair instead of 15 minutes later.
-  It **never writes** Mutter's `PowerSaveMode` itself, and that restraint is
-  the whole design. Forcing the property straight to mutter, behind
-  gnome-settings-daemon's back, hard-wedged KMS on 2026-09-06: the chord
-  release reverted gsd's own blank, gsd went back to normal and unaware, and
-  the forced-off monitors had nothing left watching to wake them — no input
-  recovered it, only a VT round-trip from another machine did (memory
-  `bigfed-mutter-kms-wedge`). So it just locks. Locking makes the screensaver
-  active, and gnome-settings-daemon blanks the monitors ~0.3 s later (a real
-  DPMS power-down) and wakes them at the next seat input — the same path GNOME
-  uses for its own idle blank, where the component that blanks is the one
-  waiting to wake. The lone subtlety is the `IdleMonitor.GetIdletime` wait: it
-  lets the seat fall quiet *before* locking, so the launching keypress or the
-  chord release cannot revert GNOME's blank. Two provisions make it work over
-  SSH from fedxps as well as locally: it defaults `DBUS_SESSION_BUS_ADDRESS`,
-  and it locks an explicitly looked-up graphical session, since bare `loginctl
-  lock-session` would lock the SSH session instead. GNOME only. The
-  *binding* is per-machine dconf and outside this repo, as adelotype's
-  `<Super>x` is; the placement follows `sway/config`'s law, a session op at
-  `$mod+Ctrl+letter`, beside `$mod+Ctrl+l` for lock. Verified end to end
-  2026-09-06: typed, chord, and SSH-from-fedxps invocations all blanked, held
-  dark, stayed locked, and woke to the lock screen on a Bluetooth key.
+- `screens-off` — locks the session and powers the displays down, on the way
+  out of the chair, under GNOME or sway; the first key or mouse movement
+  brings them back to the lock screen, nothing else interrupted. Bound to
+  `<Super><Ctrl>b` on bigfed: dconf under GNOME (`custom6`, outside this
+  repo, as adelotype's `<Super>x` is), `$mod+Ctrl+b` in
+  `sway/hosts/bigfed.conf` under sway (2026-10-03) — a session op on the
+  Ctrl tier beside `l` for lock, by `sway/config`'s law. It exists because
+  bigfed never suspends: it must answer SSH over the LAN and the tailnet
+  whenever it is left alone, so the displays are the only thing that may
+  turn off. One rule holds on both desktops: the component that powers the
+  displays down is the one waiting to power them back on, and it waits for
+  the seat to fall quiet first, so the chord's own release, which counts as
+  input, cannot revert the blank; the script never writes a display's power
+  state behind that component's back. Under GNOME it waits on
+  `IdleMonitor.GetIdletime`, then only locks — gnome-settings-daemon blanks
+  ~0.3 s later and wakes at the next input; forcing Mutter's `PowerSaveMode`
+  around gsd hard-wedged KMS on 2026-09-06 (memory `bigfed-mutter-kms-wedge`),
+  which is why that restraint is the design. Under sway it has sway spawn a
+  bare `swaylock -f`, then itself as `screens-off --watch`, which notes its
+  pid in `$XDG_RUNTIME_DIR/screens-off.watcher` and execs a one-shot
+  `swayidle -w timeout 1 '…power off' resume '…power on; kill $PPID'`: dark
+  a second after the seat falls quiet, relit and gone at the first input.
+  The lock comes first because sway honours a browser's wake lock only
+  while unlocked. The pid on file keeps a second invocation from arming a
+  second watcher, and lets a re-run re-arm the wake if one ever died. It
+  then waits up to 5 s for every output to read power off and exits 1 with
+  a line on stderr if not. It finds the live compositor itself — a sway IPC
+  socket that answers, else Mutter on the session bus — so it works over SSH
+  from fedxps too. Verified live 2026-09-06 under GNOME (typed, chord, SSH;
+  that branch is unchanged since, and the suite pins it) and 2026-10-03 under
+  sway, by the chord after a reload. Suite:
+  `tests/screens-off/run.sh` (43 checks, caged, stub-based; mutation-tested
+  against seventeen breaks). Record: `DECISIONS.md`, 2026-10-03.
 - `sway-split` — `$mod+Shift+v` and `$mod+Shift+b` as toggles, and Waybar's
   marker for them: `below` and `beside` set the focused window so the next
   opens there, cancel on a second press of the same key and flip on the
@@ -77,6 +84,19 @@ with a conflict.
   marker and no cancel). Called by path from `sway/config` and
   `waybar/config`, since a sway session's PATH lacks `~/bin`. Suite:
   `tests/sway-split/run.sh` (45 checks, caged; mutation-tested).
+- `sway-pointer` — `$mod+m`: every pointing device off, and back on, and
+  Waybar's `pointer off` marker meanwhile. `toggle` reads sway's device
+  list, takes each pointer or touchpad facet on which sway exposes
+  acceleration, skips an identifier any facet of which lacks it (a
+  keyboard's wheel; a keyboard whose mouse-keys interface shares its name),
+  and sets `events` by identifier, never by type, on what is present and on
+  everything learned at earlier presses (`~/.local/state/sway-pointer/learned`,
+  never pruned by the script), so a mouse asleep at the press wakes off.
+  `status` and `watch` print the marker; `watch` carries sway-split's stop
+  trap, so a Waybar restart leaves no subscriber behind. Called by path from
+  `sway/config` and `waybar/config`. Suite: `tests/sway-pointer/run.sh` (43
+  checks, caged, stub-based; mutation-tested against nine breaks,
+  2026-10-03). Record: `DECISIONS.md`, 2026-10-03.
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC

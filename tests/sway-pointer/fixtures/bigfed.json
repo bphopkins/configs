@@ -1,0 +1,182 @@
+[
+  {
+    "identifier": "1133:45079:MX_Master_Mouse",
+    "name": "MX Master Mouse",
+    "type": "pointer",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "disabled",
+      "left_handed": "disabled",
+      "middle_emulation": "disabled",
+      "scroll_method": "none",
+      "scroll_button": 274,
+      "scroll_button_lock": "disabled"
+    },
+    "vendor": 1133,
+    "product": 45079
+  },
+  {
+    "identifier": "1133:45079:MX_Master_Keyboard",
+    "name": "MX Master Keyboard",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 1133,
+    "product": 45079
+  },
+  {
+    "identifier": "0:0:Eee_PC_WMI_hotkeys",
+    "name": "Eee PC WMI hotkeys",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 0
+  },
+  {
+    "identifier": "0:1:Power_Button",
+    "name": "Power Button",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 1
+  },
+  {
+    "identifier": "0:1:Power_Button",
+    "name": "Power Button",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 1
+  },
+  {
+    "identifier": "1133:16480:Logitech_MX_Master",
+    "name": "Logitech MX Master",
+    "type": "pointer",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "disabled",
+      "left_handed": "disabled",
+      "middle_emulation": "disabled",
+      "scroll_method": "none",
+      "scroll_button": 274,
+      "scroll_button_lock": "disabled"
+    },
+    "vendor": 1133,
+    "product": 16480
+  },
+  {
+    "identifier": "1133:16480:Logitech_MX_Master",
+    "name": "Logitech MX Master",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "disabled",
+      "left_handed": "disabled",
+      "middle_emulation": "disabled",
+      "scroll_method": "none",
+      "scroll_button": 274,
+      "scroll_button_lock": "disabled"
+    },
+    "vendor": 1133,
+    "product": 16480
+  },
+  {
+    "identifier": "13364:53296:Keychron__Keychron_Link__Keyboard",
+    "name": "Keychron  Keychron Link  Keyboard",
+    "type": "pointer",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "natural_scroll": "disabled"
+    },
+    "vendor": 13364,
+    "product": 53296
+  },
+  {
+    "identifier": "13364:53296:Keychron__Keychron_Link__Keyboard",
+    "name": "Keychron  Keychron Link  Keyboard",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled",
+      "natural_scroll": "disabled"
+    },
+    "vendor": 13364,
+    "product": 53296
+  },
+  {
+    "identifier": "13364:53296:Keychron__Keychron_Link",
+    "name": "Keychron  Keychron Link ",
+    "type": "pointer",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "disabled",
+      "left_handed": "disabled",
+      "middle_emulation": "disabled",
+      "scroll_method": "none",
+      "scroll_button": 274,
+      "scroll_button_lock": "disabled"
+    },
+    "vendor": 13364,
+    "product": 53296
+  }
+]

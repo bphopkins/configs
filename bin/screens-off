@@ -1,64 +1,191 @@
 #!/usr/bin/env bash
-# screens-off — lock the session and let GNOME power the displays down, on the
-# way out of the chair. The machine stays awake and reachable over SSH (LAN and
-# tailnet) until an input device touches it; the displays are the only thing
-# that turns off. Bound to <Super><Ctrl>b on bigfed by a GNOME custom shortcut.
+# screens-off — lock the session and power the displays down, on the way out
+# of the chair, under GNOME or sway. The machine stays awake and reachable over
+# SSH (LAN and tailnet) until an input device touches it; the displays are the
+# only thing that turns off, and the first key or mouse movement brings them
+# back, to the lock screen, with nothing interrupted. Bound to <Super><Ctrl>b
+# on bigfed: under GNOME a custom shortcut in dconf (custom6), under sway
+# `$mod+Ctrl+b` in sway/hosts/bigfed.conf (2026-10-03).
 #
 # WHY IT EXISTS. bigfed must answer SSH whenever it is left alone, so it never
-# suspends: `sleep-inactive-ac-type` is 'nothing' and the power button is inert.
-# No sleep state can serve sshd (S3 unpowers the NIC; s2idle freezes
-# userspace), so the displays are the only thing that may turn off. GNOME
-# reaches that state on its own after `idle-delay` (15 min); this reaches the
-# same state deliberately, at once.
+# suspends: logind refuses every sleep request (`AllowSuspend=no` since
+# 2026-10-01), GNOME's `sleep-inactive-ac-type` is 'nothing' and the power
+# button is inert. No sleep state can serve sshd (S3 unpowers the NIC; s2idle
+# freezes userspace), so the displays are the only thing that may turn off.
+# Neither desktop turns them off by itself here (Caffeine under GNOME, no idle
+# timer under sway); this reaches that state deliberately, at once.
 #
-# HOW IT WORKS — AND WHAT IT DELIBERATELY DOES NOT DO. It locks the session and
-# stops. Locking makes GNOME's screensaver active, and gnome-settings-daemon
-# powers the monitors off about 0.3 s later (a real DPMS power-down, not a black
-# screen) and arms a watch that powers them back on at the next seat input. That
-# is the same path GNOME uses for its own idle blank; the component that turns
-# the screen off is the same one waiting to turn it back on, so it cannot strand
-# the display. A Bluetooth key or mouse event wakes it exactly as from a normal
-# idle blank, whether or not the device had itself gone to sleep.
+# ONE RULE, BOTH DESKTOPS. The component that powers the displays down is the
+# one waiting to power them back on, and it waits for the seat to fall quiet
+# before acting, so that the keypress launching the command — most reliably the
+# RELEASE of the chord, which counts as input — cannot revert the blank. Under
+# GNOME that component is gnome-settings-daemon; under sway it is a swayidle
+# started for the occasion. This script never writes a display's power state
+# behind that component's back.
 #
-# It does NOT write org.gnome.Mutter.DisplayConfig PowerSaveMode itself. Earlier
+# GNOME. It locks the session and stops. Locking makes GNOME's screensaver
+# active, and gnome-settings-daemon powers the monitors off about 0.3 s later
+# (a real DPMS power-down, not a black screen) and arms a watch that powers
+# them back on at the next seat input — the path GNOME uses for its own idle
+# blank, so the component that turns the screen off is the one waiting to turn
+# it back on, and it cannot strand the display. A Bluetooth key or mouse event
+# wakes it exactly as from a normal idle blank, whether or not the device had
+# itself gone to sleep.
+#
+# It does NOT write org.gnome.Mutter.DisplayConfig PowerSaveMode. Earlier
 # versions did, and on 2026-09-06 that hard-wedged the machine. Writing
 # PowerSaveMode=3 goes straight to mutter, behind gnome-settings-daemon's back;
-# if the keypress that launched the command — most reliably the RELEASE of the
-# <Super><Ctrl>b chord — had just reverted gsd's own blank, gsd was back in its
-# NORMAL state and unaware, so the forced-off monitors had nothing watching to
-# wake them, and mutter looped failing hardware-cursor commits against the
-# disabled CRTC (`drmModeAtomicCommit: Invalid argument`). No keyboard or mouse
-# input recovered it; it took a VT round-trip from another machine
-# (`ssh -t bigfed-vpn 'sudo sh -c "chvt 1; sleep 2; chvt 2"'`) to force a fresh
-# modeset. The lesson: never drive the DPMS state around gsd — trigger GNOME's
-# own blank by locking, and let it own the whole blank/wake lifecycle. See the
+# the release of the <Super><Ctrl>b chord had just reverted gsd's own blank,
+# so gsd was back in its NORMAL state and unaware, the forced-off monitors had
+# nothing watching to wake them, and mutter looped failing hardware-cursor
+# commits against the disabled CRTC (`drmModeAtomicCommit: Invalid argument`).
+# No keyboard or mouse input recovered it; it took a VT round-trip from another
+# machine (`ssh -t bigfed-vpn 'sudo sh -c "chvt 1; sleep 2; chvt 2"'`) to force
+# a fresh modeset. Never drive the DPMS state around gsd — trigger GNOME's own
+# blank by locking, and let it own the whole blank/wake lifecycle. See the
 # memory `bigfed-mutter-kms-wedge`.
 #
-# THE WAIT. The one hazard left is that the very input launching the command can
-# revert GNOME's blank in the ~0.3 s after the lock, which would only delay the
-# blank to gsd's 30 s screensaver-blank fallback — never wedge, since nothing
-# here forces the property. To keep the blank prompt it waits for the seat to
-# fall quiet BEFORE locking (QUIET_MS), then locks. A typed command blanks when
-# you stop typing; the chord blanks when you let the keys go; over SSH the seat
-# is already idle, so it locks at once.
+# The quiet wait, under GNOME: the input launching the command can revert the
+# blank in the ~0.3 s after the lock, which would only delay it to gsd's 30 s
+# screensaver-blank fallback — never wedge, since nothing here forces the
+# property. So it waits for the seat to fall quiet BEFORE locking (QUIET_MS,
+# read from Mutter's IdleMonitor), then locks. A typed command blanks when you
+# stop typing; the chord blanks when you let the keys go; over SSH the seat is
+# already idle, so it locks at once.
 #
-# SSH. Two things make it work from fedxps or nousowl as well as locally: the
-# session bus address, which a non-graphical login does not carry, and an
-# explicit graphical session id for the lock — bare `loginctl lock-session`
+# SWAY. The lock, then a watcher, both spawned by sway itself (`swaymsg exec`),
+# so that they live in the session's scope and environment, which an SSH shell
+# lacks:
+#
+#   1. `swaylock -f`, bare, as at every call site in sway/config, so that
+#      swaylock/config stays the one source of how the lock looks. On a session
+#      already locked, sway refuses the second lock and that swaylock exits; the
+#      lock that is up stays.
+#   2. `screens-off --watch`: this script again, which notes its pid in
+#      $XDG_RUNTIME_DIR/screens-off.watcher and becomes (exec) a one-shot
+#      `swayidle -w timeout 1 '…power off' resume '…power on; kill $PPID'`.
+#      The compositor tells it when the seat has been quiet for a second; it
+#      powers every output off (`output * power off`: a real DPMS power-down
+#      that keeps the outputs and their workspaces in sway's tree). The
+#      compositor tells it at the next input; it powers them on and exits —
+#      with -w the command's parent is swayidle itself, so $PPID is the pid to
+#      kill. The one-second timeout is the quiet wait: the chord's own release
+#      only restarts the second. While the pid on file is a live watcher, a
+#      further invocation adds none (a watcher armed but not yet fired at the
+#      moment of a wake would blank again a second after the input stopped);
+#      once it has exited, or died, the next invocation arms a fresh one.
+#
+#   The lock comes first for a reason beyond habit. A browser page holding a
+#   wake lock (an idle inhibitor) stops the compositor's idle timers, and sway
+#   honours an application's inhibitor only while the session is unlocked
+#   (sway 1.11, `sway_idle_inhibit_v1_is_active`): at the lock it re-evaluates
+#   them, and the watcher's second starts then. Measured in a nested sway on
+#   2026-10-03: inhibited and unlocked, the watcher never fired; locked, the
+#   output went off a second later and came back within a second of a
+#   keystroke. The watcher takes no logind inhibitor, so `systemd-inhibit
+#   --list` still names exactly one swayidle, the session's lock-before-sleep.
+#
+#   A persistent second swayidle fired by SIGUSR1 was the first draft
+#   (DECISIONS.md, 2026-09-30) and was measured the same day: SIGUSR1
+#   re-registers its timer at 0 ms, so the displays go off at once — and the
+#   chord's release, arriving next, brings them straight back; and its
+#   ten-year timeout overflows swayidle's millisecond counter to 21 days. A
+#   quiet wait would have to be built beside it; the one-shot has it built in
+#   and leaves no daemon behind.
+#
+#   Then it reports: it waits up to 5 s for every active output to read power
+#   off, exits 0 silently when they do, and 1 with a line on stderr when they
+#   do not (input still arriving, or an inhibitor sway honours while locked).
+#   The watcher stays armed either way.
+#
+# RECOVERY, sway. If the displays ever stay dark at a touch, the watcher is
+# gone and nothing else powers outputs on. Run this script again, over SSH
+# (`ssh bigfed '~/bin/screens-off'`): it finds no live watcher on file, arms a
+# fresh one, and the next touch wakes the displays. Or power them on directly:
+#   ssh bigfed 'for s in /run/user/1000/sway-ipc.*.sock; do swaymsg -s $s output "*" power on; done'
+# The lock stays up either way.
+#
+# SSH. Works from fedxps or nousowl as well as locally. Under sway it finds
+# the live IPC socket by itself (below); under GNOME it defaults the session
+# bus address, which a non-graphical login does not carry, and locks an
+# explicitly looked-up graphical session, since bare `loginctl lock-session`
 # locks the *calling* session, which over SSH is the wrong one.
 #
-# GNOME only. The *binding* is per-machine dconf, outside this repo, as
-# adelotype's <Super>x is. ⚠ On fedxps this blanks and locks but does not
-# leave the box reachable: fedxps is a laptop configured to suspend, and
-# bigfed's reachable-while-dark state comes from `sleep-inactive-ac-type`
-# being 'nothing' underneath.
+# fedxps. The script is stowed there too and runs by name: under sway it locks
+# and powers the panel down and the laptop stays awake until its lid closes;
+# under GNOME it blanks and locks, with fedxps's own suspend setting
+# underneath. The chords are bigfed's alone.
 
 set -euo pipefail
 
 : "${DBUS_SESSION_BUS_ADDRESS:=unix:path=/run/user/$(id -u)/bus}"
 export DBUS_SESSION_BUS_ADDRESS
 
+SELF=$(readlink -f -- "${BASH_SOURCE[0]}")
+RUNDIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+WATCHER_PIDFILE=$RUNDIR/screens-off.watcher
+
 die() { printf 'screens-off: %s\n' "$1" >&2; exit 1; }
+
+# ---------------------------------------------------------------------- sway
+
+# The watcher, run by sway as `screens-off --watch`: its pid noted, then
+# swayidle in its place (exec), so the file names the swayidle itself. The
+# note is best effort: a watcher must never be lost to a missing runtime dir.
+if [ "${1-}" = --watch ]; then
+  printf '%s\n' "$$" >"$WATCHER_PIDFILE" 2>/dev/null || true
+  exec swayidle -w timeout 1 'swaymsg "output * power off"' resume 'swaymsg "output * power on"; kill $PPID'
+fi
+
+# A watcher from an earlier invocation is still armed: the pid on file is
+# alive and is a watcher, or this script about to become one.
+watcher_alive() {
+  local pid
+  pid=$(cat "$WATCHER_PIDFILE" 2>/dev/null) && [[ $pid =~ ^[0-9]+$ ]] || return 1
+  tr '\0' ' ' 2>/dev/null <"/proc/$pid/cmdline" | grep -qE 'swayidle -w timeout 1 |screens-off --watch'
+}
+
+# A live sway answers on its IPC socket: $SWAYSOCK in a session shell; over
+# SSH, where nothing exports it, the socket sway names after its pid in
+# XDG_RUNTIME_DIR. Each candidate is asked for sway's version, so a stale
+# socket file, or a stale $SWAYSOCK the user manager kept from an earlier
+# session, is passed over.
+sway_socket() {
+  local s
+  for s in ${SWAYSOCK:+"$SWAYSOCK"} "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/sway-ipc.*.sock; do
+    [ -S "$s" ] && swaymsg -s "$s" -t get_version >/dev/null 2>&1 || continue
+    printf '%s\n' "$s"
+    return 0
+  done
+  return 1
+}
+
+# Every active output reads power off.
+outputs_dark() {
+  [ "$(swaymsg -s "$1" -t get_outputs | jq -r '[.[] | select(.active)] | all(.power == false)')" = true ]
+}
+
+# The windows holding an idle inhibitor, for the report.
+inhibitors() {
+  swaymsg -s "$1" -t get_tree | jq -r '[.. | objects
+    | select(.idle_inhibitors? and (.idle_inhibitors.application != "none" or .idle_inhibitors.user != "none"))
+    | .name] | if length == 0 then "no window holds an inhibitor" else "inhibitors: " + join(", ") end'
+}
+
+screens_off_sway() {
+  local sock=$1 i
+  swaymsg -s "$sock" -q exec 'swaylock -f'
+  watcher_alive || swaymsg -s "$sock" -q exec "'$SELF' --watch"
+  for ((i = 0; i < 50; i++)); do
+    sleep 0.1
+    outputs_dark "$sock" && return 0
+  done
+  printf 'screens-off: the displays are still on after 5 s (input still arriving, or an inhibitor sway honours while locked; %s); the watcher stays armed, and they go dark a second after the seat falls quiet\n' \
+    "$(inhibitors "$sock")" >&2
+  return 1
+}
+
+# --------------------------------------------------------------------- GNOME
 
 # The graphical session, found by type rather than by $XDG_SESSION_ID, which is
 # absent over SSH and in a service-spawned shell.
@@ -79,32 +206,36 @@ idletime() {
     sed -nE 's/^\(uint64 ([0-9]+),\)$/\1/p'
 }
 
-# Fail before locking if this is not a live GNOME session, so a non-GNOME
-# session exits non-zero rather than locking with no way to blank.
-gdbus introspect --session --dest org.gnome.Mutter.DisplayConfig \
-  --object-path /org/gnome/Mutter/DisplayConfig >/dev/null 2>&1 \
-  || die "org.gnome.Mutter.DisplayConfig is not on the session bus"
+screens_off_gnome() {
+  local session idle waited=0
+  session=$(graphical_session) || die "no graphical session found"
 
-session=$(graphical_session) || die "no graphical session found"
+  # Wait for the seat to fall quiet BEFORE locking, so the launching keypress
+  # (or the chord release) does not revert GNOME's blank. Never hang: past
+  # WAIT_MAX_MS, lock anyway. Over SSH the idle time is already large, so this
+  # returns on the first read.
+  local QUIET_MS=500 WAIT_MAX_MS=15000 POLL_MS=120
+  while :; do
+    idle=$(idletime) || idle=""   # pipefail: sed matching nothing must not abort
+    [ -n "$idle" ] || break          # no idle monitor: do not spin, just lock
+    [ "$idle" -ge "$QUIET_MS" ] && break
+    [ "$waited" -ge "$WAIT_MAX_MS" ] && break
+    sleep 0.12
+    waited=$(( waited + POLL_MS ))
+  done
 
-# Wait for the seat to fall quiet BEFORE locking, so the launching keypress (or
-# the chord release) does not revert GNOME's blank. Never hang: past
-# WAIT_MAX_MS, lock anyway. Over SSH the idle time is already large, so this
-# returns on the first read.
-QUIET_MS=500
-WAIT_MAX_MS=15000
-POLL_MS=120
+  # Lock, and stop. GNOME blanks the monitors ~0.3 s later and wakes them on
+  # the next input. We deliberately never touch PowerSaveMode.
+  loginctl lock-session "$session"
+}
 
-waited=0
-while :; do
-  idle=$(idletime) || idle=""   # pipefail: sed matching nothing must not abort
-  [ -n "$idle" ] || break          # no idle monitor: do not spin, just lock
-  [ "$idle" -ge "$QUIET_MS" ] && break
-  [ "$waited" -ge "$WAIT_MAX_MS" ] && break
-  sleep 0.12
-  waited=$(( waited + POLL_MS ))
-done
+# ---------------------------------------------------------------------- main
 
-# Lock, and stop. GNOME blanks the monitors ~0.3 s later and wakes them on the
-# next input. We deliberately never touch PowerSaveMode.
-loginctl lock-session "$session"
+if sock=$(sway_socket); then
+  screens_off_sway "$sock"
+elif gdbus introspect --session --dest org.gnome.Mutter.DisplayConfig \
+    --object-path /org/gnome/Mutter/DisplayConfig >/dev/null 2>&1; then
+  screens_off_gnome
+else
+  die "no live session to act on: no sway IPC socket answers, and org.gnome.Mutter.DisplayConfig is not on the session bus"
+fi

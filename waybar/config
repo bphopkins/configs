@@ -18,7 +18,10 @@
   // nothing already showing moves when it appears (2026-09-30).
   "modules-left":   ["sway/workspaces", "custom/split", "sway/mode"],
   "modules-center": ["clock"],
-  "modules-right":  ["tray", "pulseaudio", "backlight", "battery"],
+  // custom/pointer first on the right: anchored there, the group grows into
+  // the empty middle when the marker appears, and nothing already showing
+  // moves (2026-10-03), the same reason sway/mode is last on the left.
+  "modules-right":  ["custom/pointer", "tray", "pulseaudio", "backlight", "battery"],
 
   // all-outputs: the one bar lists both monitors' workspaces, and style.css
   // marks the one showing on the other screen (button.visible). On fedxps
@@ -36,6 +39,19 @@
   // path, because a sway session's PATH lacks ~/bin.
   "custom/split": {
     "exec": "~/bin/sway-split watch",
+    "return-type": "json",
+    "restart-interval": 5,
+    "hide-empty-text": true
+  },
+
+  // The pointer marker: "pointer off" while every pointing device is off
+  // ($mod+m; bin/sway-pointer), hidden otherwise. sway-pointer prints it at
+  // start and again after every sway input event, so a Waybar started while
+  // off shows it, and a reload, which turns the devices back on, clears it;
+  // restart-interval brings it back if the event stream ever breaks. By
+  // path, as custom/split.
+  "custom/pointer": {
+    "exec": "~/bin/sway-pointer watch",
     "return-type": "json",
     "restart-interval": 5,
     "hide-empty-text": true

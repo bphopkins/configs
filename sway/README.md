@@ -33,7 +33,7 @@ the tier tables.
 | `$mod+f` | Nautilus at `~/Desktop` |
 | `$mod+x` | adelotype, the typeface scratchpad (`~/Desktop/adelotype`) |
 | `$mod+w` | toggle Waybar |
-| `$mod+m` | toggle the touchpad (a notification says which way) |
+| `$mod+m` | switch every pointing device off, and back on: touchpad, mouse, whatever is attached (a notification says which way; the bar shows `pointer off` meanwhile) |
 | `$mod+n` | dismiss the newest notification |
 | `$mod+q` | close the focused window, and only a window: with a column, fold or workspace selected it does nothing *(promoted window verb)* |
 | `$mod+r` | enter resize mode; again to leave *(promoted window verb; keys below)* |
@@ -66,6 +66,7 @@ chord is held; motions, walks, volume, brightness and resize keys repeat.
 |---|---|
 | `$mod+Ctrl+r` | rotate the container around the window: a row becomes a column, and back; also unfolds tabs to the split they came from |
 | `$mod+Ctrl+l` | lock the screen (swaylock) |
+| `$mod+Ctrl+b` | screens off, on the way out (bigfed only): lock, then both monitors power down a second after your hands leave, and come back at the first key or mouse movement |
 | `$mod+Ctrl+c` | reload this config |
 
 ## `$mod+$alt` — the workspaces, as the monitors stand

@@ -175,6 +175,16 @@ window#waybar {
   color: @bg;
 }
 
+/* The pointer marker (custom/pointer in waybar/config): "pointer off" while
+   every pointing device is off after $mod+m, hidden otherwise. The urgent
+   fill, as the mode pill and the split marker: a state to leave
+   (2026-10-03). Black on it. Its box is the right-hand modules' shared rule
+   above. */
+#custom-pointer {
+  background: @urgent;
+  color: @bg;
+}
+
 /* Right-side modules: colour only; their box is the shared rule above, and
    their values take their natural width (waybar/config). Until 2026-09-30 the
    formats padded each value to a fixed field ({volume:>3}), which put up to

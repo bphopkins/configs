@@ -67,6 +67,9 @@
 #   the split cue, 2026-10-01: client.focused's indicator back to white, and
 #     #custom-split's and #mode's fills off @urgent, each failing its urgent
 #     check alone.
+#   the pointer marker, 2026-10-03: #custom-pointer's fill off @urgent, failing
+#     the urgent check alone; ~/bin/sway-pointer unlinked, failing the
+#     program check.
 #   the suite itself: `swaymsg exit` before the body loop (NO REPLY); an
 #     exec_always line, the /etc include, the bar block and `xwayland
 #     disable` each surviving the strip (the copy check fails, and no sway
@@ -681,8 +684,8 @@ check "repeat_rate and repeat_delay are digits" repeat_is_digits
 # adelotype launcher, by its ~ path), and an sh -c body in turn. Bindings of
 # sway/config and this machine's layer; startup exec lines are not bindings.
 # By hand: the bar (swaybar_command), the lock (swayidle) and jq, which
-# bin/sway-split needs. brightnessctl only where a backlight exists (TODO.md
-# item 28).
+# bin/sway-split and bin/sway-pointer need. brightnessctl only where a
+# backlight exists (TODO.md item 28).
 programs_exist() {
   local out missing="" n b skip=""
   [ -n "$(ls -A /sys/class/backlight 2>/dev/null)" ] || skip=brightnessctl
@@ -1052,6 +1055,7 @@ accent_sway()     { is_colour "$ACCENT" "$(swayconf var accent "$MAIN")" &&
 urgent_waybar()   { is_colour "$URGENT" "$(css_define "$CSS_W" urgent)" &&
                     css_uses "$CSS_W" '#workspaces button.urgent' background @urgent &&
                     css_uses "$CSS_W" '#custom-split' background @urgent &&
+                    css_uses "$CSS_W" '#custom-pointer' background @urgent &&
                     css_uses "$CSS_W" '#mode' background @urgent; }
 accent_waybar()   { is_colour "$ACCENT" "$(css_define "$CSS_W" accent)" &&
                     css_uses "$CSS_W" '#workspaces button.focused' background @accent; }
@@ -1071,7 +1075,7 @@ css_uses() { # $1 = sheet, $2 = selector, $3 = property, $4 = the define its val
   case " $v " in *" $4 "*) ;; *) say "$2 { $3: ${v:-(unset)} }"; return 1;; esac
 }
 check "urgent colour #$URGENT drawn in sway/config (client.urgent, the split edge)" urgent_sway
-check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent, the split and mode pills)" urgent_waybar
+check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent, the split, pointer and mode pills)" urgent_waybar
 check "urgent colour #$URGENT drawn in mako/config ([urgency=critical] border)" urgent_mako
 check "urgent colour #$URGENT drawn in swaylock/config (ring-wrong-color)" urgent_swaylock
 check "accent #$ACCENT drawn in sway/config (\$accent, client.focused)" accent_sway

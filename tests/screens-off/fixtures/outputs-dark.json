@@ -1,0 +1,4 @@
+[
+  {"name": "DP-3", "make": "Samsung Electric Company", "model": "C49RG9x", "active": true, "power": false, "current_mode": {"width": 5120, "height": 1440}},
+  {"name": "DP-1", "make": "Microstep", "model": "MSI MAG341CQ", "active": true, "power": false, "current_mode": {"width": 3440, "height": 1440}}
+]

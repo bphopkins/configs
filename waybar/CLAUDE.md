@@ -114,9 +114,20 @@ Conventions carrying the bar's behavior:
   script's trap stops its own event stream; without it, every reload left
   one behind. Suite: `tests/sway-split/run.sh`. Record: `DECISIONS.md`,
   2026-10-01.
-- The urgent workspace, `#battery.critical`, the `resize` pill and the split
-  marker use `#d08770`; this sheet is one of the four coupled urgent-colour
-  configs (`sway/CLAUDE.md`).
+- **The pointer marker** (`custom/pointer`, 2026-10-03): `~/bin/sway-pointer
+  watch` prints `pointer off` while every pointing device is off after
+  `$mod+m`, and nothing otherwise, which hides the module. It re-reads sway's
+  device list at start and on every sway input event, so a Waybar started
+  while off shows it and a reload, which turns the devices back on, clears
+  it. First in `modules-right`: anchored there, the group grows into the
+  empty middle when the marker appears and nothing already showing moves,
+  the reason `sway/mode` is last on the left. The urgent fill, as the
+  `resize` pill and the split marker: a state to leave. Same trap as
+  sway-split's, for the same reason. Suite: `tests/sway-pointer/run.sh`.
+  Record: `DECISIONS.md`, 2026-10-03.
+- The urgent workspace, `#battery.critical`, the `resize` pill, the split
+  marker and the pointer marker use `#d08770`; this sheet is one of the four
+  coupled urgent-colour configs (`sway/CLAUDE.md`).
 - **Seeing a change before it goes live** (2026-10-01): start Waybar
   yourself in a caged, headless nested sway (`sway/CLAUDE.md`, "The whole
   file", bar block stripped as it says), with a minimal config of its own:

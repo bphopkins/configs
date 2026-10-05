@@ -620,35 +620,6 @@ VimTeX cache, the blink frecency store, shada and undo history.
 
 ---
 
-## 27. `screens-off` under sway on bigfed (the power button and idle halves closed 2026-09-30)
-
-- [ ] Build and measure an on-demand `screens-off` for sway on bigfed (the
-  draft in `DECISIONS.md`, 2026-09-30), then land it in
-  `sway/hosts/bigfed.conf`. The power button and the idle displays closed
-  2026-09-30: the button opens the machine nag on both machines (a
-  session-lifetime inhibitor in `sway/config`), and bigfed keeps no idle
-  timer either — Caffeine is always on there under GNOME, and nothing turns
-  off unless he says so. The suspend key, which that inhibitor leaves to
-  logind, meets logind's refusal of every suspend on bigfed since 2026-10-01
-  (`org/machines/bigfed/bigfed.md`, "Power and sleep"); the key press itself
-  is untested. The per-machine mechanism exists (`hosts/`).
-
-Found 2026-09-28, the day sway went on trial on bigfed (`DECISIONS.md`,
-2026-09-28). Under GNOME, gnome-settings-daemon holds logind's power-key
-inhibitor and applies `power-button-action` 'nothing', turns the displays off
-at `idle-delay` 900, and `screens-off` locks and lets GNOME blank them
-(`org/machines/bigfed/bigfed.md`, "Power and sleep"). Under sway none of that
-runs, measured: nothing holds the inhibitor, so logind's
-`HandlePowerKey=poweroff` stands and the power button powers bigfed off—the
-machine that must stay reachable over SSH (`HandleSuspendKey=suspend` stands
-likewise); the displays never turn off, because the config's no-idle-timer
-posture was decided for fedxps; and `screens-off` works only under GNOME. Idle
-suspend stays off (`IdleAction=ignore`). A fix in `sway/config` reaches the
-laptop too, whose power button is a laptop's, so its fedxps effect is named
-before it lands (`sway/CLAUDE.md`), or the fix finds a per-machine mechanism.
-
----
-
 ## 29. A sway session's PATH lacks `~/bin` and `~/.local/bin`
 
 - [ ] Decide how a sway session gets the personal PATH.
@@ -775,6 +746,13 @@ through the shared config; nothing was measured there. Record:
 One line per closed item — verdict, date, pointer. Full notes and post-mortems
 are in `DECISIONS.md` under the same item numbers.
 
+- **27. `screens-off` under sway on bigfed** — one script for both desktops:
+  under sway it locks, then starts a one-shot swayidle that powers the
+  displays down a second after the seat falls quiet and back on at the first
+  input; the chord `$mod+Ctrl+b` in `sway/hosts/bigfed.conf`; suite
+  `tests/screens-off/` (43 checks). Verified live by the chord. The suspend
+  key's press stays untested (logind refuses it by config). Closed
+  2026-10-03 → `DECISIONS.md`, the `screens-off` entry of that date.
 - **31. The rofi trial** — adopted at first use: rofi on `$mod+d`, wofi on
   `$mod+Shift+d`, the package `rofi/` with a whole theme sheet. Closed
   2026-09-30 → `DECISIONS.md`, the audit entry (the rofi paragraph).

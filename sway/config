@@ -12,7 +12,7 @@
 #                 layers), climb and descend the tree (a parent, z child),
 #                 visit workspaces (1-0, Tab), summon things (launchers,
 #                 menu, scratchpad show), clear a notification (n), toggle
-#                 your equipment (w bar, m touchpad).
+#                 your equipment (w bar, m the pointing devices).
 #   $mod+Shift    the focused window: move it (hjkl/arrows), send it (1-0),
 #                 stash it (minus), toggle its state (f fullscreen,
 #                 space floating), split it (v: the next opens below,
@@ -53,7 +53,7 @@
 # $mod+Shift+letter. An op on the container around the window, or on the
 # session -> $mod+Ctrl+letter. A machine action -> a button on the
 # $mod+Shift+Escape nag before it ever claims a chord. Hardware with no XF86
-# key -> a bare-tier toggle letter (m, the touchpad, is the precedent). A split
+# key -> a bare-tier toggle letter (m, the pointing devices, is the precedent). A split
 # or a fold shapes the focused window's place, so it is a window verb ->
 # $mod+Shift+letter (v, b, s); the shape of the container around it stays
 # Ctrl's (r). The Layout section has the case.
@@ -579,15 +579,19 @@ input type:keyboard {
     bindsym --locked XF86MonBrightnessDown exec brightnessctl -q -c backlight set 5%-
     bindsym --locked XF86MonBrightnessUp   exec brightnessctl -q -c backlight set 5%+
 
-    # Toggle the touchpad, and say which way it went: otherwise the pointer
-    # simply stops, and m sits just below j. The word is sway's own
-    # (send_events in `swaymsg -t get_inputs`), "absent" where there is no
-    # touchpad. Exec first on purpose: tests/desktop runs every binding body
-    # that does not start with exec against its nested sway. A quote the
-    # shell must see escaped takes three backslashes here: sway un-escapes a
-    # config line once before storing it (measured 2026-09-30). A reload
-    # ($mod+Ctrl+c) also turns a disabled touchpad back on.
-    bindsym --no-repeat $mod+m exec sh -c 'swaymsg -q input type:touchpad events toggle enabled disabled; s=$(swaymsg -t get_inputs | jq -r "[.[] | select(.type == \\\"touchpad\\\") | .libinput.send_events] | first // \\\"absent\\\""); notify-send -u low "Touchpad: $s"'
+    # Switch every pointing device off, and back on -- the touchpad on
+    # fedxps, the mouse on bigfed by whichever path it arrives -- and say
+    # which way it went: otherwise the pointer simply stops, and m sits just
+    # below j. ~/bin/sway-pointer (its header has the whole contract; suite
+    # tests/sway-pointer) addresses each device by sway's identifier, never
+    # by type: `input type:touchpad` reached nothing on bigfed, and `input
+    # type:pointer` would take the keyboard, whose knob makes its node a
+    # pointer to libinput as well (2026-10-03). A device asleep at the press
+    # is remembered and wakes off; Waybar shows "pointer off" meanwhile. The
+    # words are sway's own (send_events in `swaymsg -t get_inputs`). A reload
+    # ($mod+Ctrl+c) turns everything back on. By path: a sway session's PATH
+    # lacks ~/bin.
+    bindsym --no-repeat $mod+m exec ~/bin/sway-pointer toggle
 
 #
 # Screenshots

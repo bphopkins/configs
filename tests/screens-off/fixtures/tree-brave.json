@@ -1,0 +1,10 @@
+{"id": 1, "name": "root", "type": "root", "nodes": [
+  {"id": 2, "name": "DP-3", "type": "output", "nodes": [
+    {"id": 3, "name": "1", "type": "workspace", "nodes": [
+      {"id": 4, "name": "bph@bigfed:~", "type": "con", "app_id": "com.mitchellh.ghostty",
+       "idle_inhibitors": {"user": "none", "application": "none"}, "nodes": [], "floating_nodes": []},
+      {"id": 5, "name": "Deontic logic seminar, live - Brave", "type": "con", "app_id": "brave-browser",
+       "idle_inhibitors": {"user": "none", "application": "enabled"}, "nodes": [], "floating_nodes": []}
+    ], "floating_nodes": []}
+  ]}
+]}

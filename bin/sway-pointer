@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# sway-pointer -- one key for every pointing device: all off, and back on.
+#
+#   sway-pointer toggle   $mod+m: if every pointing device present is off,
+#                         turn them all on; otherwise turn them all off
+#   sway-pointer status   print Waybar's marker for the state, once
+#   sway-pointer watch    print it now, and again after every sway input
+#                         event (waybar/config, custom/pointer)
+#
+# What counts as a pointing device is read from sway, never from a list of
+# hardware: a device sway classes as a pointer or a touchpad and on which it
+# exposes pointer acceleration (accel_speed in `swaymsg -t get_inputs`, which
+# libinput offers only for a device that moves the pointer). That takes every
+# mouse, trackball, pointing stick and touchpad, whatever its make or the path
+# it arrives by, and leaves alone a keyboard's wheel, which libinput counts as
+# a pointer facet too, with no acceleration. Sway addresses a device by its
+# identifier (vendor:product:name) and applies a command to every facet that
+# shares it, so an identifier is taken only when every facet of it has
+# acceleration: a mouse that also reports keys is one node and goes off
+# whole, as it should; a keyboard whose mouse-keys interface shares its name
+# is two nodes, and is left alone.
+#
+# Never `input type:pointer`: on bigfed that reaches the Keychron keyboard's
+# wheel facet, which shares its node with the keys, and the keyboard goes
+# dark with the mouse (sway 1.11, wlroots 0.19, libinput 1.31; 2026-10-03).
+# Never `*`. Every command this script sends is
+#     input "<identifier>" events enabled|disabled
+# for an identifier it read from sway or learned at an earlier press, and
+# nothing else: no reload, no exit, no type.
+#
+# A device asleep at the press -- a Bluetooth mouse drops its node after hours
+# idle (three times in one day's log, 2026-10-03) -- is addressed by its
+# learned identifier: sway stores a setting for an identifier that is not
+# present and applies it the moment the device returns, so the mouse wakes
+# off. The learned list is ~/.local/state/sway-pointer/learned, one
+# identifier a line, appended at every press and never pruned by the script;
+# a stale line costs nothing. A device never seen before, attached while off,
+# is live until the next press, and the marker clears to say so.
+#
+# The target comes from what is present: all off -> on; otherwise -> off. So a
+# press always ends in a known state. With no pointing device present nothing
+# is sent and the notice says "absent". A reload ($mod+Ctrl+c) resets every
+# device to enabled.
+#
+# Reads sway's device list and its input events, both documented IPC
+# (sway-ipc(7): GET_INPUTS, the input event). Suite: tests/sway-pointer/run.sh.
+#
+# pipefail: a device list that cannot be read fails `state`, so toggle sends
+# nothing and the watcher exits 1, which Waybar logs and restarts.
+set -u -o pipefail
+
+LEARNED="${XDG_STATE_HOME:-$HOME/.local/state}/sway-pointer/learned"
+# vendor:product:name, the name as sway writes it, spaces and unprintables
+# already underscores. A quote or a backslash would break the quoting below.
+ID_RE='^[0-9]+:[0-9]+:[^[:space:]"\\]+$'
+
+# The pointing devices present, one object per identifier: whether it is off.
+SELECT_JQ='
+  group_by(.identifier)
+  | map(select(any(.[]; .type == "pointer" or .type == "touchpad")
+               and all(.[]; .libinput.accel_speed != null)))
+  | map({id: .[0].identifier, off: all(.[]; .libinput.send_events == "disabled")})'
+
+state() { swaymsg -t get_inputs | jq -c "$SELECT_JQ"; }
+
+marker() {
+  state | jq -c '
+    if length > 0 and all(.[]; .off)
+    then {text: "pointer off", tooltip: "Every pointing device is off; Super+m turns them back on", class: "off"}
+    else {text: ""} end'
+}
+
+valid_ids() { grep -E "$ID_RE" || true; }
+
+case "${1:-}" in
+  toggle)
+    sel="$(state)" || exit 1
+    if [ "$(jq length <<<"$sel")" = 0 ]; then
+      notify-send -u low "Pointer: absent"
+      exit 0
+    fi
+    target="$(jq -r 'if all(.[]; .off) then "enabled" else "disabled" end' <<<"$sel")"
+    present="$(jq -r '.[].id' <<<"$sel" | valid_ids)"
+    # Learn what is present, then address everything learned, present or not.
+    mkdir -p "$(dirname "$LEARNED")"
+    [ -f "$LEARNED" ] || : >"$LEARNED"
+    all="$({ valid_ids <"$LEARNED"; printf '%s\n' "$present"; } | grep -v '^$' | LC_ALL=C sort -u)"
+    printf '%s\n' "$all" >"$LEARNED.tmp" && mv "$LEARNED.tmp" "$LEARNED"
+    failed=""
+    while IFS= read -r id; do
+      [ -n "$id" ] || continue
+      out="$(swaymsg -- "input \"$id\" events $target" 2>/dev/null)"
+      jq -e 'all(.[]; .success)' <<<"$out" >/dev/null 2>&1 || failed="$failed $id"
+    done <<<"$all"
+    if [ -n "$failed" ]; then
+      notify-send -u normal "Pointer: a device did not answer" "Failed:$failed"
+      exit 1
+    fi
+    notify-send -u low "Pointer: $target"
+    ;;
+  status)
+    marker || exit 1
+    ;;
+  watch)
+    marker || exit 1
+    # Two exits, so no part of the event stream outlives Waybar, which stops
+    # this script by signalling this process alone (measured for sway-split,
+    # 2026-09-28): the trap then stops the children. The stream runs in the
+    # background because bash holds a trap until a foreground pipeline ends,
+    # which this one never does; `wait` returns on the signal. Killed
+    # outright instead, Waybar's pipe closes, the next write fails, and the
+    # loop exits, taking the stream down after it.
+    trap 'pkill -TERM -P $$ 2>/dev/null; exit 0' TERM HUP INT
+    swaymsg -t subscribe -m '["input"]' |
+      while IFS= read -r _; do marker || exit 1; done &
+    wait
+    ;;
+  *)
+    echo "usage: sway-pointer toggle|status|watch" >&2
+    exit 2
+    ;;
+esac

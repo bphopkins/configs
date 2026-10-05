@@ -1,0 +1,216 @@
+[
+  {
+    "identifier": "2:7:SynPS/2_Synaptics_TouchPad",
+    "name": "SynPS/2 Synaptics TouchPad",
+    "type": "touchpad",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "tap": "enabled",
+      "tap_button_map": "lrm",
+      "tap_drag": "enabled",
+      "tap_drag_lock": "disabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "enabled",
+      "left_handed": "disabled",
+      "click_method": "clickfinger",
+      "clickfinger_button_map": "lrm",
+      "middle_emulation": "disabled",
+      "scroll_method": "two_finger",
+      "dwt": "enabled",
+      "dwtp": "enabled"
+    },
+    "vendor": 2,
+    "product": 7
+  },
+  {
+    "identifier": "1:1:AT_Translated_Set_2_keyboard",
+    "name": "AT Translated Set 2 keyboard",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 1,
+    "product": 1
+  },
+  {
+    "identifier": "0:0:Dell_WMI_hotkeys",
+    "name": "Dell WMI hotkeys",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 0
+  },
+  {
+    "identifier": "0:3:Sleep_Button",
+    "name": "Sleep Button",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 3
+  },
+  {
+    "identifier": "0:5:Lid_Switch",
+    "name": "Lid Switch",
+    "type": "switch",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 5
+  },
+  {
+    "identifier": "0:1:Power_Button",
+    "name": "Power Button",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 1
+  },
+  {
+    "identifier": "0:1:Power_Button",
+    "name": "Power Button",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 1
+  },
+  {
+    "identifier": "0:0:Intel_HID_5_button_array",
+    "name": "Intel HID 5 button array",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 0
+  },
+  {
+    "identifier": "0:0:Intel_HID_events",
+    "name": "Intel HID events",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 0
+  },
+  {
+    "identifier": "0:6:Video_Bus",
+    "name": "Video Bus",
+    "type": "keyboard",
+    "repeat_delay": 500,
+    "repeat_rate": 33,
+    "xkb_layout_names": [
+      "English (US)"
+    ],
+    "xkb_active_layout_index": 0,
+    "xkb_active_layout_name": "English (US)",
+    "libinput": {
+      "send_events": "enabled"
+    },
+    "vendor": 0,
+    "product": 6
+  },
+  {
+    "identifier": "1739:31251:DLL07BE:01_06CB:7A13_Touchpad",
+    "name": "DLL07BE:01 06CB:7A13 Touchpad",
+    "type": "touchpad",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "tap": "enabled",
+      "tap_button_map": "lrm",
+      "tap_drag": "enabled",
+      "tap_drag_lock": "disabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "enabled",
+      "left_handed": "disabled",
+      "click_method": "clickfinger",
+      "clickfinger_button_map": "lrm",
+      "middle_emulation": "disabled",
+      "scroll_method": "two_finger",
+      "dwt": "enabled",
+      "dwtp": "enabled"
+    },
+    "vendor": 1739,
+    "product": 31251
+  },
+  {
+    "identifier": "1739:31251:DLL07BE:01_06CB:7A13_Mouse",
+    "name": "DLL07BE:01 06CB:7A13 Mouse",
+    "type": "pointer",
+    "scroll_factor": 1.0,
+    "libinput": {
+      "send_events": "enabled",
+      "accel_speed": 0.0,
+      "accel_profile": "adaptive",
+      "natural_scroll": "disabled",
+      "left_handed": "disabled",
+      "scroll_method": "none",
+      "scroll_button": 273,
+      "scroll_button_lock": "disabled"
+    },
+    "vendor": 1739,
+    "product": 31251
+  }
+]

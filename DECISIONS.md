@@ -2749,7 +2749,9 @@ once, and the sleep waits out the chord's own key releases, which count as
 activity and would resume the displays immediately (the trap the bigfed
 record documents for GNOME). The shared swayidle has no timeouts, so the
 signal walks an empty list there. On fedxps the chord would do nothing unless
-the lines were shared.
+the lines were shared. *Superseded 2026-10-03: measured in a nested sway and
+replaced by a one-shot swayidle the script itself starts after the lock — the
+`screens-off` entry of that date.*
 
 **rofi, the same evening.** After one press of the trial key he made rofi
 the menu: `$mod+d`, with wofi on `$mod+Shift+d` as the second launcher by
@@ -2926,3 +2928,218 @@ a window alone. Sway has no option for it; `sway-split`'s watcher could run
 `split none`, at the cost of dissolving bigfed's columns down to their last
 window.
 
+
+## `$mod+m` reaches the mouse: every pointing device by identifier, a learned list, a bar marker — 2026-10-03
+
+**Question.** `$mod+m` was chosen for "mouse" and disabled the touchpad on
+fedxps; on bigfed it did nothing, and each press posted "Touchpad: absent".
+He asked what the binding did, and what it would take to make the one key
+switch the mouse on bigfed as well, without naming hardware and without
+anything to maintain when another mouse is plugged in.
+
+**What the binding did.** `input type:touchpad events toggle enabled
+disabled`. Sway classes a pointing device `touchpad` when libinput reports
+tap-to-click fingers for it and `pointer` otherwise; the two classes are
+disjoint (`sway/input/input-manager.c`, `input_device_get_type`), so the
+command matched nothing on bigfed. Sway's toggle flips each matching device
+by its current state and stores the result against the device's identifier;
+a device that reconnects gets the stored state back; a reload resets every
+device to its default (`config.c`, `input_manager_reset_all_inputs`).
+
+**Measured.** Sway 1.11, wlroots 0.19.3, libinput 1.31.3, identical on both
+machines; `swaymsg -t get_inputs` on each, saved as the suite's fixtures.
+
+| machine | pointing devices sway lists | also listed as pointer |
+|---|---|---|
+| bigfed | the MX Master over Bluetooth; the same mouse through its Unifying receiver, one node that is also a keyboard; the Keychron Link dongle's mouse-keys interface, inert | the Keychron keyboard's own node: its knob is a horizontal wheel, and libinput gives a keyboard with a wheel the pointer capability (`evdev.c`), with no acceleration |
+| fedxps | the I2C touchpad; the PS/2 touchpad node; the touchpad's inert "Mouse" sibling | none |
+
+- *`type:pointer` takes the keyboard.* wlroots turns one libinput device
+  into one wlr device per capability, all sharing the libinput handle
+  (`backend/libinput/backend.c`); `events disabled` on the Keychron's pointer
+  facet suspends the node, keys included. Confirmed by accident: a parse
+  test meant for a nested sway ran against the live session (below) and the
+  second of its commands was exactly that one.
+- *An identifier override does not survive a later type command.* Storing a
+  type config merges it on top of every identifier config of that type
+  (`config/input.c`, `merge_type_on_existing`), and an identifier config is
+  typed by the first device in sway's list with that identifier, the most
+  recently added facet, which for the Keychron node is the pointer. So
+  "protect the keyboard by identifier, then disable the type" fails in the
+  natural order and blinks the keyboard in the other.
+- *The Bluetooth node comes and goes.* The previous boot's kernel log shows
+  the mouse's Bluetooth node created at boot, again at 15:45 after a long
+  idle, and again the next morning. A device can be absent at the press and
+  present later.
+- *Sway stores a setting for an identifier that is not present* and applies
+  it the moment a device with that identifier arrives, before announcing it
+  (`input-manager.c`, `handle_new_input`). The parse test showed a nonsense
+  identifier accepted.
+- *Sway's IPC exposes `accel_speed` only where libinput offers pointer
+  acceleration* (`ipc-json.c`), and libinput offers it only for a device that
+  moves the pointer. On both fixtures that field selects exactly the pointing
+  devices and skips the keyboard's wheel facet.
+- Quoted identifiers parse as one command even with a comma or a semicolon;
+  sway strips the quotes before matching; an invalid mode is rejected.
+
+**Design** (`bin/sway-pointer`; suite `tests/sway-pointer/run.sh`, 43
+checks, caged, stub-based over both fixtures, mutation-tested against nine
+breaks; the binding and Waybar call it by path):
+
+- Selection by rule, every press: an identifier is taken when some facet of
+  it is a pointer or touchpad and every facet of it has acceleration. The
+  second clause is his question's doing: sway applies an identifier command
+  to every facet sharing the identifier, and some cheap keyboards name their
+  mouse-keys interface as their keyboard interface; such an identifier is
+  left alone, while a mouse that also reports keys, one node, goes off whole.
+- Commands by identifier only: `input "<id>" events enabled|disabled`. Never
+  a type, never `*`, never reload or exit; the suite asserts every command
+  ever sent has that one shape.
+- A learned list, `~/.local/state/sway-pointer/learned`, appended at every
+  press and never pruned by the script: off addresses everything learned,
+  present or not, so the mouse asleep at the press wakes off; on addresses
+  the same. A stale line costs nothing.
+- The target from what is present: all off, turn on; otherwise turn off.
+  Nothing present: nothing sent, "Pointer: absent".
+- The notice is "Pointer: disabled" or "Pointer: enabled", sway's words. The
+  marker is "pointer off", his choice of one string for both machines, in
+  the urgent fill, first in Waybar's right group so that its appearance
+  moves nothing already showing; the watcher is read-only, and carries
+  sway-split's stop trap: the wrap-up sweep found it missing, and the suite
+  now stops the watcher the way Waybar does and asserts nothing outlives it.
+- Residual, stated: a never-seen pointing device attached while off is live
+  until the next press, and the marker clears to say so. A keyboard whose
+  keys and pointer motion share one node, which libinput accelerates, would
+  go off with the mice; neither machine has one, and the way back is the
+  chord on another keyboard or a reload.
+
+**Declined** (asked and answered, do not re-propose): `type:pointer` (the
+keyboard); the wildcard (keyboards too); identifiers in `hosts/bigfed.conf`
+(hardware-specific, and the chord cannot be rebound there without a
+duplicate the suite rejects; a variable set there is not visible to a
+binding parsed earlier); a second seat for the pointers (the same
+enumeration, plus cursor and focus oddities); the identifier-override-then-
+type design (above); the watcher switching newcomers off itself (a
+background write; one press covers it, and the marker tells the truth
+meanwhile).
+
+**The accident, and the recipe.** A hand-rolled parse test for a caged
+nested sway put `export SWAYSOCK=…` inside an `&&` chain ending in `&`; bash
+backgrounded the chain, the foreground shell kept the live socket, the wait
+for the socket passed at once, the test's commands ran against his session,
+and its closing `swaymsg exit` ended it (11:06). The recipe in
+`sway/CLAUDE.md` had said the loaded config path "must print"; it now says
+export on its own line, assert the path before the first command, and stop
+the scope rather than `swaymsg exit`. Nothing persisted: the new session
+started with every device enabled.
+
+**Left to him.** The first press, after a reload brings the new binding and
+the Waybar module up (done on bigfed the same day: three identifiers learned,
+the marker shown and cleared, "works exactly as expected"); on fedxps,
+`gpullall`, then `stow-all` for the new file in `bin/`, then the reload.
+Unverified live: the learned-list path, a mouse asleep at the press waking
+off, which needs a long idle first.
+
+## `screens-off` under sway: lock, then a one-shot swayidle — 2026-10-03
+
+**The ask.** Leaving the house with work and computation under way, he wants
+the displays off and nothing else touched, and a touch of the mouse or
+keyboard on return to bring the lock screen back — what `screens-off` has
+done under GNOME since 2026-09-06, now under sway, where bigfed has run on
+trial since 2026-09-28. `TODO.md` item 27, with a draft in the 2026-09-30
+entry above, not built then.
+
+**Decided, with reasons.** One script, two branches, chosen by which
+compositor is live: a sway IPC socket that answers a version query
+(`$SWAYSOCK`, else the sockets sway names after its pid in
+`XDG_RUNTIME_DIR`), else Mutter's DisplayConfig on the session bus. logind's
+session metadata cannot tell the two apart (both sessions are `Type=wayland`
+with an empty `Desktop`), and over SSH there is no session environment at
+all. The sway branch has sway spawn (`swaymsg exec`, so the processes live in
+the session's scope and environment, which an SSH shell lacks) a bare
+`swaylock -f`, then the script itself as `screens-off --watch`, which notes
+its pid in `$XDG_RUNTIME_DIR/screens-off.watcher` and execs `swayidle -w
+timeout 1 'swaymsg "output * power off"' resume 'swaymsg "output * power
+on"; kill $PPID'`. The compositor tells the watcher when the seat has been
+quiet for a second; it powers every output off; the compositor tells it at
+the next input; it powers them on and exits (with `-w` the resume command's
+parent is swayidle itself). The one-second timeout is the quiet wait that
+absorbs the chord's own release, which sway counts as activity
+(`handle_key_event` notifies idle before reading the key's state). The lock
+comes first because sway honours an application's idle inhibitor only while
+unlocked (`sway_idle_inhibit_v1_is_active`, 1.11; `lock.c` re-evaluates at
+the lock), and Brave was holding one at the time. The pid on file means a
+second invocation while dark arms no second watcher — one armed but not yet
+fired at the moment of a wake would blank again a second after the input
+stopped — and a re-run after a watcher died arms a fresh one, so re-running
+the script over SSH is the repair for displays that stay dark. The script
+then waits up to 5 s for every active output to read power off and exits 1
+with a line on stderr, naming any window holding an inhibitor, if they do
+not. The chord `$mod+Ctrl+b` is bigfed's layer's first line
+(`hosts/bigfed.conf`): a session op on the Ctrl tier beside `l`, the GNOME
+shortcut's chord, bigfed's alone as that shortcut is — the laptop's way out
+of the chair is its lid. The GNOME branch is unchanged in logic — moved into
+a function — and verified by the suite's stubs; a live GNOME run of the
+refactored script waits for the next GNOME session.
+
+**Measured, in a caged headless nested sway** (a transient user service, the
+compositor's own `swaymsg exec` for its clients, `wtype` unpacked from its
+rpm for a keystroke, a GTK4 window holding a real idle inhibitor; memory
+`nested-sway-input-and-inhibitors`), 2026-10-03:
+
+- the one-shot watcher: output off 1.0 s after registration with no input,
+  on within 0.7 s of a keystroke, the process gone;
+- an application inhibitor, unlocked: the watcher never fired in 2.5 s;
+  locked (`swaylock -f` in the nested session): off about a second after the
+  lock, on within 0.7 s of a keystroke on the locked session; the watcher
+  takes no logind inhibitor (`systemd-inhibit --list` kept one swayidle);
+- the real script against the nested compositor: exit 0 after 1.06 s, dark,
+  woken, watcher gone; the report line named the inhibitor window; two
+  invocations while dark left one watcher; a watcher killed with SIGTERM
+  relit the displays on its way out (swayidle runs pending resume commands
+  on SIGTERM), and a re-run after it armed a fresh one; a reload while dark
+  relit the displays and left the watcher waiting for the next touch;
+- the 2026-09-30 draft, a persistent swayidle with `timeout 315360000` fired
+  by `SIGUSR1`: works mechanically — `SIGUSR1` re-registers each timer at
+  0 ms with the compositor (`register_timeout(cmd, 0, false)`, and wlroots
+  marks a 0 ms notification idle at once), so the output went off within
+  0.3 s and resumed on a keystroke with no bounce — but a key 150 ms after
+  the signal, as a chord's release arrives, relit the output at once, and
+  the ten-year timeout lands in a 32-bit millisecond counter: swayidle
+  logged "Register idle timeout at 1827387392 ms", about 21 days.
+
+**Measured live, by the chord after a reload**, 2026-10-03: watcher started
+17:14:06.7 (the pidfile's mtime), displays dark about a second later, two
+kernel connector-change events at 17:14:20.1 and 17:14:20.8 — the wake,
+after about twelve seconds dark; both monitors back at their modes and
+positions, every workspace on its assigned output, no watcher left, one
+swayidle, one sleep inhibitor. sway's output list had changed order:
+`output * power off` never touches that list, which changes only when an
+output is destroyed and re-created, so the Samsung at least was removed and
+re-added at the wake — it reports disconnected for about 0.7 s while its
+DisplayPort link retrains. In that gap sway moved workspaces 1–5 to the MSI
+and back by the `workspace N output` assignments, which are therefore
+load-bearing for the wake.
+
+**Suite.** `tests/screens-off/run.sh`, 43 checks, caged, stub-based (a stub
+swaymsg that answers only the sockets a case declares live and records every
+exec body; stub gdbus and loginctl for the GNOME branch; real socket files;
+`XDG_RUNTIME_DIR`, `SWAYSOCK` and the bus address pointed into the sandbox),
+mutation-tested against seventeen breaks, each failing the check meant for
+it (listed in the suite's header). The desktop suite stays at 52 with the
+host layer's first line.
+
+**Declined, with reasons.** The persistent `SIGUSR1` swayidle of the draft:
+the blink and the overflow above; a quiet wait would have to be built beside
+it, and the one-shot has it built in and leaves no daemon behind. `loginctl
+lock-session` for the sway lock: it routes through the shared swayidle's
+`lock` hook, which the charter names as the piece nothing restarts, and
+nothing sets `LockedHint` under sway anyway; a direct bare `swaylock -f`
+depends on nothing. A systemd transient unit for the watcher: `swaymsg exec`
+is the suite's restore idiom and puts the watcher in the session's scope,
+and the pidfile gives the dedup a unit would have. Sharing the chord to
+fedxps: not done, the laptop's lid being its gesture; the script runs there
+by name (stowed with `bin`) and is unverified there — fedxps still carries
+the GNOME-only version until its next pull. Running the live test from this
+chat: he was at the keyboard; the nested rehearsal carried every measurement
+and the live run only confirmed.
