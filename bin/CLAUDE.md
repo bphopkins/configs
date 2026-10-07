@@ -307,9 +307,12 @@ worth keeping in view here:
 - The transcript-based measurement of which permission entries earn their
   place — and the built-in read-only command list, documented once — is
   `org/claude-config/permission-measurement.md`.
-- Two gitignore rules carry weight, in this repo's `git/ignore` (stowed to
-  `~/.config/git/ignore` since 2026-09-07): `**/.claude/settings.local.json`
-  (the linked permission cache must never be committed to the repo it sits
-  in) and `**/.claude/projects/` (a superseded memory location Claude wrote
-  to in early 2026 — nothing stops it recurring, and in a public repo
-  `git add -A` would publish it).
+- The rules that keep agent context out of every repository live in the
+  private global exclude, `org/claude-config/git/ignore`, which the identity
+  include sets as `core.excludesFile` (2026-10-04): both charter names,
+  `**/.claude/settings.local.json` (the linked permission cache must never be
+  committed to the repo it sits in) and `**/.claude/projects/` (a superseded
+  memory location Claude wrote to in early 2026 — nothing stops it recurring,
+  and in a public repo `git add -A` would publish it). This repo's
+  `git/ignore`, still stowed to `~/.config/git/ignore`, is shadowed: git no
+  longer reads it.
