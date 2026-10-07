@@ -567,7 +567,7 @@ assembled and overwritten at every shell start; only a slot ahead of
 
 ---
 
-## 26. Eleven of the sixteen suites run without a cage
+## 26. Eleven of the nineteen suites run without a cage
 
 - [ ] Give every suite under `tests/` its own systemd scope, as
   `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
@@ -577,7 +577,9 @@ Found 2026-09-25. Three suites are caged, all through `tests/cage.sh` and all
 written 2026-09-23: `env`, `prompt`, `shell-opts`. *(A fourth, `sway-split`,
 was caged from its start, 2026-09-28; a fifth, `desktop`, since 2026-09-30,
 on the stock budget, which it fits twentyfold: about 23 MiB and 17 tasks,
-measured.)* The other eleven start no
+measured.)* *(Three more were caged from their start: `screens-off` and
+`sway-pointer`, 2026-10-03, and `sway-equalize`, 2026-10-06; counted
+2026-10-06, eight of nineteen are caged.)* The other eleven start no
 scope, and nothing in their directories mentions one: `claude`,
 `context-check`, `disk`, `french-logic`, `gsync`, `live-server`,
 `nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`, `term-bench`. Four
@@ -738,6 +740,45 @@ through the shared config; nothing was measured there. Record:
   four boots before it. Keep the line if the count falls; drop it if not, and
   record either way. `journalctl --user -b -N --no-pager | grep -c 'Page-flip
   failed'` for boot -N.
+
+---
+
+## 33. Ghostty's key for moving a tab into its own window
+
+- [ ] When the ghostty rpm moves past 1.3.1, bind `move_tab_to_new_window`
+  in `ghostty/config`, `ctrl+shift+b` suggested (free in Ghostty's defaults
+  and in `sway/config`). Not `ctrl+shift+d`: in a terminal that does not
+  bind it, it sends EOF and ends the shell. Check first with `ghostty
+  +list-actions`; 1.3.1's `+validate-config` rejects the line as
+  `InvalidAction`, so it cannot go in before the update.
+
+Added 2026-10-06. The action was merged upstream 2026-08-06 (GTK, PR #13621)
+and moves the tab with `adw_tab_view_transfer_page`, so no drag is involved.
+Its comment in the config should record why the drag cannot do this under
+sway: libadwaita opens a new window only when something accepts the dropped
+tab, GNOME Shell accepts it on bare desktop (`application/x-rootwindow-drop`),
+and wlroots has no such stand-in, so the drop is cancelled and the tab put
+back. Until then, under sway: ctrl+shift+n from the tab's own window, drag
+the tab onto the new window's tab bar, which appears during the drag, and
+close the spare tab (confirmed live 2026-10-06; tabs move only within one
+Ghostty process, and sway's `$term` starts a process per window). Memory:
+`ghostty-tab-detach-under-sway`.
+
+---
+
+## 34. Windows on the Samsung change width unasked
+
+- [ ] Find out why tiled windows on bigfed's Samsung change width without
+  being resized on purpose, and whether it is a sway bug.
+
+Raised 2026-10-06 and deferred the same day ("we don't need to mind this
+just now"); not investigated. Six windows across workspace 2 stood at 732,
+839, 853, 940, 903 and 853 px, some resized deliberately and some not. Sway
+resizes a tiled window by a drag on the border between two windows and by
+`$mod` with a right-drag (sway 1.11 `input/seatop_default.c`), so rule those
+out first. When it happens, note what
+was done just before, then even the workspace out with `$mod+Ctrl+e`
+(`bin/sway-equalize`, the same day).
 
 ---
 

@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# sway-equalize -- $mod+Ctrl+e: every row and column on the focused workspace
+# back to the sizes sway gives windows opened fresh -- in each row the same
+# width, in each column the same height (configs DECISIONS.md, 2026-10-06).
+#
+# Sway keeps a fraction per container and has no command that resets them:
+# in sway 1.11 a fraction returns to zero only for a window that is moved or
+# taken back out of floating, never for its siblings. So the script moves the
+# boundaries between siblings itself. `resize grow|shrink right N px` on
+# child i moves only the edge between child i and child i+1 (`down` for a
+# column). Sway refuses a step that would leave either window on the edge
+# under its floor, 100 px wide or 60 px high, even a window that is growing,
+# and a refused step ends the whole command list (commands.c). So the sizes
+# are simulated in pixels and each step is the first edge, left to right,
+# whose move sway would accept: 160,160,4800 moves its right edge first
+# (the suite's case 9), and a window sway has left under the floor, as it
+# does when a row a window was shrunk in gains another, is reached from
+# whichever side sway accepts (case 12). With every target at or above the
+# floor, a move once acceptable stays so as the others land, since a window
+# whose far edge has moved is at its target; so no other order evens out a
+# row this one strands. Targets are round(S/N) with the last child taking the
+# remainder, sway's own arithmetic for equal fractions (tree/arrange.c): six
+# windows across 5120 px come out 853 x5 and 855, as six opened fresh do.
+#
+# Level by level from the workspace down, re-reading the tree each time: a
+# row's resize changes the size of everything inside it. Sway's IPC reports
+# pending geometry (ipc-json.c, node_get_box -> container_get_box), so each
+# read sees the last level's result at once (the suite's case 11). Left
+# alone: floating windows (outside the tiling tree), the members of a tab or
+# stack fold (they share one size), and a row or column holding a fullscreen
+# window, whose rect reads as the whole output while its tiled slot waits
+# underneath (measured on a nested sway 2026-10-06).
+#
+# `right` and `down` are i3's resize syntax, which sway parses
+# (commands/resize.c, parse_resize_axis) but sway(5) does not list; the suite
+# exercises them on every run. Reads sway's JSON tree, a documented IPC
+# contract. Exit 1 with a line on stderr if sway refused a step, which only a
+# crowded row or column can cause: a target under the floor, or near it a
+# window under the floor with no side left to grow from. Called by path from
+# sway/config, since a sway session's PATH lacks ~/bin. Suite:
+# tests/sway-equalize/run.sh.
+set -u -o pipefail
+
+# Single-quoted: no apostrophe anywhere in the program, its comments
+# included, since one would end the quoting.
+PLAN_JQ='
+def at($d): if $d == 0 then . else (.nodes[]? | at($d - 1)) end;
+# One container. Its sizes are simulated in pixels, and each step is the
+# first pending edge, left to right, whose move sway accepts: both windows on
+# it at or above the floor, MIN_SANE_W 100 or MIN_SANE_H 60
+# (include/sway/tree/node.h; commands/resize.c, container_resize_tiled).
+# Moves sway would refuse go last, after the acceptable moves of every
+# container, so a stuck container cannot hold back the others (case 14).
+def plan:
+  (if .layout == "splith" then ["width", "right", 100] else ["height", "down", 60] end) as [$dim, $dir, $F]
+  | [.nodes[].id] as $ids
+  # A child of a split parent reports its rect less its title bar
+  # (ipc-json.c, ipc_json_describe_node); deco_rect.height adds it back.
+  | [.nodes[] | .rect[$dim] + (if $dim == "height" then .deco_rect.height else 0 end)] as $w0
+  | ($w0 | length) as $n
+  | [range(1; $n) | . * (($w0 | add) / $n | round)] as $p
+  | def cmd($i; $a):
+      "[con_id=\($ids[$i])] resize \(if $a > 0 then "grow" else "shrink" end) \($dir) \(if $a > 0 then $a else -$a end) px";
+  {w: $w0, ok: [], bad: [], done: false}
+  | until(.done;
+      .w as $w
+      | [foreach $w[0:$n - 1][] as $x (0; . + $x)] as $c
+      | [range(0; $n - 1) | $p[.] - $c[.]] as $d
+      | [range(0; $n - 1) | select($d[.] != 0)] as $order
+      | ([$order[] | select($w[.] + $d[.] >= $F and $w[. + 1] - $d[.] >= $F)] | first) as $i
+      | if ($order | length) == 0 then .done = true
+        elif $i != null then .w[$i] += $d[$i] | .w[$i + 1] -= $d[$i] | .ok += [cmd($i; $d[$i])]
+        else .bad = [$order[] | cmd(.; $d[.])] | .done = true
+        end)
+  | {ok, bad};
+[.. | objects | select(.type? == "workspace" and .name == $ws)][0] as $w
+| [$w | at($depth)] as $level
+| [$level[]
+   | select(.layout == "splith" or .layout == "splitv")
+   | select((.nodes | length) > 1)
+   | select(all(.nodes[]; .fullscreen_mode == 0))
+   | plan] as $plans
+| {more: (($level | length) > 0), cmds: ([$plans[].ok[]] + [$plans[].bad[]])}'
+
+# Two runs at once would each move every edge from the same reading, and
+# both land: the second waits for the first, then finds nothing to do. The
+# lock is this file itself, so no lock file is made anywhere.
+exec 9<"$0" && flock -w 5 9 || { echo "sway-equalize: an earlier run did not finish" >&2; exit 1; }
+
+ws="$(swaymsg -t get_workspaces | jq -r '.[] | select(.focused) | .name')" || exit 1
+[ -n "$ws" ] || exit 0
+
+# Each level is read again after its moves and moved again if it is still
+# uneven, at most three times: a window sway has collapsed to 0x0 (under
+# 10 px, tree/arrange.c) comes back at the average width on the first
+# resize next to it, which no plan made before it can foresee.
+status=0
+for ((depth = 0; ; depth++)); do
+  for pass in 1 2 3; do
+    plan="$(swaymsg -t get_tree | jq -c --arg ws "$ws" --argjson depth "$depth" "$PLAN_JQ")" || exit 1
+    [ "$(jq -r .more <<<"$plan")" = true ] || break 2
+    cmds="$(jq -r '.cmds | join("; ")' <<<"$plan")"
+    [ -n "$cmds" ] || break
+    swaymsg -- "$cmds" | jq -e 'all(.[]; .success)' >/dev/null || {
+      echo "sway-equalize: sway refused a resize at depth $depth" >&2
+      status=1
+      break
+    }
+  done
+done
+exit "$status"

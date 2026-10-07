@@ -18,7 +18,8 @@
 #                 space floating), split it (v: the next opens below,
 #                 b: beside) and fold it with its siblings (s: tabs).
 #   $mod+Ctrl     the enclosures: the container around the window (r rotates
-#                 it, a row into a column and back) and the session around
+#                 it, a row into a column and back), every row and column
+#                 of the workspace (e evens them out) and the session around
 #                 everything (l lock, c reload).
 #   $mod+$alt     the workspaces, as the monitors stand: walk this monitor's
 #                 row (left/right), step to the monitor above or below
@@ -50,8 +51,9 @@
 #
 # Placing a new binding: an app -> $mod+mnemonic letter, and a second app on
 # the same letter -> its Shift. A window verb ->
-# $mod+Shift+letter. An op on the container around the window, or on the
-# session -> $mod+Ctrl+letter. A machine action -> a button on the
+# $mod+Shift+letter. An op on the container around the window, on the
+# workspace's rows and columns, or on the session -> $mod+Ctrl+letter. A
+# machine action -> a button on the
 # $mod+Shift+Escape nag before it ever claims a chord. Hardware with no XF86
 # key -> a bare-tier toggle letter (m, the pointing devices, is the precedent). A split
 # or a fold shapes the focused window's place, so it is a window verb ->
@@ -543,6 +545,15 @@ input type:keyboard {
     bindsym --no-repeat $mod+Shift+b exec ~/bin/sway-split beside
     bindsym --no-repeat $mod+Shift+s layout toggle tabbed split
     bindsym --no-repeat $mod+Ctrl+r  layout toggle split
+    # $mod+Ctrl+e evens out the workspace: every row and column on it goes
+    # back to the sizes sway gives windows opened fresh, the same width
+    # across a row and the same height down a column, level by level.
+    # Floating windows, the members of a fold, and a row or column holding a
+    # fullscreen window are left as they are. Sway has no command for this:
+    # it resets a window's share only when that window is moved or re-tiled
+    # (sway-equalize, bin/; 2026-10-06). Called by path; suite:
+    # tests/sway-equalize/run.sh.
+    bindsym --no-repeat $mod+Ctrl+e  exec ~/bin/sway-equalize
 
 #
 # Scratchpad

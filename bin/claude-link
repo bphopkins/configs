@@ -25,12 +25,19 @@
 #
 # It never deletes unique data. Adoption moves a file into org/claude-config or
 # backs it up; anything ambiguous is reported and skipped.
+#
+# It also reports orphan charters (the pass of that name, below), and keeps the
+# list in ~/.claude/claude-link-orphans for the SessionStart hook to count.
 
 set -uo pipefail
 
 CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
 CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
 DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
+# Every walk of ~/Desktop prunes the same names, at any depth: git's own
+# directories, and the large trees this script has no business in.
+DESK_PRUNE=( \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic'
+                -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o )
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$CC/link-backups/$STAMP"
 
@@ -246,9 +253,7 @@ while IFS= read -r -d '' f; do
   else
     adp "would remove dangling link: $rel"; swept=$((swept+1))
   fi
-done < <( { find "$DESK" -maxdepth 7 \
-             \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
-                -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
+done < <( { find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
              \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null
             # depth 3 reaches ~/.claude/<entry> and ~/.claude/projects/<scope>/memory,
             # which is every link this script creates there. find does not descend
@@ -301,9 +306,7 @@ while IFS= read -r -d '' f; do
   d=$(dirname "$f"); repo_dir=$(dirname "$d")
   rel=${repo_dir#"$DESK"/}; [ "$rel" = "$repo_dir" ] && rel=_desktop-root
   harvest_one "$f" "$CFG/repos/$rel/settings.local.json" "permissions for $rel"
-done < <(find "$DESK" -maxdepth 7 \
-           \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic' \
-              -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o \
+done < <(find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
            -type f -path '*/.claude/settings.local.json' -print0 2>/dev/null)
 echo
 
@@ -359,6 +362,39 @@ if [ -d "$CFG/repos" ]; then
 fi
 echo
 
+# ---------------------------------------------------------------- orphans --
+# An orphan is a charter git ignores: a CLAUDE.md or CLAUDE.local.md sitting in
+# a work tree as a plain file that is ignored and untracked. The global exclude
+# that keeps agent context out of every repository hides one written straight
+# into a tree as well, so nothing syncs it (`git add -A` skips it), `git status`
+# never lists it, and a merge or checkout that brings its path replaces it
+# without a word -- the state of the read-only clones' charters until
+# 2026-10-06. The cure is a choice per file, into repos/<path>/ as
+# CLAUDE.local.md or tracked with `git add -f`, so this pass only reports.
+# One git call per plain charter: `check-ignore` exits 0 only for a path that is
+# ignored and untracked, and 128 outside any work tree, where Syncthing carries
+# the charter. Every run that may write keeps the list in $CC/claude-link-orphans
+# for the SessionStart hook; the dry run writes nothing.
+echo "== orphans =="
+orphans=()
+while IFS= read -r -d '' f; do
+  git -C "$(dirname "$f")" check-ignore -q -- "$(basename "$f")" 2>/dev/null || continue
+  rel=${f/#$HOME/\~}
+  wrn "orphan charter, ignored and untracked: $rel"
+  orphans+=("$rel")
+done < <(find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
+           -type f \( -name CLAUDE.md -o -name CLAUDE.local.md \) -print0 2>/dev/null | sort -z)
+n_orphan=${#orphans[@]}
+if [ $APPLY = 1 ]; then
+  if [ "$n_orphan" -gt 0 ]; then
+    printf '%s\n' "${orphans[@]}" > "$CC/claude-link-orphans.tmp" \
+      && mv -f "$CC/claude-link-orphans.tmp" "$CC/claude-link-orphans"
+  else
+    rm -f "$CC/claude-link-orphans"
+  fi
+fi
+echo
+
 # ---------------------------------------------------------------- summary ----
 echo "== summary =="
 printf "  already correct : %d\n" "$n_ok"
@@ -367,6 +403,7 @@ printf "  already correct : %d\n" "$n_ok"
 [ $n_skip  -gt 0 ] && printf "  skipped         : %d\n" "$n_skip"
 [ $n_warn  -gt 0 ] && printf "  %swarnings        : %d%s\n" "$Y" "$n_warn" "$Z"
 [ $n_fail  -gt 0 ] && printf "  %sfailures        : %d%s\n" "$R" "$n_fail" "$Z"
+[ $n_orphan -gt 0 ] && printf "  %sorphans         : %d%s  (each into repos/<path>/ as CLAUDE.local.md, or git add -f)\n" "$Y" "$n_orphan" "$Z"
 [ -d "$BACKUP" ] && echo "  backups         : $BACKUP"
 if [ $APPLY = 0 ] && [ $AUTO = 0 ] && [ $n_link -gt 0 -o $n_warn -gt 0 ]; then
   echo; echo "  Nothing was changed. Re-run with --apply (or --adopt if this machine"

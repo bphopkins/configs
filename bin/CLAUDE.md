@@ -97,6 +97,18 @@ with a conflict.
   `sway/config` and `waybar/config`. Suite: `tests/sway-pointer/run.sh` (43
   checks, caged, stub-based; mutation-tested against nine breaks,
   2026-10-03). Record: `DECISIONS.md`, 2026-10-03.
+- `sway-equalize` — `$mod+Ctrl+e`: every row and column on the focused
+  workspace back to the sizes sway gives windows opened fresh, level by
+  level, by moving the edges between siblings with directional resizes. The
+  plan simulates sway's floor, 100 px wide and 60 px high, so a window sway
+  has left under it is reached from whichever side sway accepts; a lock on
+  the script makes a second press wait for the first. Floating windows, the
+  members of a fold, and a row or column holding a fullscreen window are
+  left alone; exit 1 if sway refused a step, which only a crowded row or
+  column can cause. Called by path from `sway/config`. Suite:
+  `tests/sway-equalize/run.sh` (55 checks, caged, a nested sway at
+  5120x1440; mutation-tested against nine breaks). Record: `DECISIONS.md`,
+  2026-10-06.
 - `sysinfo.sh` — root-run hardware/OS summary (`sudo ~/bin/sysinfo.sh`);
   writes an HTML fragment to `/home/bph/Desktop/sysinfo.html` and
   deliberately omits security-sensitive identifiers (serials, MAC
@@ -277,6 +289,18 @@ worth keeping in view here:
   is the cause, since git cannot carry one: `claude-link --apply` drops a
   `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so a
   directory visited once does not become a permanent entry. Fixed 2026-09-18.
+- **`claude-link` reports orphan charters, and SessionStart counts them.** An
+  orphan is a `CLAUDE.md` or `CLAUDE.local.md` in a git work tree that git
+  ignores and does not track. The global exclude that keeps agent context out
+  of every repository hides any charter written straight into a tree, so
+  nothing syncs it, `git status` never lists it, and a merge or checkout that
+  brings its path replaces it without a word; `/init` writes one at a
+  repository's root. Every run lists them under `== orphans ==` and moves none,
+  since the cure is a choice per file: into `org/claude-config/repos/<path>/`
+  as `CLAUDE.local.md`, or tracked with `git add -f`. Every run that may write
+  keeps the list in `~/.claude/claude-link-orphans`, which SessionStart counts
+  into both channels. Added 2026-10-06; suite `tests/claude/run.sh`, caged
+  since the same day.
 - `settings.json` denies `git commit` / `git push` as a hard block, not a
   prompt; matching is prefix-based, so `git -C <path> commit` slips the
   matcher — the global `CLAUDE.md` remains the backstop for intent.

@@ -3143,3 +3143,152 @@ by name (stowed with `bin`) and is unverified there — fedxps still carries
 the GNOME-only version until its next pull. Running the live test from this
 chat: he was at the keyboard; the nested rehearsal carried every measurement
 and the live run only confirmed.
+
+## `$mod+Ctrl+e` evens out the workspace — 2026-10-06
+
+**Question.** Six windows across the Samsung on bigfed had drifted from
+their default widths, some resized on purpose and some by accident. Asked:
+is there a key that puts every width back to the monitor's width divided by
+the number of windows?
+
+**Measured.** Sway 1.11 with wlroots 0.19.3, read in its source and run in a
+caged nested sway at 5120x1440:
+
+- *No command resets sizes.* Each container keeps a width and a height
+  fraction of its parent, and arrange gives a child without one the average
+  of its siblings' (`tree/arrange.c`). A fraction returns to zero only for a
+  window that is moved (`commands/move.c`) or taken out of floating
+  (`tree/container.c`), and never for its siblings; sway(5) lists nothing
+  that equalizes.
+- *`resize set width` cannot land a row in one pass*: on a middle window it
+  takes the change half from each neighbour (`commands/resize.c`,
+  `container_resize_tiled`).
+- *`resize grow|shrink right|down N px` moves one edge*: child i grows by N
+  and child i+1 gives up N, and nothing else moves. It is i3's syntax, which
+  sway parses (`parse_resize_axis`) and sway(5) does not list.
+- *A refused step ends the command list.* Sway refuses a step that would
+  leave a window under 100 px (`MIN_SANE_W`), and `execute_command` runs
+  nothing after a refusal (`commands.c`), so the order of the moves matters:
+  a row of 160, 160 and 4800 taken left to right is left exactly as it was.
+  *[So without the floor simulated; with it, under "Hardened" below, the
+  order stops mattering.]*
+- *Fresh shares round one way*: round(S/N), the last child taking the
+  remainder. Six fresh windows across 5120 px are 853 five times and 855.
+- *Sway's IPC reports pending geometry* (`ipc-json.c`: `node_get_box`, then
+  `container_get_box`), so a tree read straight after a command list sees its
+  result.
+- *A fullscreen window's rect reads as the whole output*, 5120 wide at x 0,
+  while its tiled slot waits underneath and returns when fullscreen ends.
+
+**Design** (`bin/sway-equalize`, bash and jq like `sway-split`; bound to
+`$mod+Ctrl+e` by path):
+
+- The whole focused workspace, every row and every column, level by level
+  from the workspace down, re-reading the tree at each level, since a row's
+  resize changes the size of everything inside it.
+- The targets at each level are sway's own fresh shares. The moves are
+  directional, one edge each: leftward ones first, left to right, then
+  rightward ones, right to left. In that order no window ever shrinks below
+  its target on the way, so sway can refuse a step only when a share itself
+  falls under 100 px; the script then exits 1 with a line on stderr.
+  *[Not so for a window sway has already left under the floor, which sway
+  refuses to grow in small steps; replaced the same day, under "Hardened"
+  below.]*
+- Left as they are: floating windows, the members of a fold, and a row or
+  column holding a fullscreen window. A second press after fullscreen ends
+  evens it out.
+- The Ctrl tier by the binding grammar: the rows and columns of a workspace
+  are enclosures, and `e` was free there. The grammar's line for the tier
+  now names it, and the card lists it.
+
+**Suite.** `tests/sway-equalize/run.sh`, 32 checks, caged: a nested headless
+sway at 5120x1440 with foot windows, sway's own fresh geometry as the
+reference. A distorted row, the day's live widths, a second run on an equal
+row, a floating window, a nested column, a fold, the move-order case, a
+fullscreen window, the focused workspace only, a row inside a column inside
+a row, whose inner row the outer one resizes, and a clean cage at the end.
+Mutation-tested against five breaks, each failing the cases its header
+names: the naive move order, floor for round, the first level only, no
+fullscreen guard, and one tree read for every level. foot needs `-o workers=0` there: at one render thread per
+CPU, seventeen windows ran the cage's 256 tasks out on the first run, and
+the cage stopped it at its time cap as designed.
+
+**Live.** Run once from the study copy on workspace 2 before the key existed,
+as asked: 732, 839, 853, 940, 903 and 853 became 853 five times and 855.
+Sway reloaded with the binding the same hour. fedxps has the key from its
+next pull and needs `stow-all` for the new file in `bin` before it works;
+untried there.
+
+**Declined, with reasons.** Only the row or column around the focused
+window: one press should reset the workspace without aiming first, and on
+the day's workspace the two do the same thing. `=` inside the resize mode,
+alone or beside the chord: three presses for a reset one chord gives.
+`resize set width` per window, repeated until it settles: documented, but
+each pass splits every change between both neighbours and lands only
+approximately. Moving each window out and back to zero its fraction: it
+reorders the windows.
+
+**Hardened the same day**, when asked to see whether the script could be
+hardened at all and whether rounding could stack up over a history of
+openings and closings. Two workers in caged nested sways, one per question;
+every claim below was reviewed, and the central ones re-measured, before
+anything landed.
+
+- *Rounding across sway's own histories.* With no resize, sway's widths
+  differ from the script's targets only at exact half-pixel shares, where
+  2S/N is odd: each window comes out a pixel either side, decided by the last
+  bits of its fraction, and the last window absorbs the rest. A simulator of
+  `tree/arrange.c` matched a nested sway on 12,524 width vectors across 275
+  random histories, then searched 22,601 states at every width from 200 to
+  8000: every difference sat on a tie. At a tie sway's own result depends on
+  the opening order, and even on a re-layout (a workspace round trip or a
+  fullscreen toggle flipped tie widths, measured): sixteen windows in a
+  1720-px row came out 108 x7, 107, 107, 108 x6, 102 when opened one after
+  another and 108 x15, 100 when each opened after the first, and the script
+  takes the first to the second (re-measured). At the top level of the two
+  monitors a tie needs absurd counts: never at 5120 wide, 32 windows at
+  3440, 64 at 1440 high. No change: the script's round-half-up target is one
+  of sway's own outcomes, and stable once made.
+- *The residue* the script leaves in the fractions stays bounded under later
+  openings and closings, at most 6 px measured in a nested sway and 12 px in
+  the simulator for up to twelve windows, and does not grow with history;
+  another press removes it.
+- *Five breaks, fixed:*
+  - A window sway has left under the floor, as it does when a row a window
+    was shrunk in gains another (1300, 75, 2465, 1280), made the first step
+    refuse, and nothing moved, exit 1. The plan now simulates sway's checks
+    (both windows on the edge at or above 100 px wide or 60 px high, growing
+    or not) and takes the first edge whose move sway accepts.
+  - A stuck container's refused step ended its level's command list and held
+    back a healthy sibling; refused moves now go last.
+  - Sway reports a child's height less its title bar, so a fresh column with
+    one title bar came out 497, 472, 471; the bar is added back. Latent:
+    tiled windows here have no title bars.
+  - Two runs at once each moved every edge from one reading, and five pairs
+    in six ended uneven; a lock on the script file makes the second wait.
+  - A window sway has collapsed to 0x0 comes back at the average share on
+    the first resize, so a single plan cannot land; each level is read and
+    moved again, up to three passes.
+- *The move order is no longer load-bearing.* With the floor simulated, a
+  move sway accepts stays acceptable as the others land, since a window
+  whose far edge has moved is at its target; the plan takes edges left to
+  right. Either order gave the same outcome on 15,822 random starts. The
+  plan reached every target of at least twice the floor from every start
+  tried (5,598 random starts, and the worker's 2,963), and never did worse
+  than the first version (11,844 starts, 1,072 of them evened only by the
+  new plan).
+- *The suite* gained cases 12-16 and closes the windows it no longer needs.
+  With every window left open it peaked at 475 of the cage's 512 MiB, past
+  which the cage kills sway without a word; now about 310. 55 checks,
+  mutation-tested against nine breaks, which its header lists.
+
+**Declined, the same day.** Targets computed as sway's own
+open-one-after-another history would make them (jq reproduces its doubles
+bit for bit): it only swaps one tie outcome for another, and binds the
+script to `arrange.c`'s loop order. Lifting a window under the floor from
+both sides at once with `resize grow width`, the form that takes half from
+each neighbour, for the near-floor rows the plan still strands: those need
+26 or more windows across the Samsung. Lowering the target when sway clamps
+gaps in a container too narrow for them: no gaps are configured here, and
+it redefines "even" where sway's fresh layout cannot be reached by
+resizing.

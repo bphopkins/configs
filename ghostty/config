@@ -20,7 +20,8 @@
 # the six brights as well as by anything tweaked since. Everything else in
 # this file still tracks .wezterm.lua, with two further exceptions below,
 # likewise not mirrored: the bold weight, dropped a tick on 2026-09-20, and
-# the size, raised half a point on 2026-09-22.
+# the size, raised half a point on 2026-09-22, with its zoom step halved on
+# 2026-10-06.
 #
 # Two of WezTerm's settings have no Ghostty counterpart at all. They are
 # recorded in place below rather than dropped, so the gaps stay visible.
@@ -167,16 +168,27 @@ font-style-bold-italic = Semibold Italic
 # FreeType it links, which reproduces the measured 10x20 at 12. Recompute if
 # the face, a display scale or that code changes.
 #
-# ctrl+= and ctrl+- add and subtract a whole point, so from here they visit
-# 13.5 and 11.5. ctrl+0 returns to this line, and a config reload leaves a
-# zoomed terminal zoomed.
-#
 # Declined 2026-09-06, tried in use: normalising size per font by x-height.
 # JuliaMono's is 6.60 against Source Code Pro's 5.76, which put it at 10.6, and
 # that read as plainly too small — the x-heights matched, but the advance
 # narrowed 12%, so the text got denser rather than equal. One size, whatever
 # the face.
 font-size = 12.5
+
+# ctrl+= and ctrl+- step half a point, from 2026-10-06, where Ghostty's own
+# default is a whole one: one press from 12.5 lands on either neighbour in the
+# table above, 12 or 13. ctrl+0 returns to the font-size line, and a config
+# reload leaves a zoomed terminal zoomed.
+#
+# All three of the default triggers are restated, spelled as `+list-keybinds
+# --default` prints them. ctrl++ is bound beside ctrl+=, and a keybind
+# replaces only the trigger it names, so one left out would go on stepping a
+# whole point. Confirmed 2026-10-06 against a scratch config. NOT mirrored in
+# .wezterm.lua: WezTerm, the control, keeps its own step, which multiplies the
+# size by 1.1 a press.
+keybind = ctrl+==increase_font_size:0.5
+keybind = ctrl++=increase_font_size:0.5
+keybind = ctrl+-=decrease_font_size:0.5
 
 # NO COUNTERPART (1/2) — faint text.
 #

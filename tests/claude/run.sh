@@ -4,18 +4,22 @@
 #   bash tests/claude/run.sh
 #
 # Fully sandboxed under $TMPDIR: a fake HOME, a fake org/claude-config, a fake
-# ~/Desktop. Needs no network. Resolves claude-link relative to its own location,
-# so it tests the checkout it lives in; the hooks live in org/claude-config and
-# are read from there. Writes nothing real -- two late sections read the live
-# config tree, and only read it.
+# ~/Desktop. Needs no network. Runs caged (tests/cage.sh). Resolves claude-link
+# relative to its own location, so it tests the checkout it lives in; the hooks
+# live in org/claude-config and are read from there, or from
+# $CLAUDE_SUITE_HOOKS when a mutation run points it at another copy. Writes
+# nothing real -- two late sections read the live config tree, and only read it.
 #
 # Last line follows the tests/gsync convention: "passed: N  failed: M".
 set -uo pipefail
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
+# shellcheck source=/dev/null
+source "$REPO/tests/cage.sh"
+cage claude "$@"
 LINK="$REPO/bin/claude-link"
-HOOKS="$HOME/Desktop/org/claude-config/hooks"      # hook scripts under test
+HOOKS="${CLAUDE_SUITE_HOOKS:-$HOME/Desktop/org/claude-config/hooks}"  # hook scripts under test
 pass=0; fail=0
 ok()   { pass=$((pass+1)); printf '  \033[32mok\033[0m   %s\n' "$1"; }
 no()   { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
@@ -256,6 +260,65 @@ mkdir -p "$w/cfg/repos/ghost"; printf '{"permissions":{"allow":[]}}\n' > "$w/cfg
 out=$(run "$w" --apply); rc=$?
 yes_ "reports the skip"                   '[[ "$out" == *"ghost"*"not on this machine"* ]]'
 not_ "does not error out"                 '[ "$rc" = 2 ]'
+
+echo "== orphan charters are reported, never moved =="
+# An orphan is a charter git ignores and does not track: nothing syncs it, and a
+# merge that brings its path replaces it in silence. The sandbox brings its own
+# exclude, so the result does not depend on this machine's git config.
+w=$(mkworld)
+printf '**/CLAUDE.md\n**/CLAUDE.local.md\n' > "$w/excludes"
+printf '[core]\n\texcludesFile = %s\n[user]\n\tname = t\n\temail = t@t\n' "$w/excludes" > "$w/gitconfig"
+gx() { GIT_CONFIG_GLOBAL="$w/gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"; }
+mkdir -p "$w/desk/proj/sub" "$w/desk/seen" "$w/desk/loose" "$w/cfg/repos/proj"
+gx git -C "$w/desk/proj" init -q
+printf 'tracked\n' > "$w/desk/proj/CLAUDE.md"
+gx git -C "$w/desk/proj" add -f CLAUDE.md; gx git -C "$w/desk/proj" commit -q -m one
+printf 'o\n' > "$w/desk/proj/sub/CLAUDE.md"            # ignored and untracked
+printf 'o\n' > "$w/desk/proj/sub/CLAUDE.local.md"      # ignored and untracked
+printf 'layer\n' > "$w/cfg/repos/proj/CLAUDE.local.md" # linked in by --apply
+gx git -C "$w/desk/seen" init -q
+printf '!CLAUDE.md\n' > "$w/desk/seen/.gitignore"
+printf 'v\n' > "$w/desk/seen/CLAUDE.md"                # untracked, but git status lists it
+printf 'l\n' > "$w/desk/loose/CLAUDE.md"               # in no work tree
+out=$(gx run "$w")
+yes_ "an ignored untracked CLAUDE.md is reported" '[[ "$out" == *"orphan charter"*"proj/sub/CLAUDE.md"* ]]'
+yes_ "  and a CLAUDE.local.md"                    '[[ "$out" == *"orphan charter"*"proj/sub/CLAUDE.local.md"* ]]'
+not_ "a tracked charter is not"                   '[[ "$out" == *"orphan charter"*"/proj/CLAUDE.md"* ]]'
+not_ "a charter git status lists is not"          '[[ "$out" == *"orphan charter"*"seen/CLAUDE.md"* ]]'
+not_ "a charter in no work tree is not"           '[[ "$out" == *"loose/CLAUDE.md"* ]]'
+yes_ "the summary counts them"                    '[[ "$out" == *"orphans "*": 2"* ]]'
+not_ "the dry run writes no list"                 '[ -e "$w/home/.claude/claude-link-orphans" ]'
+gx run "$w" --apply >/dev/null
+check "--apply keeps the list for the hook"       "$(grep -c . "$w/home/.claude/claude-link-orphans" 2>/dev/null)" "2"
+yes_ "  and moves nothing"                        '[ -f "$w/desk/proj/sub/CLAUDE.md" ] && [ ! -L "$w/desk/proj/sub/CLAUDE.md" ] && [ -f "$w/desk/proj/sub/CLAUDE.local.md" ] && [ ! -L "$w/desk/proj/sub/CLAUDE.local.md" ]'
+yes_ "a link into the layer is not an orphan"     '[ -L "$w/desk/proj/CLAUDE.local.md" ] && ! grep -q "proj/CLAUDE.local.md" "$w/home/.claude/claude-link-orphans"'
+out=$(gx run "$w" --apply); rc=$?
+check "orphans leave the exit status alone"       "$rc" "0"
+rm -f "$w/home/.claude/claude-link-orphans"
+out=$(gx run "$w" --auto)
+check "--auto stays silent"                       "$out" ""
+check "  and keeps the list too"                  "$(grep -c . "$w/home/.claude/claude-link-orphans" 2>/dev/null)" "2"
+rm "$w/desk/proj/sub/CLAUDE.md" "$w/desk/proj/sub/CLAUDE.local.md"
+gx run "$w" --apply >/dev/null
+not_ "once they are gone, so is the list"         '[ -e "$w/home/.claude/claude-link-orphans" ]'
+
+echo "== the hook counts orphan charters =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  # two paths and a stray blank line, which is not counted
+  printf '~/Desktop/a/CLAUDE.md\n\n~/Desktop/b/sub/CLAUDE.local.md\n' > "$w/home/.claude/claude-link-orphans"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a listed orphan warns, with the count" '[[ "$j" == *"2 orphan charter(s)"* ]]'
+  yes_ "  and reaches the user too"            'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  : > "$w/home/.claude/claude-link-orphans"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "an empty list is silent"               '[[ "$j" == *"orphan"* ]]'
+  rm "$w/home/.claude/claude-link-orphans"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "  and so is no list"                   '[[ "$j" == *"orphan"* ]]'
+else
+  no "session-start.sh not found at $HOOKS"
+fi
 
 echo "== --unlink reverses, keeping the merged content =="
 w=$(mkworld)

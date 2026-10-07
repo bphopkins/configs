@@ -65,6 +65,7 @@ chord is held; motions, walks, volume, brightness and resize keys repeat.
 | chord | does |
 |---|---|
 | `$mod+Ctrl+r` | rotate the container around the window: a row becomes a column, and back; also unfolds tabs to the split they came from |
+| `$mod+Ctrl+e` | even out the workspace: every window back to its fresh size, the same width across a row and the same height down a column |
 | `$mod+Ctrl+l` | lock the screen (swaylock) |
 | `$mod+Ctrl+b` | screens off, on the way out (bigfed only): lock, then both monitors power down a second after your hands leave, and come back at the first key or mouse movement |
 | `$mod+Ctrl+c` | reload this config |

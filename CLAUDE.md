@@ -132,6 +132,10 @@ hand-edited (`nvim/CLAUDE.md`, Snippets).
 **Run `tests/sway-split/run.sh` after any edit to `bin/sway-split`.** Caged;
 it drives a nested headless sway, never the live one.
 
+**Run `tests/sway-equalize/run.sh` after any edit to `bin/sway-equalize`.**
+Caged; it drives a nested headless sway at the Samsung's 5120x1440, never the
+live one.
+
 **Run `tests/sway-pointer/run.sh` after any edit to `bin/sway-pointer`.** Caged;
 stub-based: no compositor is started or addressed, the device lists are the
 two machines' saved ones.

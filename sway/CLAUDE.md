@@ -4,8 +4,9 @@ Charter for `sway/` (stowed to `~/.config/sway`), and the coordinating
 charter for the desktop suite — waybar, swaylock, mako, wofi, rofi each carry
 their own small charter for what binds when their files are touched. Records:
 `DECISIONS.md` items 5 and 6, the entries of 2026-09-28 and 2026-09-29, the
-audit of 2026-09-30, the split cue's entry of 2026-10-01, and the pointer
-key's and `screens-off`'s of 2026-10-03.
+audit of 2026-09-30, the split cue's entry of 2026-10-01, the pointer
+key's and `screens-off`'s of 2026-10-03, and the equalize key's of
+2026-10-06.
 
 **Sway runs on both machines:** fedxps, and bigfed on trial since 2026-09-28,
 on its two monitors. One config serves both, so **before changing anything,
@@ -75,6 +76,9 @@ a nested sway with a virtual keyboard on 2026-10-03, memory
   `$mod+Shift+d`. `$mod+q` closes only a window: with a column, fold or workspace
   selected it does nothing (a guard, 2026-09-30). `$mod+r` toggles the
   resize mode in and out, and Waybar shows `resize` while it holds the keys.
+  `$mod+Ctrl+e` evens out the focused workspace through `bin/sway-equalize`
+  (2026-10-06): every row and column back to the sizes sway gives windows
+  opened fresh, which no sway command does.
 - **`README.md`** is a hand-maintained quick-reference card — a courtesy, not
   a contract: `config` is authoritative, the card may lag or be deleted at
   will, and the suite deliberately does not check the two against each other
@@ -267,6 +271,12 @@ the body gap:
   end the nested sway by stopping its scope, never with `swaymsg exit`: on a
   socket that was the live one after all, that ends the session
   (2026-10-03).
+- **foot as a test client**: foot starts one render thread per CPU, sixteen
+  on bigfed, so a harness opening many foot windows passes `-o workers=0` or
+  runs the cage out of tasks (seventeen windows did, 2026-10-06). Each window
+  also holds its buffers, so a harness closes the windows it no longer
+  needs: `tests/sway-equalize/run.sh` peaked at 475 of the cage's 512 MiB
+  before it did, and past the line the cage kills sway without a word.
 - **swaynag buttons**: only `-z`/`-Z` dismiss; `-b`/`-B` run their action and
   leave the bar on screen — a working Cancel is `-s 'Cancel'` (renames the
   built-in dismiss). Prefer `-B` over `-b`, which routes through `$TERMINAL`
