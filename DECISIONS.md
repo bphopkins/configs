@@ -3326,3 +3326,46 @@ goes first, as a pilot.
   index on bigfed — that refresh is what prevents the pack re-stamp there —
   so the index half of the guard rides in fedxps's environment and config,
   not in this code.
+
+## The gauge: `bin/sync-check`, and the push gauge in `gpush`/`gpushall` — 2026-10-10
+
+Step 3b of the transport campaign, `org/machines/transport-2026-10/PLAN.md` →
+Phases; the record with every reading is `pilot/build-gauge.md` there, and the
+rules it installs are that directory's `rules.md` (ws-1, ws-2, fedxps-3,
+bigfed-2). The same day as 3a, in a second chat.
+
+- **What landed here.** `bin/sync-check` (Python 3, read-only, in the
+  `disk-check` shape): `sync`, `conflicts`, `guard` and `push REPO…`
+  (`bin/CLAUDE.md`). `50-git-sync.sh`'s `_gsync_push_repo` runs
+  `sync-check push -q` before `add -A` and skips the repository on a refusal
+  or an unreadable cluster, with the gauge's own lines; a missing gauge is
+  one hint and the push proceeds; a cluster the gauge cannot read pushes
+  this machine's own state under a WARN, his word at the wrap-up (the
+  campaign's `PLAN.md` → settled 34), since nothing from the other
+  workstation can arrive meanwhile and a skip would only leave GitHub's
+  copy ageing for the outage. Suites: `tests/sync-check/run.sh` (new;
+  caged; three fixture Syncthing instances on loopback), section 5 of
+  `tests/gsync/test-role.sh`, a `sync-check` stub in every gsync suite
+  (418 checks now). Two reviews the same afternoon, a code review and an
+  adversarial read with sixteen mutants, found two serious faults — the
+  settle re-read only this machine, and a HEAD the other workstation could
+  not give counted as silence — and a dozen smaller ones, every one fixed
+  and pinned; the suite grew from 177 to 257 checks (the record's § Review).
+- **Settled by measurement, on a throwaway Syncthing in a cage:** the
+  `/rest/events/disk` buffer holds events from the daemon's start, not from
+  the first subscriber (the two events written before the first-ever read
+  were in it), so the guard line reads "since Syncthing started" and says
+  when the 1,000-event buffer has rolled; `POST /rest/db/scan` returns when
+  the scan is done (500 for an unknown folder, 404 from `db/status`, 403
+  for a wrong key). On the real hub the need lists carry opaque names, so
+  the other workstation's own view is read over ssh when the hub shows it
+  owing or needing something — the one reading beyond ws-1's letter, forced
+  by the hub's encryption.
+- **Declined:** reading `/rest/config` for the folder list (its folder
+  objects carry the encryption password; `config.xml` is parsed for the
+  fields needed and nothing else is extracted, which also lets the push
+  line pass a repository in no folder while the daemon is down); the API
+  key on curl's command line (`urllib` with a header instead); a second
+  implementation of the reads for the hub (the gauge sends its own source
+  and runs there); a `bye` function (him-3) — not in the step; the pilot's
+  exercise 4 runs `sync-check sync` by hand until it is asked for.

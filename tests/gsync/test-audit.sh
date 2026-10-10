@@ -15,6 +15,10 @@ _gsync_online() { return 0; }                        # local-path remotes
 mkdir -p "$SB/stub"
 printf '#!/bin/sh\necho gsync-suite\n' > "$SB/stub/uname"
 chmod +x "$SB/stub/uname"
+# The push gauge (2026-10-10) is stubbed to pass in silence: the real one would
+# read this machine's Syncthing. test-role.sh is where its refusals are exercised.
+printf '#!/bin/sh\nexit 0\n' > "$SB/stub/sync-check"
+chmod +x "$SB/stub/sync-check"
 PATH="$SB/stub:$PATH"
 
 pass=0 fail=0

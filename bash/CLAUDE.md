@@ -162,7 +162,8 @@ apart:
 
 - `gpullall` — pulls every repo in `REPOS_DESKTOP` (ff-only, prune,
   submodules on demand; tags on fetched history auto-follow — deliberately no
-  `--tags`, so a force-moved remote tag can't wedge every future pull)
+  `--tags`, so a force-moved remote tag can't wedge every future pull). On a
+  writer; a reader refuses, see the first guardrail below
 - `gpushall [-m MSG]` — stages (`git add -A`), vets new paths, commits,
   `pull --rebase=merges`, pushes every repo. Remote commits integrated by the
   rebase are reported (`[PULL] integrated changes from origin`) and fire the
@@ -222,6 +223,31 @@ Guardrails, shared by the single- and all-repo variants:
   every file the vet would have declined (a secret, an oversize file) are
   unstaged, without a prompt, so a commit made by any other route afterwards
   carries none of them. The rest of the batch still pushes.
+- **The push gauge runs before anything is staged (2026-10-10)**: `gpush`
+  and `gpushall` run `sync-check push -q` on each repository before its
+  `add -A` (`rules.md` → bigfed-2; the gauge is `bin/sync-check`,
+  `bin/CLAUDE.md`). For a repository Syncthing carries that means the folder
+  up to date on both machines and the hub, nothing under its `.git` needed
+  in any view, no phantom ref or conflict copy under `.git`, and the other
+  workstation at the same HEAD when it answers; a repository in no
+  Syncthing folder passes at once and in silence, which today is all of
+  them. A refusal (exit 1) skips the repository — `[SKIP] … the push gauge
+  refused` with the gauge's own lines, which name the repair — and the rest
+  of the batch still pushes; there is no override, since the repair is the
+  way through. A cluster that cannot be read (exit 2: the hub, this
+  machine's Syncthing or the other workstation unreadable) pushes this
+  machine's own state under a `[WARN]` that shows the gauge's lines, his
+  word of 2026-10-10 (the campaign's `PLAN.md` → settled 34): nothing from
+  the other workstation can arrive meanwhile, it writes no `.git`, and a
+  skip would only leave GitHub's copy ageing for the outage. A machine
+  without the gauge on `PATH` pushes with one hint naming `stow-all`,
+  because refusing every push for a missing tool would stop the backup —
+  except a repository with a Syncthing marker (`.stfolder`) at its root or
+  above it, the one case the gauge exists for, which is skipped. On a pass
+  the gauge's one line for a carried repository prints unindented above
+  the repository's own. Suite: `tests/gsync/test-role.sh`, section 5,
+  against a stub gauge; every suite stubs it, since the real one reads this
+  machine's Syncthing.
 - **New-path vetting**: newly added paths — including rename targets and
   typechanges (the listing runs with rename detection off), matched per path
   component so a directory named `.env/` or `credentials/` is caught — larger
@@ -286,14 +312,14 @@ To add a new repo, append its path to `REPOS_DESKTOP` — note it spans *all*
 the Desktop repos, not just this one. Commit messages follow
 `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`.
 
-**Regression suite:** `tests/gsync/run-all.sh` (381 checks in five suites,
+**Regression suite:** `tests/gsync/run-all.sh` (418 checks in five suites,
 sandboxed under `$TMPDIR`, no network). Run it after **any** edit to
 `50-git-sync.sh`, and after an edit to `git/hosts/`, whose files the role
 suite reads. Each suite also runs standalone and tests the checkout it
 lives in; `tests/gsync/README.md` has suite scope and the harness conventions
 new suites must follow (`passed: N  failed: M` last line, registration in
 `run-all.sh`, a `uname` stub so the machine's own host file never reaches a
-suite).
+suite, a `sync-check` stub so the real gauge never does).
 
 ## Reboot verdict (`40-aliases.sh`, added 2026-08-08)
 

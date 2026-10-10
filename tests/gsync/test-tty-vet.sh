@@ -21,6 +21,8 @@ git -C work add -A && git -C work commit -qm base && git -C work push -qu origin
 mkdir -p "$SB/stub"
 printf '#!/bin/sh\necho gsync-suite\n' > "$SB/stub/uname"
 chmod +x "$SB/stub/uname"
+printf '#!/bin/sh\nexit 0\n' > "$SB/stub/sync-check"   # the push gauge, passing in silence
+chmod +x "$SB/stub/sync-check"
 cat > driver.sh <<EOF
 PATH="$SB/stub:\$PATH"
 source "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh"

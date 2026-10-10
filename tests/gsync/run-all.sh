@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the full git-sync regression battery (381 checks as of 2026-10-10).
+# Run the full git-sync regression battery (418 checks as of 2026-10-10).
 # Run after any edit to configs/bash/.bashrc.d/50-git-sync.sh.
 # Everything executes against throwaway repos under $TMPDIR — the real
 # ~/Desktop repos are never touched, and no network is used (the online

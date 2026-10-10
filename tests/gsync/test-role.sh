@@ -32,6 +32,22 @@ HOSTS="$HOME/Desktop/configs/git/hosts"
 mkdir -p "$HOSTS" "$SB/stub"
 printf '#!/bin/sh\ncat "%s/host"\n' "$SB" > "$SB/stub/uname"
 chmod +x "$SB/stub/uname"
+# The push gauge (bigfed-2, 2026-10-10), stubbed: it records every call with
+# whether anything was staged when it ran, and answers for a repository from
+# STUB_GAUGE_<name> as "rc:text" (default: pass in silence). Section 5 drives it;
+# every other section needs it to pass.
+cat > "$SB/stub/sync-check" <<'EOF'
+#!/usr/bin/env bash
+repo="${@: -1}"; name="$(basename "$repo")"
+staged=clean; git -C "$repo" diff --cached --quiet 2>/dev/null || staged=staged
+printf '%s %s %s\n' "$name" "$staged" "$*" >> "${STUB_GAUGE_LOG:-/dev/null}"
+var="STUB_GAUGE_${name//[^A-Za-z0-9]/_}"; spec="${!var:-0:}"
+rc="${spec%%:*}"; text="${spec#*:}"
+[ -n "$text" ] && printf '%s\n' "$text"
+exit "$rc"
+EOF
+chmod +x "$SB/stub/sync-check"
+export STUB_GAUGE_LOG="$SB/gauge.log"
 PATH="$SB/stub:$PATH"
 hash -r
 be() { printf '%s\n' "$1" > "$SB/host"; _GSYNC_ROLE=""; } # become hostname $1
@@ -411,7 +427,82 @@ check "copies removed: no copy left anywhere in the tree" [ -z "$(find "$O" -nam
 check "copies removed: the innocent edit went"         bash -c "git -C '$SB/origin-org.git' show main:base.txt | grep -q mine"
 check "copies removed: conflict-notes.txt went"        bash -c "git -C '$SB/origin-org.git' ls-tree --name-only main | grep -qx conflict-notes.txt"
 
-# --- 5. the live contract: the checkout's own host files (read only) --------
+# --- 5. the push gauge: a refusal skips the repository, the rest still pushes ---
+echo "== bigfed, the push gauge refusing nousowl =="
+be bigfed
+hostfile bigfed '[gsync]\n\trole = writer\n'
+git -C "$N" ls-files --error-unmatch local.txt >/dev/null 2>&1 && git -C "$N" rm -q --cached local.txt 2>/dev/null
+echo new > "$N/gauge.txt"; echo new > "$O/gauge.txt"
+: > "$STUB_GAUGE_LOG"
+export STUB_GAUGE_nousowl='1:[FAIL] nousowl: stranded on fedxps: notes.txt'
+snapN="$(gitsnap "$N")"
+out="$(gpush nousowl)"; rc=$?
+check "gpush nousowl: rc=1 (a named repo's skip is a failure)" [ "$rc" -eq 1 ]
+check "gpush nousowl: the SKIP line names the gauge"  contains "$out" "nousowl: not pushed — the push gauge refused"
+check "gpush nousowl: the gauge's own line is shown under it" contains "$out" "    [FAIL] nousowl: stranded on fedxps: notes.txt"
+check "gpush nousowl: names bigfed-2"                 contains "$out" "bigfed-2"
+check "gpush nousowl: nothing pushed"                 lacks "$out" "path(s); pushed"
+check "gpush nousowl: nothing committed, the new file still untracked" bash -c "! git -C '$N' ls-files --error-unmatch gauge.txt >/dev/null 2>&1"
+check "gpush nousowl: nothing under .git changed"      [ "$(gitsnap "$N")" = "$snapN" ]
+check "gpush nousowl: the gauge ran before add -A (nothing staged)" contains "$(cat "$STUB_GAUGE_LOG")" "nousowl clean push -q -- $N"
+check "gpush nousowl: the gauge was called with the repository's path" contains "$(cat "$STUB_GAUGE_LOG")" "-- $N"
+out="$(gpushall)"; rc=$?
+check "gpushall: rc=0 (a refusal is a skip, not a failure)" [ "$rc" -eq 0 ]
+check "gpushall: counters"                             contains "$out" "ok: 1  skipped: 1  failed: 0  pending: 0"
+check "gpushall: nousowl in the skipped list"          contains "$out" "skipped: nousowl"
+check "gpushall: org carried"                          contains "$out" "org: committed 1 path(s); pushed"
+check "gpushall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
+check "gpushall: the gauge ran for org too, before its add -A" contains "$(cat "$STUB_GAUGE_LOG")" "org clean push -q -- $O"
+export STUB_GAUGE_nousowl='2:[WARN] alpha: nousowl did not answer over ssh'
+out="$(gpush nousowl)"; rc=$?
+check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (1/4)" [ "$rc" -eq 0 ]
+check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (2/4)" contains "$out" "the push gauge could not read the cluster — pushing this machine's own state"
+check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (3/4)" contains "$out" "    [WARN] alpha: nousowl did not answer over ssh"
+check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (4/4)" contains "$out" "nousowl: committed 1 path(s); pushed"
+check "  the file is committed now"                   bash -c "git -C '$N' ls-files --error-unmatch gauge.txt >/dev/null 2>&1"
+export STUB_GAUGE_nousowl='0:[ OK ] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps'
+echo pass > "$N/pass.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a pass with a line: the line is shown and the push goes through (1/3)" [ "$rc" -eq 0 ]
+check "a pass with a line: the line is shown and the push goes through (2/3)" bash -c 'grep -qx "\[ OK \] nousowl: folder nousowl up to date.*" <<<"$1"' _ "$out"
+check "a pass with a line: the line is shown and the push goes through (3/3)" contains "$out" "nousowl: committed 1 path(s); pushed"
+unset STUB_GAUGE_nousowl
+echo again > "$N/gauge.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a silent pass (no folder): no gauge line, pushed (1/3)" [ "$rc" -eq 0 ]
+check "a silent pass (no folder): no gauge line, pushed (2/3)" lacks "$out" "    ["
+check "a silent pass (no folder): no gauge line, pushed (3/3)" contains "$out" "nousowl: committed 1 path(s); pushed"
+# the gauge missing from PATH: one hint, and the push goes through
+mkdir -p "$SB/stub-nogauge"; cp "$SB/stub/uname" "$SB/stub-nogauge/"
+echo again2 > "$O/gauge.txt"
+out="$(PATH="$SB/stub-nogauge:/usr/bin:/bin" gpushall)"; rc=$?
+check "no gauge on PATH: rc=0, pushed"                 [ "$rc" -eq 0 ]
+check "no gauge on PATH: one hint, naming stow-all"     [ "$(count "$out" 'sync-check is not on PATH')" -eq 1 ]
+check "no gauge on PATH: the hint names bin/sync-check" contains "$out" "stow-all installs bin/sync-check"
+check "no gauge on PATH: org pushed"                    contains "$out" "org: committed 1 path(s); pushed"
+# ... except a repository with a Syncthing marker at its root or above it
+mkdir -p "$N/.stfolder"; echo x > "$N/nogauge.txt"
+out="$(PATH="$SB/stub-nogauge:/usr/bin:/bin" gpush nousowl)"; rc=$?
+check "no gauge, a .stfolder at the repository's root: refused (1/3)" [ "$rc" -eq 1 ]
+check "no gauge, a .stfolder at the repository's root: refused (2/3)" contains "$out" "lies in the Syncthing folder at $N"
+check "no gauge, a .stfolder at the repository's root: refused (3/3)" bash -c "! git -C '$N' ls-files --error-unmatch nogauge.txt >/dev/null 2>&1"
+rmdir "$N/.stfolder"; mkdir -p "$HOME/Desktop/.stfolder"
+out="$(PATH="$SB/stub-nogauge:/usr/bin:/bin" gpushall)"; rc=$?
+check "no gauge, a .stfolder above every repository: all skipped (1/2)" contains "$out" "ok: 0  skipped: 2"
+check "no gauge, a .stfolder above every repository: all skipped (2/2)" contains "$out" "lies in the Syncthing folder at $HOME/Desktop"
+rmdir "$HOME/Desktop/.stfolder"; rm -f "$N/nogauge.txt"
+# a reader never reaches the gauge for a repository it reads: the refusal comes first
+be fedxps
+hostfile fedxps '[gsync]\n\treaderRepo = nousowl\n'
+: > "$STUB_GAUGE_LOG"
+export STUB_GAUGE_nousowl='0:[ OK ] should not be reached'
+out="$(gpush nousowl)"
+check "fedxps reading nousowl: refused before the gauge (1/2)" contains "$out" "nousowl: refused"
+check "fedxps reading nousowl: refused before the gauge (2/2)" [ ! -s "$STUB_GAUGE_LOG" ]
+unset STUB_GAUGE_nousowl
+hostfile fedxps ''
+
+# --- 6. the live contract: the checkout's own host files (read only) --------
 echo "== the checkout's host files and include =="
 F="$CFG_ROOT/git/hosts/fedxps.inc"; B="$CFG_ROOT/git/hosts/bigfed.inc"; C="$CFG_ROOT/git/config"
 check "fedxps.inc: core.checkStat = minimal"           [ "$(git config -f "$F" --get core.checkStat)" = minimal ]

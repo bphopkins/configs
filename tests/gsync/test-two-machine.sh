@@ -18,6 +18,10 @@ _gsync_online() { return 0; }   # local-path remotes; no real network involved
 mkdir -p "$SANDBOX/stub"
 printf '#!/bin/sh\necho gsync-suite\n' > "$SANDBOX/stub/uname"
 chmod +x "$SANDBOX/stub/uname"
+# The push gauge (2026-10-10) is stubbed to pass in silence: the real one would
+# read this machine's Syncthing. test-role.sh is where its refusals are exercised.
+printf '#!/bin/sh\nexit 0\n' > "$SANDBOX/stub/sync-check"
+chmod +x "$SANDBOX/stub/sync-check"
 PATH="$SANDBOX/stub:$PATH"
 
 pass=0 fail=0

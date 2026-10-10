@@ -782,6 +782,26 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
 
 ---
 
+## 35. The transport campaign's configs work
+
+- [ ] Pointer, not a plan: the work this repo takes from
+  `org/machines/transport-2026-10/` (Syncthing carries every repository's
+  `.git`; bigfed alone pushes) runs by that campaign's `PLAN.md`, each chat
+  launched from the kickoff line its step names, and the rules by its
+  `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same
+  day): the host files `git/hosts/`, the role and the conflict-copy refusal
+  in `50-git-sync.sh`, the export in `10-env.sh`; and at step 3b the same
+  day (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its
+  four lines and `tests/sync-check`, and the push gauge in `gpush` and
+  `gpushall`. Still to come on this side, in the plan's order: `stow-all`
+  without its pull and the arrival lines (ws-8), the reader's own plugin
+  lock (fedxps-5), `byebye` asking the gauge (bigfed-3), the conflict-copy
+  skip in `.bashrc` (ws-4), `init.defaultRefFormat` (ws-6), the test suites
+  building outside the tree (ws-9), `claude-link`'s lock and confinement
+  (ws-12 to ws-14), the `tests/sync` rig, and `tests/gsync/test-two-machine.sh`
+  retired (5a). Do none of it from here: the campaign chats carry the
+  evidence and the record.
+
 ## Closed
 
 One line per closed item — verdict, date, pointer. Full notes and post-mortems

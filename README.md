@@ -221,6 +221,7 @@ hand, once per machine:
 ```bash
 ln -s ../../Desktop/configs/git/hosts/"$(uname -n)".inc ~/.config/git/host.inc
 git config --show-origin core.checkStat   # fedxps: names host.inc; bigfed: prints nothing
+sync-check guard                          # the same, plus the environment half, once bin is stowed
 ```
 
 Git ignores a missing include silently, so a forgotten link leaves fedxps
@@ -313,7 +314,7 @@ But honestly, why not just reboot?
   stow -Dvt ~/.config/waybar waybar
   stow -Dvt ~/.config/wofi wofi
   stow -Dvt ~/.config/tmux tmux
-  stow -Dvt ~/.config/git git
+  stow -Dvt ~/.config/git git   # the host link ~/.config/git/host.inc is hand-made, not stow's: rm it too
   stow -Dvt ~/.config/fontconfig fontconfig
   stow -Dvt ~/.config/environment.d environment.d
   stow -Dvt ~/texmf/tex/latex latex

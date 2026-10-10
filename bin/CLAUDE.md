@@ -23,6 +23,45 @@ with a conflict.
   could-not-determine, every FAIL naming its repair. The half of that tree's
   integrity a script can decide; `/restore-order` judges the prose and calls this
   first. Suite: `tests/context-check/run.sh`.
+- `sync-check` — read-only gauge for the Syncthing cluster and the git roles,
+  in the `disk-check` shape (2026-10-10, step 3b of
+  `org/machines/transport-2026-10/PLAN.md`; the rules it reads are that
+  directory's `rules.md` → ws-1, ws-2, fedxps-3, bigfed-2; record
+  `pilot/build-gauge.md`). Four lines: `sync` (every folder this machine
+  shares is up to date — a blocking scan, then the local status, this
+  machine's view of the hub, and over batch-mode ssh the hub's view of both
+  workstations and, when the hub shows the other workstation owing or
+  needing something, that workstation's own view, since the hub holds
+  ciphertext and names what it needs opaquely; a need that outlives a 15 s
+  settle with every folder idle is stranded, named with him-2's repair,
+  while a transfer still running is `WAIT`; one known stuck item is carried
+  by name in `KNOWN`, and `DUE` says when it no longer shows, or when a
+  folder's watcher is dead), `conflicts` (one `find`
+  over `~/Desktop` and every folder path: copies under a `.git` and stale
+  locks there FAIL, copies in a directory that loads FAIL, the rest DUE),
+  `guard` (the host link, every key of the host file resolving through it,
+  `GIT_OPTIONAL_LOCKS` as the role requires, and no write seen under a `.git`
+  this machine reads in Syncthing's disk events, which are kept from the
+  daemon's start, the last 1,000), and `push REPO…` (bigfed-2: the folder up
+  to date, nothing under the repository's `.git` needed in any view, no
+  phantom ref or conflict copy under `.git`, the other workstation's HEAD
+  equal when it answers, and the age of what GitHub lacks; a repository in
+  no Syncthing folder passes, silently under `-q`, unless a `.stfolder`
+  marker sits at or above it, which is `WARN`; a workstation the hub shows
+  asleep blocks nothing, what the hub lists for it being what it lacks),
+  which `gpush` and `gpushall` run before `add -A`: exit 1 skips the
+  repository, exit 2 pushes with the warning shown (`bash/CLAUDE.md` → Git
+  sync). Exit 0 all
+  clear, 1 attention (FAIL, WAIT, DUE), 2 could not determine. The API key is
+  read from `config.xml` into a variable and sent as a header, never printed
+  and never on a command line; the file is parsed for the fields needed and a
+  folder's `encryptionPassword` is never extracted; `/rest/config` is never
+  read. The hub and the other workstation run this same file in its
+  `--remote-views` mode from stdin, so the reads have one implementation,
+  and every round of the settle reads them afresh. Suite:
+  `tests/sync-check/run.sh` (caged, three fixture Syncthing instances on
+  loopback, a stub `ssh` and `uname`; 257 checks, reviewed twice and
+  mutation-tested the day it was written, `pilot/build-gauge.md`).
 - `claude-link` / `claude-prune` / `claude-collect.sh` — Claude Code
   configuration linkage; see below.
 - `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose

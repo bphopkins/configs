@@ -37,9 +37,16 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   the hostname's forms, the link as a second source, a malformed, unreadable
   or dangling host file, a stale role in the shell; a conflict copy — new,
   renamed, extensionless, tracked, beside a secret — refused and unstaged,
-  and the push going through once it is gone; and, read-only, the checkout's
-  own host files and include in `git/config`. Its two reviews of 2026-10-10
-  are in `org/machines/transport-2026-10/pilot/build-git.md`.
+  and the push going through once it is gone; the push gauge (rule bigfed-2,
+  step 3b the same day) against a stub `sync-check` — a refusal skips the
+  repository with the gauge's lines shown, nothing staged, the rest of the
+  batch pushed; an unreadable cluster pushes under a WARN with the lines
+  shown (his word, 2026-10-10); the gauge run before `add -A`
+  with the repository's path, a pass shown or silent, the gauge missing from
+  `PATH` hinted once and pushed, or skipped where a `.stfolder` marker sits
+  at or above the repository, a reader's refusal coming first; and, read-only, the
+  checkout's own host files and include in `git/config`. Its two reviews of
+  2026-10-10 are in `org/machines/transport-2026-10/pilot/build-git.md`.
 - `test-audit.sh` — regressions for the 2026-07-26 audit findings: revert guard,
   unborn-branch skip, `:(literal)` unstaging, rename/typechange vetting, embedded
   repos, secret directory components, `GSYNC_MAX_MB` validation, `gpushall` parser,
@@ -58,6 +65,10 @@ Harness conventions — keep these when adding tests:
   reads this machine's role from `configs/git/hosts/$(uname -n).inc`, and a
   suite must not change behaviour with the machine it runs on. The four older
   suites name a host with no file, a writer; `test-role.sh` switches names.
+- Every suite also puts a `sync-check` stub there (2026-10-10): `gpush` and
+  `gpushall` run the push gauge before `add -A`, and the real one reads this
+  machine's Syncthing. The four older suites' stub passes in silence;
+  `test-role.sh`'s answers per repository from `STUB_GAUGE_<name>`.
 - ⚠ One command per `check`: in `check "d" A && B` the `&&` binds outside
   `check`, so B is never checked and a false B only fails the line's exit
   status silently (found 2026-10-10 in 30 lines of `test-role.sh`). Write two

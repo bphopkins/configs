@@ -41,6 +41,23 @@
 # staged or tracked, refuses that repository's push outright, no prompt and
 # no override, with the staged copies and the files the vet would decline
 # unstaged, until it is resolved by hand.
+#
+# The push gauge (2026-10-10; rules.md bigfed-2): before a repository is
+# staged, `sync-check push -q` says whether it may be pushed from here. For a
+# repository Syncthing carries that means the folder up to date on both
+# machines and the hub, nothing under its .git needed either way, no phantom
+# ref or conflict copy under .git, and the other workstation at the same HEAD
+# when it answers; a repository in no Syncthing folder passes at once and in
+# silence. A refusal (exit 1) skips the repository with the gauge's own
+# lines, which name the repair, and the rest of the batch still pushes;
+# there is no override, since the repair is the way through. A cluster that
+# cannot be read (exit 2) pushes this machine's own state under a WARN, his
+# word of 2026-10-10 (PLAN.md settled 34): nothing from the other workstation
+# can arrive meanwhile, it writes no .git, and a skip would only leave
+# GitHub's copy ageing for the outage. A machine without the gauge on PATH pushes with one hint,
+# because refusing every push for a missing tool would stop the backup --
+# except a repository with a Syncthing marker (.stfolder) at its root or
+# above it, the one case the gauge exists for, which is skipped.
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
@@ -615,6 +632,48 @@ _gsync_push_repo() {
   fi
   _gsync_preflight "$name" "$repo" || return $?
   branch="$_GSYNC_BRANCH"
+
+  # The push gauge, before anything is staged (bigfed-2; the header). Its
+  # output is shown either way: on a refusal under the SKIP line, on a pass
+  # as the one line it prints for a repository Syncthing carries.
+  if command -v sync-check >/dev/null 2>&1; then
+    out="$(sync-check push -q -- "$repo" 2>&1)"
+    case $? in
+      0)
+        # A pass prints the gauge's own lines unindented: indented, they read
+        # as detail of the repository above this one.
+        [[ -n "$out" ]] && printf '%s\n' "$out"
+        ;;
+      2)
+        # Could not determine -- the hub, this machine's Syncthing or the
+        # other workstation unreadable. His word (2026-10-10, PLAN.md settled
+        # 34): push this machine's own state and say so, since nothing from
+        # the other workstation can arrive meanwhile and it writes no .git,
+        # while a skip would leave GitHub's copy ageing for the outage.
+        _gsync_say WARN "$name: the push gauge could not read the cluster — pushing this machine's own state (org/machines/transport-2026-10/rules.md → bigfed-2):"
+        [[ -n "$out" ]] && _gsync_detail "$out"
+        ;;
+      *)
+        _gsync_say SKIP "$name: not pushed — the push gauge refused (org/machines/transport-2026-10/rules.md → bigfed-2):"
+        [[ -n "$out" ]] && _gsync_detail "$out"
+        return 2
+        ;;
+    esac
+  else
+    # Without the gauge, a repository inside a Syncthing folder -- a .stfolder
+    # marker at its root or above it -- is not pushed: that is the one case
+    # the gauge exists for. Anything else pushes with one hint.
+    local marked="" d="$repo"
+    while [[ -n "$d" ]]; do
+      if [[ -d "$d/.stfolder" ]]; then marked="$d"; break; fi
+      d="${d%/*}"
+    done
+    if [[ -n "$marked" ]]; then
+      _gsync_say SKIP "$name: not pushed — sync-check is not on PATH and this repository lies in the Syncthing folder at $marked; stow-all installs bin/sync-check (org/machines/transport-2026-10/rules.md → bigfed-2)"
+      return 2
+    fi
+    _gsync_hint "sync-check is not on PATH — pushed without the push gauge; stow-all installs bin/sync-check (org/machines/transport-2026-10/rules.md → bigfed-2)"
+  fi
 
   if ! git -C "$repo" add -A; then
     _gsync_say FAIL "$name: git add -A failed"

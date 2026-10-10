@@ -53,7 +53,7 @@ a package without a charter keeps its detail in its config's own comments
 | wofi | `~/.config/wofi` | the second launcher since 2026-09-30, same GTK3 dialect |
 | rofi | `~/.config/rofi` | the app menu since 2026-09-30: a whole theme sheet, a silent parser and the two checks that cover it |
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
-| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
+| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the three rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10)* |
@@ -80,7 +80,13 @@ defaults, so its reproduced default patterns must stay (`bash/CLAUDE.md`).
 ## Daily Sync Workflow
 
 Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) →
-`stow-all` (if files added/deleted). End of session: `gpushall`.
+`stow-all` (if files added/deleted). End of session: `gpushall`. Since
+2026-10-10 the commands read this machine's role from
+`git/hosts/<hostname>.inc` and refuse what it reads, and the push commands
+ask the gauge `bin/sync-check` before staging a repository Syncthing
+carries (`bash/CLAUDE.md` → Git sync); today both machines write and no
+repository is carried, and the transport campaign
+(`org/machines/transport-2026-10/PLAN.md`) is what changes that.
 
 **The re-source is not optional when a pull adds a stow package.**
 `60-stow.sh` is itself a bash file, so a pull that adds a package updates it
@@ -109,6 +115,10 @@ in-progress guards, offline handling, hints — and their scope live in
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh` or to
 `git/hosts/`.**
+
+**Run `tests/sync-check/run.sh` after any edit to `bin/sync-check`.** Caged;
+three fixture Syncthing instances on loopback, a stub `ssh` and `uname`;
+nothing real is reached.
 
 **Run `tests/env/run.sh` after any edit to `bash/.bash_profile`, `10-env.sh`,
 `20-path.sh` or `environment.d/`.** It pins what a login shell hands the
