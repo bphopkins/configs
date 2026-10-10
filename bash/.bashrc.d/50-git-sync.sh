@@ -27,6 +27,20 @@
 # file's name has not changed, so re-globbing it buys nothing and would prompt
 # on ordinary edits. .gitignore is the standing second layer; a content scan of
 # the staged diff is the real remedy, deferred as TODO.md item 7.
+#
+# The machine's role (2026-10-10; org/machines/transport-2026-10, rules.md
+# fedxps-2 and ws-5): Syncthing carries each repository, .git included,
+# between the machines, and bigfed alone commits and pushes. The tracked host
+# file configs/git/hosts/$(uname -n).inc says which this machine is. On a
+# reader, gpull, gpush, gpullall and gpushall refuse before any git command
+# that could write runs in a repository (the refusal reads the remote URL,
+# for its clone command), and gstatall -f fetches nothing; `gsync.readerRepo`
+# names single repositories to refuse while the rest are still written (the
+# pilot's nousowl). No host file, or no role: a writer; a host file git cannot
+# read, or a dangling host link: a reader. And a Syncthing conflict copy,
+# staged or tracked, refuses that repository's push outright, no prompt and
+# no override, with the staged copies and the files the vet would decline
+# unstaged, until it is resolved by hand.
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
@@ -152,6 +166,122 @@ _gsync_online() {
   [[ "$_GSYNC_ONLINE_CACHE" == 1 ]]
 }
 
+# The machine's role, read once per command. Two sources, and a reader if
+# either says so: the tracked host file for this hostname, read by name and
+# not through the link, so a rebuilt fedxps refuses before its link exists;
+# and the file git itself reads through ~/.config/git/host.inc, so the sync
+# commands never disagree with git when the hostname is not what the file is
+# named for -- an FQDN, a container, a case difference, each warned about.
+# `gsync.role` absent means writer, which is what anyone else using this repo
+# gets; any value but `writer` means reader, so a typo fails on the safe
+# side, and so does a host file that exists but cannot be read or parsed, or
+# a dangling link. `gsync.readerRepo` (repeatable) names repositories this
+# machine reads while it still writes the rest; a value naming no repository
+# of REPOS_DESKTOP refuses nothing and is warned about. Each command declares
+# _GSYNC_ROLE local and empty, so the files are read once per run and never
+# stale across runs; a helper called on its own (the suites) reads them on
+# first use and keeps the result.
+_gsync_role_load() {
+  [[ -n "${_GSYNC_ROLE:-}" ]] && return 0
+  local IFS=$' \t\n' host link target f key val out rc seen="" r want
+  local files=()
+  _GSYNC_ROLE=writer
+  _GSYNC_READER_REPOS=()
+  # The short hostname, lowercased, whitespace dropped: what the file is
+  # named for, whatever `uname -n` adds to it.
+  host="$(uname -n 2>/dev/null)"
+  host="${host%%.*}"; host="${host,,}"; host="${host//[[:space:]]/}"
+  [[ -n "$host" ]] && files+=("$HOME/Desktop/configs/git/hosts/$host.inc")
+  link="$HOME/.config/git/host.inc"
+  if [[ -L "$link" || -e "$link" ]]; then
+    if target="$(readlink -e -- "$link" 2>/dev/null)"; then
+      files+=("$target")
+      if [[ -n "$host" && "${target##*/}" != "$host.inc" ]]; then
+        # shellcheck disable=SC2088  # the message names the link as he writes it
+        _gsync_say WARN "~/.config/git/host.inc names ${target##*/} but this machine is $host — the stricter of the two holds"
+      fi
+    else
+      _GSYNC_ROLE=reader
+      # shellcheck disable=SC2088
+      _gsync_say WARN "~/.config/git/host.inc is dangling — treating $(uname -n) as a reader until it is fixed"
+    fi
+  fi
+  for f in "${files[@]}"; do
+    [[ "$seen" == *"|$f|"* ]] && continue
+    seen+="|$f|"
+    [[ -e "$f" || -L "$f" ]] || continue
+    # A host file that exists but cannot be read is not "no role": that would
+    # make a slip in the reader's file a writer. Git reports a file it cannot
+    # open with exit 1, the same as "no such key" (measured), so readability
+    # is tested here; a bad line in the file is git's exit 128.
+    if [[ ! -f "$f" || ! -r "$f" ]]; then
+      _GSYNC_ROLE=reader
+      _gsync_say WARN "host file $f exists but cannot be read — treating $(uname -n) as a reader until it is fixed"
+      continue
+    fi
+    # `git config -f` still discovers a repository from the current directory,
+    # and a dangling .git file there is fatal (measured: exit 128); -C / keeps
+    # the read independent of where the command was typed. --includes: an
+    # [include] inside the host file counts here as it does for git.
+    out="$(git -C / config -f "$f" --includes --get-regexp '^gsync\.' 2>/dev/null)"
+    rc=$?
+    if ((rc > 1)); then
+      _GSYNC_ROLE=reader
+      _gsync_say WARN "host file $f unreadable by git (exit $rc) — treating $(uname -n) as a reader until it is fixed"
+      continue
+    fi
+    while read -r key val; do
+      case "$key" in
+        gsync.role) [[ "$val" == writer ]] || _GSYNC_ROLE=reader ;;
+        gsync.readerrepo)
+          [[ -n "$val" ]] || continue
+          _GSYNC_READER_REPOS+=("$val")
+          want="$(realpath -m -- "$HOME/Desktop/$val")"
+          for r in "${REPOS_DESKTOP[@]}"; do
+            [[ "$(realpath -m -- "$r")" == "$want" ]] && continue 2
+          done
+          _gsync_say WARN "host file $f: readerRepo '$val' names no repository of REPOS_DESKTOP — nothing is refused for it"
+          ;;
+      esac
+    done <<<"$out"
+  done
+  return 0
+}
+
+_gsync_reads() { # _gsync_reads DIR: true when this machine must not write the .git DIR belongs to
+  local IFS=$' \t\n' r have want
+  _gsync_role_load
+  [[ "$_GSYNC_ROLE" == reader ]] && return 0
+  ((${#_GSYNC_READER_REPOS[@]})) || return 1
+  # By the repository's top level and its canonical path, not by the typed
+  # name: `gpush nousowl/`, `./nousowl`, `../Desktop/nousowl`, a symlink to
+  # it and `nousowl/sub` all reach the same .git.
+  have="$(git -C "$1" rev-parse --show-toplevel 2>/dev/null)"
+  have="$(realpath -m -- "${have:-$1}")"
+  for r in "${_GSYNC_READER_REPOS[@]}"; do
+    want="$(realpath -m -- "$HOME/Desktop/$r")"
+    [[ "$have" == "$want" ]] && return 0
+  done
+  return 1
+}
+
+# One line for a repository this machine reads: what carries it instead, and
+# the hub-outage route (rules.md -> him-5). The origin URL is read from the
+# repository's config -- a read, so the clone command can be pasted.
+_gsync_refuse_repo() {
+  local name="$1" repo="$2" url
+  url="$(git -C "$repo" config --get remote.origin.url 2>/dev/null)"
+  _gsync_say SKIP "$name: refused — $(uname -n) reads this repository: Syncthing carries it and bigfed pulls, commits and pushes it (gpull/gpush $name there). Hub down? work in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/$name (org/machines/transport-2026-10/rules.md → him-5)"
+}
+
+# The whole-machine refusal for gpullall and gpushall on a reader: one line,
+# nothing touched. $1 = the verb for the message (pulled|pushed).
+_gsync_refuse_all() {
+  local verb="$1" cmd
+  [[ "$verb" == pulled ]] && cmd=gpullall || cmd=gpushall
+  _gsync_say SKIP "$(uname -n) is a reader — nothing $verb: Syncthing carries every repository and bigfed pulls and pushes ($cmd there, or from here: ssh -t bigfed 'bash -ic $cmd'). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+}
+
 # Shared validation. Sets _GSYNC_BRANCH on success.
 # Returns 0 ok / 1 fail / 2 skip (message already printed for 1/2).
 _gsync_preflight() {
@@ -210,14 +340,39 @@ _gsync_ensure_upstream() {
   return 2
 }
 
+# Unstage the given paths and verify they are gone from the staging area.
+# :(literal) pathspecs: a name with glob characters or a leading ':' must
+# unstage exactly itself -- nothing else, and never silently nothing. A path
+# still staged afterwards would be committed, so that is a FAIL, return 1.
+_gsync_unstage() { # _gsync_unstage NAME REPO PATH...
+  local name="$1" repo="$2" f d
+  local specs=()
+  shift 2
+  for f in "$@"; do specs+=(":(literal)$f"); done
+  git -C "$repo" reset -q -- "${specs[@]}" 2>/dev/null
+  while IFS= read -r -d '' f; do
+    for d in "$@"; do
+      if [[ "$f" == "$d" ]]; then
+        _gsync_say FAIL "$name: could not unstage declined file '$f' — refusing to commit"
+        return 1
+      fi
+    done
+  done < <(git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=AT -z)
+  if ! wait "$!"; then
+    _gsync_say FAIL "$name: could not re-check staged files — refusing to commit"
+    return 1
+  fi
+  return 0
+}
+
 # Vet the newly added staged paths against the size and secrets guards;
 # unstage any that are declined. Rename detection is disabled for the listing
 # so a rename's target is vetted as the new path it is, and typechanges (T)
 # are included so e.g. a symlink swapped for a real file still meets the size
 # guard. Fills _GSYNC_NEW_FILES with the files that stay in the commit.
 _gsync_vet_new_files() {
-  local name="$1" repo="$2" f d reason glob size ans limit
-  local new=() drop=()
+  local name="$1" repo="$2" f d reason glob size ans limit refusing=0
+  local new=() drop=() copies=() staged_copies=() tracked_copies=() unstage=()
   _GSYNC_NEW_FILES=()
   if [[ "$GSYNC_MAX_MB" =~ ^[0-9]+$ ]]; then
     limit=$((GSYNC_MAX_MB * 1024 * 1024))
@@ -233,7 +388,35 @@ _gsync_vet_new_files() {
     _gsync_say FAIL "$name: could not list staged files — refusing to commit unvetted"
     return 1
   fi
-  ((${#new[@]})) || return 0
+  # A Syncthing conflict copy refuses the whole repository, no prompt and no
+  # override (ws-5): the copy holds the losing machine's version of a file
+  # and is resolved by hand -- the right text kept in the original, the copy
+  # deleted -- never committed and hidden. Looked for among every staged
+  # path, new or modified, and among the tracked files anywhere in the tree
+  # (a copy committed by another route). With the refusal, the staged copies
+  # and every path the vet below would decline are unstaged without a
+  # prompt, so a commit made by any other route afterwards carries neither.
+  # --diff-filter=d: a staged deletion of a copy is the remedy, not a copy.
+  while IFS= read -r -d '' f; do
+    [[ "$f" == *.sync-conflict-* ]] && staged_copies+=("$f")
+  done < <(git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=d -z)
+  if ! wait "$!"; then
+    _gsync_say FAIL "$name: could not list staged files — refusing to commit unvetted"
+    return 1
+  fi
+  while IFS= read -r -d '' f; do tracked_copies+=("$f"); done \
+    < <(git -C "$repo" ls-files -z -- '*.sync-conflict-*')
+  if ! wait "$!"; then
+    _gsync_say FAIL "$name: could not list tracked files — refusing to commit unvetted"
+    return 1
+  fi
+  copies=("${staged_copies[@]}")
+  for f in "${tracked_copies[@]}"; do
+    for d in "${copies[@]}"; do [[ "$d" == "$f" ]] && continue 2; done
+    copies+=("$f")
+  done
+  ((${#copies[@]})) && refusing=1
+  ((${#new[@]} || refusing)) || return 0
   for f in "${new[@]}"; do
     reason=""
     if [[ -e "$repo/$f/.git" ]]; then
@@ -258,7 +441,7 @@ _gsync_vet_new_files() {
       continue
     fi
     _gsync_say WARN "$name: new file '$f' — $reason"
-    if [[ -t 0 ]]; then
+    if ((!refusing)) && [[ -t 0 ]]; then
       # If stdout is being captured, the WARN above is invisible — repeat the
       # context on stderr so the prompt is never answered blind.
       [[ -t 1 ]] || printf '[WARN] %s: new file %s — %s\n' "$name" "$f" "$reason" >&2
@@ -270,25 +453,18 @@ _gsync_vet_new_files() {
     fi
     drop+=("$f")
   done
-  if ((${#drop[@]})); then
-    # :(literal) pathspecs: a name with glob characters or a leading ':' must
-    # unstage exactly itself — nothing else, and never silently nothing.
-    local specs=()
-    for f in "${drop[@]}"; do specs+=(":(literal)$f"); done
-    git -C "$repo" reset -q -- "${specs[@]}" 2>/dev/null
-    # Verify the unstage took: a declined file still staged would be committed.
-    while IFS= read -r -d '' f; do
-      for d in "${drop[@]}"; do
-        if [[ "$f" == "$d" ]]; then
-          _gsync_say FAIL "$name: could not unstage declined file '$f' — refusing to commit"
-          return 1
-        fi
-      done
-    done < <(git -C "$repo" -c diff.renames=false diff --cached --name-only --diff-filter=AT -z)
-    if ! wait "$!"; then
-      _gsync_say FAIL "$name: could not re-check staged files — refusing to commit"
-      return 1
+  if ((refusing)); then
+    _gsync_say FAIL "$name: Syncthing conflict copy — refusing to commit this repository until it is resolved: keep the right text in the original, then delete the copy; a committed one: git rm it, then push (org/machines/transport-2026-10/rules.md → ws-5, him-2):"
+    _gsync_detail "$(printf '%s\n' "${copies[@]}")"
+    unstage=("${staged_copies[@]}" "${drop[@]}")
+    if ((${#unstage[@]})); then
+      _gsync_unstage "$name" "$repo" "${unstage[@]}"
     fi
+    ((${#drop[@]})) && _gsync_say WARN "$name: also left unstaged, unvetted: ${drop[*]}"
+    return 1
+  fi
+  if ((${#drop[@]})); then
+    _gsync_unstage "$name" "$repo" "${drop[@]}" || return 1
     _gsync_say WARN "$name: left uncommitted: ${drop[*]}"
   fi
   return 0
@@ -384,6 +560,10 @@ _gsync_pull_hints() {
 _gsync_pull_repo() {
   local name="$1" repo="$2" branch old out ahead
   local _GSYNC_BRANCH
+  if [[ -d "$repo" ]] && _gsync_reads "$repo"; then
+    _gsync_refuse_repo "$name" "$repo"
+    return 2
+  fi
   _gsync_preflight "$name" "$repo" || return $?
   branch="$_GSYNC_BRANCH"
   if ! _gsync_online; then
@@ -429,6 +609,10 @@ _gsync_push_repo() {
   local name="$1" repo="$2" msg="$3"
   local branch committed=0 staged_count=0 new_note="" out ahead have_up prepull integrated=0
   local _GSYNC_BRANCH _GSYNC_NEW_FILES=()
+  if [[ -d "$repo" ]] && _gsync_reads "$repo"; then
+    _gsync_refuse_repo "$name" "$repo"
+    return 2
+  fi
   _gsync_preflight "$name" "$repo" || return $?
   branch="$_GSYNC_BRANCH"
 
@@ -549,7 +733,7 @@ _gsync_push_repo() {
 
 gpull() {
   local name failed=0
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
   if (($# == 0)); then
     echo "Usage: gpull NAME...   (repos under ~/Desktop)"
     return 1
@@ -564,7 +748,7 @@ gpull() {
 
 gpush() {
   local msg="" names=() name rc failed=0
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
   while (($#)); do
     case "$1" in
       -m)
@@ -598,7 +782,12 @@ gpush() {
 gpullall() {
   local repo name ok=0 skipped=0 failed=0
   local fail_list=() skip_list=()
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
+  _gsync_role_load
+  if [[ "$_GSYNC_ROLE" == reader ]]; then
+    _gsync_refuse_all pulled
+    return 1
+  fi
   if ! _gsync_online; then
     _gsync_say WARN "offline — nothing pulled"
     return 1
@@ -630,7 +819,7 @@ gpullall() {
 gpushall() {
   local msg="" repo name ok=0 skipped=0 failed=0 pending=0
   local fail_list=() skip_list=() pend_list=()
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
   if [[ "${1:-}" == "-m" ]]; then
     if [[ -z "${2:-}" ]]; then
       echo "Usage: gpushall [-m MSG]"
@@ -646,6 +835,11 @@ gpushall() {
     msg="$*" # legacy positional message — all words, not just the first
   fi
   [[ -n "$msg" ]] || msg="$(hostname): $(date '+%Y-%m-%d %H:%M:%S')"
+  _gsync_role_load
+  if [[ "$_GSYNC_ROLE" == reader ]]; then
+    _gsync_refuse_all pushed
+    return 1
+  fi
   echo "Committing and pushing ${#REPOS_DESKTOP[@]} repositories..."
   for repo in "${REPOS_DESKTOP[@]}"; do
     name="$(basename "$repo")"
@@ -676,11 +870,16 @@ gpushall() {
 }
 
 gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origin first
-  local repo name branch dirty behind ahead state parts fetch=0 fetch_fail
-  local _GSYNC_ONLINE_CACHE=""
+  local repo name branch dirty behind ahead state parts fetch=0 fetch_fail reader readers=0
+  local nol=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
+  _gsync_role_load
   if [[ "${1:-}" == "-f" || "${1:-}" == "--fetch" ]]; then
     fetch=1
-    if ! _gsync_online; then
+    if [[ "$_GSYNC_ROLE" == reader ]]; then
+      _gsync_say SKIP "$(uname -n) is a reader — nothing fetched, the local view follows: Syncthing carries every repository and bigfed fetches (gstatall -f there). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+      fetch=0
+    elif ! _gsync_online; then
       _gsync_say WARN "offline — showing counts vs the last fetch instead"
       fetch=0
     fi
@@ -693,14 +892,29 @@ gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origi
       continue
     fi
     fetch_fail=0
-    if ((fetch)); then
+    reader=0
+    nol=()
+    if _gsync_reads "$repo"; then
+      reader=1
+      readers=1
+      # A plain status rewrites the index of a copy Syncthing delivered
+      # unless GIT_OPTIONAL_LOCKS=0 is in the environment (10-env.sh), and a
+      # shell started before the role was armed has no such variable: so the
+      # flag rides here too, for the rows this machine reads. Never for the
+      # writer's rows, whose refresh is what keeps `add -A` from re-stamping
+      # packs on bigfed.
+      nol=(--no-optional-locks)
+    fi
+    # A repository this machine reads is never fetched: a fetch writes
+    # objects and refs into a .git that bigfed owns.
+    if ((fetch && !reader)); then
       git -C "$repo" fetch --prune --tags >/dev/null 2>&1 || fetch_fail=1
     fi
     branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
     # -uall enumerates files inside untracked directories, so DIRTY equals
     # the number of paths gpushall would commit (a pending rename counts as
     # two paths here and one in the commit — the lone exception).
-    dirty="$(git -C "$repo" status --porcelain -uall 2>/dev/null | wc -l | tr -d '[:space:]')"
+    dirty="$(git -C "$repo" "${nol[@]}" status --porcelain -uall 2>/dev/null | wc -l | tr -d '[:space:]')"
     behind="-"
     ahead="-"
     if git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
@@ -710,6 +924,7 @@ gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origi
     fi
     # STATE composes every applicable verdict; the numbers are the detail.
     parts=()
+    ((reader)) && parts+=("reader")
     state="$(_gsync_in_progress "$repo" || true)"
     [[ -n "$state" ]] && parts+=("$state")
     ((fetch_fail)) && parts+=("fetch failed")
@@ -731,8 +946,12 @@ gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origi
     fi
     printf '%-22s %-10s %6s %7s %6s  %s\n' "$name" "$branch" "$dirty" "$behind" "$ahead" "$state"
   done
-  if ((fetch)); then
+  if ((fetch && readers)); then
+    echo "(fetched — BEHIND/AHEAD are current vs origin, except rows marked reader, which this machine never fetches; nothing was pulled or pushed)"
+  elif ((fetch)); then
     echo "(fetched — BEHIND/AHEAD are current vs origin; nothing was pulled or pushed)"
+  elif [[ "$_GSYNC_ROLE" == reader ]]; then
+    echo "(local view — BEHIND/AHEAD are vs the last fetch bigfed made; a reader fetches nothing)"
   else
     echo "(local view — BEHIND/AHEAD are vs the last fetch; gstatall -f refreshes them)"
   fi

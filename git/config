@@ -25,3 +25,13 @@
 	# Private and synced: [user] name and email. Git ignores a missing include
 	# silently; useConfigOnly above turns that silence into a refusal.
 	path = ~/Desktop/org/claude-config/git/identity
+
+[include]
+	# Machine-local: this machine's half of the configuration, one of
+	# hosts/<hostname>.inc, through the link ~/.config/git/host.inc made by
+	# hand at bootstrap (README section 5) -- fedxps's reader guard,
+	# bigfed's writer settings. Git ignores a missing include silently, so a
+	# forgotten link leaves fedxps unguarded; the check is
+	# `git config --show-origin core.checkStat`, which names host.inc there
+	# and nothing on bigfed (2026-10-10, org/machines/transport-2026-10).
+	path = ~/.config/git/host.inc

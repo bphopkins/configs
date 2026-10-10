@@ -56,7 +56,7 @@ a package without a charter keeps its detail in its config's own comments
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the three rejectfont blocks |
-| git | `~/.config/git` | *(no charter — the config file carries its own)* |
+| git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10)* |
 | environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own)* |
 
 ## Stow Deployment
@@ -107,7 +107,8 @@ in-progress guards, offline handling, hints — and their scope live in
 `org/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
 `bin/context-check`.** Both are sandboxed under `$TMPDIR` and touch nothing real.
 
-**Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh`.**
+**Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh` or to
+`git/hosts/`.**
 
 **Run `tests/env/run.sh` after any edit to `bash/.bash_profile`, `10-env.sh`,
 `20-path.sh` or `environment.d/`.** It pins what a login shell hands the

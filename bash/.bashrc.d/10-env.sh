@@ -4,7 +4,8 @@
 # Sourced twice by design: from ~/.bash_profile for login shells -- including
 # the one GDM starts, whose environment the graphical session inherits
 # (2026-09-23) -- and from ~/.bashrc for interactive ones. Everything here is a
-# constant or an unset, so the second pass is a no-op.
+# constant, an unset, or an export decided by a file, so the second pass is a
+# no-op.
 
 export EDITOR="nvim"
 export VISUAL="nvim"
@@ -46,3 +47,65 @@ export NPM_CONFIG_PREFIX="$HOME/.local/npm-global"
 # `systemctl --user unset-environment BASH_ENV` is run once, or the machine
 # reboots. fedxps does not linger, and has no Lmod.
 unset BASH_ENV
+
+# The reader guard's environment half (2026-10-10; org/machines/transport-2026-10,
+# rules.md fedxps-1). Syncthing carries each repository's .git between the
+# machines and bigfed alone writes it; on fedxps a plain `git status` would
+# still rewrite .git/index on a copy Syncthing delivered, and that write races
+# bigfed's through the hub. GIT_OPTIONAL_LOCKS=0 stops it, and has no config
+# form, so it rides here: this file reaches login shells, the GNOME session
+# and what it starts, interactive shells, and Claude Code's Bash tool. The
+# rest of the guard is git configuration, configs/git/hosts/fedxps.inc through
+# the link ~/.config/git/host.inc.
+#
+# Exported when either of the two host files 50-git-sync.sh reads -- the one
+# for this hostname (short, lowercased), and the one ~/.config/git/host.inc
+# points at, which is what git itself reads -- names this machine a reader
+# (`gsync.role` anything but `writer`) or names a reader repository
+# (`gsync.readerRepo`, the pilot's nousowl); and on a host file that exists
+# but cannot be read or parsed, or a dangling link: the safe side. bigfed,
+# the writer, never gets it: there it would make gpushall's `add -A` re-stamp
+# pack files after a stat-only arrival. Never unset here: a role change takes
+# a new login, like everything in this file, and reaches only the shells and
+# sessions started after it. `git -C /`: `git config -f` still discovers a
+# repository from the current directory, and a dangling .git file there is
+# fatal. Suite: tests/env/run.sh.
+_env_host="$(uname -n 2>/dev/null)"
+_env_host="${_env_host%%.*}"; _env_host="${_env_host,,}"; _env_host="${_env_host//[[:space:]]/}"
+_env_files="$HOME/Desktop/configs/git/hosts/$_env_host.inc"
+_env_link="$HOME/.config/git/host.inc"
+if [ -L "$_env_link" ] || [ -e "$_env_link" ]; then
+  if _env_target="$(readlink -e -- "$_env_link" 2>/dev/null)"; then
+    _env_files="$_env_files
+$_env_target"
+  else
+    export GIT_OPTIONAL_LOCKS=0
+  fi
+fi
+if command -v git >/dev/null 2>&1; then
+  while read -r _env_f; do
+    [ -n "$_env_host" ] || [ "$_env_f" != "$HOME/Desktop/configs/git/hosts/.inc" ] || continue
+    [ -e "$_env_f" ] || [ -L "$_env_f" ] || continue
+    if [ ! -f "$_env_f" ] || [ ! -r "$_env_f" ]; then
+      export GIT_OPTIONAL_LOCKS=0
+      continue
+    fi
+    _env_keys="$(git -C / config -f "$_env_f" --includes --get-regexp '^gsync\.' 2>/dev/null)"
+    _env_rc=$?
+    if [ "$_env_rc" -gt 1 ]; then
+      export GIT_OPTIONAL_LOCKS=0
+      continue
+    fi
+    while read -r _env_key _env_val; do
+      case "$_env_key" in
+        gsync.role) if [ "$_env_val" != writer ]; then export GIT_OPTIONAL_LOCKS=0; fi ;;
+        gsync.readerrepo) if [ -n "$_env_val" ]; then export GIT_OPTIONAL_LOCKS=0; fi ;;
+      esac
+    done <<EOF_KEYS
+$_env_keys
+EOF_KEYS
+  done <<EOF_FILES
+$_env_files
+EOF_FILES
+fi
+unset _env_host _env_files _env_link _env_target _env_f _env_keys _env_rc _env_key _env_val

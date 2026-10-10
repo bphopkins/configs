@@ -213,6 +213,20 @@ stow -vt ~/bin bin
 stow -vt ~/.config okular
 ```
 
+The `git` package has a machine-local half (2026-10-10): `git/hosts/<hostname>.inc`
+holds what differs between the machines — fedxps's reader guard, bigfed's writer
+settings — and git reads it through a link that stow does not make. Make it by
+hand, once per machine:
+
+```bash
+ln -s ../../Desktop/configs/git/hosts/"$(uname -n)".inc ~/.config/git/host.inc
+git config --show-origin core.checkStat   # fedxps: names host.inc; bigfed: prints nothing
+```
+
+Git ignores a missing include silently, so a forgotten link leaves fedxps
+unguarded. The sync commands and `10-env.sh` read the host file by hostname
+instead and do not depend on the link.
+
 
 
 ### 6. Verify
@@ -227,6 +241,7 @@ ls -l ~/.config/waybar/config ~/.config/waybar/style.css
 ls -l ~/texmf/tex/latex/french-logic/french-logic.sty
 ls -l ~/bin/tl-newyear
 ls -l ~/.config/okularpartrc
+ls -l ~/.config/git/config ~/.config/git/host.inc
 ```
 
 You should see arrows (`->`) pointing into `~/Desktop/configs/...`.
@@ -359,7 +374,7 @@ But honestly, why not just reboot?
 
 It's really as simple as cloning the repo on your Desktop, clearing your dotfiles and emptying your configuration directories in `~/.config`, creating empty directories for your configurations to `stow` to, and creating the symlinks.
 
-One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. Clone `org` before the first commit; until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts.
+One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. Clone `org` before the first commit; until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
 
 It's also worth noting, that every time you update `.bashrc` or `.bash_profile`, you should run:
 ```bash

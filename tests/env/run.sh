@@ -47,7 +47,7 @@ pos() { awk -v p="$1" -v e="$2" 'BEGIN { n = split(p, a, ":"); for (i = 1; i <= 
 field() { sed -n "s/^$1=//p" <<<"$2"; }
 
 BASE=/usr/local/bin:/usr/bin
-REPORT='printf "%s\n" "PATH=$PATH" "EDITOR=${EDITOR-unset}" "VISUAL=${VISUAL-unset}" "BASH_ENV=${BASH_ENV-unset}" "NPM_CONFIG_PREFIX=${NPM_CONFIG_PREFIX-unset}"'
+REPORT='printf "%s\n" "PATH=$PATH" "EDITOR=${EDITOR-unset}" "VISUAL=${VISUAL-unset}" "BASH_ENV=${BASH_ENV-unset}" "NPM_CONFIG_PREFIX=${NPM_CONFIG_PREFIX-unset}" "GIT_OPTIONAL_LOCKS=${GIT_OPTIONAL_LOCKS-unset}"'
 # A login shell running one command, non-interactive: the shape GDM starts to
 # launch the session (environment.md, stage 2). Its final environment is what
 # the session inherits.
@@ -77,6 +77,7 @@ check "EDITOR=nvim" [ "$(field EDITOR "$out")" = nvim ]
 check "VISUAL=nvim" [ "$(field VISUAL "$out")" = nvim ]
 check "BASH_ENV unset (Lmod disarmed for the session)" [ "$(field BASH_ENV "$out")" = unset ]
 check "NPM_CONFIG_PREFIX=~/.local/npm-global" [ "$(field NPM_CONFIG_PREFIX "$out")" = "$H/.local/npm-global" ]
+check "GIT_OPTIONAL_LOCKS unset with no host file" [ "$(field GIT_OPTIONAL_LOCKS "$out")" = unset ]
 
 # --- 2. the same PATH survives the interactive passes -----------------------
 echo "== idempotence =="
@@ -111,6 +112,71 @@ else
 fi
 check "no drop-in in the package sets PATH" [ -z "$(grep -l '^PATH=' "$CFG_ROOT"/environment.d/*.conf 2>/dev/null)" ]
 check "every drop-in line is a comment, blank, or NAME=value" [ -z "$(grep -hvE '^(#|;|$|[A-Za-z_][A-Za-z0-9_]*=)' "$CFG_ROOT"/environment.d/*.conf)" ]
+
+# --- 5. the reader guard's environment half (10-env.sh, 2026-10-10) ---------
+# GIT_OPTIONAL_LOCKS=0 is exported only on a machine whose host file,
+# configs/git/hosts/<hostname>.inc, names it a reader or names a reader
+# repository (org/machines/transport-2026-10, rules.md fedxps-1). The fixture
+# gets a host file under this machine's real hostname, since the login shell
+# reads it by `uname -n`.
+echo "== GIT_OPTIONAL_LOCKS from the host file =="
+HF="$H/Desktop/configs/git/hosts/$(uname -n).inc"
+mkdir -p "$(dirname "$HF")"
+hostfile() { printf '%b' "$1" > "$HF"; }
+hostfile '[gsync]\n\trole = writer\n'
+out="$(login_shell "$REPORT" 2>"$SB/login-w.err")"
+check "writer: unset"                                   [ "$(field GIT_OPTIONAL_LOCKS "$out")" = unset ]
+check "writer: runs clean"                              empty_file "$SB/login-w.err"
+hostfile '[gsync]\n\treaderRepo = nousowl\n'
+out="$(login_shell "$REPORT" 2>"$SB/login-p.err")"
+check "a reader repository (the pilot's key): =0"       [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+check "pilot key: runs clean"                           empty_file "$SB/login-p.err"
+hostfile '[gsync]\n\trole = reader\n'
+out="$(login_shell "$REPORT" 2>"$SB/login-r.err")"
+check "reader: =0"                                      [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+check "reader: runs clean"                              empty_file "$SB/login-r.err"
+check "reader: PATH unchanged by the block"             [ "$(field PATH "$out")" = "$path" ]
+iout="$(env -i HOME="$H" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TERM=dumb PATH="$BASE" /bin/bash -lic 'printf "%s" "${GIT_OPTIONAL_LOCKS-unset}"' 2>/dev/null </dev/null)"
+check "reader: the interactive pass keeps it"           [ "$iout" = 0 ]
+tout="$(env -i HOME="$H" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TERM=dumb PATH="$BASE" /bin/bash -ic 'printf "%s" "${GIT_OPTIONAL_LOCKS-unset}"' 2>/dev/null </dev/null)"
+check "reader: a terminal inside the session has it"    [ "$tout" = 0 ]
+sout="$(env -i HOME="$H" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash SSH_CLIENT='203.0.113.1 1 22' PATH="$BASE" /bin/bash -c "$REPORT" 2>/dev/null)"
+check "reader: ssh host cmd gets nothing (no profile)"  [ "$(field GIT_OPTIONAL_LOCKS "$sout")" = unset ]
+hostfile '[gsync]\n\trole = readr\n'
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "any role but writer counts as reader: =0"        [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+hostfile '# a host file with no gsync section\n[core]\n\tcheckStat = minimal\n'
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "host file without a role: unset"                 [ "$(field GIT_OPTIONAL_LOCKS "$out")" = unset ]
+hostfile '[core]\n\tcheck_stat = minimal\n[gsync]\n\trole = reader\n'
+out="$(login_shell "$REPORT" 2>"$SB/login-m.err")"
+check "a host file git cannot parse: =0 (fails safe)"   [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+check "malformed: still runs clean (git's error swallowed)" empty_file "$SB/login-m.err"
+hostfile '[gsync]\n\trole = reader\n'
+chmod 000 "$HF"
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "a host file this user cannot read: =0 (fails safe)" [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+chmod 644 "$HF"
+rm -f "$HF"
+# the second source: the file ~/.config/git/host.inc points at, which git reads
+OTHER="$(dirname "$HF")/other.inc"
+printf '[gsync]\n\trole = reader\n' > "$OTHER"
+mkdir -p "$H/.config/git"
+ln -s ../../Desktop/configs/git/hosts/other.inc "$H/.config/git/host.inc"
+out="$(login_shell "$REPORT" 2>"$SB/login-l.err")"
+check "no hostname file, link to a reader file: =0"     [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+check "link case: runs clean"                           empty_file "$SB/login-l.err"
+ln -sfn /nowhere "$H/.config/git/host.inc"
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "a dangling host link: =0 (fails safe)"           [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+rm "$H/.config/git/host.inc"
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "link removed, no hostname file: unset again"     [ "$(field GIT_OPTIONAL_LOCKS "$out")" = unset ]
+# an [include] inside the host file counts, as it does for git
+hostfile '[include]\n\tpath = other.inc\n'
+out="$(login_shell "$REPORT" 2>/dev/null)"
+check "a role reached through an include in the host file: =0" [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
+rm -f "$HF" "$OTHER"
 
 echo
 echo "passed: $pass  failed: $fail"

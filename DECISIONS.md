@@ -3292,3 +3292,37 @@ each neighbour, for the near-floor rows the plan still strands: those need
 gaps in a container too narrow for them: no gaps are configured here, and
 it redefines "even" where sway's fresh layout cannot be reached by
 resizing.
+
+## fedxps becomes git's reader: host files, the sync commands' role, a conflict-copy refusal — 2026-10-10
+
+Step 3a of the transport campaign, `org/machines/transport-2026-10/PLAN.md` →
+Phases; the record with every measurement is `pilot/build-git.md` there, and
+the rules it installs are that directory's `rules.md` (fedxps-1, fedxps-2,
+ws-5, bigfed-1). Syncthing is to carry each repository, `.git` included,
+between the machines, with bigfed alone committing and pushing; `nousowl`
+goes first, as a pilot.
+
+- **What landed here.** `git/hosts/fedxps.inc` and `bigfed.inc`, both
+  tracked: what differs between the machines in git, reached by every git
+  process through a new `[include]` at the end of `git/config` naming the
+  hand-made, machine-local link `~/.config/git/host.inc` (README §5), and by
+  `50-git-sync.sh` and `10-env.sh` by hostname. fedxps's file carries the
+  reader guard — `core.checkStat=minimal`, `trustctime=false`,
+  `diff.autoRefreshIndex=false`, `gc.auto=0`, `maintenance.auto=false` — and
+  the two role keys as comments until the pilot's seeding arms the first;
+  bigfed's names it the writer and sets `maintenance.autoDetach=false`.
+  `50-git-sync.sh` reads the role and refuses on a reader; its vet refuses a
+  `*.sync-conflict-*` path outright. `10-env.sh` exports
+  `GIT_OPTIONAL_LOCKS=0` on a reader. Suites: `tests/gsync/test-role.sh`
+  (new; 381 checks in the battery now), `tests/env/run.sh` extended.
+- **Declined, with the reasons in the campaign's `decisions.md` → 5:** the
+  guard in `settings.json`'s `env` (one file for both machines, and on bigfed
+  the reader half makes `gpushall`'s `add -A` re-stamp pack files); a `git`
+  shim on `PATH`; a role file of its own with an override variable (two
+  markers of one fact, failing open). The role is read by hostname from the
+  tracked file, so a rebuilt fedxps refuses before its link exists and a
+  stranger with no host file is a writer.
+- **Kept as is, on purpose:** `gstatall`'s `git status` still refreshes the
+  index on bigfed — that refresh is what prevents the pack re-stamp there —
+  so the index half of the guard rides in fedxps's environment and config,
+  not in this code.

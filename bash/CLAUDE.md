@@ -56,6 +56,19 @@ integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
   unset and `.bashrc` sources `/etc/bashrc` before this directory, so
   unsetting here is the whole fix. `module`/`ml` are unaffected: they are
   exported shell functions and survive into child shells on their own.
+  Since 2026-10-10 it also exports `GIT_OPTIONAL_LOCKS=0` when either host
+  file the sync commands read — `configs/git/hosts/<hostname>.inc`, the
+  hostname short and lowercased, or the file `~/.config/git/host.inc` points
+  at, which is what git reads — names this machine a reader (`gsync.role`
+  anything but `writer`) or names a reader repository (`gsync.readerRepo`,
+  the pilot's `nousowl`), or exists but cannot be read or parsed, or the
+  link dangles: the environment half of fedxps's reader guard, which keeps
+  `git status` from rewriting `.git/index` on a copy Syncthing delivered
+  (`org/machines/transport-2026-10/rules.md` → fedxps-1; the config half is
+  the link, see "Git sync"). Never on bigfed, where it would make
+  `gpushall`'s `add -A` re-stamp pack files. Never unset here: a role change
+  takes a new login, and reaches only shells and sessions started after it.
+  About 1.3 ms a shell with a host file present. Suite: `tests/env/run.sh`.
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions, duplicate-guarded. Each
   entry prepends, so **effective priority is the reverse of reading order** —
   TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is
@@ -167,6 +180,48 @@ apart:
 
 Guardrails, shared by the single- and all-repo variants:
 
+- **The machine's role (2026-10-10)**: Syncthing carries each repository,
+  `.git` included, between the machines, and bigfed alone commits and pushes
+  (`org/machines/transport-2026-10/rules.md` → fedxps-2). The tracked host
+  file `configs/git/hosts/<hostname>.inc` says which this machine is, read
+  two ways and a reader if either says so: by hostname (short, lowercased),
+  not through the link `~/.config/git/host.inc` that git itself reads, so a
+  rebuilt fedxps refuses before its link exists; and through that link, so
+  the sync commands never disagree with git when the hostname is not what
+  the file is named for (an FQDN, a container; warned about). On a reader
+  (`gsync.role` present and anything but `writer`, so a typo fails safe),
+  `gpullall` and `gpushall` refuse with one line and touch nothing, `gpull`
+  and `gpush` refuse each named repository, and `gstatall -f` fetches
+  nothing while plain `gstatall` still runs, every row marked `reader`.
+  `gsync.readerRepo = <name>` (repeatable) refuses that repository alone
+  while the rest are still written — the pilot's `nousowl`, armed at the
+  seeding's step 1: `gpushall` and `gpullall` skip it with one
+  `[SKIP] … refused` line naming what carries it and the hub-outage route
+  (him-5). No host file, or no role: a writer, which is what anyone else
+  using this repo gets; a host file git cannot parse or read, or a dangling
+  link, makes a reader, with a warning, and a `readerRepo` value naming no
+  repository of `REPOS_DESKTOP` is warned about. The files are read once per
+  command, from `/` (`git config -f` still discovers a repository from the
+  working directory) and with their includes, and a repository is matched by
+  its top level's canonical path, so `gpush nousowl/`, `./nousowl`,
+  `nousowl/sub` and a symlink to it are refused like `gpush nousowl`. The
+  refusal sits in the per-repo helpers, before any git
+  command that could write runs there — it reads the remote URL, for the
+  clone command it prints. `gstatall` passes `--no-optional-locks` for the
+  rows this machine reads and never for the writer's, whose refresh is what
+  keeps bigfed's `add -A` from re-stamping packs; the index half of the guard
+  otherwise rides in fedxps's environment and git config (`10-env.sh`,
+  `git/hosts/fedxps.inc`), not here.
+- **A Syncthing conflict copy refuses the repository's push (2026-10-10)**:
+  a path matching `*.sync-conflict-*` among the staged paths (new or
+  modified; a staged deletion is the remedy) or among the tracked files
+  anywhere in the tree (one committed by another route) makes the vet refuse
+  that repository outright — `[FAIL]`, no prompt, no override — naming each
+  copy and the remedy: keep the right text in the original, delete the copy,
+  `git rm` a committed one (`rules.md` → ws-5, him-2). The staged copies and
+  every file the vet would have declined (a secret, an oversize file) are
+  unstaged, without a prompt, so a commit made by any other route afterwards
+  carries none of them. The rest of the batch still pushes.
 - **New-path vetting**: newly added paths — including rename targets and
   typechanges (the listing runs with rename detection off), matched per path
   component so a directory named `.env/` or `credentials/` is caught — larger
@@ -231,12 +286,14 @@ To add a new repo, append its path to `REPOS_DESKTOP` — note it spans *all*
 the Desktop repos, not just this one. Commit messages follow
 `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`.
 
-**Regression suite:** `tests/gsync/run-all.sh` (177 checks in four suites,
+**Regression suite:** `tests/gsync/run-all.sh` (381 checks in five suites,
 sandboxed under `$TMPDIR`, no network). Run it after **any** edit to
-`50-git-sync.sh`. Each suite also runs standalone and tests the checkout it
+`50-git-sync.sh`, and after an edit to `git/hosts/`, whose files the role
+suite reads. Each suite also runs standalone and tests the checkout it
 lives in; `tests/gsync/README.md` has suite scope and the harness conventions
 new suites must follow (`passed: N  failed: M` last line, registration in
-`run-all.sh`).
+`run-all.sh`, a `uname` stub so the machine's own host file never reaches a
+suite).
 
 ## Reboot verdict (`40-aliases.sh`, added 2026-08-08)
 

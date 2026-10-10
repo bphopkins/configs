@@ -9,6 +9,13 @@ CFG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh"
 source "$CFG_ROOT/bash/.bashrc.d/60-stow.sh"   # STOW_ORDER for hint tests
 _gsync_online() { return 0; }                        # local-path remotes
+# The role helper reads configs/git/hosts/$(uname -n).inc (2026-10-10); a
+# hostname with no host file keeps this suite a writer whatever the machine it
+# runs on is. test-role.sh is where the roles themselves are exercised.
+mkdir -p "$SB/stub"
+printf '#!/bin/sh\necho gsync-suite\n' > "$SB/stub/uname"
+chmod +x "$SB/stub/uname"
+PATH="$SB/stub:$PATH"
 
 pass=0 fail=0
 check() { local d="$1"; shift; if "$@"; then echo "ok   - $d"; ((pass+=1)); else echo "FAIL - $d"; ((fail+=1)); fi; }

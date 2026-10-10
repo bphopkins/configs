@@ -8,6 +8,7 @@ CFG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 pass=0 fail=0
 check() { local d="$1"; shift; if "$@"; then echo "ok   - $d"; ((pass+=1)); else echo "FAIL - $d"; ((fail+=1)); fi; }
 contains() { [[ "$1" == *"$2"* ]]; }
+lacks() { [[ "$1" != *"$2"* ]]; }
 
 cd "$SB"
 git init -q --bare -b main origin.git
@@ -15,15 +16,24 @@ git clone -q origin.git work 2>/dev/null
 echo base > work/base.txt
 git -C work add -A && git -C work commit -qm base && git -C work push -qu origin main 2>/dev/null
 
+# The role helper reads configs/git/hosts/$(uname -n).inc (2026-10-10); a
+# hostname with no host file keeps the driver a writer on either machine.
+mkdir -p "$SB/stub"
+printf '#!/bin/sh\necho gsync-suite\n' > "$SB/stub/uname"
+chmod +x "$SB/stub/uname"
 cat > driver.sh <<EOF
+PATH="$SB/stub:\$PATH"
 source "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh"
 _GSYNC_ONLINE_CACHE=1
 _gsync_push_repo T "\$1" "tty test"
 EOF
 
 ptyrun() { # run "bash driver.sh <repo>" under a pty, feeding $1 as stdin;
-  # rc propagates via pty.spawn -> sys.exit, so callers can assert it.
-  printf '%s' "$1" | python3 -c "import pty,sys; sys.exit(pty.spawn(['bash','driver.sh','$SB/work']))" 2>&1
+  # rc propagates via pty.spawn -> sys.exit, so callers can assert it. The
+  # spawn returns a raw wait status, which sys.exit would fold to 0 for any
+  # exit code (1 is status 256; found 2026-10-10 when a refusal's rc=1 read
+  # as 0), so it is converted first.
+  printf '%s' "$1" | python3 -c "import os,pty,sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(['bash','driver.sh','$SB/work'])))" 2>&1
 }
 
 # --- Answer y: the flagged file is committed and listed.
@@ -56,6 +66,20 @@ check "mixed: rc=0"                [ "$rc" -eq 0 ]
 check "mixed: one committed"       bash -c "git -C '$SB/work' ls-files --error-unmatch one.pem >/dev/null 2>&1"
 check "mixed: two left behind"     bash -c "! git -C '$SB/work' ls-files --error-unmatch two.pem >/dev/null 2>&1"
 check "mixed: drop named"          contains "$out" "left uncommitted: two.pem"
+
+# --- A Syncthing conflict copy on a tty (2026-10-10, ws-5): refused outright,
+# no y/N prompt for it or for the flagged file beside it, nothing committed.
+rm work/two.pem
+echo theirs > work/notes.sync-conflict-20261009-160110-GE3DRZ3.txt
+echo k3 > work/three.pem
+out="$(ptyrun $'y\n')"; rc=$?
+check "copy: rc=1"                 [ "$rc" -eq 1 ]
+check "copy: refused"              contains "$out" "Syncthing conflict copy"
+check "copy: no prompt shown"      lacks "$out" "commit it? [y/N]"
+check "copy: not committed"        bash -c "! git -C '$SB/work' ls-files --error-unmatch notes.sync-conflict-20261009-160110-GE3DRZ3.txt >/dev/null 2>&1"
+check "copy: the pem beside it not committed" bash -c "! git -C '$SB/work' ls-files --error-unmatch three.pem >/dev/null 2>&1"
+check "copy: neither left staged"  [ -z "$(git -C "$SB/work" diff --cached --name-only)" ]
+check "copy: both still on disk"   bash -c "[ -f '$SB/work/three.pem' ] && [ -f '$SB/work/notes.sync-conflict-20261009-160110-GE3DRZ3.txt' ]"
 
 echo
 echo "passed: $pass  failed: $fail"

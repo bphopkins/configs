@@ -10,6 +10,13 @@ trap 'rm -rf "$SANDBOX"' EXIT
 CFG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh"
 _GSYNC_ONLINE_CACHE=1   # local-path remotes; skip the github probe
+# The role helper reads configs/git/hosts/$(uname -n).inc (2026-10-10); a
+# hostname with no host file keeps this suite a writer whatever the machine it
+# runs on is. test-role.sh is where the roles themselves are exercised.
+mkdir -p "$SANDBOX/stub"
+printf '#!/bin/sh\necho gsync-suite\n' > "$SANDBOX/stub/uname"
+chmod +x "$SANDBOX/stub/uname"
+PATH="$SANDBOX/stub:$PATH"
 
 pass=0 fail=0
 check() { # check DESC EXPR...
