@@ -120,6 +120,11 @@ in-progress guards, offline handling, hints — and their scope live in
 three fixture Syncthing instances on loopback, a stub `ssh` and `uname`;
 nothing real is reached.
 
+**Run `tests/leave/run.sh` after any edit to `bye` or `byebye` in
+`bash/.bashrc.d/40-aliases.sh`.** Caged; 53 checks against a stubbed
+`systemctl`, gauge, `uname` and `ps`; nothing real is suspended or powered off
+(`bash/CLAUDE.md` → "Leaving a machine").
+
 **Run `tests/env/run.sh` after any edit to `bash/.bash_profile`, `10-env.sh`,
 `20-path.sh` or `environment.d/`.** It pins what a login shell hands the
 session and what the `environment.d` generator hands the user manager; caged in

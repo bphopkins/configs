@@ -210,6 +210,33 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   yes_ "  a foreign dangling link is not counted" '[[ "$j" == *"1 link(s)"* ]]'
 fi
 
+echo "== the hook reads the gauge where it is stowed (ws-15, 2026-10-10) =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "no ~/bin/sync-check: nothing about the gauge" '[[ "$j" == *"sync-check"* ]]'
+  mkdir -p "$w/home/bin"
+  printf '#!/bin/sh\nfor f in a b c d e f g h; do echo "[ OK ] $f: up to date"; done; echo; echo "all clear"\n' > "$w/home/bin/sync-check"; chmod +x "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "all clear: the model is told, with the count" '[[ "$j" == *"sync-check: all clear (8 folders up to date)"* ]]'
+  not_ "  and the user is not interrupted"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  printf '#!/bin/sh\necho "[ OK ] a: up to date"; echo "[FAIL] nousowl: stranded on bigfed: docs/x.md"; echo "       fix: edit it on fedxps"; echo; echo "1 needing attention, 0 unknown"; exit 1\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a FAIL: reaches the user"           'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if \"sync-check exit 1: [FAIL] nousowl: stranded on bigfed\" in m else 1)"'
+  yes_ "  and the model, as a warning"      '[[ "$j" == *"WARNING: sync-check exit 1"* ]]'
+  yes_ "  valid JSON with the gauge text in it" 'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
+  printf '#!/bin/sh\necho "[WARN] x: Syncthing is not answering"; exit 2\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a WARN (exit 2): reaches the user"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if \"sync-check exit 2\" in json.load(sys.stdin).get(\"systemMessage\",\"\") else 1)"'
+  printf '#!/bin/sh\nsleep 6\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a hung gauge: cut at 4 s and said so" '[[ "$j" == *"did not answer within 4 s"* ]]'
+  ln -s "$w/cfg/gone" "$w/home/.claude/plans"
+  printf '#!/bin/sh\necho "[FAIL] y: z"; exit 1\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "both kinds of warning: one systemMessage carries both" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if (\"claude-link:\" in m and \"| sync-check exit 1\" in m) else 1)"'
+fi
+
 echo "== ephemeral scopes are never harvested or linked =="
 w=$(mkworld)
 for e in -tmp-scratch -var-tmp-x -run-user-1000-y; do

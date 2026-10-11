@@ -3369,3 +3369,41 @@ bigfed-2). The same day as 3a, in a second chat.
   implementation of the reads for the hub (the gauge sends its own source
   and runs there); a `bye` function (him-3) — not in the step; the pilot's
   exercise 4 runs `sync-check sync` by hand until it is asked for.
+
+## `bye` and `byebye` leave a machine by the gauge; the session-start hook reads it — 2026-10-10
+
+At the transport pilot's seeding, on his word at its wrap-up
+(`org/machines/transport-2026-10/pilot/seeding.md` → "After the close"), the
+two tools the rules him-3 and bigfed-3 specify and the hook lines ws-15
+specifies were pulled forward from step 5a, because the pilot's weeks need
+them: the gauge at every leaving, and its line in the log, by one word rather
+than by hand.
+
+- **`bye` and `byebye`** in `bash/.bashrc.d/40-aliases.sh` (`bash/CLAUDE.md`
+  → "Leaving a machine"): the gauge first, the line into this machine's own
+  log file, then `systemctl suspend` or `poweroff` on OK alone; `-f` forces,
+  `-i` passes through. The log is one file per machine, never one file for
+  both: `org` still moves by git with two writers, and two appends to one
+  file between syncs are a merge conflict — adelotype's per-machine log is
+  the precedent. The maintenance check (bigfed-1) is the power-off's alone
+  and matches the git process by argv, after the first form matched a
+  command line that merely carried the words.
+- **The session-start hook** (`org/claude-config/hooks/session-start.sh`)
+  runs the gauge where it is stowed, bounded at 4 s inside the hook's 5 s
+  with a 1 s settle: all clear goes to the model alone, anything else to
+  both channels, the fix lines left to `sync-check` by hand. The suite's
+  sandbox homes carry no `~/bin/sync-check`, so the hook stays off the live
+  cluster there; `tests/claude/run.sh` gained nine cases.
+- **Declined:** reading the role to decide the maintenance check (a suspend
+  cuts nothing, whatever the role; the verb decides); a `-n` check-only flag
+  (`sync-check sync` is that); raising the hook's 5 s budget in
+  `settings.json` (the gauge is bounded instead, and a cold cache after a
+  boot may read "did not answer within 4 s" once).
+
+*His word at 16:48 the same day:* `bye` stays as built, "a good tool to
+have", though he rarely suspends by command; `byebye` is his usual leaving of
+the laptop as of the desktop and is one function on both. And an objection,
+recorded as given: `bye` was built on a rule's naming of it and on a yes
+that carried a question, before he had grasped what it was. The standing
+correction is in the `org` scope's memory,
+`an-approval-with-a-question-is-not-yet-approval`.

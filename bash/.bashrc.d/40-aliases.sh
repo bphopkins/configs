@@ -344,13 +344,106 @@ alias tl-upgrade='sudo "$(command -v tlmgr)" update --self --all'
 # nonzero; any real error prints above it.
 alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 
-# Power off now. `shutdown` on its own looks broken but isn't: it's a symlink
-# to systemctl, and for SysV compat a bare invocation defaults to `+1`, so it
-# SCHEDULES for one minute out rather than acting (cancel with `shutdown -c`).
-# `poweroff` is the immediate verb. No sudo -- polkit authorizes power-off for
-# an active local session. Block inhibitors are honoured, so this refuses while
-# a dnf transaction is mid-flight and names the culprit; override with -i.
-alias byebye='systemctl poweroff'
+# Leaving a machine (org/machines/transport-2026-10/rules.md: him-3 for the
+# laptop, bigfed-3 for the desktop; built 2026-10-10 at the pilot's seeding,
+# pilot/seeding.md there). `bye` suspends and `byebye` powers off, each only
+# once the Syncthing gauge reads every folder this machine shares up to date
+# -- the laptop before its lid closes, bigfed before it goes dark -- and each
+# writes the reading as one line into this machine's own file of the pilot's
+# log, so the log keeps itself (one file per machine: two machines appending
+# to one git-synced file would be a merge conflict). On a writer (bigfed-1) a
+# running `git maintenance`, or its lock under any rotation repository, refuses
+# too: a power-off would cut a repack short, and the hub would carry the halves.
+# Flags: -f leaves whatever the gauge says, logged as forced; -i is systemctl's
+# --ignore-inhibitors. Without the gauge on PATH (a machine not yet stowed)
+# they act as the plain commands did, with one hint. LEAVE_LOG_DIR overrides
+# the log's directory (the suite); a machine without it logs nothing and acts.
+#
+# `shutdown` on its own looks broken but isn't: it's a symlink to systemctl,
+# and for SysV compat a bare invocation defaults to `+1`, so it SCHEDULES for
+# one minute out rather than acting (cancel with `shutdown -c`). `poweroff`
+# is the immediate verb. No sudo -- polkit authorizes power-off and suspend
+# for an active local session. Block inhibitors are honoured, so this refuses
+# while a dnf transaction is mid-flight and names the culprit; override with
+# -i. Tests: tests/leave/run.sh.
+_leave() {
+  local verb="$1" cmd=bye force=0 ignore="" a host out rc=0 reading="" note log dir n line lock proc
+  local args=()
+  shift
+  [[ "$verb" == poweroff ]] && cmd=byebye
+  for a in "$@"; do
+    case "$a" in
+      -f) force=1 ;;
+      -i) ignore="-i" ;;
+      *) echo "Usage: $cmd [-f] [-i]   (-f: leave whatever the gauge says; -i: ignore inhibitors)"; return 1 ;;
+    esac
+  done
+  host="$(uname -n 2>/dev/null)"; host="${host%%.*}"; host="${host,,}"
+  if command -v sync-check >/dev/null 2>&1; then
+    out="$(sync-check sync 2>&1)"; rc=$?
+    printf '%s\n' "$out"
+    if ((rc == 0)); then
+      n="$(grep -c -E '^\[ OK \] [^:]+: up to date' <<<"$out")"
+      reading="OK, $n folders"
+    else
+      line="$(grep -v -E '^\[ OK \]|^[[:space:]]*$|needing attention|all clear' <<<"$out" | head -1)"
+      reading="${line:-the gauge exited $rc}"
+    fi
+    # bigfed-1, before a power-off only: no repack cut short. A suspend cuts
+    # nothing, so bye skips this. REPOS_DESKTOP comes from 50-git-sync.sh,
+    # loaded after this file and present by the time anyone types byebye.
+    # Never pgrep -f: the pattern would match this shell's own command line
+    # (org/claude-config/rules/system-and-server-work.md).
+    if [[ "$verb" == poweroff ]]; then
+      lock=""
+      if declare -p REPOS_DESKTOP >/dev/null 2>&1; then
+        for dir in "${REPOS_DESKTOP[@]}"; do
+          [[ -e "$dir/.git/objects/maintenance.lock" ]] && { lock="$dir/.git/objects/maintenance.lock"; break; }
+        done
+      fi
+      # The process itself -- argv[0] git, argv[1] maintenance -- never a
+      # shell whose command line merely carries the words (a Claude session's
+      # wrapper did, 2026-10-10, and read as a repack).
+      proc="$(ps -eo pid,args 2>/dev/null | awk '$2 ~ /(^|\/)git$/ && $3 == "maintenance" { print $1; exit }')"
+      if [[ -n "$proc" ]]; then
+        echo "[FAIL] git maintenance is running (pid $proc) -- a power-off now would cut the repack short; wait for it to finish (rules.md -> bigfed-1)"
+        ((rc == 0)) && reading="FAIL git maintenance running"
+        rc=1
+      elif [[ -n "$lock" ]]; then
+        echo "[FAIL] $lock stands with no git maintenance running -- a repack was cut short; run: git -C ${lock%/.git/objects/maintenance.lock} maintenance run --task=gc   (rules.md -> bigfed-1)"
+        ((rc == 0)) && reading="FAIL stale maintenance lock"
+        rc=1
+      fi
+    fi
+  else
+    echo "(no sync-check on PATH -- leaving unchecked; stow-all puts the gauge on PATH)"
+    reading="unchecked (no sync-check on PATH)"
+  fi
+  dir="${LEAVE_LOG_DIR:-$HOME/Desktop/org/machines/transport-2026-10/pilot}"
+  if [[ -d "$dir" && -n "$host" ]]; then
+    log="$dir/log-$host.md"
+    [[ -e "$log" ]] || printf "# The pilot's log — %s's lines\n\n| when | reading | note |\n|---|---|---|\n" "$host" > "$log"
+    note="$cmd"
+    ((force)) && note+=", forced"
+    ((rc != 0 && !force)) && note+=", refused"
+    printf '| %s | %s | %s |\n' "$(date '+%Y-%m-%d %H:%M')" "${reading//|//}" "$note" >> "$log"
+  fi
+  if ((rc == 0 || force)); then
+    args=("$verb"); [[ -n "$ignore" ]] && args+=("$ignore")
+    systemctl "${args[@]}"
+  else
+    echo "[SKIP] not leaving: the gauge did not read all clear ($cmd -f leaves regardless; org/machines/transport-2026-10/rules.md -> him-3)"
+    return 1
+  fi
+}
+# The re-source trap, as for sysupgrade above: a shell that still holds the
+# old `byebye` alias would alias-expand the name in the definition below and
+# die with a syntax error, taking the navigation aliases after it down
+# silently. Own line, executed before the definition is parsed. Costs nothing
+# to keep once every shell on both machines has started fresh.
+unalias byebye 2>/dev/null || :
+bye() { _leave suspend "$@"; }
+byebye() { _leave poweroff "$@"; }
 
 # Move+List Shortcuts
 alias lsa='ls -a --group-directories-first'

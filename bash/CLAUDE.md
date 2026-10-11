@@ -104,7 +104,8 @@ integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
   The file's comments carry the derivation, the measurements and the declined
   alternatives; the record is `DECISIONS.md`, 2026-09-23. Suite:
   `tests/prompt/run.sh`, after any edit here.
-- `40-aliases.sh` — aliases plus functions: `sysupgrade` and `reboot-check`
+- `40-aliases.sh` — aliases plus functions: `bye` and `byebye` (see "Leaving
+  a machine" below), `sysupgrade` and `reboot-check`
   (see "Reboot verdict" below), `tl-upgrade` (within-release TeX Live update;
   resolves `tlmgr` through PATH so it survives year bumps), `reload`
   (typo-proof `source ~/.bashrc`), `cc` / `ccf` (claude with opus/fable at max
@@ -320,6 +321,42 @@ lives in; `tests/gsync/README.md` has suite scope and the harness conventions
 new suites must follow (`passed: N  failed: M` last line, registration in
 `run-all.sh`, a `uname` stub so the machine's own host file never reaches a
 suite, a `sync-check` stub so the real gauge never does).
+
+## Leaving a machine (`40-aliases.sh`, added 2026-10-10)
+
+`byebye` powers off and `bye` suspends, each only once the Syncthing gauge
+reads every folder this machine shares up to date. `byebye` is his usual
+leaving of either machine and is one function on both; `bye` is for the
+laptop when he suspends it by command rather than closing the lid, which he
+rarely does (`org/machines/transport-2026-10/rules.md` → bigfed-3, him-3;
+built at the pilot's seeding, `pilot/seeding.md` there, kept on his word).
+Both run `sync-check sync`, show its lines, and write one line — the reading
+and the verb — into this machine's own file of the pilot's log,
+`org/machines/transport-2026-10/pilot/log-<hostname>.md` (one file per
+machine: two machines appending to one git-synced file would be a merge
+conflict; `LEAVE_LOG_DIR` overrides the directory, and a machine without it
+logs nothing and acts). `byebye` also refuses while `git maintenance` runs or
+its lock stands under a rotation repository, since a power-off cuts a repack
+short (bigfed-1); `bye` skips that, a suspend cutting nothing. The process is
+matched by argv — `git` then `maintenance` — never by a command line carrying
+the words: a Claude session's own wrapper did, and read as a repack
+(2026-10-10). Flags: `-f` leaves whatever the gauge says, logged as forced;
+`-i` is systemctl's `--ignore-inhibitors`. Without the gauge on PATH they act
+as the plain commands did, with one hint. A reading of WARN (exit 2, the
+cluster unreadable) refuses like a FAIL: away from the hub, `bye -f` is the
+honest form. The old `byebye` alias was `systemctl poweroff` alone, and an
+`unalias byebye` line stands before the definitions, as for `sysupgrade`: a
+shell still holding that alias would otherwise alias-expand the name in the
+definition at `reload` and die with a syntax error, losing every alias after
+it in silence (reproduced and closed 2026-10-10; the suite's last case).
+
+**Regression suite:** `tests/leave/run.sh` (53 checks; caged), with
+`systemctl`, the gauge, `uname` and `ps` stubbed and the log in a sandbox:
+the suspend and the power-off on OK, the log's header and lines, the refusal
+on FAIL and on WARN with the gauge's line in the log, `-f` and `-i`, usage on
+a bad flag, the maintenance process and the stale lock on a power-off and
+their irrelevance to a suspend, no gauge on PATH, no log directory. Run it
+after any edit to these two.
 
 ## Reboot verdict (`40-aliases.sh`, added 2026-08-08)
 
