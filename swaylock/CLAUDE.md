@@ -17,21 +17,19 @@ length silently becomes opaque white. The one line that means no lock is
 the installed man page, so it tracks the installed version rather than a
 snapshot.
 
-The package exists so the two call sites — the `$mod+Ctrl+l` binding and the
-before-sleep and lock hooks, all in `sway/config` — can each be a bare
-`swaylock -f`, with everything cosmetic here; inline flags would drift. The
-wrong-password ring is `#d08770`, one of the four coupled urgent-colour sites
-(`sway/CLAUDE.md`). PAM is already correct on Fedora (`/etc/pam.d/swaylock`
-is `auth include login`; password unlock verified live; `pam_faildelay` 2 s,
-no `pam_faillock`, so failed attempts cannot lock the account). No clock on
-the lock screen, deliberately: `--clock`/`--timestr`/`--datestr` belong to
-the swaylock-effects fork, so a real clock means replacing the packaged
-binary — `indicator-idle-visible` answers the actual question ("is the lock
-up, or is the machine off?") without one. Username and session detail are
-deliberately not displayed. Since 2026-09-30: `ignore-empty-password` (an
-empty Enter no longer costs 2 s and a failed attempt), `indicator-caps-lock`
-(without it five of the six Caps Lock colours never applied), and "Cleared"
-in white (it was black on black).
+The package exists so every call site can be a bare `swaylock -f`, with
+everything cosmetic here; inline flags would drift. The wrong-password ring is
+`#d08770`, one of the four coupled urgent-colour sites (`sway/CLAUDE.md`). PAM
+is already correct on Fedora (`/etc/pam.d/swaylock` is `auth include login`;
+password unlock verified live; `pam_faildelay` 2 s, no `pam_faillock`, so failed
+attempts cannot lock the account). No clock on the lock screen, deliberately:
+`--clock`/`--timestr`/`--datestr` belong to the swaylock-effects fork, so a real
+clock means replacing the packaged binary — `indicator-idle-visible` answers the
+actual question ("is the lock up, or is the machine off?") without one. Username
+and session detail are deliberately not displayed. Since 2026-09-30:
+`ignore-empty-password` (an empty Enter no longer costs 2 s and a failed
+attempt), `indicator-caps-lock` (without it five of the six Caps Lock colours
+never applied), and "Cleared" in white (it was black on black).
 
 **Locked out: the way back.** If the lock screen turns **solid red**,
 swaylock died while the session was locked and sway kept the lock (sway

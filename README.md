@@ -147,7 +147,7 @@ This simulates the action, reporting back if `stow` sees anything funny about cr
 cd ~/Desktop/configs
 
 # Ensure target directories exist
-mkdir -p ~/.config/{alacritty,environment.d,fontconfig,ghostty,git,mako,nvim,sway,swaylock,tmux,waybar,wofi} ~/texmf/tex/latex ~/bin
+mkdir -p ~/.config/{alacritty,environment.d,fontconfig,ghostty,git,mako,nvim,rofi,sway,swaylock,tmux,waybar,wofi} ~/texmf/tex/latex ~/bin
 
 # Links to $HOME
 stow -nvt ~ bash
@@ -162,6 +162,7 @@ stow -nvt ~/.config/swaylock swaylock
 stow -nvt ~/.config/mako mako
 stow -nvt ~/.config/waybar waybar
 stow -nvt ~/.config/wofi wofi
+stow -nvt ~/.config/rofi rofi
 stow -nvt ~/.config/tmux tmux
 stow -nvt ~/.config/git git
 stow -nvt ~/.config/fontconfig fontconfig
@@ -198,6 +199,7 @@ stow -vt ~/.config/swaylock swaylock
 stow -vt ~/.config/mako mako
 stow -vt ~/.config/waybar waybar
 stow -vt ~/.config/wofi wofi
+stow -vt ~/.config/rofi rofi
 stow -vt ~/.config/tmux tmux
 stow -vt ~/.config/git git
 stow -vt ~/.config/fontconfig fontconfig
@@ -290,6 +292,7 @@ But honestly, why not just reboot?
   stow --adopt -vt ~/.config/mako mako
   stow --adopt -vt ~/.config/waybar waybar
   stow --adopt -vt ~/.config/wofi wofi
+  stow --adopt -vt ~/.config/rofi rofi
   stow --adopt -vt ~/.config/tmux tmux
   stow --adopt -vt ~/.config/git git
   stow --adopt -vt ~/.config/fontconfig fontconfig
@@ -313,6 +316,7 @@ But honestly, why not just reboot?
   stow -Dvt ~/.config/mako mako
   stow -Dvt ~/.config/waybar waybar
   stow -Dvt ~/.config/wofi wofi
+  stow -Dvt ~/.config/rofi rofi
   stow -Dvt ~/.config/tmux tmux
   stow -Dvt ~/.config/git git   # the host link ~/.config/git/host.inc is hand-made, not stow's: rm it too
   stow -Dvt ~/.config/fontconfig fontconfig

@@ -30,16 +30,15 @@ unaffected). **`layer=overlay`** (2026-09-30) shows the menu over a fullscreen
 window, where the default top layer drew it beneath one while still taking
 the keyboard.
 
-Styling deliberately matches Waybar — black, the desktop's one `@accent`,
-sway's dodger blue since 2026-09-29 (forest green before, kept as `@forest`
-for a one-word swap), Source Code Pro, and a 3px border echoing sway's
-`default_border pixel 3`. No icons (`allow_images=false`; no icon font
-installed); `image_size` is set anyway so enabling them is a one-word change.
-Every key was validated against wofi(5)'s documented options; the CSS node
-names (`#window`, `#input`, `#entry`, `#text`, …) come from wofi(5)'s CSS
+Styling deliberately matches Waybar — black, the desktop's one `@accent`, sway's
+dodger blue since 2026-09-29 (forest green before, kept as `@forest` for a
+one-word swap), and Source Code Pro. No icons (`allow_images=false`; no icon
+font installed); `image_size` is set anyway so enabling them is a one-word
+change. Every key was validated against wofi(5)'s documented options; the CSS
+node names (`#window`, `#input`, `#entry`, `#text`, …) come from wofi(5)'s CSS
 SELECTORS section — `tests/desktop/run.sh` validates the keys and, since
-2026-09-30, the `#id` selectors (GTK accepts any id, and a misspelt one
-silently styles nothing).
+2026-09-30, the `#id` selectors (GTK accepts any id, and a misspelt one silently
+styles nothing).
 
 wofi reads its config at launch, so there is nothing to reload — just run it
 again.

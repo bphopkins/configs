@@ -80,7 +80,7 @@
 # 52 checks on fedxps on 2026-10-01: 48, and two for each host layer (its
 # inlined validation, its chords).
 #
-# Run from anywhere after editing any of the five configs or a host layer
+# Run from anywhere after editing any of the six configs or a host layer
 # (~4 s). Last line follows the tests/gsync convention: "passed: N  failed:
 # M"; exit 0 iff nothing failed. Requires bash 5+, sway, swaymsg, jq,
 # python3 + python3-gi, man, ps; mako for its parser check.
@@ -1056,6 +1056,7 @@ urgent_waybar()   { is_colour "$URGENT" "$(css_define "$CSS_W" urgent)" &&
                     css_uses "$CSS_W" '#workspaces button.urgent' background @urgent &&
                     css_uses "$CSS_W" '#custom-split' background @urgent &&
                     css_uses "$CSS_W" '#custom-pointer' background @urgent &&
+                    css_uses "$CSS_W" '#custom-sync.off' background @urgent &&
                     css_uses "$CSS_W" '#mode' background @urgent; }
 accent_waybar()   { is_colour "$ACCENT" "$(css_define "$CSS_W" accent)" &&
                     css_uses "$CSS_W" '#workspaces button.focused' background @accent; }
@@ -1075,7 +1076,7 @@ css_uses() { # $1 = sheet, $2 = selector, $3 = property, $4 = the define its val
   case " $v " in *" $4 "*) ;; *) say "$2 { $3: ${v:-(unset)} }"; return 1;; esac
 }
 check "urgent colour #$URGENT drawn in sway/config (client.urgent, the split edge)" urgent_sway
-check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent, the split, pointer and mode pills)" urgent_waybar
+check "urgent colour #$URGENT drawn in waybar/style.css (@urgent, button.urgent, the split, pointer, sync and mode pills)" urgent_waybar
 check "urgent colour #$URGENT drawn in mako/config ([urgency=critical] border)" urgent_mako
 check "urgent colour #$URGENT drawn in swaylock/config (ring-wrong-color)" urgent_swaylock
 check "accent #$ACCENT drawn in sway/config (\$accent, client.focused)" accent_sway

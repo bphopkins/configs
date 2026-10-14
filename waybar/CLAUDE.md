@@ -119,15 +119,29 @@ Conventions carrying the bar's behavior:
   `$mod+m`, and nothing otherwise, which hides the module. It re-reads sway's
   device list at start and on every sway input event, so a Waybar started
   while off shows it and a reload, which turns the devices back on, clears
-  it. First in `modules-right`: anchored there, the group grows into the
-  empty middle when the marker appears and nothing already showing moves,
-  the reason `sway/mode` is last on the left. The urgent fill, as the
-  `resize` pill and the split marker: a state to leave. Same trap as
+  it. Second in `modules-right`, after the sync marker: anchored there, the
+  group grows into the empty middle when a marker appears and nothing already
+  showing moves, the reason `sway/mode` is last on the left. The urgent fill,
+  as the `resize` pill and the split marker: a state to leave. Same trap as
   sway-split's, for the same reason. Suite: `tests/sway-pointer/run.sh`.
   Record: `DECISIONS.md`, 2026-10-03.
+- **The sync marker** (`custom/sync`, 2026-10-11): the syncthing-indicator
+  extension's second front end, run from where that extension is installed,
+  so GNOME and Sway read one engine; its behaviour and its suite live in that
+  extension's repository, private. Hidden while this machine is up to date;
+  `syncing` and `sync paused` in plain text; `sync error`, `sync off` and
+  `sync ?` in the urgent fill, states to leave. It holds its first line until
+  the state has settled and never exits non-zero of its own accord, since
+  Waybar clears a module that does and a cleared marker reads as up to date; a
+  click opens Syncthing's web interface. Outermost on the right, as it comes
+  and goes with every sync, so its comings and goings move nothing. ⚠ On a
+  machine without the extension installed the exec fails, and the hidden
+  module then reads as up to date: install it before this config reaches a
+  machine.
 - The urgent workspace, `#battery.critical`, the `resize` pill, the split
-  marker and the pointer marker use `#d08770`; this sheet is one of the four
-  coupled urgent-colour configs (`sway/CLAUDE.md`).
+  marker, the pointer marker and the sync marker's off, error and broken
+  states use `#d08770`; this sheet is one of the four coupled urgent-colour
+  configs (`sway/CLAUDE.md`).
 - **Seeing a change before it goes live** (2026-10-01): start Waybar
   yourself in a caged, headless nested sway (`sway/CLAUDE.md`, "The whole
   file", bar block stripped as it says), with a minimal config of its own:

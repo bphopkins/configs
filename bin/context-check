@@ -5,6 +5,8 @@
 #   context-check            one verdict line per check
 #   context-check -v         also print every offending path
 #
+#   CONTEXT_CHECK_DAYS       how far back the transcript checks look (14)
+#
 # Exit: 0 all clear · 1 something is actually wrong · 2 could not determine
 #
 # The half of org/claude-config's integrity that a script can decide. Its
@@ -12,11 +14,16 @@
 # what a grep can, so an agent is never spent on it. Built 2026-09-18 from the
 # nine defects of that day's audit that needed no judgment at all — among them a
 # dangling ~/.claude/plans that had survived 23 days and 337 `claude-link --auto`
-# runs, because nothing looked.
+# runs, because nothing looked. Since 2026-10-12 it also watches the ground the
+# routines stand on: ten premises about Claude Code, read from the installed
+# binary, the flag cache and the transcripts, so that a vendor change the
+# routines rest on is seen rather than assumed (checks 10 to 19).
 #
-# Read-only and unprivileged by construction: no writes, no sudo, no network.
-# Thresholds are absolute, not proportional, so one rule deploys to both
-# machines. Every FAIL prints the literal command that fixes it.
+# Read-only and unprivileged by construction: no writes, no sudo, no network,
+# and the Claude binary is read, never started. Thresholds are absolute, not
+# proportional, so one rule deploys to both machines. Every FAIL prints the
+# literal command that fixes it — or, for a premise about Claude Code that has
+# moved and has no command, the texts that rest on it.
 #
 # Tag semantics, as in `disk-check`:
 #   [ OK ]  clear, nothing to do
@@ -40,11 +47,22 @@ DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
 # client-side, and they truncate rather than reject.
 IDX_LINE_MAX=200
 IDX_LINE_TARGET=150
+# The caps themselves, and recall's, read from the binary on 2.1.296 (2026-10-11,
+# the inventory named below, rows 4 and 11) and checked against it on every run
+# (check 13): per index 200 lines or 25,000 characters, the head loaded and the
+# model told "Only part of it was loaded"; while recall is on, 200 lines or 4,096
+# bytes of each recalled file and 61,440 bytes a session.
+IDX_LINES_CAP=200
+IDX_CHARS_CAP=25000
+RECALL_LINES=200
+RECALL_BYTES=4096
+SESSION_BYTES=61440
+DAYS="${CONTEXT_CHECK_DAYS:-14}"
 
 VERBOSE=0
 for a in "$@"; do case "$a" in
   -v|--verbose) VERBOSE=1 ;;
-  -h|--help) sed -n '2,24p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
+  -h|--help) sed -n '2,32p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
   *) echo "context-check: unknown option $a (try --help)" >&2; exit 2 ;;
 esac; done
 
@@ -54,6 +72,7 @@ ok()   { printf '%s[ OK ]%s %s\n' "$G" "$Z" "$*"; }
 fail() { printf '%s[FAIL]%s %s\n' "$R" "$Z" "$*"; n_fail=$((n_fail+1)); }
 warn() { printf '%s[WARN]%s %s\n' "$R" "$Z" "$*"; n_warn=$((n_warn+1)); }
 fix()  { printf '       fix: %s\n' "$*"; }
+note() { printf '       note: %s\n' "$*"; }
 det()  { [ $VERBOSE = 1 ] && printf '       %s\n' "$@"; return 0; }
 
 [ -d "$CFG" ] || { warn "config tree not found at $CFG — nothing could be checked"; exit 2; }
@@ -83,12 +102,11 @@ else fail "${#empt[@]} empty directory(ies) — git cannot carry them to the oth
      det "${empt[@]}"; fix "claude-link --apply   (or rmdir the ones whose directory is gone)"; fi
 
 # 3 ── memory index line shape --------------------------------------------
-# Two distinct facts, and conflating them overstates the case. (a) The harness
-# asks for "index entries to one line under ~200 chars" -- that is a shape, and
-# this check measures it. (b) A server-side size cap rejects an over-large index
-# *whole*, at which point that scope's memory stops being recallable with nothing
-# on screen to say so -- that is the consequence, and its threshold is not
-# knowable from here. Report the shape; name the consequence; claim no proximity.
+# Two distinct facts. (a) The harness asks for one line under ~150 characters
+# and treats ~200 as the demote trigger -- that is a shape, and this check
+# measures it. (b) The caps are 200 lines and 25,000 characters per index,
+# enforced client-side, and they truncate rather than reject: the head loads
+# and the tail is dropped. Report the shape; name the consequence.
 over=0 near=0 worst=0 biggest=0 bigscope=- det3=()
 while IFS= read -r -d '' idx; do
   sz=$(wc -c < "$idx"); [ "$sz" -gt "$biggest" ] && { biggest=$sz; bigscope=$(basename "$(dirname "$idx")"); }
@@ -106,9 +124,11 @@ else fail "memory index lines: $over at or over the ~${IDX_LINE_MAX}c demote tri
 '
      printf '             carrying content that belongs in the topic file. The target is ~150c.
 '
-     printf '             The real caps are 200 lines and 25,000 chars per index, client-side,
+     printf '             The real caps are %s lines and %s chars per index, client-side,
+' "$IDX_LINES_CAP" "$IDX_CHARS_CAP"
+     printf '             and they fail PARTIALLY: the head loads, the tail does not, and the
 '
-     printf '             and they fail PARTIALLY — the head loads, the tail is dropped silently.
+     printf '             model is told so ("Only part of it was loaded"), as check 13 verifies.
 '
      det "${det3[@]}"; fix "shorten the hooks in the named MEMORY.md files to one line each"; fi
 
@@ -205,6 +225,324 @@ uniq_miss=$(printf '%s\n' "${miss[@]:-}" | grep -v '^$' | sort -u)
 nm=$(printf '%s' "$uniq_miss" | grep -c . || true)
 if [ "$nm" -eq 0 ]; then ok "repos/: every entry's tree is present on this machine"
 else ok "repos/: $nm entry(ies) for a tree not on this machine (normal if by decision)"; det $uniq_miss; fi
+
+# ── the ground the routines stand on, since 2026-10-12 ─────────────────────
+# Ten premises about Claude Code that `/restore-order`, `/wrap-up` and this
+# gauge rest on, each read where it can be seen without starting anything: the
+# installed binary (a literal anchor, then the value beside it; a minified name
+# is read backwards from its anchor, never matched by itself), the flag cache
+# in ~/.claude.json (server switches that turn with no release), and the
+# transcripts, which record every charter load and every start bundle. The
+# inventory of premises, by row, is the dated record named in INV; the design
+# is vision.md §9 beside it. A FAIL here is a premise that has moved and has no
+# command that fixes it: the line names the texts that rest on it, and
+# `/restore-order` files it as a `moved-premise` finding. An anchor that is not
+# found reads WARN, never OK. The anchors are the vendor's own strings, shipped
+# in a public binary; nothing of the configuration is in them.
+INV="org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md"
+premise() { # a premise that moved (fail) or could not be read (warn): what rests on it, then the fix
+  local rows=$1 rests=$2 how=$3 rw=row
+  if [ "$rows" = cfg ]; then fix "$rests"; return; fi
+  case "$rows" in *,*) rw=rows ;; esac
+  printf '       rests on: %s\n' "$rests"
+  if [ "$how" = warn ]; then fix "find the anchor on Claude Code $VERD and update this gauge, then re-measure the premise and check the texts above ($INV, $rw $rows)"
+  else fix "re-measure on Claude Code $VERD, then correct the texts above ($INV, $rw $rows); /restore-order files it as moved-premise"; fi
+}
+emit() { # verdict (V) and detail (D) lines from a premise sweep, in order
+  local out=$1 kind n tag text rows rests k2 n2 d2
+  while IFS=$'\t' read -r kind n tag text rows rests; do
+    [ "$kind" = V ] || continue
+    case "$tag" in
+      OK)   ok "$text" ;;
+      FAIL) fail "$text"; premise "$rows" "$rests" fail ;;
+      WARN) warn "$text"; premise "$rows" "$rests" warn ;;
+    esac
+    [ $VERBOSE = 1 ] || continue
+    while IFS=$'\t' read -r k2 n2 d2; do [ "$k2" = D ] && [ "$n2" = "$n" ] && det "$d2"; done <<<"$out"
+  done <<<"$out"
+}
+
+# 10 ── the version on record ---------------------------------------------
+# The Claude Code version this gauge last ran against, written by hand after a
+# run — every write manual, by his maintenance rule — into claude-version-checked
+# beside the config: one line, the version first, then whatever he adds (the
+# date, the machine). The SessionStart hook compares it with the installed
+# version in microseconds and says when they differ; this check prints the line
+# to paste. The installed version is the basename of what the launcher resolves
+# to, the native installer's layout (~/.local/share/claude/versions/<version>);
+# a layout that does not carry it reads WARN, and the binary is never started.
+STAMP="$CFG/claude-version-checked"
+BIN="$HOME/.local/bin/claude"; [ -e "$BIN" ] || BIN=$(command -v claude 2>/dev/null || true)
+BINR=""; VER=""
+[ -n "$BIN" ] && BINR=$(readlink -f "$BIN" 2>/dev/null || true)
+[ -n "$BINR" ] && VER=$(basename "$BINR")
+case "$VER" in [0-9]*.[0-9]*.[0-9]*) ;; *) VER="" ;; esac
+VERD=${VER:-the installed version}
+REC=""; [ -s "$STAMP" ] && REC=$(awk 'NR==1{print $1; exit}' "$STAMP")
+record="echo \"$VER $(date +%F) $(hostname -s 2>/dev/null || echo unknown)\" > ${STAMP/#"$HOME"/\~}"
+if [ -z "$BINR" ] || [ ! -f "$BINR" ]; then
+  warn "Claude Code: no binary at ~/.local/bin/claude or on PATH — the premises it carries could not be read"
+elif [ -z "$VER" ]; then
+  warn "Claude Code: version not readable from the install path (${BINR/#"$HOME"/\~})"
+  fix "read it with 'claude --version', then check the layout this gauge expects: ~/.local/share/claude/versions/<version>"
+elif [ -z "$REC" ]; then fail "Claude Code $VER installed; no version on record"; note "paste the fix after reading the lines below"; fix "$record"
+elif [ "$VER" != "$REC" ]; then fail "Claude Code $VER installed; $REC on record"; note "paste the fix after reading the lines below"; fix "$record"
+else ok "Claude Code $VER, the version on record ($(sed -n 1p "$STAMP" | cut -s -d' ' -f2-))"; fi
+
+# 11–15 ── read from the binary and the flag cache -------------------------
+if [ -n "$BINR" ] && [ -f "$BINR" ] && command -v python3 >/dev/null 2>&1; then
+  out=$(python3 -I -B - "$BINR" "$HOME/.claude.json" "$IDX_LINES_CAP" "$IDX_CHARS_CAP" "$RECALL_LINES" "$RECALL_BYTES" "$SESSION_BYTES" <<'PY'
+import json, mmap, re, sys, time
+binp, cache = sys.argv[1], sys.argv[2]
+want = [int(x) for x in sys.argv[3:8]]   # index lines, index chars, recalled lines, recalled bytes, session bytes
+fh = open(binp, 'rb'); m = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
+V, D = [], []
+def v(n, tag, text, rows, rests): V.append(f"V\t{n}\t{tag}\t{text}\t{rows}\t{rests}")
+R2 = "context-policy-questions.md; context-drift-2026-09/run3-2026-09-23.md and memory-scope-2026-09-18.md; context-order-2026-10/vision.md §9"
+R3 = "skills/restore-order/autonomy-ledger.md (scope-placement) and SKILL.md; context-drift-2026-09/memory-scope-2026-09-18.md"
+R4 = "this gauge (check 3 and its note); context-policy.md; context-policy-questions.md; context-drift-2026-09/memory-scope-2026-09-18.md"
+R18 = "skills/restore-order/SKILL.md (disable-model-invocation); context-order-2026-10/vision.md (Settled)"
+R28 = "everything that presumes a charter or a memory index arrives: context-policy.md; skills/restore-order/SKILL.md and tools/census.py; skills/wrap-up/SKILL.md; R2 for recall"
+# 11 the recall gate (row 2): the exported name, read backwards from its anchor; its body names the
+#    server switch; the environment variable of the other path is beside it
+i = m.find(b' as isMemoryRecallEnabled')
+if i < 0: v(11, 'WARN', 'recall gate (row 2): its anchor is not in this binary; could not determine', '2', R2)
+else:
+    j = i
+    while j > 0 and (chr(m[j-1]).isalnum() or m[j-1] in b'$_'): j -= 1
+    name = m[j:i]; k = m.find(b'function ' + name + b'(){'); body = m[k:k+160] if k >= 0 else b''
+    env = m.find(b'process.env.CLAUDE_MEMORY_STORES?.trim()') >= 0
+    gone = [w for w, c in (('the switch tengu_moth_copse', b'tengu_moth_copse' not in body), ('the variable CLAUDE_MEMORY_STORES', not env)) if c]
+    if k < 0: v(11, 'WARN', 'recall gate (row 2): the gate has no readable body in this binary; could not determine', '2', R2)
+    elif gone: v(11, 'FAIL', 'recall gate (row 2): no longer reads ' + ' or '.join(gone), '2', R2)
+    else: v(11, 'OK', 'recall gate (row 2): the switch tengu_moth_copse or the variable CLAUDE_MEMORY_STORES, as measured', '2', R2)
+# 12 the memory scope (row 3): the git root of the launch folder
+if m.find(b'via:"git"') >= 0: v(12, 'OK', 'memory scope (row 3): the git root of the launch folder, as measured', '3', R3)
+else: v(12, 'WARN', 'memory scope (row 3): the anchor via:"git" is not in this binary; could not determine', '3', R3)
+# 13 the memory numbers (rows 4, 11): the index caps, recall's, the session cap, the partial-load warning
+rx = re.compile(rb'^="MEMORY\.md",[\w$]+=(\d+),[\w$]+=(\d+),[\w$]+=4\*[\w$]+,[\w$]+=(\d+),[\w$]+=(\d+);')
+caps = None; pos = 0
+while True:
+    i = m.find(b'="MEMORY.md",', pos)
+    if i < 0: break
+    g = rx.search(m[i:i+200])
+    if g: caps = [int(x) for x in g.groups()]; break
+    pos = i + 1
+i = m.find(b'MAX_SESSION_BYTES:'); g = re.search(rb'^MAX_SESSION_BYTES:(\d+)', m[i:i+40]) if i >= 0 else None
+sess = int(g.group(1)) if g else None
+warned = m.find(b'Only part of it was loaded') >= 0
+missing = [w for w, c in (('the index caps', caps is None), ('the session cap', sess is None), ('the partial-load warning', not warned)) if c]
+if missing: v(13, 'WARN', 'memory numbers (rows 4, 11): ' + ' and '.join(missing) + ' not found in this binary; could not determine', '4, 11', R4)
+elif caps + [sess] != want:
+    v(13, 'FAIL', 'memory numbers (rows 4, 11): the binary reads ' + '/'.join(map(str, caps + [sess])) + ' where ' + '/'.join(map(str, want)) + ' is on record (index lines/chars, recalled lines/bytes, session bytes)', '4, 11', R4)
+else: v(13, 'OK', f'memory numbers (rows 4, 11): per index {want[0]} lines or {want[1]:,} chars, the model told when cut; per recalled file {want[2]} lines or {want[3]:,} B, {want[4]:,} B a session', '4, 11', R4)
+# 14 the skill gate (row 18): a model-invoked skill under disable-model-invocation is refused
+if m.find(b' tool due to disable-model-invocation.') >= 0: v(14, 'OK', 'skill gate (row 18): disable-model-invocation refused by the tool, as measured', '18', R18)
+else: v(14, 'WARN', 'skill gate (row 18): the refusal is not in this binary; could not determine', '18', R18)
+# 15 the server switches (rows 2, 28, 29): cached values, quiet when absent, false, null or empty
+hal = m.find(b'k("tengu_paper_halyard",!1)') >= 0
+try:
+    cj = json.load(open(cache)); flags = cj.get('cachedGrowthBookFeatures'); at = cj.get('cachedGrowthBookFeaturesAt')
+except Exception:
+    flags = None; at = None
+names = [('tengu_moth_copse', 'recall'), ('tengu_mill_orange', 'index recall'), ('tengu_paper_halyard', 'charter loading off'),
+         ('tengu_sepia_cormorant', 'models without auto memory'), ('tengu_umber_petrel', 'auto memory per model')]
+if not isinstance(flags, dict): v(15, 'WARN', 'server switches (rows 2, 28, 29): no cachedGrowthBookFeatures in ~/.claude.json; could not determine', '2, 28, 29', R28)
+else:
+    loud = []
+    for k, what in names:
+        val = flags.get(k); D.append(f"D\t15\t{k} ({what}): " + ('absent' if k not in flags else json.dumps(val)))
+        if val not in (None, False, []): loud.append(f'{k} ({what}) cached {json.dumps(val)}')
+    try: at = time.strftime('%Y-%m-%d %H:%M', time.localtime(float(at) / 1000))
+    except (TypeError, ValueError): pass
+    D.append(f"D\t15\tcached at {at}")
+    if loud: v(15, 'FAIL', 'server switches (rows 2, 28, 29): ' + '; '.join(loud) + ' — decide its use or refusal from what it does in his sessions', '2, 28, 29', R28)
+    elif not hal: v(15, 'WARN', 'server switches (rows 2, 28, 29): 5 cached quiet, but the charter-loading switch is not in this binary; could not determine whether project charters still load (check 17 sees their loads)', '28', R28)
+    else: v(15, 'OK', 'server switches (rows 2, 28, 29): 5 cached quiet (recall, index recall, charter loading, auto memory per model); the charter-loading switch in the binary', '2, 28, 29', R28)
+print('\n'.join(V + D))
+PY
+) || out=""
+  if [ -z "$out" ]; then warn "the binary and the flag cache: the check itself failed — not verified"
+  else emit "$out"; fi
+elif [ -n "$BINR" ] && [ -f "$BINR" ]; then warn "python3 absent — the binary and the flag cache not verified"
+fi
+
+# 16–19 ── seen in the transcripts ------------------------------------------
+# One sweep of the transcripts written in the last DAYS days (2.6 s over 433 MB
+# on 2026-10-12). A worker's transcript sits under its session's directory; its
+# launch folder is the session's, the scope, since a worker starts wherever it
+# was sent. A session that reads under a charter's folder without reading the
+# charter itself receives the charter: 4 of 4 such sessions since 2026-09 on the
+# day this was built, with the two shapes that attach nothing excluded — a
+# charter the model read directly (not attached again) and a touch inside a
+# memory directory. Workers of a type whose agent file sets omitClaudeMd get no
+# bundle by design, and a fork inherits its parent's; both are left out. Learned
+# from bigfed's transcripts the same day, before this landed: a start bundle can
+# arrive in several attachments, a later one carrying only part, so the types
+# are unioned; a session can carry no bundle at all and says nothing; a session
+# older than its scope's index never had one; and a path-scoped rule loads by
+# the same attachment, typed User, from outside every launch folder.
+if command -v python3 >/dev/null 2>&1 && [ -d "$CC/projects" ]; then
+  out=$(python3 -I -B - "$CC/projects" "$DAYS" "$CFG/agents" "$CFG/settings.json" "$CFG" <<'PY'
+import calendar, glob, json, os, re, subprocess, sys, time
+root, days, agents, settings, cfg = sys.argv[1], float(sys.argv[2]), sys.argv[3], sys.argv[4], os.path.realpath(sys.argv[5])
+since = time.time() - days * 86400
+def epoch(ts):   # a transcript timestamp, 2026-10-12T00:00:00.000Z
+    try: return calendar.timegm(time.strptime(ts[:19], '%Y-%m-%dT%H:%M:%S'))
+    except (TypeError, ValueError): return None
+def born(path):   # when a memory index came to be: its first add in the config's git history, else its mtime
+    rp = os.path.realpath(path)
+    if rp.startswith(cfg + '/'):
+        try:
+            r = subprocess.run(['git', '-C', cfg, 'log', '--diff-filter=A', '--format=%at', '--', os.path.relpath(rp, cfg)],
+                               capture_output=True, text=True, timeout=10)
+            if r.returncode == 0 and r.stdout.split(): return int(r.stdout.split()[-1])
+        except (OSError, ValueError, subprocess.SubprocessError): pass
+    try: return os.stat(path).st_mtime
+    except OSError: return None
+san = lambda p: re.sub(r'[^a-zA-Z0-9\-_]', '-', p)
+V, D = [], []
+def v(n, tag, text, rows, rests): V.append(f"V\t{n}\t{tag}\t{text}\t{rows}\t{rests}")
+def d(n, text): D.append(f"D\t{n}\t{text}")
+R1 = "context-policy.md (loading); skills/restore-order/SKILL.md and tools/census.py; skills/wrap-up/SKILL.md; rules/latex-and-notation.md"
+R2 = "context-policy-questions.md; context-drift-2026-09/run3-2026-09-23.md and memory-scope-2026-09-18.md; context-order-2026-10/vision.md §9"
+R5 = "context-policy.md (what workers receive); agents/Explore.md and Plan.md; skills/restore-order/SKILL.md"
+R13 = "settings.json; skills/restore-order/tools/token_account.py; skills/restore-order/runs/"
+omit = set()
+for f in glob.glob(os.path.join(agents, '*.md')):
+    try:
+        if re.search(r'^omitClaudeMd:\s*true', open(f, encoding='utf-8', errors='replace').read(4000), re.M): omit.add(os.path.basename(f)[:-3])
+    except OSError: pass
+n_main = n_work = recalls = loads = rule_loads = 0
+idx_expected, idx_missing = 0, []
+loads_out, trig = [], {}
+touch_sessions, touch_received, touch_missed = 0, 0, []
+work_total, work_bad = 0, []
+bund_main, oldest = {}, None
+ccache = {}
+def charter_dirs(launch):   # every folder below the launch folder that carries a charter; memory directories skipped
+    if launch not in ccache:
+        out = {}
+        for dp, dn, fn in os.walk(launch):
+            dn[:] = [x for x in dn if x not in ('.git', 'node_modules', 'memory') and not x.startswith('.')]
+            cs = [os.path.join(dp, c) for c in ('CLAUDE.md', 'CLAUDE.local.md') if c in fn]
+            if cs and dp != launch: out[dp] = cs
+        ccache[launch] = out
+    return ccache[launch]
+for scope in sorted(os.listdir(root)):
+    sd = os.path.join(root, scope)
+    if not os.path.isdir(sd): continue
+    has_index = os.path.isfile(os.path.join(sd, 'memory', 'MEMORY.md'))
+    for dp, dn, fn in os.walk(sd):
+        for f in sorted(fn):
+            if not f.endswith('.jsonl') or f == 'journal.jsonl': continue   # the Workflow tool's journal is not a transcript
+            p = os.path.join(dp, f)
+            try: st = os.stat(p)
+            except OSError: continue
+            if oldest is None or st.st_mtime < oldest: oldest = st.st_mtime
+            if st.st_mtime < since: continue
+            worker = '/subagents/' in p
+            cwd0, types, reads, had, sl, last_tool, first = None, None, set(), [], set(), None, None
+            for ln in open(p, encoding='utf-8', errors='replace'):
+                if '"cwd"' not in ln and '"attachment"' not in ln and '"tool_use"' not in ln: continue
+                try: r = json.loads(ln)
+                except Exception: continue
+                if cwd0 is None and isinstance(r.get('cwd'), str): cwd0 = r['cwd']
+                if first is None and isinstance(r.get('timestamp'), str): first = epoch(r['timestamp'])
+                c = (r.get('message') or {}).get('content')
+                if isinstance(c, list):
+                    for b in c:
+                        if not (isinstance(b, dict) and b.get('type') == 'tool_use'): continue
+                        last_tool = b.get('name'); inp = b.get('input')
+                        if not isinstance(inp, dict): continue
+                        fp, cm = inp.get('file_path'), inp.get('command')
+                        if isinstance(fp, str): (reads.add(fp) if last_tool == 'Read' else had.append(fp))
+                        if isinstance(cm, str) and 'CLAUDE' in cm: had.append(cm)
+                if r.get('type') != 'attachment': continue
+                a = r.get('attachment') or {}; t = a.get('type')
+                if t in ('relevant_memories', 'account_memory_recall'): recalls += 1
+                elif t == 'instructions':   # a bundle may arrive in several attachments, a later one carrying part
+                    types = (types or set()) | set(x.get('type') for x in a.get('files', []) if isinstance(x, dict))
+                elif t == 'nested_memory':
+                    path = a.get('path') or ''
+                    sl.add(path); sl.add(os.path.realpath(path)); trig[last_tool] = trig.get(last_tool, 0) + 1
+                    if (a.get('content') or {}).get('type') == 'User': rule_loads += 1; continue   # a path-scoped rule: loaded by the same attachment, from ~/.claude/rules
+                    loads += 1; dd = san(os.path.dirname(path))
+                    if not (dd == scope or dd.startswith(scope + '-')): loads_out.append(f"{scope}/{f}: {path}")
+            if worker:
+                n_work += 1
+                try: at = json.load(open(p[:-6] + '.meta.json')).get('agentType')
+                except Exception: at = None
+                if at is None: d(18, f'not judged, no .meta.json: {scope}/{os.path.relpath(p, sd)}'); continue
+                if at in omit or at == 'fork': continue
+                work_total += 1
+                sid = os.path.basename(p.split('/subagents/', 1)[0])   # the session, for the Workflow tool's agents too (subagents/workflows/<run>/)
+                need = set(bund_main.get(sid) or {'User'})
+                if has_index: need.add('AutoMem')
+                have = types or set()
+                if not have or not need <= have:
+                    work_bad.append(f"{scope}/{os.path.relpath(p, sd)} ({at}): " + ('no start bundle' if not have else 'lacks ' + ', '.join(sorted(need - have))))
+                continue
+            n_main += 1; bund_main[f[:-6]] = types
+            if types is None: d(16, f'no start bundle, not judged: {scope}/{f}')
+            elif has_index:
+                if 'AutoMem' in types: idx_expected += 1
+                else:
+                    b = born(os.path.join(sd, 'memory', 'MEMORY.md'))
+                    if first is not None and b is not None and first < b: d(16, f'not judged, the index is younger than the session: {scope}/{f}')
+                    else: idx_expected += 1; idx_missing.append(f"{scope}/{f}")
+            if cwd0 and os.path.isdir(cwd0):
+                cd = charter_dirs(cwd0); hit = set()
+                for fp in reads:
+                    if not fp.startswith(cwd0 + '/') or '/memory/' in fp: continue
+                    dd = os.path.dirname(fp)
+                    while dd != cwd0 and dd.startswith(cwd0):
+                        if dd in cd:
+                            for ch in cd[dd]:
+                                if ch not in reads and not any(ch in x for x in had): hit.add(ch)
+                            break
+                        dd = os.path.dirname(dd)
+                if hit:
+                    touch_sessions += 1
+                    if hit & sl or {os.path.realpath(h) for h in hit} & sl: touch_received += 1
+                    else: touch_missed.append(f"{scope}/{f}: read under " + ', '.join(sorted(os.path.dirname(h) for h in hit)) + ", never received its charter")
+w = f'{days:g} days'
+if n_main + n_work == 0:
+    for n, rows, rests in ((16, '2, 4, 11', R2), (17, '1', R1), (18, '5, 6', R5)):
+        v(n, 'WARN', f'transcripts: none written in the last {w}; could not determine', rows, rests)
+else:
+    if recalls: v(16, 'FAIL', f"recall in practice (rows 2, 4, 11), {w}: recall fired {recalls} {'time' if recalls == 1 else 'times'} — the index then stops loading at session start", '2, 4, 11', R2)
+    elif idx_missing: v(16, 'FAIL', f'recall in practice (rows 2, 4, 11), {w}: the memory index missing from {len(idx_missing)} of {idx_expected} start bundles whose scope has one', '2, 4, 11', R2)
+    elif n_main == 0: v(16, 'WARN', f'recall in practice (rows 2, 4, 11), {w}: no main session, only workers; could not determine', '2, 4, 11', R2)
+    else: v(16, 'OK', f'recall in practice (rows 2, 4, 11), {w}: 0 recalls in {n_main + n_work} transcripts; the memory index in {idx_expected} of {idx_expected} start bundles whose scope has one', '2, 4, 11', R2)
+    for x in idx_missing: d(16, 'index missing: ' + x)
+    bad = []
+    if loads_out: bad.append(f'{len(loads_out)} of {loads} charter loads outside the launch folder')
+    if touch_missed: bad.append(f"{len(touch_missed)} of {touch_sessions} sessions that read under a charter's folder never received it")
+    rl = f', {rule_loads} rule loads' if rule_loads else ''
+    if bad: v(17, 'FAIL', f'charter loading (row 1), {w}: ' + '; '.join(bad), '1', R1)
+    else: v(17, 'OK', f"charter loading (row 1), {w}: {loads} charter loads, all under the launch folder{rl}; {touch_received} of {touch_sessions} sessions that read under a charter's folder received it", '1', R1)
+    for x in loads_out: d(17, 'outside the launch folder: ' + x)
+    for x in touch_missed: d(17, x)
+    if trig: d(17, 'loads by the tool before them: ' + ', '.join(f'{k} {n}' for k, n in sorted(trig.items(), key=lambda kv: -kv[1])))
+    aside = ', '.join(sorted(omit)) + ' and forks aside' if omit else 'forks aside'
+    if work_total == 0: v(18, 'OK', f'workers (rows 5, 6), {w}: none in the window ({aside})', '5, 6', R5)
+    elif work_bad: v(18, 'FAIL', f'workers (rows 5, 6), {w}: {len(work_bad)} of {work_total} start bundles lack what their session received ({aside})', '5, 6', R5)
+    else: v(18, 'OK', f'workers (rows 5, 6), {w}: {work_total} of {work_total} start bundles carry what their session received ({aside})', '5, 6', R5)
+    for x in work_bad: d(18, x)
+try: period = json.load(open(settings)).get('cleanupPeriodDays')
+except Exception: period = None
+old = time.strftime('%Y-%m-%d', time.localtime(oldest)) if oldest else 'none'
+if period is None: v(19, 'FAIL', 'transcripts (row 13): cleanupPeriodDays is not set in settings.json, so the 30-day default sweeps what the run records and the counts rest on', 'cfg', 'add "cleanupPeriodDays": 365 to settings.json')
+else: v(19, 'OK', f'transcripts kept {period} days (row 13, cleanupPeriodDays); the oldest last written {old}', '13', R13)
+print('\n'.join(V + D))
+PY
+) || out=""
+  if [ -z "$out" ]; then warn "the transcripts: the check itself failed — not verified"
+  else emit "$out"; fi
+elif ! command -v python3 >/dev/null 2>&1; then warn "python3 absent — the transcripts not verified"
+else warn "no transcripts at $CC/projects — could not determine what sessions receive"
+fi
 
 echo
 if [ "$n_fail" -gt 0 ]; then printf '%s%d failing%s, %d unknown\n' "$R" "$n_fail" "$Z" "$n_warn"; exit 1; fi

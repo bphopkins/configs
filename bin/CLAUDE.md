@@ -19,10 +19,23 @@ with a conflict.
   migration; see below.
 - `okular-forward` / `okular-inverse` — the SyncTeX bridge; see below.
 - `context-check` — read-only gauge for the Claude configuration tree, in the
-  `disk-check` shape: nine verdict lines, exit 1 on a fault, 2 on
+  `disk-check` shape: nineteen verdict lines, exit 1 on a fault, 2 on
   could-not-determine, every FAIL naming its repair. The half of that tree's
   integrity a script can decide; `/restore-order` judges the prose and calls this
-  first. Suite: `tests/context-check/run.sh`.
+  first. Since 2026-10-12 its last ten lines watch the ground the routines
+  stand on: premises about Claude Code, read from the installed binary (a
+  literal anchor, then the value beside it; the binary is never started), from
+  the server switches cached in `~/.claude.json`, and from the last 14 days of
+  transcripts (`CONTEXT_CHECK_DAYS`). A FAIL there has no command: it names
+  the texts that rest on the premise and its row in the inventory,
+  `org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md`,
+  and `/restore-order` files it as `moved-premise`. The version the gauge last
+  ran against is his to record in `org/claude-config/claude-version-checked`;
+  the gauge prints the line, and the SessionStart hook says at every start when
+  the installed version differs. The anchors are the vendor's strings; nothing
+  of the configuration is in this file. Suite: `tests/context-check/run.sh`
+  (124 checks, caged since 2026-10-12: a stub binary that would mark itself if
+  started, a stub flag cache and stub transcripts, each premise mutated).
 - `sync-check` — read-only gauge for the Syncthing cluster and the git roles,
   in the `disk-check` shape (2026-10-10, step 3b of
   `org/machines/transport-2026-10/PLAN.md`; the rules it reads are that
@@ -34,8 +47,9 @@ with a conflict.
   needing something, that workstation's own view, since the hub holds
   ciphertext and names what it needs opaquely; a need that outlives a 15 s
   settle with every folder idle is stranded, named with him-2's repair,
-  while a transfer still running is `WAIT`; one known stuck item is carried
-  by name in `KNOWN`, and `DUE` says when it no longer shows, or when a
+  while a transfer still running is `WAIT`; a known stuck item is carried
+  by name in `KNOWN` (none since 2026-10-11, the suite testing the mechanism
+  on a stand-in), and `DUE` says when it no longer shows, or when a
   folder's watcher is dead), `conflicts` (one `find`
   over `~/Desktop` and every folder path: copies under a `.git` and stale
   locks there FAIL, copies in a directory that loads FAIL, the rest DUE),
@@ -54,8 +68,8 @@ with a conflict.
   sync). Exit 0 all
   clear, 1 attention (FAIL, WAIT, DUE), 2 could not determine. The API key is
   read from `config.xml` into a variable and sent as a header, never printed
-  and never on a command line; the file is parsed for the fields needed and a
-  folder's `encryptionPassword` is never extracted; `/rest/config` is never
+  and never on a command line; the file is parsed for the fields needed, and a
+  folder's `encryptionPassword` only as set or unset; `/rest/config` is never
   read. The hub and the other workstation run this same file in its
   `--remote-views` mode from stdin, so the reads have one implementation,
   and every round of the settle reads them afresh. Suite:
@@ -71,16 +85,6 @@ with a conflict.
   `bph_autosave`, sets `nomodifiable`, parks the cursor on a `\command`
   already in the text. Why the cost exists: `nvim/CLAUDE.md` → the
   cold-cache stall.
-- `tabula` — **retired 2026-09-29** and deleted: the font trial it opened
-  (2026-09-15) is `~/Desktop/adelotype`, which took its `<Super>x` on bigfed
-  through its own `tools/launcher.sh bind` (record: adelotype's private `DECISIONS.md`,
-  2026-09-29; tabula's arc and its three declined mechanisms stay in
-  `DECISIONS.md`, 2026-09-15). Its binding was per-machine dconf and outside
-  this repo, and fedxps's `<Super>x` kept `gnome-text-editor` throughout.
-  Since 2026-09-29 `$mod+x` under sway runs adelotype on both machines too,
-  from `sway/config`, with the plain editor on `$mod+Shift+x`; under GNOME
-  the key is adelotype's own `tools/launcher.sh bind`, per machine.
-
 - `screens-off` — locks the session and powers the displays down, on the way
   out of the chair, under GNOME or sway; the first key or mouse movement
   brings them back to the lock screen, nothing else interrupted. Bound to
@@ -201,10 +205,9 @@ State, fingerprints, and ~130MB of build artifacts live in
 `~/.cache/tl-newyear` — machine-local, deliberately unsynced. Builds always
 go there via `-output-directory`, never in-place. `teach-logic/` tracks its
 build artifacts, so an in-place recompile dirties tracked PDFs; `opuscula/`
-carries 285 of them as **Syncthing** content since 2026-09-15
-(`org/machines/syncthing.md`), so one in-place recompile there rewrites all
-285 across three machines and leaves a year of `.stversions` entries on
-nousowl.
+carries its own as **Syncthing** content, so an in-place recompile there
+rewrites the artifacts of every document it builds, on three machines, and
+leaves a year of `.stversions` entries for them on nousowl.
 
 **Known casualty: the *forall x* textbook.** `tabu` v2.9 (unmaintained)
 patches `array.sty` internals, and TL2026's rewritten `array` breaks all
@@ -272,10 +275,8 @@ Standing verdicts (2026-07/08; the full investigation is
   `org/machines/environment.md`). `tests/env/run.sh` pins the login shell's
   output; the live proof is an inverse search from an Okular opened in Files.
   A sway session misses all of this until `sway/wayland-session.desktop` is
-  installed: GDM starts sway with no login shell, so there the
-  desktop-launched case fails as before (measured 2026-09-28; the session
-  file, which re-execs sway through a login shell, is drafted 2026-09-30 —
-  `TODO.md` item 29).
+  installed: there the desktop-launched case fails as before (measured
+  2026-09-28; `TODO.md` item 29).
 
 ## Claude Code configuration linkage
 
@@ -318,16 +319,15 @@ worth keeping in view here:
   not worked around (`docs/claude-config-behaviors-2026-08.md`). Add entries in
   `org/claude-config`, or put global ones in `settings.json`, which the same
   writer does follow through its link.
-- **Both halves of the health check reach inside `~/.claude`, and that is new.**
-  The user-level link pass skips a shared directory that has disappeared —
+- **Both halves of the health check reach inside `~/.claude`.** The user-level
+  link pass skips a shared directory that has disappeared —
   `[ -e "$CFG/$e" ] || continue` — so only the sweep sees the dangling link left
-  behind, and the sweep walks `~/.claude` as well as `~/Desktop` for exactly that
-  reason. `~/.claude/plans` sat broken on both machines for 23 days because
-  nothing did. SessionStart now counts dangling links into the config and says so
-  in both channels; SessionEnd's `--auto` repairs them. An empty shared directory
+  behind, and the sweep walks `~/.claude` as well as `~/Desktop` for exactly
+  that reason. SessionStart counts dangling links into the config and says so in
+  both channels; SessionEnd's `--auto` repairs them. An empty shared directory
   is the cause, since git cannot carry one: `claude-link --apply` drops a
-  `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so a
-  directory visited once does not become a permanent entry. Fixed 2026-09-18.
+  `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so
+  a directory visited once does not become a permanent entry. Fixed 2026-09-18.
 - **`claude-link` reports orphan charters, and SessionStart counts them.** An
   orphan is a `CLAUDE.md` or `CLAUDE.local.md` in a git work tree that git
   ignores and does not track. The global exclude that keeps agent context out

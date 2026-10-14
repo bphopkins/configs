@@ -12,20 +12,22 @@ top.
 GDM starts for a **GNOME** session is a login shell whose environment the whole
 graphical session inherits — so that is how desktop-launched apps get the
 personal PATH and `EDITOR` there, and how bigfed's session sheds Lmod's
-`BASH_ENV` (once: that manager lingers, and the upload never removes a
-variable it already holds, so the first deployment needs
+`BASH_ENV` (once: that manager lingers, and the upload never removes a variable
+it already holds, so the first deployment needs
 `systemctl --user unset-environment BASH_ENV` or a reboot). A **sway** session
-gets no login shell from GDM and none of this (measured on both machines,
-2026-09-28 and 29; the gap is `TODO.md` item 29). `.bashrc`'s early return still keeps `ssh host cmd` and scripts cheap. Both modules are
-idempotent, so the interactive pass re-sourcing them is a no-op. Takes effect
-at a login. **Run `tests/env/run.sh` after any edit to `.bash_profile`,
-`10-env.sh`, `20-path.sh` or `environment.d/`**: it pins the login shell's
-output and the `environment.d` generator's, caged in its own systemd scope.
-**And `tests/shell-opts/run.sh` after any edit to `00-shell-opts.sh`**: the
-same cage, interactive shells against the real system layer, a sandboxed
-history file. **And `tests/prompt/run.sh` after any edit to `30-prompt.sh`**:
-the rendered prompt in every shape a shell here takes, through both terminal
-integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
+started without `sway/wayland-session.desktop` installed gets no login shell
+from GDM and none of this (measured on both machines, 2026-09-28 and 29; the gap
+is `TODO.md` item 29). `.bashrc`'s early return still keeps `ssh host cmd` and
+scripts cheap. Both modules are idempotent, so the interactive pass re-sourcing
+them is a no-op. Takes effect at a login. **Run `tests/env/run.sh` after any
+edit to `.bash_profile`, `10-env.sh`, `20-path.sh` or `environment.d/`**: it
+pins the login shell's output and the `environment.d` generator's, caged in its
+own systemd scope. **And `tests/shell-opts/run.sh` after any edit to
+`00-shell-opts.sh`**: the same cage, interactive shells against the real system
+layer, a sandboxed history file. **And `tests/prompt/run.sh` after any edit to
+`30-prompt.sh`**: the rendered prompt in every shape a shell here takes, through
+both terminal integrations. The cage the three share is `tests/cage.sh`
+(2026-09-23).
 
 ## Module map (sourced in numbered order)
 
@@ -78,7 +80,8 @@ integrations. The cage the three share is `tests/cage.sh` (2026-09-23).
   with `TEXLIVE_YEAR=<year>` — see `bin/CLAUDE.md`, TeX Live release
   upgrades. The bun block is a guarded shim, inert until bun exists. Sourced
   from `.bash_profile` too, so a GNOME session carries the same PATH in the
-  same order (a sway session does not: item 29); this file is PATH's one author.
+  same order, and a sway session where `sway/wayland-session.desktop` is
+  installed (item 29); this file is PATH's one author.
 - `30-prompt.sh` — writes PS1 in full (2026-09-23): a reset, bold and the
   machine colour on `\u@\h`, a plain colon, bold and colour on `\w`, a reset,
   `\$ ` — the shape Fedora's bash-color-prompt package gave it, now stated
@@ -182,10 +185,10 @@ apart:
 
 Guardrails, shared by the single- and all-repo variants:
 
-- **The machine's role (2026-10-10)**: Syncthing carries each repository,
-  `.git` included, between the machines, and bigfed alone commits and pushes
-  (`org/machines/transport-2026-10/rules.md` → fedxps-2). The tracked host
-  file `configs/git/hosts/<hostname>.inc` says which this machine is, read
+- **The machine's role (2026-10-10)**: Syncthing is to carry each repository,
+  `.git` included, between the machines, with bigfed alone committing and
+  pushing (`org/machines/transport-2026-10/rules.md` → fedxps-2). The tracked
+  host file `configs/git/hosts/<hostname>.inc` says which this machine is, read
   two ways and a reader if either says so: by hostname (short, lowercased),
   not through the link `~/.config/git/host.inc` that git itself reads, so a
   rebuilt fedxps refuses before its link exists; and through that link, so
@@ -224,31 +227,29 @@ Guardrails, shared by the single- and all-repo variants:
   every file the vet would have declined (a secret, an oversize file) are
   unstaged, without a prompt, so a commit made by any other route afterwards
   carries none of them. The rest of the batch still pushes.
-- **The push gauge runs before anything is staged (2026-10-10)**: `gpush`
-  and `gpushall` run `sync-check push -q` on each repository before its
-  `add -A` (`rules.md` → bigfed-2; the gauge is `bin/sync-check`,
-  `bin/CLAUDE.md`). For a repository Syncthing carries that means the folder
-  up to date on both machines and the hub, nothing under its `.git` needed
-  in any view, no phantom ref or conflict copy under `.git`, and the other
-  workstation at the same HEAD when it answers; a repository in no
-  Syncthing folder passes at once and in silence, which today is all of
-  them. A refusal (exit 1) skips the repository — `[SKIP] … the push gauge
-  refused` with the gauge's own lines, which name the repair — and the rest
-  of the batch still pushes; there is no override, since the repair is the
-  way through. A cluster that cannot be read (exit 2: the hub, this
-  machine's Syncthing or the other workstation unreadable) pushes this
-  machine's own state under a `[WARN]` that shows the gauge's lines, his
-  word of 2026-10-10 (the campaign's `PLAN.md` → settled 34): nothing from
-  the other workstation can arrive meanwhile, it writes no `.git`, and a
-  skip would only leave GitHub's copy ageing for the outage. A machine
-  without the gauge on `PATH` pushes with one hint naming `stow-all`,
-  because refusing every push for a missing tool would stop the backup —
-  except a repository with a Syncthing marker (`.stfolder`) at its root or
-  above it, the one case the gauge exists for, which is skipped. On a pass
-  the gauge's one line for a carried repository prints unindented above
-  the repository's own. Suite: `tests/gsync/test-role.sh`, section 5,
-  against a stub gauge; every suite stubs it, since the real one reads this
-  machine's Syncthing.
+- **The push gauge runs before anything is staged (2026-10-10)**: `gpush` and
+  `gpushall` run `sync-check push -q` on each repository before its `add -A`
+  (`rules.md` → bigfed-2; the gauge is `bin/sync-check`, `bin/CLAUDE.md`). For a
+  repository Syncthing carries that means the folder up to date on both machines
+  and the hub, nothing under its `.git` needed in any view, no phantom ref or
+  conflict copy under `.git`, and the other workstation at the same HEAD when it
+  answers; a repository in no Syncthing folder passes at once and in silence. A
+  refusal (exit 1) skips the repository — `[SKIP] … the push gauge refused` with
+  the gauge's own lines, which name the repair — and the rest of the batch still
+  pushes; there is no override, since the repair is the way through. A cluster
+  that cannot be read (exit 2: the hub, this machine's Syncthing or the other
+  workstation unreadable) pushes this machine's own state under a `[WARN]` that
+  shows the gauge's lines, his word of 2026-10-10 (the campaign's `PLAN.md` →
+  settled 34): nothing from the other workstation can arrive meanwhile, it
+  writes no `.git`, and a skip would only leave GitHub's copy ageing for the
+  outage. A machine without the gauge on `PATH` pushes with one hint naming
+  `stow-all`, because refusing every push for a missing tool would stop the
+  backup — except a repository with a Syncthing marker (`.stfolder`) at its root
+  or above it, the one case the gauge exists for, which is skipped. On a pass
+  the gauge's one line for a carried repository prints unindented above the
+  repository's own. Suite: `tests/gsync/test-role.sh`, section 5, against a stub
+  gauge; every suite stubs it, since the real one reads this machine's
+  Syncthing.
 - **New-path vetting**: newly added paths — including rename targets and
   typechanges (the listing runs with rename detection off), matched per path
   component so a directory named `.env/` or `credentials/` is caught — larger
@@ -313,14 +314,14 @@ To add a new repo, append its path to `REPOS_DESKTOP` — note it spans *all*
 the Desktop repos, not just this one. Commit messages follow
 `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`.
 
-**Regression suite:** `tests/gsync/run-all.sh` (418 checks in five suites,
-sandboxed under `$TMPDIR`, no network). Run it after **any** edit to
-`50-git-sync.sh`, and after an edit to `git/hosts/`, whose files the role
-suite reads. Each suite also runs standalone and tests the checkout it
-lives in; `tests/gsync/README.md` has suite scope and the harness conventions
-new suites must follow (`passed: N  failed: M` last line, registration in
-`run-all.sh`, a `uname` stub so the machine's own host file never reaches a
-suite, a `sync-check` stub so the real gauge never does).
+**Regression suite:** `tests/gsync/run-all.sh` (five suites, sandboxed under
+`$TMPDIR`, no network). Run it after **any** edit to `50-git-sync.sh`, and after
+an edit to `git/hosts/`, whose files the role suite reads. Each suite also runs
+standalone and tests the checkout it lives in; `tests/gsync/README.md` has suite
+scope and the harness conventions new suites must follow (`passed: N  failed: M`
+last line, registration in `run-all.sh`, a `uname` stub so the machine's own
+host file never reaches a suite, a `sync-check` stub so the real gauge never
+does).
 
 ## Leaving a machine (`40-aliases.sh`, added 2026-10-10)
 
@@ -350,13 +351,12 @@ shell still holding that alias would otherwise alias-expand the name in the
 definition at `reload` and die with a syntax error, losing every alias after
 it in silence (reproduced and closed 2026-10-10; the suite's last case).
 
-**Regression suite:** `tests/leave/run.sh` (53 checks; caged), with
-`systemctl`, the gauge, `uname` and `ps` stubbed and the log in a sandbox:
-the suspend and the power-off on OK, the log's header and lines, the refusal
-on FAIL and on WARN with the gauge's line in the log, `-f` and `-i`, usage on
-a bad flag, the maintenance process and the stale lock on a power-off and
-their irrelevance to a suspend, no gauge on PATH, no log directory. Run it
-after any edit to these two.
+**Regression suite:** `tests/leave/run.sh` (caged), with `systemctl`, the gauge,
+`uname` and `ps` stubbed and the log in a sandbox: the suspend and the power-off
+on OK, the log's header and lines, the refusal on FAIL and on WARN with the
+gauge's line in the log, `-f` and `-i`, usage on a bad flag, the maintenance
+process and the stale lock on a power-off and their irrelevance to a suspend, no
+gauge on PATH, no log directory. Run it after any edit to these two.
 
 ## Reboot verdict (`40-aliases.sh`, added 2026-08-08)
 

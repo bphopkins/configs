@@ -3407,3 +3407,85 @@ recorded as given: `bye` was built on a rule's naming of it and on a yes
 that carried a question, before he had grasped what it was. The standing
 correction is in the `org` scope's memory,
 `an-approval-with-a-question-is-not-yet-approval`.
+
+## The sync marker: the Syncthing indicator's second front end on the bar — 2026-10-11
+
+**Question.** He asked whether his Syncthing indicator, a GNOME Shell
+extension, could double as an indicator in Sway. It can: the extension's
+engine imports nothing from the Shell and runs unmodified as a plain `gjs`
+process, so a second front end beside the Shell's prints Waybar's
+custom-module JSON, and the bar runs it from where the extension is installed.
+The extension's own repository, private, records that build; this entry
+records what the bar took.
+
+**What the bar took** (`waybar/config`, `custom/sync`; `waybar/style.css`,
+`#custom-sync`).
+
+- *Hidden while this machine is up to date*, in the shape of the split and
+  pointer markers, with `hide-empty-text`. Otherwise one word: `syncing`,
+  `sync paused` (no remote device online), `sync error`, `sync off` (Syncthing
+  not running or not answering) or `sync ?` (the marker cannot run). The
+  tooltip lists every folder and device with its state; a click opens
+  Syncthing's web interface.
+- *Plain text for `syncing` and `sync paused`, the urgent fill for `sync off`,
+  `sync error` and `sync ?`*: the first two are on their way or have no peer,
+  the other three are states to leave, the urgent colour's meaning across the
+  desktop. The desktop suite pins `#custom-sync.off` among the urgent sites.
+- *Outermost on the right, before the pointer marker.* Both markers grow the
+  right-hand group into the empty middle, so whichever is outermost appears
+  without moving anything; the sync marker comes and goes with every sync,
+  the pointer marker rarely.
+- *`exec-on-event` off*, a click being no reason to run the script again;
+  `restart-interval` 5, as the other markers.
+- *It never exits non-zero of its own accord*: Waybar clears a module whose
+  script does, and a cleared marker would read as up to date. It holds its
+  first line until the state has settled, so a bar start flashes no false
+  alarm.
+
+**Seen before it went live.** The preview recipe of 2026-10-01: a caged,
+headless nested sway, Waybar started inside it with a minimal config, one
+stacked bar per state, `grim` taking the strip. The five visible states drew
+in the bar's own box and type, Waybar at 58 MiB. The desktop suite passed on a
+patched copy (51, the live-layer check skipping on a copy), then 52 of 52 on
+the tree; the bar reloaded on SIGUSR2 and started the marker as its child.
+
+**Declined.** A tray icon (StatusNotifierItem) beside nm-applet, with the
+GNOME icons and a menu: feasible – Waybar links libdbusmenu and hides passive
+items – but a GTK3 process and a menu protocol to keep correct, outside the
+nested-Waybar recipe, and a picture where every other marker on this bar is a
+word. Syncthing Tray: not in Fedora's enabled repositories, and a replacement
+for the extension rather than a second front end to it.
+
+⚠ **A machine without the extension installed** runs an exec that fails, and
+the hidden module then reads as up to date: the extension goes on before this
+config reaches a machine (`waybar/CLAUDE.md`).
+
+## The gauge watches the ground: `context-check`'s premise checks, and the version on record — 2026-10-12
+
+Step 7 of the order-of-context build, landed in the `configs` chat at his
+word; the design and the full record are
+`org/claude-config/context-order-2026-10/vision.md` (§9; "Built", step 7 and
+its amendment), the inventory of premises `battery/dev-4-rented-ground.md`
+beside it.
+
+- **What landed here.** `bin/context-check`: ten verdict lines after the nine
+  — the Claude Code version on record; five premises read from the installed
+  binary and the flag cache; four from the last 14 days of transcripts — each
+  FAIL naming the texts that rest on the premise and its inventory row, since
+  a moved premise has no command. The binary is read by literal anchor and
+  never started. The version on record is
+  `org/claude-config/claude-version-checked`, written by hand after a run,
+  every write manual; the SessionStart hook in `org` compares it with the
+  install at every start. Suites: `tests/context-check/run.sh`, caged, 38 to
+  124 checks against a stub binary, a stub flag cache and stub transcripts,
+  each premise mutated; `tests/claude/run.sh` 141 to 153 for the hook's line.
+- **Verified** on 2.1.296 on both machines, bigfed over SSH with the script on
+  stdin; bigfed's transcripts taught the check three shapes before it landed,
+  recorded in `vision.md`. Amended the same day: the version line's fix made
+  paste-ready, its caveat moved to a note line.
+- **Declined here.** A per-touch inference of missed charter loads, as the
+  inventory described it untried: it cries wolf on a charter the model read
+  itself in the same batch and on touches inside a memory directory; the
+  per-session check is what landed, 4 of 4 on fedxps since September. A
+  `/workflows/` path exclusion for workers: it dropped real Workflow agents,
+  so journals are skipped by name instead.

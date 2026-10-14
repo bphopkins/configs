@@ -190,6 +190,18 @@ check "named"                                has "$out" '^\[FAIL\] alpha: needs 
 check "  exit 1"                             is "$r" 1
 
 echo "== sync: the known stuck item, named, reads OK; anything else fails =="
+# KNOWN is empty since its last item was repaired (2026-10-11), so these cases run on a copy of the
+# gauge carrying a stand-in entry, the repaired one's; the substitution must match once.
+KGAUGE="$SB/sync-check-known"
+python3 -I - "$GAUGE" "$KGAUGE" <<'PY' || { echo "sync-check tests: no 'KNOWN = [' line to insert the stand-in after -- not running" >&2; exit 2; }
+import sys
+src, dst = sys.argv[1:3]
+t = open(src).read()
+assert t.count("\nKNOWN = [\n") == 1
+open(dst, "w").write(t.replace("\nKNOWN = [\n", '\nKNOWN = [\n    {"label": "adelotype-data", "on": "bigfed", "path": "log", "since": "2026-09-30",\n     "note": "a stand-in: the item repaired 2026-10-11"},\n', 1))
+PY
+chmod +x "$KGAUGE"
+REAL_GAUGE=$GAUGE GAUGE=$KGAUGE
 be fedxps
 K='fedxps.folders.f3.label="adelotype-data"'
 scenario "$K" 'bigfed.folders.f3.completion.HUB.needItems=1' 'bigfed.folders.f3.completion.HUB.names=["log"]' 'nousowl.folders.f3.completion.BIG.needItems=1' 'nousowl.folders.f3.completion.BIG.names=["M.syncthing-enc/QE/OPAQUE"]'
@@ -214,6 +226,7 @@ check "the known item no longer showing anywhere: DUE, delete its line" has "$ou
 check "  fix names KNOWN"                     has "$out" 'delete its line from KNOWN'
 check "  exit 1"                             is "$r" 1
 check "  the other folders OK, the label alone decides" has "$out" '^\[ OK \] alpha: up to date'
+GAUGE=$REAL_GAUGE
 scenario "$K"; touch "$SB/ssh/nousowl/down"
 check "  with the hub unread, no such verdict" lacks "$(run sync)" 'no longer shows'
 scenario 'fedxps.folders.f1.watchError="failed to setup inotify handler. Please increase inotify limits"'

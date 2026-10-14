@@ -87,17 +87,6 @@ carried the module (the module itself had been rendered against fedxps's
 system layer over ssh the evening of session four: mint, 32 without
 `COLORTERM`, bold alone under `NO_COLOR`).
 
-*Corrected 2026-08-17.* The `90-nix.sh` sentence above previously read "kept ready for
-Carnap development even though nix isn't installed" — false when written (2026-07-26),
-since nix had been on bigfed for seventeen months by then. It was written from fedxps,
-where nix genuinely is absent, and generalised without checking the other machine. The
-same claim appeared in `90-nix.sh` and `CLAUDE.md` and was corrected there on
-2026-08-17; **this third restatement was missed by that sweep and caught a day later**,
-which is the argument for the `grep -rn` step whenever a restated fact changes. Note the
-failure mode is not staleness but *unverified generalisation across machines*: a
-two-machine setup makes "on either machine" the easiest sentence to write and the
-hardest to check.
-
 ---
 
 ## 7. A dedicated secret scan across the repos
@@ -567,7 +556,7 @@ assembled and overwritten at every shell start; only a slot ahead of
 
 ---
 
-## 26. Eleven of the nineteen suites run without a cage
+## 26. Nine of the twenty-one suites run without a cage
 
 - [ ] Give every suite under `tests/` its own systemd scope, as
   `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
@@ -579,20 +568,22 @@ was caged from its start, 2026-09-28; a fifth, `desktop`, since 2026-09-30,
 on the stock budget, which it fits twentyfold: about 23 MiB and 17 tasks,
 measured.)* *(Three more were caged from their start: `screens-off` and
 `sway-pointer`, 2026-10-03, and `sway-equalize`, 2026-10-06; counted
-2026-10-06, eight of nineteen are caged.)* The other eleven start no
-scope, and nothing in their directories mentions one: `claude`,
-`context-check`, `disk`, `french-logic`, `gsync`, `live-server`,
-`nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`, `term-bench`. Four
-of them are the run-after-an-edit suites the root `CLAUDE.md` names (`claude`,
-`context-check`, `gsync`, `snipgen`), so until this lands that charter and the
-rule disagree about them. `desktop` is the suite the rule's incident came from:
+2026-10-06, eight of nineteen are caged.)* *(`claude` caged 2026-10-06;
+`leave` and `sync-check` caged from their start, 2026-10-10; `context-check`
+caged 2026-10-12, when its suite grew the premise checks; counted 2026-10-12,
+twelve of twenty-one are caged.)* The other nine start no scope, and nothing
+in their directories mentions one: `disk`, `french-logic`, `gsync`,
+`live-server`, `nvim-latency`, `nvim-syntax`, `reboot-verdict`, `snipgen`,
+`term-bench`. Two of them are the run-after-an-edit suites the root
+`CLAUDE.md` names (`gsync`, `snipgen`), so until this lands that charter and
+the rule disagree about them. `desktop` is the suite the rule's incident came from:
 on 2026-08-13 its nested sway spawned a Waybar that grew to 9.2 GB, and the OOM
 kill took down the WezTerm scope it had been placed in, closing every window
 there (the comment above its bar-stripping `sed`). *(Caged 2026-09-30, with
 every spawn point stripped or disabled.)* And a Claude Code session measured on fedxps the
 same day ran inside its terminal window's own scope,
 `app-gnome-ghostty-<pid>.scope`, with `memory.max` at `max`, so a runaway in
-any of the twelve, run from such a session, lands where that incident did.
+any of the nine, run from such a session, lands where that incident did.
 
 **One budget does not fit them.** `cage` hard-codes `MemoryMax=512M`,
 `MemorySwapMax=0`, `TasksMax=256`, `RuntimeMaxSec=120`, `TimeoutStopSec=10` and
@@ -644,17 +635,20 @@ fedxps measured 2026-09-29, logged into sway through GDM: the same chain
 on the system-default PATH, `EDITOR` present only because `environment.d` sets
 it. One fix, both machines. Record: `org/machines/environment.md` §6.
 
-**2026-09-30: the fix is drafted.** `sway/wayland-session.desktop`, tracked
-and installed by hand as `/usr/local/share/wayland-sessions/sway.desktop`,
-re-execs sway through a login shell (GDM starts a session with no shell and
-offers no user-level hook; the login shell under GNOME is gnome-session's own
-re-exec, not GDM's), and `exec dbus-update-activation-environment --systemd
-PATH` in `sway/config` hands the PATH to D-Bus-activated apps and the user
-units. Open until installed on both machines and a sway terminal shows
-`~/bin` on `PATH`. Closure list, the sites that state the gap:
-`sway/CLAUDE.md` (setup and PATH bullets), `bin/CLAUDE.md` (the header and
-the okular-inverse paragraph), `CLAUDE.md`, `bash/CLAUDE.md`,
-`environment.d/10-editor.conf`, `org/machines/environment.md` §6, this item.
+**2026-09-30: the fix is drafted.** `sway/wayland-session.desktop`, tracked and
+installed by hand as `/usr/local/share/wayland-sessions/sway.desktop`, re-execs
+sway through a login shell (GDM starts a session with no shell and offers no
+user-level hook; the login shell under GNOME is gnome-session's own re-exec, not
+GDM's), and `exec dbus-update-activation-environment --systemd PATH` in
+`sway/config` hands the PATH to D-Bus-activated apps and the user units. Open
+until installed on both machines and a sway terminal shows `~/bin` on `PATH`.
+fedxps's half is done: on 2026-10-12 its sway ran under
+`gdm-wayland-session … bash -l -c 'exec /usr/bin/sway'`, the installed file
+identical to the tracked one, `~/bin` on the user manager's `PATH`; bigfed's is
+in item 30. Closure list, the sites that state the gap: `sway/CLAUDE.md` (setup
+and PATH bullets), `bin/CLAUDE.md` (the header and the okular-inverse
+paragraph), `CLAUDE.md`, `bash/CLAUDE.md`, `environment.d/10-editor.conf`,
+`org/machines/environment.md` §6, this item.
 
 ---
 
@@ -788,19 +782,39 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
   `org/machines/transport-2026-10/` (Syncthing carries every repository's
   `.git`; bigfed alone pushes) runs by that campaign's `PLAN.md`, each chat
   launched from the kickoff line its step names, and the rules by its
-  `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same
-  day): the host files `git/hosts/`, the role and the conflict-copy refusal
-  in `50-git-sync.sh`, the export in `10-env.sh`; and at step 3b the same
-  day (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its
-  four lines and `tests/sync-check`, and the push gauge in `gpush` and
-  `gpushall`. Still to come on this side, in the plan's order: `stow-all`
-  without its pull and the arrival lines (ws-8), the reader's own plugin
-  lock (fedxps-5), `byebye` asking the gauge (bigfed-3), the conflict-copy
-  skip in `.bashrc` (ws-4), `init.defaultRefFormat` (ws-6), the test suites
-  building outside the tree (ws-9), `claude-link`'s lock and confinement
-  (ws-12 to ws-14), the `tests/sync` rig, and `tests/gsync/test-two-machine.sh`
-  retired (5a). Do none of it from here: the campaign chats carry the
-  evidence and the record.
+  `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same day):
+  the host files `git/hosts/`, the role and the conflict-copy refusal in
+  `50-git-sync.sh`, the export in `10-env.sh`; and at step 3b the same day
+  (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its four lines
+  and `tests/sync-check`, and the push gauge in `gpush` and `gpushall`. Still to
+  come on this side, in the plan's order: `stow-all` without its pull and the
+  arrival lines (ws-8), the reader's own plugin lock (fedxps-5), the
+  conflict-copy skip in `.bashrc` (ws-4), `init.defaultRefFormat` (ws-6), the
+  test suites building outside the tree (ws-9), `claude-link`'s lock and
+  confinement (ws-12 to ws-14), the `tests/sync` rig, and
+  `tests/gsync/test-two-machine.sh` retired (5a). Do none of it from here: the
+  campaign chats carry the evidence and the record.
+
+## 36. Two suite defects found by the 2026-10-12 restore-order run
+
+Found in passing by the documentation audit of 2026-10-12 (its record:
+`org/claude-config/skills/restore-order/runs/2026-10-12-1822-fedxps-configs.md`,
+rows CFG-96 and CFG-97); the charters that named the first suite as the pattern
+were corrected the same day. Due when either suite is next touched; the chat
+that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
+`nested-sway-harness-must-assert-its-socket`.
+
+- [ ] `tests/sway-split/run.sh` neither asserts `loaded_config_file_name`
+  before its first command nor stops its nested sway by its scope — it ends
+  with `swaymsg exit` (:37, :206). Its SWAYSOCK is absolute and exported on its
+  own line, so as written it cannot reach the live session; bring it to the
+  rule all the same, as `tests/desktop/run.sh` and `tests/sway-equalize/run.sh`
+  already are.
+- [ ] `tests/screens-off/run.sh` fails 7 of 43 when `TMPDIR` is long: its stub
+  sockets under `$TMPDIR` exceed AF_UNIX's 108-byte path limit (`OSError:
+  AF_UNIX path too long`); 43/43 with the default. Put the sockets under a
+  short path (`/tmp/claude-1000/…` or a `mktemp -d -p /tmp`), and say so in
+  the cage prelude if the fix belongs there.
 
 ## Closed
 

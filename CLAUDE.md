@@ -43,7 +43,7 @@ a package without a charter keeps its detail in its config's own comments
 | bash | `~` | module detail, git-sync guardrails + suite, reboot verdict, disk pair, the stow guard |
 | wezterm | `~` | *(no charter — the config file carries its own)* |
 | ghostty | `~/.config/ghostty` | *(no charter — the config file carries its own)* |
-| alacritty | `~/.config/alacritty` | *(no charter — font settings only, deliberately unthemed)* |
+| alacritty | `~/.config/alacritty` | *(no charter — font settings only)* |
 | tmux | `~/.config/tmux` | *(no charter — the config file carries its own)* |
 | nvim | `~/.config/nvim` | LaTeX toolchain + VimTeX traps, completion gates, snippets, persistence, auto-save, lockfile, suites |
 | sway | `~/.config/sway` | desktop-suite charter: binding grammar, locking, verification method, cross-config wiring |
@@ -55,7 +55,7 @@ a package without a charter keeps its detail in its config's own comments
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
 | bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
-| fontconfig | `~/.config/fontconfig` | TeX Live's ~1,500 families exposed to GUI apps; the pinned year, the three rejectfont blocks |
+| fontconfig | `~/.config/fontconfig` | TeX Live's fonts exposed to GUI apps; the pinned year, the three rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10)* |
 | environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own)* |
 
@@ -84,9 +84,8 @@ Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) →
 2026-10-10 the commands read this machine's role from
 `git/hosts/<hostname>.inc` and refuse what it reads, and the push commands
 ask the gauge `bin/sync-check` before staging a repository Syncthing
-carries (`bash/CLAUDE.md` → Git sync); today both machines write and no
-repository is carried, and the transport campaign
-(`org/machines/transport-2026-10/PLAN.md`) is what changes that.
+carries (`bash/CLAUDE.md` → Git sync); the transport campaign
+(`org/machines/transport-2026-10/PLAN.md`) is what changes the host files.
 
 **The re-source is not optional when a pull adds a stow package.**
 `60-stow.sh` is itself a bash file, so a pull that adds a package updates it
@@ -111,7 +110,8 @@ in-progress guards, offline handling, hints — and their scope live in
 
 **Run `tests/claude/run.sh` after any edit to `bin/claude-link` or to
 `org/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
-`bin/context-check`.** Both are sandboxed under `$TMPDIR` and touch nothing real.
+`bin/context-check`.** Both are caged (`tests/cage.sh`) and sandboxed under
+`$TMPDIR`, and touch nothing real.
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh` or to
 `git/hosts/`.**
@@ -121,9 +121,9 @@ three fixture Syncthing instances on loopback, a stub `ssh` and `uname`;
 nothing real is reached.
 
 **Run `tests/leave/run.sh` after any edit to `bye` or `byebye` in
-`bash/.bashrc.d/40-aliases.sh`.** Caged; 53 checks against a stubbed
-`systemctl`, gauge, `uname` and `ps`; nothing real is suspended or powered off
-(`bash/CLAUDE.md` → "Leaving a machine").
+`bash/.bashrc.d/40-aliases.sh`.** Caged, against a stubbed `systemctl`, gauge,
+`uname` and `ps`; nothing real is suspended or powered off (`bash/CLAUDE.md` →
+"Leaving a machine").
 
 **Run `tests/env/run.sh` after any edit to `bash/.bash_profile`, `10-env.sh`,
 `20-path.sh` or `environment.d/`.** It pins what a login shell hands the
@@ -189,26 +189,22 @@ machine), `40` aliases (`sysupgrade`/`reboot-check`, `tl-upgrade`, `reload`,
 `clam`, `85` `disk-check`/`disk-fix`, `90` nix (load-bearing on bigfed).
 `.bash_profile` sources `10` and `20` first, for login shells — the one GDM
 starts for a GNOME session included, which is how that session gets the
-personal PATH and `EDITOR` (2026-09-23); a sway session gets no login shell,
-see `bash/CLAUDE.md` and `TODO.md` item 29. Everything else — module hazards, the reboot-verdict
+personal PATH and `EDITOR` (2026-09-23); a sway session GDM starts gets a
+login shell only through `sway/wayland-session.desktop`, installed by hand
+(`TODO.md` item 29). Everything else — module hazards, the reboot-verdict
 contract, the disk pair, the suites — is in `bash/CLAUDE.md`.
 
 ## Visual Consistency
 
-TokyoNight "night" across Neovim, WezTerm and Ghostty — and since 2026-09-20
-the three no longer agree, deliberately. Neovim stays on folke's
-tokyonight.nvim by standing preference. Ghostty is the surface where tweaks
-are made: it runs a fork of the palette,
-`ghostty/themes/tokyonight-night-bph`, itself based on folke's *generated*
-theme rather than the one Ghostty ships, which flattens the bright set into a
-copy of the normal set. WezTerm keeps the shipped built-in unchanged, as the
-control a tweak can be judged against. The shell prompt is off the palette
-entirely on all three machines (`bash/CLAUDE.md`). Waybar is not on the theme
-at all: its five colours are `#000000`, `#ffffff`, `#9e9e9e`, the desktop's
-one accent `#0088FF` (sway's; wofi's since 2026-09-29, forest green `#228B22`
-before; mako's and swaylock's since they were written, 2026-08-13) and the
-shared `#d08770` urgent, plus two pale tints on the battery value since
-2026-09-30, `#ffb3b3` on battery and `#b3ffb3` on the mains.
+TokyoNight "night" across Neovim, WezTerm and Ghostty — and since 2026-09-20 the
+three no longer agree, deliberately. Neovim stays on folke's tokyonight.nvim by
+standing preference. Ghostty is the surface where tweaks are made: it runs a
+fork of the palette, `ghostty/themes/tokyonight-night-bph`, itself based on
+folke's *generated* theme rather than the one Ghostty ships, which flattens the
+bright set into a copy of the normal set. WezTerm keeps the shipped built-in
+unchanged, as the control a tweak can be judged against. The shell prompt is off
+the palette entirely on all three machines (`bash/CLAUDE.md`). Waybar is not on
+the theme at all.
 
 Source Code Pro font in three of the four terminals (WezTerm, Ghostty,
 Alacritty): 12pt in WezTerm and Alacritty, 12.5pt in Ghostty since
@@ -262,3 +258,11 @@ languages — see `sway/CLAUDE.md` before changing it.
 - **`french-logic.sty` is a shared, snippet-coupled dependency** — editing it
   affects the dissertation/teaching repos; see `latex/CLAUDE.md` before
   touching it.
+- **bphopkins.net describes this repo.** Its computing page states the daily
+  terminal and the second one, the desktop on both machines, the Neovim
+  completion design and the fresh-machine install; its LaTeX page the sync
+  helpers; and both link into this repo by path, to the nvim package, the latex
+  README and the terminal benchmark in `docs/`
+  (`bphopkins.net/src/computing.body.html`, `src/latex.body.html`). A change
+  to any of those re-opens the sentence that states it; `make check` there
+  resolves every link into this clone (2026-10-13).

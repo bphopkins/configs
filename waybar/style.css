@@ -185,6 +185,19 @@ window#waybar {
   color: @bg;
 }
 
+/* The sync marker (custom/sync in waybar/config), shown only while this
+   machine is not known to be up to date. "syncing" and "sync paused" in plain
+   text: on their way, or no peer to sync with. The urgent fill for
+   "sync off" (Syncthing not running or not answering), "sync error" and
+   "sync ?" (the marker itself cannot run): states to leave (2026-10-11). Its
+   box is the right-hand modules' shared rule above. */
+#custom-sync.off,
+#custom-sync.error,
+#custom-sync.broken {
+  background: @urgent;
+  color: @bg;
+}
+
 /* Right-side modules: colour only; their box is the shared rule above, and
    their values take their natural width (waybar/config). Until 2026-09-30 the
    formats padded each value to a fixed field ({volume:>3}), which put up to

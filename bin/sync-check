@@ -76,8 +76,6 @@ import xml.etree.ElementTree as ET
 # named and FAILs on any other item (pilot.md -> P9). Delete a line once the
 # item is repaired.
 KNOWN = [
-    {"label": "adelotype-data", "on": "bigfed", "path": "log", "since": "2026-09-30",
-     "note": "a directory made on both machines at once; org/machines/transport-2026-10/pilot.md -> P9"},
 ]
 
 # Directories whose files load as standing instructions or configuration on

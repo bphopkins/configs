@@ -43,6 +43,12 @@ mkworld() {
   printf 'shared mem\n'                          > "$w/cfg/memory/-shared/s.md"
   printf -- '- [s](s.md) — h\n'                  > "$w/cfg/memory/-shared/MEMORY.md"
   printf '{"permissions":{"allow":["Bash(a)"]}}\n' > "$w/cfg/repos/rep/settings.local.json"
+  # a stub Claude install in the native installer's layout, and the version
+  # context-check last ran against, for the hook's version line (2026-10-12)
+  mkdir -p "$w/home/.local/bin" "$w/home/.local/share/claude/versions"
+  printf 'stub\n' > "$w/home/.local/share/claude/versions/9.9.9"
+  ln -s "$w/home/.local/share/claude/versions/9.9.9" "$w/home/.local/bin/claude"
+  printf '9.9.9 2026-10-12 test\n' > "$w/cfg/claude-version-checked"
   echo "$w"
 }
 run() { local w=$1; shift
@@ -235,6 +241,36 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   printf '#!/bin/sh\necho "[FAIL] y: z"; exit 1\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "both kinds of warning: one systemMessage carries both" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if (\"claude-link:\" in m and \"| sync-check exit 1\" in m) else 1)"'
+fi
+
+echo "== the hook compares Claude Code with the version context-check last ran against (2026-10-12) =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  hasmsg() { echo "$1" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"; }
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "on record: the model is told the version"   '[[ "$j" == *"Claude Code 9.9.9, the version context-check last ran against."* ]]'
+  not_ "  and the user is not interrupted"          'hasmsg "$j"'
+  printf '1.2.3 2026-09-01 test\n' > "$w/cfg/claude-version-checked"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a newer install: the user is told it changed, then and now" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if \"Claude Code has changed since context-check last ran: 1.2.3 then, 9.9.9 now; run \" in m else 1)"'
+  yes_ "  and the model, as a warning"              '[[ "$j" == *"WARNING: Claude Code has changed since context-check last ran: 1.2.3 then, 9.9.9 now"* ]]'
+  printf '10.0.0 2026-12-01 test\n' > "$w/cfg/claude-version-checked"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a record newer than the install is said honestly" '[[ "$j" == *"context-check last ran against Claude Code 10.0.0, newer than the 9.9.9 installed here"* ]]'
+  yes_ "  in both channels"                         'hasmsg "$j"'
+  rm "$w/cfg/claude-version-checked"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "no record: asks for one, naming the version" '[[ "$j" == *"context-check has no Claude Code version on record; run "*"and record 9.9.9 as it says."* ]]'
+  yes_ "  in both channels"                         'hasmsg "$j"'
+  rm "$w/home/.local/bin/claude"
+  j=$(PATH=/usr/bin:/bin HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "no install: says the version could not be read" '[[ "$j" == *"version could not be read from its install path"* ]]'
+  yes_ "  valid JSON throughout"                    'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
+  w=$(mkworld); run "$w" --apply >/dev/null
+  ln -s "$w/cfg/gone" "$w/home/.claude/plans"; printf '1.2.3\n' > "$w/cfg/claude-version-checked"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "with a claude-link warning: one systemMessage carries both" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if (\"claude-link:\" in m and \"| Claude Code has changed since\" in m) else 1)"'
+  yes_ "the binary is read, never started"          '! grep -qE "^[^#]*claude --version" "$HOOKS/session-start.sh"'
 fi
 
 echo "== ephemeral scopes are never harvested or linked =="

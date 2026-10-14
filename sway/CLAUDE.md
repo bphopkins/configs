@@ -19,8 +19,10 @@ have goes in that machine's layer, `hosts/<hostname>.conf`, included after
 every setting (silent when missing; the suite checks this machine's is linked
 and validates each layer inlined, since `sway --validate` passes an error
 inside an include; 2026-09-30). Either machine may be in GNOME or Sway:
-**check which compositor is live before testing** (`pgrep -x gnome-shell` /
-`pgrep -x sway`; `swaymsg` fails confusingly under GNOME). Most work here can
+**check which compositor is live before testing** (`pgrep -u "$USER" -x
+gnome-shell` / `pgrep -x sway`: the login screen runs a `gnome-shell` of its
+own, as `gdm-greeter`, while nobody is logged in; `swaymsg` fails confusingly
+under GNOME). Most work here can
 be done against `sway --validate` plus a headless nested sway (below)—
 everything except what needs a real seat (lid behaviour, cursor- and
 notification-related work; locking, idle and wake-on-input were rehearsed in
@@ -42,7 +44,7 @@ a nested sway with a virtual keyboard on 2026-10-03, memory
   /usr/local/share/wayland-sessions/sway.desktop`, so GDM starts sway from a
   login shell and the session inherits the personal PATH (`TODO.md` item 29;
   the file's header has the reasoning and the undo). Installed on fedxps
-  2026-09-30, to take effect at its next login; bigfed pending.
+  2026-09-30; bigfed pending.
 
 ## The config
 
@@ -83,17 +85,15 @@ a nested sway with a virtual keyboard on 2026-10-03, memory
   a contract: `config` is authoritative, the card may lag or be deleted at
   will, and the suite deliberately does not check the two against each other
   (drift check offered and declined 2026-08-22).
-- **One accent across the desktop** (2026-09-29): sway's `$accent #0088FF`
-  is Waybar's, wofi's, rofi's, mako's border and swaylock's ring too (mako
-  and swaylock blue since 2026-08-13, rofi since 2026-09-30), meaning where
-  you are or what is selected; the suite pins all six sites (2026-09-30).
-  `#d08770` keeps meaning needs-you: waiting on you before you go on, an
-  alert or a state to leave (the resize mode; a pending split since
-  2026-10-01, its edge and its bar marker both; the pointing devices off,
-  since 2026-10-03, as a bar marker). `$forest #228B22` sits
-  unused in `config`, and `@forest` in the three launcher and bar sheets, so
-  the old green can be swapped back in one word — don't clean them up; mako
-  and swaylock would need the same swap by hand.
+- **One accent across the desktop** (2026-09-29): sway's `$accent #0088FF` is
+  Waybar's, wofi's, rofi's, mako's border and swaylock's ring too (mako and
+  swaylock blue since 2026-08-13, rofi since 2026-09-30), meaning where you are
+  or what is selected; the suite pins all six sites (2026-09-30). `#d08770`
+  keeps meaning needs-you: waiting on you before you go on, an alert or a state
+  to leave. `$forest #228B22` sits unused in `config`, and `@forest` in the
+  three launcher and bar sheets, so the old green can be swapped back in one
+  word — don't clean them up; mako and swaylock would need the same swap by
+  hand.
 - **The split cue is the urgent colour** (2026-10-01; white from
   2026-09-28): `client.focused`'s indicator, which sway paints on the edge
   where the next window will open while the focused window sits alone in its
@@ -126,7 +126,7 @@ a nested sway with a virtual keyboard on 2026-10-03, memory
   config languages — sway `client.urgent` (border and, since 2026-09-30, an
   urgent tab's fill) and, since 2026-10-01, `client.focused`'s indicator, the
   split edge; Waybar's urgent workspace, `#battery.critical`, the `resize`
-  mode pill, the split marker and the pointer marker; mako's
+  mode pill, the split marker, the pointer marker and the sync marker; mako's
   `[urgency=critical]` border, swaylock's wrong-password ring. Deliberately
   not derived from one another;
   changing it means changing all four. The suite pins the drawn keys.
@@ -205,7 +205,7 @@ to that terminal (2026-09-30).
 
 | gone | costs | shows as | restore |
 |---|---|---|---|
-| Waybar, split and pointer markers | clock, battery, workspaces | no bar; `$mod+w` does nothing | `$mod+Ctrl+c` |
+| Waybar, split, pointer and sync markers | clock, battery, workspaces | no bar; `$mod+w` does nothing | `$mod+Ctrl+c` |
 | swaybg | the wallpaper (seen only on an empty workspace) | black there | `$mod+Ctrl+c` |
 | swayidle | the lock before suspend: a shut lid reopens unlocked | no swayidle line in `systemd-inhibit --list` | `swaymsg exec "swayidle -w before-sleep 'swaylock -f' lock 'swaylock -f'"` |
 | the screens-off watcher (bigfed) | the wake after `$mod+Ctrl+b`: the displays stay dark at a touch | both monitors dark, the lock up behind them | `~/bin/screens-off` again, over SSH, then touch again; or `swaymsg output '*' power on` on the session's socket |
@@ -241,8 +241,8 @@ the body gap:
   ```bash
   swaymsg -- '<cmd>' | jq -r 'any(.[]?; (.error // "") | test("Unknown/invalid command"))'
   ```
-- **The whole file**: a headless nested sway, in a cage, on a short socket —
-  the pattern of `tests/sway-split/run.sh`. From a GNOME session too:
+- **The whole file**: a headless nested sway, in a cage, on a short socket.
+  From a GNOME session too:
 
   ```bash
   cd <workdir>   # a short path: sway and swaymsg truncate SWAYSOCK at 107 bytes

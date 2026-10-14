@@ -37,7 +37,7 @@
 	# readerRepo repeats for more than one repository; its value is a name
 	# under ~/Desktop, and a value that names no directory is warned about
 	# and refuses nothing.
-	#readerRepo = nousowl
+	readerRepo = nousowl
 	# At the cutover (5a) readerRepo leaves and fedxps reads every repository:
 	#role = reader
 

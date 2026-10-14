@@ -7,7 +7,8 @@ GUI applications: 212 families before, 1,398 after, measured 2026-09-06.
 - **Nothing is copied.** fontconfig reads the fonts where TeX Live already put
   them, under `/usr/local/texlive/2026/texmf-dist/fonts/`. There is no second
   copy on disk and no `~/.local/share/fonts` involvement.
-- **The TeX Live year is pinned, and is the only line needing maintenance.**
+- **The TeX Live year is pinned, in both `<dir>` lines and every glob of the
+  first two blocks, and is the one value needing maintenance.**
   `bash/.bashrc.d/20-path.sh` discovers the year deliberately; fontconfig
   cannot, because its `<dir>` elements take no globs and listing several years
   at once would expose two releases' fonts simultaneously — both 2025 and 2026
@@ -56,26 +57,17 @@ breaks and nothing disappears. The third is a guard, not a snapshot.
   icon sets, printer's flowers. Verified to drop zero language-bearing faces.
   The heuristic is imperfect in the other direction: TeX math fonts such as
   `drmmi` and `drmsy` do declare coverage and still reach the menus. Delete the
-  block to get all 1,555 families back.
+  block to get back every family it suppresses.
 - **Web-font wrappers (2 globs, added 2026-09-23)** reject every `.woff` and
-  `.woff2` under any `<dir>`: 42 files in `gentium-sil` and `logix`, each a
-  wrapper around a face the same directory ships as `.ttf` or `.otf`, so the
-  menus lose nothing. The block exists because of what another program's
-  scanner made of them. Chrome and Brave each carry a copy of fontconfig
-  inside the browser binary, beside the system library they also link (the
-  library's internal strings are in both binaries and not in Ghostty, an
-  ordinary client), and Chrome's became newer than Fedora's with the update to 154 on
-  2026-09-22. At its first start the next morning it rewrote every cache
-  under `~/.cache/fontconfig` in its own format, version 12 with
-  compatibility symlinks for versions 9 to 11, where Fedora's 2.17.0 writes
-  real version-9 files, and its entries for the 42 wrappers carried no
-  family. fontconfig scores a font that lacks the requested element as a
-  perfect match, so every request, `sans-serif` included, resolved to
-  `Gentium-Bold.woff`, and every fresh Ghostty died at surface creation with
-  `FontconfigNoMatch` while the running process, which had loaded its fonts
-  at 08:59, kept opening windows. The rule neutralised the bad cache in place
-  before `fc-cache -f` replaced it. What Chrome's scanner does with a WOFF
-  was not pursued; the record is `DECISIONS.md`, 2026-09-23.
+  `.woff2` under any `<dir>`, each a wrapper around a face the same directory
+  ships as `.ttf` or `.otf`, so the menus lose nothing. The block is a guard
+  against another program's scanner: Chrome and Brave each carry their own copy
+  of fontconfig, and Chrome's, newer than Fedora's, once rewrote every cache
+  under `~/.cache/fontconfig` in its own format with no family in these files'
+  entries. fontconfig scores a font that lacks the requested element as a
+  perfect match, so every request resolved to one `.woff` and every fresh
+  Ghostty died with `FontconfigNoMatch`. The rule holds whichever scanner wrote
+  the cache last; the record is `DECISIONS.md`, 2026-09-23.
 
 ## Verifying
 
@@ -93,12 +85,8 @@ system fonts, and the two differ there (fedxps has a
 hand-placed Latin Modern in `~/.local/share/fonts`; bigfed has the `texlive-lm`
 and `jetbrains-mono-fonts` RPMs). Compare **2,275 faces under
 `/usr/local/texlive`** instead: that is what this file controls. The two
-machines agree on it only once both carry the same globs — on 2026-09-06 they
-read 2,351 apiece, then bigfed dropped to 2,317 when the Anonymous Pro,
-Atkinson Mono and IBM Plex Mono globs were added, and fedxps followed on its
-next sync; then bigfed to 2,275 with the wrapper block of 2026-09-23, fedxps
-following at its next sync. A one-sided figure means the config has not
-travelled yet.
+machines agree on it only once both carry the same globs; a one-sided figure
+means the config has not travelled yet.
 
 The generic aliases are the thing to watch: adding ~2,900 fonts must not move
 `serif`, `sans-serif` or `monospace`.

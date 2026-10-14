@@ -773,7 +773,7 @@ client.focused_tab_title $accent  $accent #ffffff
 #   focused work. This is the same posture as leaving Caffeine on under GNOME,
 #   which he does on bigfed too (confirmed 2026-09-30: nothing turns off
 #   unless he says so; his `screens-off` command is the on-demand form,
-#   GNOME-only so far). Note that the swayidle line under "Includes and
+#   on sway since 2026-10-03). Note that the swayidle line under "Includes and
 #   startup" is NOT a timer -- it has no `timeout` clause at all, only
 #   `before-sleep` and `lock`, so it can never blank or lock mid-work.
 #
@@ -809,7 +809,7 @@ include hosts/$(uname -n).conf
 # /usr/local/share/wayland-sessions/sway.desktop) starts sway from a login
 # shell, so sway and everything it launches inherit the personal PATH. This
 # hands the same PATH to the user manager and to D-Bus, for what starts as a
-# service instead -- a DBusActivatable app opened from wofi (Nautilus, Loupe,
+# service instead -- a DBusActivatable app opened from rofi (Nautilus, Loupe,
 # Ghostty's entry) and the user units -- as gnome-session does under GNOME.
 # Without the session file sway's PATH is the system's, and this changes
 # nothing (TODO.md item 29).

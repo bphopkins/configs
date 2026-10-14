@@ -1,10 +1,11 @@
 # swaylock -- stow-managed from ~/Desktop/configs/swaylock/config.
 # Edit it here, not at ~/.config/swaylock/config (that is a symlink into this repo).
 #
-# Why this file exists rather than inline flags: swaylock is invoked from two
-# places in sway/config -- the $mod+Ctrl+l binding and swayidle's before-sleep
-# hook -- so inline colours would have to be kept in sync by hand. Both call
-# sites are a bare `swaylock -f`; everything cosmetic lives here.
+# Why this file exists rather than inline flags: swaylock is invoked from three
+# places -- the $mod+Ctrl+l binding and swayidle's before-sleep hook in
+# sway/config, and bin/screens-off -- so inline colours would have to be kept in
+# sync by hand. Every call site is a bare `swaylock -f`; everything cosmetic
+# lives here.
 #
 # Syntax (man 1 swaylock): long option names with no leading dashes, `=` for
 # options that take an argument, bare name for flags, and no trailing spaces

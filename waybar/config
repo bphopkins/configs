@@ -18,10 +18,12 @@
   // nothing already showing moves when it appears (2026-09-30).
   "modules-left":   ["sway/workspaces", "custom/split", "sway/mode"],
   "modules-center": ["clock"],
-  // custom/pointer first on the right: anchored there, the group grows into
-  // the empty middle when the marker appears, and nothing already showing
-  // moves (2026-10-03), the same reason sway/mode is last on the left.
-  "modules-right":  ["custom/pointer", "tray", "pulseaudio", "backlight", "battery"],
+  // The two markers first on the right: anchored there, the group grows into
+  // the empty middle when one appears, and nothing already showing moves
+  // (2026-10-03), the same reason sway/mode is last on the left. custom/sync
+  // outermost, since it comes and goes with every sync: its comings and
+  // goings move nothing (2026-10-11).
+  "modules-right":  ["custom/sync", "custom/pointer", "tray", "pulseaudio", "backlight", "battery"],
 
   // all-outputs: the one bar lists both monitors' workspaces, and style.css
   // marks the one showing on the other screen (button.visible). On fedxps
@@ -55,6 +57,25 @@
     "return-type": "json",
     "restart-interval": 5,
     "hide-empty-text": true
+  },
+
+  // The sync marker: hidden while this machine is up to date; "syncing",
+  // "sync paused", "sync error", "sync off" or "sync ?" otherwise, each a
+  // class (style.css, #custom-sync). It is the syncthing-indicator
+  // extension's second front end, run from where that extension is
+  // installed, so GNOME and Sway read one engine; a click opens Syncthing's
+  // web interface. It prints a line at every change, holds its first until
+  // the state has settled, and never exits non-zero on its own account:
+  // Waybar clears a module that does, and a cleared marker reads as up to
+  // date. restart-interval brings it back if it ends; exec-on-event off, as
+  // a click is no reason to run it again.
+  "custom/sync": {
+    "exec": "gjs -m ~/.local/share/gnome-shell/extensions/syncthing-indicator@bphopkins.net/waybar.js",
+    "on-click": "gjs -m ~/.local/share/gnome-shell/extensions/syncthing-indicator@bphopkins.net/waybar.js open",
+    "return-type": "json",
+    "restart-interval": 5,
+    "hide-empty-text": true,
+    "exec-on-event": false
   },
 
   // sway's binding mode, shown only outside the default mode. swaybar shows
