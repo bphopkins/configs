@@ -234,6 +234,10 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   printf '#!/bin/sh\necho "[WARN] x: Syncthing is not answering"; exit 2\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "a WARN (exit 2): reaches the user"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if \"sync-check exit 2\" in json.load(sys.stdin).get(\"systemMessage\",\"\") else 1)"'
+  printf '#!/bin/sh\necho "[ OK ] a: up to date"; echo "[DUE] adelotype-data: up to date; the known item log no longer shows stranded on bigfed"; echo "       fix: delete its line from KNOWN"; echo; echo "1 needing attention, 0 unknown"; exit 3\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a DUE alone (exit 3, which the gates pass): still reaches the user" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if \"sync-check exit 3: [DUE] adelotype-data: up to date\" in m else 1)"'
+  yes_ "  and the model, as a warning"      '[[ "$j" == *"WARNING: sync-check exit 3"* ]]'
   printf '#!/bin/sh\nsleep 6\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "a hung gauge: cut at 4 s and said so" '[[ "$j" == *"did not answer within 4 s"* ]]'

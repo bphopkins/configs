@@ -41,7 +41,8 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   step 3b the same day) against a stub `sync-check` — a refusal skips the
   repository with the gauge's lines shown, nothing staged, the rest of the
   batch pushed; an unreadable cluster pushes under a WARN with the lines
-  shown (his word, 2026-10-10); the gauge run before `add -A`
+  shown (his word, 2026-10-10); a DUE alone (exit 3) pushes with its line
+  shown and its step hinted (his word, 2026-10-14); the gauge run before `add -A`
   with the repository's path, a pass shown or silent, the gauge missing from
   `PATH` hinted once and pushed, or skipped where a `.stfolder` marker sits
   at or above the repository, a reader's refusal coming first; and, read-only, the

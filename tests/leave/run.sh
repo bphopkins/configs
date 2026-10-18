@@ -52,6 +52,8 @@ reset() { : > "$SB/systemctl.log"; : > "$SB/gauge.log"; unset STUB_LEAVE_RC STUB
 OKTEXT='[ OK ] nousowl: up to date\n[ OK ] readings: up to date\n[ OK ] teaching: up to date\n[ OK ] personal: up to date\n[ OK ] opuscula: up to date\n[ OK ] adelotype-data: up to date -- the known item log stays stranded on bigfed\n[ OK ] finances: up to date\n[ OK ] adelotype: up to date\n\nall clear'
 FAILTEXT='[ OK ] readings: up to date\n[FAIL] nousowl: stranded on bigfed: docs/a.md | docs/b.md\n       fix: edit each listed path on fedxps\n\n1 needing attention, 0 unknown'
 WARNTEXT="[WARN] nousowl: nousowl's view unread: ssh: connect to host nousowl port 22: No route to host\n       fix: ssh -o BatchMode=yes nousowl true\n\n0 needing attention, 1 unknown"
+DUETEXT='[ OK ] nousowl: up to date\n[ OK ] readings: up to date\n[DUE] adelotype-data: up to date; the known item log no longer shows stranded on bigfed\n       fix: delete its line from KNOWN in bin/sync-check (configs): nothing carries it any more\n[ OK ] finances: up to date\n\n1 needing attention, 0 unknown'
+DUEFAILTEXT='[DUE] alpha: up to date; the watcher reports: failed to setup inotify handler\n       fix: raise fs.inotify.max_user_watches\n[FAIL] nousowl: stranded on bigfed: docs/a.md\n       fix: edit each listed path on fedxps\n\n2 needing attention, 0 unknown'
 
 echo "== bye on fedxps, the gauge all clear =="
 reset; be fedxps; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT"
@@ -92,6 +94,29 @@ out="$(bye 2>&1)"; rc=$?
 check "WARN (could not determine): exit 1"            [ "$rc" -eq 1 ]
 check "WARN: nothing suspended"                       [ ! -s "$SB/systemctl.log" ]
 check "WARN: logged as refused with the WARN line"    contains "$(tail -1 "$SB/pilot/log-fedxps.md")" "[WARN] nousowl: nousowl's view unread"
+
+echo "== a DUE alone (the gauge's exit 3) leaves; it never decides a refusal (settled 37) =="
+reset; be bigfed; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT"
+out="$(byebye 2>&1)"; rc=$?
+check "DUE alone: exit 0"                             [ "$rc" -eq 0 ]
+check "DUE alone: powered off, once"                  [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
+check "DUE alone: the DUE line shown"                 contains "$out" "[DUE] adelotype-data: up to date"
+check "DUE alone: no SKIP line"                       lacks "$out" "[SKIP]"
+check "DUE alone: the reading is the DUE line, neither refused nor forced" contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| [DUE] adelotype-data: up to date; the known item log no longer shows stranded on bigfed | byebye |"
+reset; be fedxps; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT"
+out="$(bye 2>&1)"; rc=$?
+check "DUE alone, bye: exit 0"                        [ "$rc" -eq 0 ]
+check "DUE alone, bye: suspended"                     [ "$(cat "$SB/systemctl.log")" = "suspend" ]
+reset; be bigfed; export STUB_LEAVE_RC=1 STUB_LEAVE_TEXT="$DUEFAILTEXT"
+out="$(byebye 2>&1)"; rc=$?
+check "a DUE above a FAIL: refused"                   [ "$rc" -eq 1 ]
+check "  nothing powered off"                         [ ! -s "$SB/systemctl.log" ]
+check "  the reading is the FAIL that decided, not the DUE printed first" contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| [FAIL] nousowl: stranded on bigfed: docs/a.md | byebye, refused |"
+reset; be bigfed; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT" STUB_PS_TEXT=' 4242 git maintenance run --auto --no-quiet'
+out="$(byebye 2>&1)"; rc=$?
+check "a DUE alone with git maintenance running: refused" [ "$rc" -eq 1 ]
+check "  nothing powered off"                         [ ! -s "$SB/systemctl.log" ]
+check "  the reading is the maintenance FAIL"         contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| FAIL git maintenance running | byebye, refused |"
 
 echo "== -f and -i =="
 reset; be bigfed; export STUB_LEAVE_RC=1 STUB_LEAVE_TEXT="$FAILTEXT"

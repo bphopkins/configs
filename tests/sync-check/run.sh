@@ -16,7 +16,7 @@
 # lines on this machine, read-only, and asserts only that tags and exit
 # status agree.
 #
-# Run after any edit to bin/sync-check (~55 s; the cage stops it at 120 s, so a
+# Run after any edit to bin/sync-check (~60 s; the cage stops it at 120 s, so a
 # section that doubles the count needs a second cage). SYNC_CHECK=<path> runs the suite
 # against another copy of the gauge, which is how it was mutation-tested (the
 # breaks are listed in pilot/build-gauge.md). Last line follows the tests/gsync
@@ -224,7 +224,7 @@ scenario "$K" 'fedxps.folders.f3.label="adelotype-data"'
 out=$(run sync); r=$(rc sync)
 check "the known item no longer showing anywhere: DUE, delete its line" has "$out" '^\[DUE\] adelotype-data: up to date; the known item log no longer shows stranded on bigfed'
 check "  fix names KNOWN"                     has "$out" 'delete its line from KNOWN'
-check "  exit 1"                             is "$r" 1
+check "  exit 3: up to date, attention due (settled 37)" is "$r" 3
 check "  the other folders OK, the label alone decides" has "$out" '^\[ OK \] alpha: up to date'
 GAUGE=$REAL_GAUGE
 scenario "$K"; touch "$SB/ssh/nousowl/down"
@@ -233,7 +233,18 @@ scenario 'fedxps.folders.f1.watchError="failed to setup inotify handler. Please 
 out=$(run sync); r=$(rc sync)
 check "a dead watcher: DUE, up to date but seen only by scans" has "$out" '^\[DUE\] alpha: up to date; the watcher reports: failed to setup inotify'
 check "  fix names the inotify limit"        has "$out" 'fs.inotify.max_user_watches'
-check "  exit 1"                             is "$r" 1
+check "  exit 3"                             is "$r" 3
+# a DUE decides only alone: beside a WARN the run is 2, beside a FAIL 1
+scenario 'fedxps.folders.f1.watchError="failed to setup inotify handler. Please increase inotify limits"' 'nousowl.folders.f3.completion.BIG.needItems=1'; touch "$SB/ssh/bigfed/down"
+out=$(run sync); r=$(rc sync)
+check "a DUE beside a WARN: both shown"      has "$out" '^\[WARN\] gamma: 1 item at the hub for bigfed, unverified'
+check "  the DUE too"                        has "$out" '^\[DUE\] alpha: up to date; the watcher reports'
+check "  exit 2: the WARN decides"           is "$r" 2
+scenario 'fedxps.folders.f1.watchError="failed to setup inotify handler. Please increase inotify limits"' 'fedxps.folders.f2.needTotalItems=2' 'fedxps.folders.f2.needNames=["a.txt","b.txt"]'
+out=$(run sync); r=$(rc sync)
+check "a DUE beside a FAIL: both shown"      has "$out" '^\[FAIL\] nousowl: needs 2 items that do not arrive'
+check "  the DUE too"                        has "$out" '^\[DUE\] alpha: up to date; the watcher reports'
+check "  exit 1: the FAIL decides"           is "$r" 1
 
 echo "== sync: the other workstation unreachable, or asleep =="
 be fedxps; scenario 'nousowl.folders.f3.completion.BIG.needItems=1'; touch "$SB/ssh/bigfed/down"
@@ -432,7 +443,7 @@ rm -f "$N/.git/refs/heads/main.sync-conflict-20261009-162229-GE3DRZ3" "$N/.git/i
 rm -rf "$HOME/Desktop/org/claude-config" "$HOME/Desktop/configs/environment.d" "$HOME/Desktop/other" "$HOME/.local/share/adelotype/log/fedxps.sync-conflict-20261009-195347-7Z3LCI7.jsonl"
 echo o > "$HOME/Desktop/alpha/notes.sync-conflict-20261009-195347-7Z3LCI7.md"
 out=$(run conflicts); r=$(rc conflicts)
-check "one copy elsewhere alone: DUE and exit 1" is "$r" 1
+check "one copy elsewhere alone: DUE and exit 3" is "$r" 3
 check "  the other two lines OK"             is "$(grep -c '^\[ OK \]' <<<"$out")" 2
 rm -f "$HOME/Desktop/alpha/notes.sync-conflict-20261009-195347-7Z3LCI7.md"
 mkdir -p "$HOME/Desktop/locked"; echo x > "$HOME/Desktop/locked/notes.sync-conflict-20261009-195347-7Z3LCI7.md"; chmod 000 "$HOME/Desktop/locked"
@@ -564,6 +575,17 @@ check "  fedxps's HEAD read over ssh under GIT_OPTIONAL_LOCKS=0" has "$(cat "$SB
 out=$(run push -q nousowl)
 check "-q: the folder repository still gets its line" has "$out" '^\[ OK \] nousowl: folder nousowl up to date'
 check "  but no summary"                     lacks "$out" 'all clear'
+scenario 'bigfed.folders.f2.watchError="failed to setup inotify handler. Please increase inotify limits"'
+out=$(run push nousowl); r=$(rc push nousowl)
+check "a DUE alone on the folder: the push line's own checks run and its OK line prints (settled 37)" has "$out" '^\[ OK \] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps'
+check "  the DUE shown"                      has "$out" '^\[DUE\] nousowl: up to date; the watcher reports'
+check "  exit 3"                             is "$r" 3
+cp "$HOME/Desktop/nousowl/.git/refs/heads/main" "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261009-162229-GE3DRZ3"
+out=$(run push nousowl); r=$(rc push nousowl)
+check "a DUE never excuses a phantom ref: FAIL" has "$out" '^\[FAIL\] nousowl: 1 phantom ref'
+check "  exit 1"                             is "$r" 1
+rm "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261009-162229-GE3DRZ3"
+scenario
 echo "== push: the age of what GitHub lacks =="
 echo more > "$HOME/Desktop/nousowl/more.txt"; git -C "$HOME/Desktop/nousowl" add -A; git -C "$HOME/Desktop/nousowl" commit -qm more
 git -C "$SB/ssh/fedxps/home/Desktop/nousowl" pull -q 2>/dev/null; git -C "$SB/ssh/fedxps/home/Desktop/nousowl" reset -q --hard "$(git -C "$HOME/Desktop/nousowl" rev-parse HEAD)" 2>/dev/null
@@ -734,7 +756,7 @@ if [ "$LIVE_GOL" = __unset__ ]; then unset GIT_OPTIONAL_LOCKS; else export GIT_O
 unset GIT_CONFIG_NOSYSTEM
 for line in conflicts guard; do
   out=$("$GAUGE" "$line" 2>&1); r=$?
-  if grep -qE '^\[(FAIL|WAIT|DUE)\]' <<<"$out"; then want=1; elif grep -q '^\[WARN\]' <<<"$out"; then want=2; else want=0; fi
+  if grep -qE '^\[(FAIL|WAIT)\]' <<<"$out"; then want=1; elif grep -q '^\[WARN\]' <<<"$out"; then want=2; elif grep -q '^\[DUE\]' <<<"$out"; then want=3; else want=0; fi
   check "live $line: exit $r matches its tags" is "$r" "$want"
 done
 

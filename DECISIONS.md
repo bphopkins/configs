@@ -3489,3 +3489,56 @@ beside it.
   per-session check is what landed, 4 of 4 on fedxps since September. A
   `/workflows/` path exclusion for workers: it dropped real Workflow agents,
   so journals are skipped by name instead.
+
+## A DUE alone passes the leave and push gates — 2026-10-14
+
+His word in a fedxps chat (`org/machines/transport-2026-10/PLAN.md` →
+settled 37, the reasoning there), after a stale `KNOWN` line had refused
+`byebye` on bigfed three times: the item's 2026-10-11 repair deleted the line
+on fedxps, and the deletion reached bigfed by git only today.
+
+- **What landed here.** `bin/sync-check` exits 3 when its only flags are DUE
+  lines, every folder up to date with attention due; 1 is FAIL or WAIT, and a
+  WARN beside a DUE is 2. A DUE no longer makes a folder's verdict false, so
+  under one the push line's own checks still run and its OK line prints.
+  `_leave` in `40-aliases.sh` leaves on 3 with the DUE line as the logged
+  reading, and a refusal logs the FAIL, WAIT or WARN that decided it, even
+  below a DUE printed first; `_gsync_push_repo` in `50-git-sync.sh` pushes
+  on 3 as on a pass and queues the DUE as a hint. The session-start hook is
+  unchanged: it reports every status but 0 to both channels, so a DUE still
+  reaches the next chat.
+- **Suites.** `tests/sync-check/run.sh` 257 to 268 checks (the DUE
+  statuses, a DUE beside a WARN and beside a FAIL, the push line under a
+  DUE, a DUE beside a phantom ref); `tests/leave/run.sh` 53 to 66;
+  `tests/gsync/test-role.sh` 234 to 239; `tests/claude/run.sh` 153 to 155.
+  Every new case fails against the code before the change, the hook's two
+  against a copy of the hook reading exit 3 as all clear, and passes after;
+  the other four gsync suites pass unchanged.
+- **Declined here.** A DUE as a refusal, as `bye` and `byebye` were built:
+  it trained `-f`, which passes a real FAIL as readily. `_leave` and `gpush`
+  each reading the tags in place of a new status: two callers would
+  interpret the gauge, where its exit status is the contract.
+
+## The page-flip line kept — 2026-10-17
+
+Item 32's rule was his, set 2026-09-30: keep `output eDP-1 max_render_time 10`
+if the journal's count of `Page-flip failed on output eDP-1` falls, drop it if
+not. Measured 2026-10-17 on fedxps over the whole user journal, which holds
+every boot since 2026-08-19.
+
+- **Before the line:** 46 on 2026-08-22, 28 on 2026-09-05, 105 on 2026-09-29
+  and 168 on 2026-09-30, the last at 17:06 that day. The item's own figures
+  (127, 86, 27 and 46) were per boot; these are per day, so the two do not
+  sum alike.
+- **After it:** none. Seven sway sessions of substance in October — the boots
+  of 10-01, 10-03, 10-08, 10-11, 10-12, 10-13 and 10-14, told from GNOME
+  boots by `waybar`'s journal lines against `gnome-shell`'s — and every boot
+  between them logged zero.
+- **Method:** `journalctl --user -o short-iso | grep 'Page-flip failed' | cut -c1-10 | sort | uniq -c`
+  for the per-day count; `journalctl --user -b <N> _COMM=waybar | wc -l`
+  beside `_COMM=gnome-shell` for the compositor each boot ran.
+
+Kept. The comment above the line in `sway/config` states the verdict; D18 of
+`docs/sway-audit-2026-09-30/report.md` is annotated. Not measured: the line's
+stated cost, a frame that takes sway over 10 ms to composite showing one
+refresh late; nothing of the kind was seen.

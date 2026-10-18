@@ -351,9 +351,13 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # -- the laptop before its lid closes, bigfed before it goes dark -- and each
 # writes the reading as one line into this machine's own file of the pilot's
 # log, so the log keeps itself (one file per machine: two machines appending
-# to one git-synced file would be a merge conflict). On a writer (bigfed-1) a
-# running `git maintenance`, or its lock under any rotation repository, refuses
-# too: a power-off would cut a repack short, and the hub would carry the halves.
+# to one git-synced file would be a merge conflict). A DUE alone -- the
+# gauge's exit 3, every folder up to date with attention due -- leaves, the
+# DUE line logged as the reading (2026-10-14, the pilot's PLAN.md -> settled
+# 37); a refusal logs the FAIL, WAIT or WARN that decided it. On a writer
+# (bigfed-1) a running `git maintenance`, or its lock under any rotation
+# repository, refuses too: a power-off would cut a repack short, and the hub
+# would carry the halves.
 # Flags: -f leaves whatever the gauge says, logged as forced; -i is systemctl's
 # --ignore-inhibitors. Without the gauge on PATH (a machine not yet stowed)
 # they act as the plain commands did, with one hint. LEAVE_LOG_DIR overrides
@@ -386,9 +390,14 @@ _leave() {
       n="$(grep -c -E '^\[ OK \] [^:]+: up to date' <<<"$out")"
       reading="OK, $n folders"
     else
-      line="$(grep -v -E '^\[ OK \]|^[[:space:]]*$|needing attention|all clear' <<<"$out" | head -1)"
+      # the line that decided: a FAIL, WAIT or WARN before any DUE printed
+      # above it, since a DUE decides only alone
+      line="$(grep -m1 -E '^\[(FAIL|WAIT|WARN)\]' <<<"$out")"
+      [[ -n "$line" ]] || line="$(grep -v -E '^\[ OK \]|^[[:space:]]*$|needing attention|all clear' <<<"$out" | head -1)"
       reading="${line:-the gauge exited $rc}"
     fi
+    # 3: up to date with attention due, a DUE and nothing worse -- leaves
+    ((rc == 3)) && rc=0
     # bigfed-1, before a power-off only: no repack cut short. A suspend cuts
     # nothing, so bye skips this. REPOS_DESKTOP comes from 50-git-sync.sh,
     # loaded after this file and present by the time anyone types byebye.

@@ -12,6 +12,7 @@
   -h   this text                                       repository in no folder
 
 Exit: 0 all clear . 1 something is wrong, or not yet true . 2 could not determine
+      . 3 up to date with attention due: DUE lines and nothing worse
 
 The gauge of org/machines/transport-2026-10 (rules.md: ws-1, ws-2, fedxps-3,
 bigfed-2; pilot/build-gauge.md), built 2026-10-10 at the pilot's step 3b in the
@@ -48,7 +49,10 @@ Tag semantics, as in disk-check:
   [WAIT]  not yet: syncing, paused    [DUE]   attention, nothing broken
   [WARN]  could not determine -- never silently assumed healthy
 Every line that is not OK prints the paste-ready command or the step that
-clears it (rules.md -> him-2 for the stranded cases).
+clears it (rules.md -> him-2 for the stranded cases). A DUE prints only for a
+folder otherwise up to date, so a run whose only flags are DUE lines exits 3,
+which `bye`, `byebye` and the push gauge in `gpush` pass, the DUE shown
+(2026-10-14; org/machines/transport-2026-10/PLAN.md -> settled 37).
 
 Known stuck items are carried by name until repaired, each a FAIL otherwise:
 see KNOWN below. SYNC_CHECK_SETTLE (seconds, default 15) is how long a need
@@ -151,10 +155,12 @@ class Out:
                 print("       %s" % l)
 
     def exit_code(self):
-        if self.fail or self.wait or self.due:
+        if self.fail or self.wait:
             return 1
         if self.warn:
             return 2
+        if self.due:
+            return 3    # up to date, attention due: the gates pass it (settled 37)
         return 0
 
     def summary(self):
@@ -834,7 +840,8 @@ def unresolved(r):
 
 def verdict(cl, r, f, settled, ok_line=True):
     """Print one folder's verdict line(s) from a reading taken after the settle;
-    with ok_line False the OK line is left to the caller (the push line's own)."""
+    with ok_line False the OK line is left to the caller (the push line's own).
+    True when the folder reads up to date, under a DUE as well."""
     label = r["label"]
     me = cl.local["myID"]
     myname = cl.local["names"].get(me, short_hostname())
@@ -946,7 +953,9 @@ def verdict(cl, r, f, settled, ok_line=True):
     elif notes or known_notes:
         OUT.det(*(known_notes + notes))
     OUT.det(*r["detail"])
-    return not failures and not waits and not warns and not dues
+    # a DUE is attention, never a refusal (settled 37): the folder reads up to
+    # date, so a caller's own checks go on and its OK line still prints
+    return not failures and not waits and not warns
 
 
 def check_folders(inst, folders, settle=None, ok_line=True):

@@ -727,16 +727,6 @@ through the shared config; nothing was measured there. Record:
   background). ~3.6 MB of the repo's 9.2 MB is this directory, which is not a stow
   package.
 
-## 32. The page-flip line on trial
-
-- [ ] Count `Page-flip failed on output eDP-1` per day before and after
-  `output eDP-1 max_render_time 10` (2026-09-30): 127, 86, 27 and 46 in the
-  four boots before it. Keep the line if the count falls; drop it if not, and
-  record either way. `journalctl --user -b -N --no-pager | grep -c 'Page-flip
-  failed'` for boot -N.
-
----
-
 ## 33. Ghostty's key for moving a tab into its own window
 
 - [ ] When the ghostty rpm moves past 1.3.1, bind `move_tab_to_new_window`
@@ -821,6 +811,10 @@ that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
 One line per closed item — verdict, date, pointer. Full notes and post-mortems
 are in `DECISIONS.md` under the same item numbers.
 
+- **32. The page-flip line on trial** — kept: 105 and 168 failures on the two
+  days before `output eDP-1 max_render_time 10`, none in the seventeen days
+  after it, across seven sway sessions and every GNOME boot between them.
+  Closed 2026-10-17 → `DECISIONS.md`, the page-flip entry of that date.
 - **27. `screens-off` under sway on bigfed** — one script for both desktops:
   under sway it locks, then starts a one-shot swayidle that powers the
   displays down a second after the seat falls quiet and back on at the first

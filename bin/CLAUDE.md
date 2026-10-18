@@ -64,9 +64,12 @@ with a conflict.
   marker sits at or above it, which is `WARN`; a workstation the hub shows
   asleep blocks nothing, what the hub lists for it being what it lacks),
   which `gpush` and `gpushall` run before `add -A`: exit 1 skips the
-  repository, exit 2 pushes with the warning shown (`bash/CLAUDE.md` → Git
-  sync). Exit 0 all
-  clear, 1 attention (FAIL, WAIT, DUE), 2 could not determine. The API key is
+  repository, exit 2 pushes with the warning shown, exit 3 pushes with the
+  DUE shown and hinted (`bash/CLAUDE.md` → Git sync). Exit 0 all clear, 1
+  something wrong or not yet (FAIL, WAIT), 2 could not determine, 3 up to
+  date with attention due: DUE lines and nothing worse, which `bye`,
+  `byebye` and the push gauge pass (2026-10-14;
+  `org/machines/transport-2026-10/PLAN.md` → settled 37). The API key is
   read from `config.xml` into a variable and sent as a header, never printed
   and never on a command line; the file is parsed for the fields needed, and a
   folder's `encryptionPassword` only as set or unset; `/rest/config` is never
@@ -74,8 +77,9 @@ with a conflict.
   `--remote-views` mode from stdin, so the reads have one implementation,
   and every round of the settle reads them afresh. Suite:
   `tests/sync-check/run.sh` (caged, three fixture Syncthing instances on
-  loopback, a stub `ssh` and `uname`; 257 checks, reviewed twice and
-  mutation-tested the day it was written, `pilot/build-gauge.md`).
+  loopback, a stub `ssh` and `uname`; 268 checks, reviewed twice and
+  mutation-tested the day it was written, `pilot/build-gauge.md`, its exit-3
+  cases mutation-tested against the prior gauge on 2026-10-14).
 - `claude-link` / `claude-prune` / `claude-collect.sh` — Claude Code
   configuration linkage; see below.
 - `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose

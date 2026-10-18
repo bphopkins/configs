@@ -242,7 +242,11 @@ Guardrails, shared by the single- and all-repo variants:
   shows the gauge's lines, his word of 2026-10-10 (the campaign's `PLAN.md` →
   settled 34): nothing from the other workstation can arrive meanwhile, it
   writes no `.git`, and a skip would only leave GitHub's copy ageing for the
-  outage. A machine without the gauge on `PATH` pushes with one hint naming
+  outage. A reading of DUE alone (exit 3: up to date with attention due)
+  pushes as a pass does, the DUE line shown and queued as a hint, his word of
+  2026-10-14 (`PLAN.md` → settled 37): the gauge prints a DUE only for a
+  folder otherwise up to date.
+  A machine without the gauge on `PATH` pushes with one hint naming
   `stow-all`, because refusing every push for a missing tool would stop the
   backup — except a repository with a Syncthing marker (`.stfolder`) at its root
   or above it, the one case the gauge exists for, which is skipped. On a pass
@@ -345,7 +349,11 @@ the words: a Claude session's own wrapper did, and read as a repack
 `-i` is systemctl's `--ignore-inhibitors`. Without the gauge on PATH they act
 as the plain commands did, with one hint. A reading of WARN (exit 2, the
 cluster unreadable) refuses like a FAIL: away from the hub, `bye -f` is the
-honest form. The old `byebye` alias was `systemctl poweroff` alone, and an
+honest form. A reading of DUE alone (exit 3: every folder up to date, with
+attention due) leaves, the DUE line logged as the reading, his word of
+2026-10-14 (`org/machines/transport-2026-10/PLAN.md` → settled 37); a refusal
+logs the FAIL, WAIT or WARN that decided it, even below a DUE printed first.
+The old `byebye` alias was `systemctl poweroff` alone, and an
 `unalias byebye` line stands before the definitions, as for `sysupgrade`: a
 shell still holding that alias would otherwise alias-expand the name in the
 definition at `reload` and die with a syntax error, losing every alias after
@@ -354,7 +362,8 @@ it in silence (reproduced and closed 2026-10-10; the suite's last case).
 **Regression suite:** `tests/leave/run.sh` (caged), with `systemctl`, the gauge,
 `uname` and `ps` stubbed and the log in a sandbox: the suspend and the power-off
 on OK, the log's header and lines, the refusal on FAIL and on WARN with the
-gauge's line in the log, `-f` and `-i`, usage on a bad flag, the maintenance
+gauge's line in the log, the leave on a DUE alone with its line logged and the
+refusal's reading the FAIL even below a DUE, `-f` and `-i`, usage on a bad flag, the maintenance
 process and the stale lock on a power-off and their irrelevance to a suspend, no
 gauge on PATH, no log directory. Run it after any edit to these two.
 

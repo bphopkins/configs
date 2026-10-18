@@ -148,9 +148,10 @@ output $samsung position 0 1440 mode 5120x1440@59.977Hz
 # issue 3507 and MR 5454, open as of 2026-09-30). Compositing 10 ms before
 # the refresh leaves the kernel some 6 ms to close that record, and lets a
 # client's new frame reach the screen up to one refresh sooner; a frame that
-# takes sway longer than 10 ms to composite shows one refresh late. On trial
-# from 2026-09-30: the journal's count of that error per day says whether
-# it works.
+# takes sway longer than 10 ms to composite shows one refresh late. Kept
+# 2026-10-17: the journal logged 105 of these on 2026-09-29 and 168 on
+# 2026-09-30, the last at 17:06 that day, and none afterwards through seven
+# sway sessions in October (DECISIONS.md, the page-flip entry of that date).
 output eDP-1 max_render_time 10
 
 # Workspaces 1-5 live on the Samsung and 6-10 on the MSI, so on bigfed a

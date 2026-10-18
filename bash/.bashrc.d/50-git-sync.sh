@@ -54,7 +54,10 @@
 # cannot be read (exit 2) pushes this machine's own state under a WARN, his
 # word of 2026-10-10 (PLAN.md settled 34): nothing from the other workstation
 # can arrive meanwhile, it writes no .git, and a skip would only leave
-# GitHub's copy ageing for the outage. A machine without the gauge on PATH pushes with one hint,
+# GitHub's copy ageing for the outage. A DUE alone (exit 3: up to date with
+# attention due) pushes as a pass does, the DUE queued as a hint, his word of
+# 2026-10-14 (PLAN.md settled 37): the gauge prints a DUE only for a folder
+# otherwise up to date. A machine without the gauge on PATH pushes with one hint,
 # because refusing every push for a missing tool would stop the backup --
 # except a repository with a Syncthing marker (.stfolder) at its root or
 # above it, the one case the gauge exists for, which is skipped.
@@ -643,6 +646,13 @@ _gsync_push_repo() {
         # A pass prints the gauge's own lines unindented: indented, they read
         # as detail of the repository above this one.
         [[ -n "$out" ]] && printf '%s\n' "$out"
+        ;;
+      3)
+        # Up to date with attention due, a DUE and nothing worse (settled
+        # 37): a pass, shown as one, and the DUE queued with the hints so a
+        # batch's output does not bury the step it names.
+        [[ -n "$out" ]] && printf '%s\n' "$out"
+        _gsync_hint "$name: the push gauge reads DUE, attention with nothing broken; its fix line above names the step — to read it again, run: sync-check push $name"
         ;;
       2)
         # Could not determine -- the hub, this machine's Syncthing or the

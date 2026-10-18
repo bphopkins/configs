@@ -341,7 +341,8 @@ Reply by number. "Take your recommendations" accepts every (R) option.
   #d6ffd6, fainter). (R) A first; switch on sight.
 - D18 Page-flip. (a) (R) `output eDP-1 max_render_time 10`, on trial: I count
   the errors per day before and after. (b) Leave; journal noise only unless
-  you have seen a hitch or a late character in Ghostty.
+  you have seen a hitch or a late character in Ghostty. *(Kept 2026-10-17:
+  none logged after the line; `DECISIONS.md`, the page-flip entry.)*
 - D19 VRR on bigfed. The sway lines set adaptive_sync on; bigfed's record says
   VRR is off after two amdgpu hangs pending a controlled re-trial. (a) You
   re-enabled it deliberately: the records get annotated. (b) (R until you

@@ -460,6 +460,14 @@ check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 20
 check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (3/4)" contains "$out" "    [WARN] alpha: nousowl did not answer over ssh"
 check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (4/4)" contains "$out" "nousowl: committed 1 path(s); pushed"
 check "  the file is committed now"                   bash -c "git -C '$N' ls-files --error-unmatch gauge.txt >/dev/null 2>&1"
+export STUB_GAUGE_nousowl='3:[DUE] nousowl: up to date; the watcher reports: failed to setup inotify handler'
+echo due > "$N/due.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a DUE alone (exit 3): pushed, the DUE shown, its step hinted (settled 37) (1/5)" [ "$rc" -eq 0 ]
+check "a DUE alone (exit 3): pushed, the DUE shown, its step hinted (settled 37) (2/5)" bash -c 'grep -qx "\[DUE\] nousowl: up to date; the watcher reports.*" <<<"$1"' _ "$out"
+check "a DUE alone (exit 3): pushed, the DUE shown, its step hinted (settled 37) (3/5)" contains "$out" "nousowl: committed 1 path(s); pushed"
+check "a DUE alone (exit 3): pushed, the DUE shown, its step hinted (settled 37) (4/5)" bash -c 'grep -q "nousowl: the push gauge reads DUE.* run: sync-check push nousowl$" <<<"$1"' _ "$out"
+check "a DUE alone (exit 3): pushed, the DUE shown, its step hinted (settled 37) (5/5)" lacks "$out" "not pushed"
 export STUB_GAUGE_nousowl='0:[ OK ] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps'
 echo pass > "$N/pass.txt"
 out="$(gpush nousowl)"; rc=$?
