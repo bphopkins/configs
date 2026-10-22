@@ -4,8 +4,8 @@
 # Sourced twice by design: from ~/.bash_profile for login shells -- including
 # the one GDM starts, whose environment the graphical session inherits
 # (2026-09-23) -- and from ~/.bashrc for interactive ones. Everything here is a
-# constant, an unset, or an export decided by a file, so the second pass is a
-# no-op.
+# constant, an unset, or an export decided by a file or by the session's
+# desktop name, so the second pass is a no-op.
 
 export EDITOR="nvim"
 export VISUAL="nvim"
@@ -109,3 +109,24 @@ $_env_files
 EOF_FILES
 fi
 unset _env_host _env_files _env_link _env_target _env_f _env_keys _env_rc _env_key _env_val
+
+# Java under sway (2026-10-19). Java's X11 toolkit treats its windows according
+# to the X11 window manager it recognises. The JDK Isabelle bundles (21.0.9)
+# knows Mutter, so GNOME is fine, but not sway's, which calls itself "wlroots
+# wm": Java then assumes a manager that reparents windows into frames, and keeps
+# laying them out at their first size whatever size sway gives them.
+# Isabelle/jEdit drew 1190x820 of a 2556x1413 tile and kept that size when the
+# tile was halved; with this variable it filled the tile both times (a caged
+# nested sway). Isabelle's jEdit manual lists the problem (ch. 7, "Known
+# problems") and suggests a reparenting window manager. Java ORs the variable
+# with its own detection (sun.awt.X11.XWM.isNonReparentingWM, disassembled), so
+# an upstream fix leaves this line redundant, never wrong, and a Wayland-native
+# Java ignores it. Keyed to the desktop name GDM sets from the session file --
+# sway:wlroots in Fedora's and in configs/sway's -- so a GNOME session never has
+# it. It reaches every terminal in a sway session, and the session itself where
+# the session file is installed (configs TODO.md item 29). Retire it once
+# `env -u _JAVA_AWT_WM_NONREPARENTING isabelle jedit` fills its window under
+# sway. Suite: tests/env/run.sh.
+case ":${XDG_CURRENT_DESKTOP:-}:" in
+  *:sway:*) export _JAVA_AWT_WM_NONREPARENTING=1 ;;
+esac

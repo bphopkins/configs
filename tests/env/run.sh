@@ -47,7 +47,7 @@ pos() { awk -v p="$1" -v e="$2" 'BEGIN { n = split(p, a, ":"); for (i = 1; i <= 
 field() { sed -n "s/^$1=//p" <<<"$2"; }
 
 BASE=/usr/local/bin:/usr/bin
-REPORT='printf "%s\n" "PATH=$PATH" "EDITOR=${EDITOR-unset}" "VISUAL=${VISUAL-unset}" "BASH_ENV=${BASH_ENV-unset}" "NPM_CONFIG_PREFIX=${NPM_CONFIG_PREFIX-unset}" "GIT_OPTIONAL_LOCKS=${GIT_OPTIONAL_LOCKS-unset}"'
+REPORT='printf "%s\n" "PATH=$PATH" "EDITOR=${EDITOR-unset}" "VISUAL=${VISUAL-unset}" "BASH_ENV=${BASH_ENV-unset}" "NPM_CONFIG_PREFIX=${NPM_CONFIG_PREFIX-unset}" "GIT_OPTIONAL_LOCKS=${GIT_OPTIONAL_LOCKS-unset}" "_JAVA_AWT_WM_NONREPARENTING=${_JAVA_AWT_WM_NONREPARENTING-unset}"'
 # A login shell running one command, non-interactive: the shape GDM starts to
 # launch the session (environment.md, stage 2). Its final environment is what
 # the session inherits.
@@ -78,6 +78,7 @@ check "VISUAL=nvim" [ "$(field VISUAL "$out")" = nvim ]
 check "BASH_ENV unset (Lmod disarmed for the session)" [ "$(field BASH_ENV "$out")" = unset ]
 check "NPM_CONFIG_PREFIX=~/.local/npm-global" [ "$(field NPM_CONFIG_PREFIX "$out")" = "$H/.local/npm-global" ]
 check "GIT_OPTIONAL_LOCKS unset with no host file" [ "$(field GIT_OPTIONAL_LOCKS "$out")" = unset ]
+check "_JAVA_AWT_WM_NONREPARENTING unset with no desktop name" [ "$(field _JAVA_AWT_WM_NONREPARENTING "$out")" = unset ]
 
 # --- 2. the same PATH survives the interactive passes -----------------------
 echo "== idempotence =="
@@ -177,6 +178,24 @@ hostfile '[include]\n\tpath = other.inc\n'
 out="$(login_shell "$REPORT" 2>/dev/null)"
 check "a role reached through an include in the host file: =0" [ "$(field GIT_OPTIONAL_LOCKS "$out")" = 0 ]
 rm -f "$HF" "$OTHER"
+
+# --- 6. Java's window-manager hint under sway (10-env.sh, 2026-10-19) -------
+# _JAVA_AWT_WM_NONREPARENTING=1 is exported only when the desktop name GDM sets
+# from the session file has sway among its colon-separated components.
+echo "== Java's window-manager hint =="
+desk() { env -i HOME="$H" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TERM=dumb PATH="$BASE" XDG_CURRENT_DESKTOP="$1" /bin/bash -lc "$REPORT"; }
+out="$(desk sway:wlroots 2>"$SB/login-j.err")"
+check "sway:wlroots, both session files' name: =1"      [ "$(field _JAVA_AWT_WM_NONREPARENTING "$out")" = 1 ]
+check "sway: runs clean"                                empty_file "$SB/login-j.err"
+check "sway: PATH unchanged by the line"                [ "$(field PATH "$out")" = "$path" ]
+out="$(desk sway 2>/dev/null)"
+check "sway alone: =1"                                  [ "$(field _JAVA_AWT_WM_NONREPARENTING "$out")" = 1 ]
+out="$(desk GNOME 2>/dev/null)"
+check "GNOME: unset"                                    [ "$(field _JAVA_AWT_WM_NONREPARENTING "$out")" = unset ]
+out="$(desk X-swaylike 2>/dev/null)"
+check "a name merely containing sway: unset"            [ "$(field _JAVA_AWT_WM_NONREPARENTING "$out")" = unset ]
+tout="$(env -i HOME="$H" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TERM=dumb PATH="$BASE" XDG_CURRENT_DESKTOP=sway:wlroots /bin/bash -ic 'printf "%s" "${_JAVA_AWT_WM_NONREPARENTING-unset}"' 2>/dev/null </dev/null)"
+check "a terminal in a sway session has it (how Isabelle starts)" [ "$tout" = 1 ]
 
 echo
 echo "passed: $pass  failed: $fail"

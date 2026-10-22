@@ -4,6 +4,9 @@
 #
 #   context-check            one verdict line per check
 #   context-check -v         also print every offending path
+#   context-check --binary   checks 11 to 15 alone, read from the binary and the
+#                            flag cache: what the SessionStart hook asks when
+#                            Claude Code's version differs from the record
 #
 #   CONTEXT_CHECK_DAYS       how far back the transcript checks look (14)
 #
@@ -59,10 +62,11 @@ RECALL_BYTES=4096
 SESSION_BYTES=61440
 DAYS="${CONTEXT_CHECK_DAYS:-14}"
 
-VERBOSE=0
+VERBOSE=0 BINARY=0
 for a in "$@"; do case "$a" in
   -v|--verbose) VERBOSE=1 ;;
-  -h|--help) sed -n '2,32p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
+  --binary) BINARY=1 ;;
+  -h|--help) sed -n '2,35p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
   *) echo "context-check: unknown option $a (try --help)" >&2; exit 2 ;;
 esac; done
 
@@ -76,6 +80,9 @@ note() { printf '       note: %s\n' "$*"; }
 det()  { [ $VERBOSE = 1 ] && printf '       %s\n' "$@"; return 0; }
 
 [ -d "$CFG" ] || { warn "config tree not found at $CFG — nothing could be checked"; exit 2; }
+
+# Checks 1 to 9 read the config tree; --binary skips them, and the transcripts.
+if [ $BINARY = 0 ]; then
 
 # 1 ── links into the config that no longer resolve ------------------------
 # A dangling link still fails every write through it, in silence. claude-link's
@@ -94,12 +101,24 @@ else fail "links into the config: ${#dang[@]} dangling"; det "${dang[@]}"; fix "
 
 # 2 ── directories git cannot carry ----------------------------------------
 # An empty directory never reaches the other machine, so its link dangles there
-# even though everything looks right here. This is what broke plans/.
+# even though everything looks right here. This is what broke plans/. One that
+# git ignores was never meant to reach it, so it is not counted: Claude Code's
+# skill sync leaves an empty .staging inside the ignored skills/synced/ (seen
+# 2026-10-18). Outside a git work tree nothing is ignored, and all are counted.
 empt=(); while IFS= read -r -d '' d; do empt+=("$d"); done \
   < <(find "$CFG" -path "$CFG/.git" -prune -o -type d -empty -print0 2>/dev/null)
+if [ ${#empt[@]} -gt 0 ] && git -C "$CFG" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  declare -A ign=()
+  while IFS= read -r -d '' d; do ign[$d]=1; done \
+    < <(printf '%s\0' "${empt[@]}" | git -C "$CFG" check-ignore -z --stdin 2>/dev/null)
+  kept=(); for d in "${empt[@]}"; do [ -n "${ign[$d]:-}" ] || kept+=("$d"); done
+  empt=("${kept[@]}")
+fi
 if [ ${#empt[@]} -eq 0 ]; then ok "no empty directories in the config"
 else fail "${#empt[@]} empty directory(ies) — git cannot carry them to the other machine"
-     det "${empt[@]}"; fix "claude-link --apply   (or rmdir the ones whose directory is gone)"; fi
+     det "${empt[@]}"
+     note "claude-link --apply holds an empty memory scope open; give any other a .gitkeep, or rmdir it if its directory is gone"
+     fix "claude-link --apply"; fi
 
 # 3 ── memory index line shape --------------------------------------------
 # Two distinct facts. (a) The harness asks for one line under ~150 characters
@@ -226,6 +245,8 @@ nm=$(printf '%s' "$uniq_miss" | grep -c . || true)
 if [ "$nm" -eq 0 ]; then ok "repos/: every entry's tree is present on this machine"
 else ok "repos/: $nm entry(ies) for a tree not on this machine (normal if by decision)"; det $uniq_miss; fi
 
+fi   # checks 1 to 9
+
 # ── the ground the routines stand on, since 2026-10-12 ─────────────────────
 # Ten premises about Claude Code that `/restore-order`, `/wrap-up` and this
 # gauge rest on, each read where it can be seen without starting anything: the
@@ -271,6 +292,11 @@ emit() { # verdict (V) and detail (D) lines from a premise sweep, in order
 # to paste. The installed version is the basename of what the launcher resolves
 # to, the native installer's layout (~/.local/share/claude/versions/<version>);
 # a layout that does not carry it reads WARN, and the binary is never started.
+# A record newer than the install was written on the other machine, which
+# updated first; this one catches up at its next update, and a line pasted here
+# would set the shared record back and move the nudge there, so none is
+# offered (2026-10-18). Under --binary the comparison is the hook's, and only
+# a missing binary is reported here.
 STAMP="$CFG/claude-version-checked"
 BIN="$HOME/.local/bin/claude"; [ -e "$BIN" ] || BIN=$(command -v claude 2>/dev/null || true)
 BINR=""; VER=""
@@ -282,10 +308,13 @@ REC=""; [ -s "$STAMP" ] && REC=$(awk 'NR==1{print $1; exit}' "$STAMP")
 record="echo \"$VER $(date +%F) $(hostname -s 2>/dev/null || echo unknown)\" > ${STAMP/#"$HOME"/\~}"
 if [ -z "$BINR" ] || [ ! -f "$BINR" ]; then
   warn "Claude Code: no binary at ~/.local/bin/claude or on PATH — the premises it carries could not be read"
+elif [ $BINARY = 1 ]; then :
 elif [ -z "$VER" ]; then
   warn "Claude Code: version not readable from the install path (${BINR/#"$HOME"/\~})"
   fix "read it with 'claude --version', then check the layout this gauge expects: ~/.local/share/claude/versions/<version>"
 elif [ -z "$REC" ]; then fail "Claude Code $VER installed; no version on record"; note "paste the fix after reading the lines below"; fix "$record"
+elif [ "$VER" != "$REC" ] && [ "$(printf '%s\n%s\n' "$REC" "$VER" | sort -V | tail -n 1)" = "$REC" ]; then
+  ok "Claude Code $VER installed, older than the $REC on record ($(sed -n 1p "$STAMP" | cut -s -d' ' -f2-)): nothing to record here; this machine catches up at its next update"
 elif [ "$VER" != "$REC" ]; then fail "Claude Code $VER installed; $REC on record"; note "paste the fix after reading the lines below"; fix "$record"
 else ok "Claude Code $VER, the version on record ($(sed -n 1p "$STAMP" | cut -s -d' ' -f2-))"; fi
 
@@ -382,7 +411,8 @@ fi
 # are unioned; a session can carry no bundle at all and says nothing; a session
 # older than its scope's index never had one; and a path-scoped rule loads by
 # the same attachment, typed User, from outside every launch folder.
-if command -v python3 >/dev/null 2>&1 && [ -d "$CC/projects" ]; then
+if [ $BINARY = 1 ]; then :
+elif command -v python3 >/dev/null 2>&1 && [ -d "$CC/projects" ]; then
   out=$(python3 -I -B - "$CC/projects" "$DAYS" "$CFG/agents" "$CFG/settings.json" "$CFG" <<'PY'
 import calendar, glob, json, os, re, subprocess, sys, time
 root, days, agents, settings, cfg = sys.argv[1], float(sys.argv[2]), sys.argv[3], sys.argv[4], os.path.realpath(sys.argv[5])

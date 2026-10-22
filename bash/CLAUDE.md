@@ -71,6 +71,12 @@ both terminal integrations. The cage the three share is `tests/cage.sh`
   `gpushall`'s `add -A` re-stamp pack files. Never unset here: a role change
   takes a new login, and reaches only shells and sessions started after it.
   About 1.3 ms a shell with a host file present. Suite: `tests/env/run.sh`.
+  Since 2026-10-19 it also exports `_JAVA_AWT_WM_NONREPARENTING=1` when
+  `XDG_CURRENT_DESKTOP` has `sway` among its components, so that a Java
+  window (Isabelle/jEdit) fills the space sway gives it: Java does not
+  recognise sway's X11 window manager. A GNOME session never gets it; the
+  line's comment carries the measurement and the test that retires it
+  (`DECISIONS.md`, 2026-10-19). Same suite.
 - `20-path.sh` — PATH/MANPATH/INFOPATH additions, duplicate-guarded. Each
   entry prepends, so **effective priority is the reverse of reading order** —
   TeX Live ends up first, `~/bin` last of the personal dirs. **TeX Live is

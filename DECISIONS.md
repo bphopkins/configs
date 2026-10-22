@@ -3542,3 +3542,84 @@ Kept. The comment above the line in `sway/config` states the verdict; D18 of
 `docs/sway-audit-2026-09-30/report.md` is annotated. Not measured: the line's
 stated cost, a frame that takes sway over 10 ms to composite showing one
 refresh late; nothing of the kind was seen.
+
+## Java under sway: `_JAVA_AWT_WM_NONREPARENTING` in `10-env.sh` — 2026-10-19
+
+He reported that Isabelle/jEdit "seems not to format properly" in sway, and
+confirmed the reproduction below as what he saw. The cause, measured on bigfed:
+Java's X11 toolkit recognises a fixed list of window managers (in the JDK that
+Isabelle2025-2 bundles, 21.0.9, `sun.awt.X11.XWM` names Mutter, GNOME Shell,
+Metacity, KWin, Compiz, Enlightenment and LG3D), and sway's X11 window manager
+calls itself `wlroots wm` (`xprop` on `_NET_SUPPORTING_WM_CHECK` in a nested
+sway). Java takes an unknown manager to reparent its windows into frames, and
+then keeps laying a window out at its first size. In a caged headless nested
+sway with a stand-in HOME, the real `~/.isabelle` untouched, jEdit drew
+1190×820 of a 2556×1413 tile and kept that size when a second window halved the
+tile; with the variable it filled the tile both times. Menus, popups and
+dialogs went unexercised: the nested sway had no input devices. Isabelle's
+jEdit manual lists the problem (ch. 7, "Known problems and workarounds"), with
+the workaround "use a regular re-parenting X11 window manager".
+
+**His concern** was conflict with a later upstream fix, and one more thing to
+keep track of. Neither holds. `isNonReparentingWM()` returns the variable *or*
+Java's own detection (disassembled with the bundled `javap`), so an upstream
+fix leaves the line redundant, never wrong, and a Wayland-native Java ignores
+it. A redundant copy does nothing, so there is no tracker item; the line's
+comment carries the test that retires it.
+
+**Changed.** One `case` on `XDG_CURRENT_DESKTOP` at the end of
+`bash/.bashrc.d/10-env.sh`, and the header's account of what the file holds.
+`tests/env/run.sh` gains a check in section 1 and a section 6 of seven: set for
+`sway:wlroots` and for `sway`, in the login shell and in a terminal; unset for
+GNOME, for no desktop name and for a name merely containing sway; PATH
+unchanged. Mutation-tested against the line removed (three failures), made
+unconditional (three) and matched as a substring (one); 55 checks pass, and the
+shell-options and prompt suites with them. The module map in `bash/CLAUDE.md`
+and §8 of `org/machines/environment.md` carry a line each. On fedxps the line
+matters only if a Java window ever runs under sway there; Isabelle is
+bigfed-only.
+
+**Other homes weighed.** Isabelle's own `$ISABELLE_HOME_USER/etc/settings`,
+put to him: it belongs to one Isabelle release and would be left behind at the
+next. An `environment.d` drop-in: constants only, so it would reach GNOME too.
+The session file `sway/wayland-session.desktop`: root-owned, and not yet on
+bigfed (`TODO.md` item 29). Leaving jEdit to GNOME, Isabelle's own advice: he
+uses both and wants them to work together.
+
+## What a sway session lacks of GNOME's session layer — 2026-10-19
+
+He asked how worried to be that a sway-only life misses something GNOME does
+in the background. Measured on bigfed from a live GNOME session; fedxps
+answered on neither door, so its half rests on the records. GNOME's part comes
+from four places, so the list closes: gnome-shell's own services,
+gnome-settings-daemon's sixteen plugins, the seventeen XDG autostart entries
+(sway runs none; the `nm-applet` comment in `sway/config` says why), and GNOME
+Software.
+
+- **No gap, being session-independent:** updates (`sysupgrade` alone, and dnf
+  ran in the sway-only boots); Syncthing and the pull timers; the keyring,
+  unlocked by GDM's PAM stack for either session, with Brave and Chrome
+  encrypting under its key throughout the sway-only boots; SMART alerts
+  (`smartdnotify` notifies every Wayland session; read, not triggered);
+  upowerd's critical battery action; screen sharing (the wlr portal); VMs (the
+  `libvirt` group).
+- **Silent under sway:** gnome-settings-daemon's notices of an OOM kill, low
+  disk space and printer trouble; ABRT's crash notices (an autostart entry;
+  abrtd still collects); Zulip, never started; Solaar, which re-applies the
+  mouse's DPI and SmartShift at each connection (whether the mouse keeps them
+  through sleep was not measured). `disk-check` covers fullness and SMART on
+  demand.
+- **Noticed when hit:** mutter's clipboard keeper (`meta-clipboard-manager`);
+  a polkit agent (none installed); an SSH agent (gcr-ssh-agent comes only with
+  gnome-session's targets, and none ran in the sway-only boots of 2026-09-28,
+  10-03 and 10-05, which matters only for keys with passphrases); automount;
+  GUI Bluetooth pairing and display arrangement; Sonnerie. Java windows: the
+  entry above.
+- **The laptop, unmeasured that day:** automatic brightness if the XPS has a
+  light sensor, presenting (section 6 of the 2026-09-30 audit), Thunderbolt
+  enrolment where the port asks for it.
+
+Nothing else was decided: Zulip at login, a polkit agent and udiskie stay open
+on his word from the 2026-09-30 audit. The same sweep found GNOME's custom
+shortcut `<Super>v` on bigfed still launching `code`, gone since 2026-09-07;
+removed at his word (fedxps not checked).

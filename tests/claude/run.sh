@@ -260,8 +260,8 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   yes_ "  and the model, as a warning"              '[[ "$j" == *"WARNING: Claude Code has changed since context-check last ran: 1.2.3 then, 9.9.9 now"* ]]'
   printf '10.0.0 2026-12-01 test\n' > "$w/cfg/claude-version-checked"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
-  yes_ "a record newer than the install is said honestly" '[[ "$j" == *"context-check last ran against Claude Code 10.0.0, newer than the 9.9.9 installed here"* ]]'
-  yes_ "  in both channels"                         'hasmsg "$j"'
+  yes_ "a record newer than the install is said honestly" '[[ "$j" == *"context-check last ran against Claude Code 10.0.0, newer than the 9.9.9 installed here; this machine catches up at its next update; nothing for him to do."* ]]'
+  not_ "  to the model alone: it clears at the next update (2026-10-18)" 'hasmsg "$j"'
   rm "$w/cfg/claude-version-checked"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "no record: asks for one, naming the version" '[[ "$j" == *"context-check has no Claude Code version on record; run "*"and record 9.9.9 as it says."* ]]'
@@ -275,6 +275,56 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "with a claude-link warning: one systemMessage carries both" 'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if (\"claude-link:\" in m and \"| Claude Code has changed since\" in m) else 1)"'
   yes_ "the binary is read, never started"          '! grep -qE "^[^#]*claude --version" "$HOOKS/session-start.sh"'
+fi
+
+echo "== when the versions differ, the hook reads the gauge's binary checks (2026-10-18) =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null; mkdir -p "$w/home/bin"
+  hook() { HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh"; }
+  sysm() { echo "$1" | python3 -c "import json,sys;print(json.load(sys.stdin).get('systemMessage',''))"; }
+  ms()   { echo $(( $(date +%s%N) / 1000000 )); }
+  # a stub ~/bin/context-check: logs how it was called, then runs the body given
+  gauge() { printf '#!/bin/sh\necho "$*" >> "%s/called"\n%s\n' "$w" "$1" > "$w/home/bin/context-check"; chmod +x "$w/home/bin/context-check"; }
+  gauge 'echo "[ OK ] recall gate (row 2): as measured"; echo; echo "all clear"'
+  j=$(hook)
+  not_ "versions agree: the gauge is not run"       '[ -e "$w/called" ]'
+  printf '1.2.3 2026-09-01 test\n' > "$w/cfg/claude-version-checked"
+  j=$(hook)
+  check "a newer install: the gauge is run, once, with --binary" "$(cat "$w/called" 2>/dev/null)" "--binary"
+  yes_ "  its checks hold: the model is told, then and now" '[[ "$j" == *"Claude Code has changed since context-check last ran: 1.2.3 then, 9.9.9 now; its binary and switch checks hold on 9.9.9; nothing for him to do."* ]]'
+  check "  and the user is not interrupted"          "$(sysm "$j")" ""
+  not_ "  nor the model warned"                      '[[ "$j" == *"WARNING"* ]]'
+  gauge 'echo "[FAIL] memory numbers (rows 4, 11): the binary reads 1 where 2 is on record"; echo "       rests on: x"; echo "       fix: y"; echo "[ OK ] skill gate (row 18): as measured"; echo; echo "1 failing, 0 unknown"; exit 1'
+  j=$(hook)
+  yes_ "a check fails: the user is told which"       '[[ "$(sysm "$j")" == *"Claude Code has changed since context-check last ran: 1.2.3 then, 9.9.9 now, and a check on the binary or the server switches fails: memory numbers (rows 4, 11): the binary reads 1 where 2 is on record; run '"'"'context-check'"'"'."* ]]'
+  yes_ "  and the model, as a warning"               '[[ "$j" == *"WARNING: Claude Code has changed since context-check last ran"* ]]'
+  not_ "  leaving the rests-on and fix lines to the gauge" '[[ "$j" == *"rests on"* || "$j" == *"fix: y"* ]]'
+  gauge 'echo "[FAIL] a: one"; echo "[WARN] b: two"; echo "[FAIL] c: three"; echo; echo "2 failing, 1 unknown"; exit 1'
+  j=$(hook)
+  yes_ "  two failing lines at most, joined"         '[[ "$(sysm "$j")" == *"fails: a: one; b: two; run "* ]]'
+  gauge 'echo "[WARN] memory scope (row 3): the anchor via:\"git\" is not in this binary; could not determine"; echo; echo "1 unknown, nothing failing"; exit 2'
+  j=$(hook)
+  yes_ "a check that cannot be read (exit 2): the user is told, with its line" '[[ "$(sysm "$j")" == *"its binary checks could not all be read (exit 2: memory scope (row 3): the anchor via:\"git\" is not in this binary; could not determine); run "* ]]'
+  yes_ "  valid JSON with the gauge's quotes in it" 'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
+  gauge 'sleep 6'
+  t0=$(ms); j=$(hook); t1=$(ms)
+  yes_ "a hung gauge: cut at 3 s and said so, to the user" '[[ "$(sysm "$j")" == *"its binary checks did not answer within 3 s; run "* ]]'
+  yes_ "  well inside the hook's 5 s"                '[ $((t1 - t0)) -lt 4500 ]'
+  printf '10.0.0 2026-12-01 test\n' > "$w/cfg/claude-version-checked"
+  gauge 'echo "[ OK ] recall gate (row 2): as measured"; echo; echo "all clear"'
+  j=$(hook)
+  yes_ "a newer record, checks holding: the model alone is told this machine catches up" '[[ "$j" == *"context-check last ran against Claude Code 10.0.0, newer than the 9.9.9 installed here; its binary and switch checks hold on 9.9.9, and this machine catches up at its next update; nothing for him to do."* ]]'
+  check "  and the user is not interrupted"          "$(sysm "$j")" ""
+  gauge 'echo "[FAIL] server switches (rows 2, 28, 29): tengu_moth_copse (recall) cached true"; echo; echo "1 failing, 0 unknown"; exit 1'
+  j=$(hook)
+  yes_ "  but a failing check still reaches the user" '[[ "$(sysm "$j")" == *"newer than the 9.9.9 installed here, and a check on the binary or the server switches fails: server switches (rows 2, 28, 29): tengu_moth_copse (recall) cached true; run "* ]]'
+  printf '1.2.3 2026-09-01 test\n' > "$w/cfg/claude-version-checked"
+  printf '#!/bin/sh\nsleep 2.5\nfor f in a b; do echo "[ OK ] $f: up to date"; done; echo; echo "all clear"\n' > "$w/home/bin/sync-check"; chmod +x "$w/home/bin/sync-check"
+  gauge 'sleep 2; echo "[ OK ] recall gate (row 2): as measured"; echo; echo "all clear"'
+  t0=$(ms); j=$(hook); t1=$(ms)
+  yes_ "the binary checks run beside sync-check, not after it" '[ $((t1 - t0)) -lt 4000 ]'
+  yes_ "  and both readings arrive"                  '[[ "$j" == *"sync-check: all clear (2 folders up to date)"* && "$j" == *"its binary and switch checks hold on 9.9.9"* ]]'
+  yes_ "  valid JSON throughout"                     'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
 fi
 
 echo "== ephemeral scopes are never harvested or linked =="

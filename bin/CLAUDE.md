@@ -31,11 +31,15 @@ with a conflict.
   `org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md`,
   and `/restore-order` files it as `moved-premise`. The version the gauge last
   ran against is his to record in `org/claude-config/claude-version-checked`;
-  the gauge prints the line, and the SessionStart hook says at every start when
-  the installed version differs. The anchors are the vendor's strings; nothing
-  of the configuration is in this file. Suite: `tests/context-check/run.sh`
-  (124 checks, caged since 2026-10-12: a stub binary that would mark itself if
-  started, a stub flag cache and stub transcripts, each premise mutated).
+  the gauge prints the line, and offers none where the record is newer than
+  the install, since that machine catches up at its next update. When the
+  installed version differs from the record, the SessionStart hook runs
+  `context-check --binary` (checks 11 to 15 alone, 0.33 s) and tells him only
+  when one fails or cannot be read (2026-10-18). The anchors are the vendor's
+  strings; nothing of the configuration is in this file. Suite:
+  `tests/context-check/run.sh` (150 checks, caged since 2026-10-12: a stub
+  binary that would mark itself if started, a stub flag cache and stub
+  transcripts, each premise mutated).
 - `sync-check` — read-only gauge for the Syncthing cluster and the git roles,
   in the `disk-check` shape (2026-10-10, step 3b of
   `org/machines/transport-2026-10/PLAN.md`; the rules it reads are that

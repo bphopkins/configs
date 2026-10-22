@@ -3,9 +3,10 @@
 #
 #   bash tests/context-check/run.sh
 #
-# Fully sandboxed under $TMPDIR: a fake config tree, a fake HOME holding a fake
-# ~/.claude, ~/.claude.json and Claude install, a fake ~/Desktop. Touches
-# nothing real and needs no network. The installed Claude binary is never read:
+# Fully sandboxed under $TMPDIR: a fake config tree (made a git work tree only
+# where check 2's ignore rule is tested), a fake HOME holding a fake ~/.claude,
+# ~/.claude.json and Claude install, a fake ~/Desktop. Touches nothing real and
+# needs no network. The installed Claude binary is never read:
 # the premise checks (10 to 19) run against a stub binary carrying the vendor's
 # anchor strings with the values measured on 2.1.296, a stub flag cache and stub
 # transcripts, each mutated in turn; the stub would leave a marker if it were
@@ -139,11 +140,21 @@ yes_ "-v lists the offending path"    '[[ "$(run "$w" -v)" == *".claude/plans"* 
 
 echo "== directories git cannot carry =="
 w=$(mkworld); mkdir -p "$w/cfg/memory/-empty"
-out=$(run "$w")
+out=$(run "$w"); nl=$'\n'
 yes_ "an empty dir fails"             '[[ "$out" == *"1 empty directory"* ]]'
 check "  exits 1" "$(rc "$w")" "1"
+yes_ "  its fix line is the command alone, the caveat on a note above it" '[[ "$out" == *"       note: claude-link --apply holds an empty memory scope open"*"$nl       fix: claude-link --apply$nl"* ]]'
+yes_ "  and parses when pasted whole" 'bash -n -c "$(sed -n "s/^       fix: //p" <<<"$out")"'
 : > "$w/cfg/memory/-empty/.gitkeep"
 not_ "a keeper clears it"             '[[ "$(run "$w")" == *"empty directory"*"[FAIL]"* ]]'
+w=$(mkworld); git -C "$w/cfg" init -q; printf 'skills/synced/\nskills/.staging/\n' > "$w/cfg/.gitignore"
+mkdir -p "$w/cfg/skills/synced/b/.staging" "$w/cfg/skills/.staging"
+not_ "an empty dir git ignores is not counted, inside an ignored folder or by its own pattern" '[[ "$(run "$w")" == *"empty directory(ies)"* ]]'
+mkdir -p "$w/cfg/memory/-empty"; out=$(run "$w" -v)
+yes_ "  while one git carries still fails"   '[[ "$out" == *"1 empty directory"* ]]'
+yes_ "  and -v names that one alone"         '[[ "$out" == *"/cfg/memory/-empty"* && "$out" != *".staging"* ]]'
+w=$(mkworld); mkdir -p "$w/cfg/skills/synced/b/.staging"
+yes_ "outside a git work tree nothing is ignored: it fails" '! git -C "$w/cfg" rev-parse --is-inside-work-tree >/dev/null 2>&1 && [[ "$(run "$w")" == *"1 empty directory"* ]]'
 
 echo "== memory index line shape =="
 w=$(mkworld)
@@ -213,6 +224,12 @@ yes_ "  ending at the path: paste-ready"          '[[ "$out" == *"/cfg/claude-ve
 yes_ "  after a note saying when to paste it"     '[[ "$out" == *"       note: paste the fix after reading the lines below$nl       fix: echo"* ]]'
 yes_ "  with the date and the machine in it"      '[[ "$out" == *"echo \"9.9.9 $(date +%F) $(hostname -s)\""* ]]'
 check "  exits 1" "$(rc "$w")" "1"
+printf '10.0.0 2026-12-01 other\n' > "$w/cfg/claude-version-checked"; out=$(run "$w")
+yes_ "a newer record, from the machine that updated first: OK, naming both" '[[ "$out" == *"[ OK ] Claude Code 9.9.9 installed, older than the 10.0.0 on record (2026-12-01 other): nothing to record here; this machine catches up at its next update"* ]]'
+not_ "  and no line that would set the shared record back" '[[ "$out" == *"fix: echo"* ]]'
+check "  exits 0" "$(rc "$w")" "0"
+printf '9.10.0 2026-12-01 other\n' > "$w/cfg/claude-version-checked"
+yes_ "  versions compare as versions: 9.10.0 is newer than 9.9.9" '[[ "$(run "$w")" == *"[ OK ] Claude Code 9.9.9 installed, older than the 9.10.0 on record"* ]]'
 rm "$w/cfg/claude-version-checked"; out=$(run "$w")
 yes_ "no record: fails and asks for one"          '[[ "$out" == *"[FAIL] Claude Code 9.9.9 installed; no version on record"* ]]'
 yes_ "  with the same note and paste-ready line"  '[[ "$out" == *"       note: paste the fix after reading the lines below$nl       fix: echo \"9.9.9 "*"/cfg/claude-version-checked$nl"* ]]'
@@ -353,6 +370,33 @@ yes_ "no transcript store: warns"                  '[[ "$out" == *"[WARN] no tra
 w=$(mkworld); vars "$w"; printf '{}\n' > "$w/cfg/settings.json"; out=$(run "$w")
 yes_ "no retention setting: fails, with the default named" '[[ "$out" == *"[FAIL] transcripts (row 13): cleanupPeriodDays is not set in settings.json, so the 30-day default sweeps"* ]]'
 yes_ "  and a literal fix, not a re-measure"       '[[ "$out" == *"fix: add \"cleanupPeriodDays\": 365 to settings.json"* && "$out" != *"re-measure on Claude Code 9.9.9, then correct"*"row 13"* ]]'
+
+echo "== --binary: checks 11 to 15 alone, what the SessionStart hook asks (2026-10-18) =="
+w=$(mkworld); out=$(run "$w" --binary)
+check "five checks reported, and no others" "$(grep -c '^\[' <<<"$out")" "5"
+yes_ "  the recall gate first, the server switches last" '[[ "$(grep "^\[" <<<"$out" | head -n 1)" == *"[ OK ] recall gate (row 2)"* && "$(grep "^\[" <<<"$out" | tail -n 1)" == *"[ OK ] server switches (rows 2, 28, 29)"* ]]'
+yes_ "  all clear"                                 '[[ "$out" == *"all clear"* ]]'
+check "  exits 0" "$(rc "$w" --binary)" "0"
+printf '1.2.3 2026-09-01 test\n' > "$w/cfg/claude-version-checked"; mkdir -p "$w/cfg/memory/-empty"
+check "a record the install has passed is the hook's to judge, a tree fault is not read: still 0" "$(rc "$w" --binary)" "0"
+not_ "  and neither the version nor the transcripts are reported" '[[ "$(run "$w" --binary)" == *"Claude Code 9.9.9"* || "$(run "$w" --binary)" == *"transcripts"* ]]'
+sed -i 's/Roe=25000/Roe=50000/' "$w/home/.local/share/claude/versions/9.9.9"
+check "a moved premise: exits 1"                   "$(rc "$w" --binary)" "1"
+yes_ "  with its FAIL line, as the hook reads it"  '[[ "$(run "$w" --binary)" == *"[FAIL] memory numbers (rows 4, 11): the binary reads 200/50000"* ]]'
+w=$(mkworld); sed -i '/via:"git"/d' "$w/home/.local/share/claude/versions/9.9.9"
+check "a gone anchor: exits 2"                     "$(rc "$w" --binary)" "2"
+yes_ "  with its WARN line"                        '[[ "$(run "$w" --binary)" == *"[WARN] memory scope (row 3): the anchor via:\"git\" is not in this binary"* ]]'
+w=$(mkworld); sed -i 's/"tengu_moth_copse":false/"tengu_moth_copse":true/' "$w/home/.claude.json"
+check "a server switch turned on: exits 1"         "$(rc "$w" --binary)" "1"
+w=$(mkworld); rm "$w/home/.local/bin/claude"
+check "no install, none on PATH: exits 2"          "$(PATH=/usr/bin:/bin rc "$w" --binary)" "2"
+yes_ "  saying so"                                 '[[ "$(PATH=/usr/bin:/bin run "$w" --binary)" == *"[WARN] Claude Code: no binary at ~/.local/bin/claude or on PATH"* ]]'
+w=$(mkworld)
+before=$(find "$w/cfg" "$w/home" -type f -exec md5sum {} + | sort); run "$w" --binary >/dev/null
+check "  writes nothing"                           "$(find "$w/cfg" "$w/home" -type f -exec md5sum {} + | sort)" "$before"
+not_ "  and never starts the binary"               '[ -e "$w/home/.local/share/claude/versions/9.9.9.started" ]'
+h=$(run "$w" --help)
+yes_ "--help names it, and shows the whole header and no code" '[[ "$h" == *"context-check --binary"* && "$h" == *"never silently assumed healthy"* && "$h" != *"set -uo"* ]]'
 
 echo "== could-not-determine is never silent health =="
 w=$(mkworld)

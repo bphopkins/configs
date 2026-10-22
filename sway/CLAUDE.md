@@ -5,8 +5,9 @@ charter for the desktop suite — waybar, swaylock, mako, wofi, rofi each carry
 their own small charter for what binds when their files are touched. Records:
 `DECISIONS.md` items 5 and 6, the entries of 2026-09-28 and 2026-09-29, the
 audit of 2026-09-30, the split cue's entry of 2026-10-01, the pointer
-key's and `screens-off`'s of 2026-10-03, and the equalize key's of
-2026-10-06.
+key's and `screens-off`'s of 2026-10-03, the equalize key's of 2026-10-06,
+and the two of 2026-10-19: Java windows under sway, and what a sway session
+lacks of GNOME's session layer.
 
 **Sway runs on both machines:** fedxps, and bigfed on trial since 2026-09-28,
 on its two monitors. One config serves both, so **before changing anything,
