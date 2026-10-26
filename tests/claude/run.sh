@@ -4,11 +4,12 @@
 #   bash tests/claude/run.sh
 #
 # Fully sandboxed under $TMPDIR: a fake HOME, a fake org/claude-config, a fake
-# ~/Desktop. Needs no network. Runs caged (tests/cage.sh). Resolves claude-link
-# relative to its own location, so it tests the checkout it lives in; the hooks
-# live in org/claude-config and are read from there, or from
-# $CLAUDE_SUITE_HOOKS when a mutation run points it at another copy. Writes
-# nothing real -- two late sections read the live config tree, and only read it.
+# ~/Desktop, and git with no global or system config. Needs no network. Runs
+# caged (tests/cage.sh). Resolves claude-link relative to its own location, so
+# it tests the checkout it lives in, or $CLAUDE_SUITE_LINK when a mutation run
+# points it at another copy; the hooks live in org/claude-config and are read
+# from there, or from $CLAUDE_SUITE_HOOKS likewise. Writes nothing real --
+# three late sections read the live config tree, and only read it.
 #
 # Last line follows the tests/gsync convention: "passed: N  failed: M".
 set -uo pipefail
@@ -18,8 +19,9 @@ REPO=$(cd "$HERE/../.." && pwd)
 # shellcheck source=/dev/null
 source "$REPO/tests/cage.sh"
 cage claude "$@"
-LINK="$REPO/bin/claude-link"
+LINK="${CLAUDE_SUITE_LINK:-$REPO/bin/claude-link}"                     # claude-link under test
 HOOKS="${CLAUDE_SUITE_HOOKS:-$HOME/Desktop/org/claude-config/hooks}"  # hook scripts under test
+RCFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"           # the live tree, read only
 pass=0; fail=0
 ok()   { pass=$((pass+1)); printf '  \033[32mok\033[0m   %s\n' "$1"; }
 no()   { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
@@ -31,6 +33,10 @@ not_() { if eval "$2"; then no "$1"; else ok "$1"; fi; }
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/claude-suite.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
+# git sees no config of this machine's: the identity include, the private
+# global exclude and its hooks stay out, and scratch commits get a stand-in.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 XDG_CONFIG_HOME="$WORK/xdg"
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 
 # build a fresh sandbox; echoes its root
 mkworld() {
@@ -52,8 +58,14 @@ mkworld() {
   echo "$w"
 }
 run() { local w=$1; shift
-  CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
+  HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
     "$LINK" "$@" 2>&1; }
+# snap <dir>  -- every entry's type, path and link target, and every file's
+# hash: two snapshots equal mean nothing under <dir> was written
+snap() { ( cd "$1" && find . -path ./.git -prune -o -printf '%y %p %l\n' | sort
+           find . -path ./.git -prune -o -type f -print0 | sort -z | xargs -0 -r md5sum ) 2>/dev/null; }
+# sysm <json>  -- the hook's systemMessage, or nothing
+sysm() { echo "$1" | python3 -c "import json,sys;print(json.load(sys.stdin).get('systemMessage',''))"; }
 
 echo "== preflight refusals =="
 w=$(mkworld)
@@ -333,7 +345,7 @@ for e in -tmp-scratch -var-tmp-x -run-user-1000-y; do
   mkdir -p "$w/home/.claude/projects/$e/memory"; printf 'junk\n' > "$w/home/.claude/projects/$e/memory/j.md"
 done
 mkdir -p "$w/cfg/memory/-tmp-already-there"; printf 'x\n' > "$w/cfg/memory/-tmp-already-there/x.md"
-out=$(run "$w" --auto)
+out=$(run "$w" --apply)                  # the harvesting run: --auto harvests nothing since 2026-10-26
 not_ "/tmp scope not harvested"           '[ -e "$w/cfg/memory/-tmp-scratch" ]'
 not_ "/var/tmp scope not harvested"       '[ -e "$w/cfg/memory/-var-tmp-x" ]'
 not_ "/run/user scope not harvested"      '[ -e "$w/cfg/memory/-run-user-1000-y" ]'
@@ -350,26 +362,317 @@ mkdir -p "$w/home/.claude/projects/-shared/memory";    printf 'DIVERGENT\n' > "$
 out=$(run "$w" --auto)
 check "stdout is empty"                   "$out" ""
 yes_ "writes a log instead"               '[ -s "$w/home/.claude/claude-link-auto.log" ]'
-yes_ "harvests the safe new scope"        '[ -L "$w/home/.claude/projects/-brand-new/memory" ]'
+not_ "leaves the new scope to --apply (ws-13)" '[ -L "$w/home/.claude/projects/-brand-new/memory" ]'
 not_ "refuses the ambiguous one"          '[ -L "$w/home/.claude/projects/-shared/memory" ]'
 check "  and leaves shared copy intact"   "$(cat "$w/cfg/memory/-shared/s.md")" "shared mem"
 
 echo "== --auto refuses a busy repo =="
+# What --auto still does is link: the arrived scope -shared stays unlinked
+# while the repository is mid-operation, and links once it is over.
 w=$(mkworld)
-mkdir -p "$w/cfg/.git/rebase-merge" "$w/home/.claude/projects/-mid/memory"
-printf 'x\n' > "$w/home/.claude/projects/-mid/memory/x.md"
+mkdir -p "$w/cfg/.git/rebase-merge"
 run "$w" --auto >/dev/null 2>&1
-not_ "no write during rebase"             '[ -e "$w/cfg/memory/-mid" ]'
+not_ "no write during rebase"             '[ -e "$w/home/.claude/projects/-shared/memory" ]'
 not_ "  no log written either"            '[ -e "$w/home/.claude/claude-link-auto.log" ]'
 rmdir "$w/cfg/.git/rebase-merge"
 run "$w" --auto >/dev/null 2>&1
-yes_ "proceeds once rebase is over"       '[ -L "$w/home/.claude/projects/-mid/memory" ]'
+yes_ "proceeds once rebase is over"       '[ -L "$w/home/.claude/projects/-shared/memory" ]'
 for g in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_LOG; do
   w=$(mkworld); : > "$w/cfg/.git/$g"
-  mkdir -p "$w/home/.claude/projects/-g/memory"; printf 'x\n' > "$w/home/.claude/projects/-g/memory/x.md"
   run "$w" --auto >/dev/null 2>&1
-  not_ "refuses during $g"                '[ -e "$w/cfg/memory/-g" ]'
+  not_ "refuses during $g"                '[ -e "$w/home/.claude/projects/-shared/memory" ]'
 done
+
+echo "== one run at a time (ws-12) =="
+# The battery's link/e2.sh: runs ending together, each finding the same new
+# scope, nested a copy and made self-links in the shared tree. A held lock
+# turns a second run away; thirty at once leave the tree as one run would.
+newscope() {  # a real memory scope this machine made, not yet shared
+  mkdir -p "$1/home/.claude/projects/-newscope/memory"
+  printf -- '- [n](n.md) — new\n' > "$1/home/.claude/projects/-newscope/memory/MEMORY.md"
+  printf 'n\n' > "$1/home/.claude/projects/-newscope/memory/n.md"
+}
+held() { local w=$1; shift   # run claude-link while another process holds the lock
+  flock "$w/home/.claude/.claude-link.lock" env HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" \
+    CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" "$LINK" "$@" 2>&1; }
+w=$(mkworld); newscope "$w"
+out=$(held "$w" --apply); rc=$?
+check "--apply while another run holds the lock exits 2" "$rc" "2"
+check "  with one line"                           "$(printf '%s\n' "$out" | grep -c .)" "1"
+yes_ "  naming the lock"                          '[[ "$out" == *"holds"*".claude-link.lock"* ]]'
+not_ "  and changes nothing"                      '[ -L "$w/home/.claude/CLAUDE.md" ] || [ -e "$w/cfg/memory/-newscope" ]'
+out=$(held "$w" --auto); rc=$?
+check "--auto under a held lock exits 0"          "$rc" "0"
+check "  in silence"                              "$out" ""
+not_ "  logging nothing"                          '[ -e "$w/home/.claude/claude-link-auto.log" ]'
+not_ "  and changing nothing"                     '[ -L "$w/home/.claude/projects/-shared/memory" ]'
+out=$(held "$w"); rc=$?
+check "the dry run takes no lock"                 "$rc" "1"
+yes_ "  and still reports"                        '[[ "$out" == *"would link"* ]]'
+out=$(run "$w" --apply); rc=$?
+check "once the lock is free, --apply runs"       "$rc" "1"
+yes_ "  and harvests"                             '[ -L "$w/home/.claude/projects/-newscope/memory" ]'
+w=$(mkworld); newscope "$w"
+for i in $(seq 1 30); do ( run "$w" --apply > "$w/run.$i"; echo $? > "$w/rc.$i" ) & done; wait
+turned=0 odd=0
+for i in $(seq 1 30); do
+  case "$(cat "$w/rc.$i")" in
+    2) grep -q "another claude-link run holds" "$w/run.$i" && turned=$((turned+1)) || odd=$((odd+1)) ;;
+    0|1) ;;
+    *) odd=$((odd+1)) ;;
+  esac
+done
+check "thirty --apply at once: the new scope harvested once" \
+  "$(cd "$w/cfg/memory/-newscope" 2>/dev/null && find . | sort | tr '\n' ' ')" ". ./MEMORY.md ./n.md "
+not_ "  no nested copy"                           '[ -e "$w/cfg/memory/-newscope/memory" ]'
+check "  no link anywhere in the shared tree"     "$(find "$w/cfg" -path "$w/cfg/.git" -prune -o -type l -print | wc -l)" "0"
+check "  its index intact"                        "$(cat "$w/cfg/memory/-newscope/MEMORY.md" 2>/dev/null)" "- [n](n.md) — new"
+check "  the local scope a link to it"            "$(readlink -f "$w/home/.claude/projects/-newscope/memory")" "$(readlink -f "$w/cfg/memory/-newscope")"
+check "  the arrived scope linked as one link"    "$(readlink "$w/home/.claude/projects/-shared/memory")" "$w/cfg/memory/-shared"
+check "  no run failed"                           "$(cat "$w"/run.* | grep -c '\[FAIL\]')" "0"
+check "  each run either ran or was turned away by the lock" "$odd" "0"
+w=$(mkworld); newscope "$w"
+for i in $(seq 1 30); do run "$w" --auto > "$w/run.$i" & done; wait
+not_ "thirty --auto at once: nothing harvested"   '[ -e "$w/cfg/memory/-newscope" ]'
+check "  no link anywhere in the shared tree"     "$(find "$w/cfg" -path "$w/cfg/.git" -prune -o -type l -print | wc -l)" "0"
+check "  the arrived scope linked as one link"    "$(readlink "$w/home/.claude/projects/-shared/memory")" "$w/cfg/memory/-shared"
+check "  the shared index intact"                 "$(cat "$w/cfg/memory/-shared/MEMORY.md")" "- [s](s.md) — h"
+check "  the new scope left whole where it was"   "$(ls "$w/home/.claude/projects/-newscope/memory" | tr '\n' ' ')" "MEMORY.md n.md "
+check "  and every run silent"                    "$(cat "$w"/run.* | wc -c)" "0"
+
+echo "== --auto writes only under ~/.claude once the Desktop is a folder (ws-13) =="
+# The cutover's state, a .stfolder marker at ~/Desktop: a layer's link that
+# has arrived before its target (Syncthing makes a symlink from the index
+# alone; live-B section 2, the battery's t7.sh), a layer arrived with no link
+# yet, a new scope and a new permission file of this machine's, an arrived
+# scope with an empty local memory/ and one with a full one.
+w=$(mkworld); mkdir "$w/desk/.stfolder"
+mkdir -p "$w/desk/rep2" "$w/cfg/repos/rep3" "$w/desk/rep3" "$w/desk/fresh/.claude" "$w/cfg/memory/-arrived" "$w/cfg/memory/-kept"
+ln -s "$w/cfg/repos/rep2/CLAUDE.local.md" "$w/desk/rep2/CLAUDE.local.md"       # its target not yet arrived
+printf 'layer\n' > "$w/cfg/repos/rep3/CLAUDE.local.md"                          # arrived, not linked here
+printf '{"permissions":{"allow":["Bash(f)"]}}\n' > "$w/desk/fresh/.claude/settings.local.json"
+newscope "$w"
+printf 'a\n' > "$w/cfg/memory/-arrived/a.md"; mkdir -p "$w/home/.claude/projects/-arrived/memory"   # empty, made by a session
+printf 'k\n' > "$w/cfg/memory/-kept/k.md";    mkdir -p "$w/home/.claude/projects/-kept/memory"
+printf 'local\n' > "$w/home/.claude/projects/-kept/memory/l.md"
+ln -s "$w/cfg/gone" "$w/home/.claude/plans"                                     # dangling, under ~/.claude
+cfg0=$(snap "$w/cfg"); desk0=$(snap "$w/desk")
+out=$(run "$w" --auto); rc=$?
+check "--auto: nothing written in the shared tree"  "$(snap "$w/cfg")" "$cfg0"
+check "  nor in ~/Desktop"                          "$(snap "$w/desk")" "$desk0"
+check "  silent"                                    "$out" ""
+yes_ "the dangling layer link survives --auto"      '[ -L "$w/desk/rep2/CLAUDE.local.md" ]'
+not_ "the arrived layer is not linked by --auto"    '[ -e "$w/desk/rep3/CLAUDE.local.md" ]'
+yes_ "  and the log names it"                       'grep -q "not linked: .*rep3/CLAUDE.local.md" "$w/home/.claude/claude-link-auto.log"'
+not_ "a new scope is not harvested by --auto"       '[ -L "$w/home/.claude/projects/-newscope/memory" ]'
+yes_ "  and the log says so"                        'grep -q "new memory scope -newscope: --auto harvests nothing" "$w/home/.claude/claude-link-auto.log"'
+not_ "a new permission file is not harvested"       '[ -L "$w/desk/fresh/.claude/settings.local.json" ]'
+yes_ "an empty local memory/ ends linked"           '[ -L "$w/home/.claude/projects/-arrived/memory" ]'
+check "  to its shared scope"                       "$(readlink -f "$w/home/.claude/projects/-arrived/memory")" "$(readlink -f "$w/cfg/memory/-arrived")"
+not_ "a full one is left alone"                     '[ -L "$w/home/.claude/projects/-kept/memory" ]'
+yes_ "  its file where it was"                      '[ -f "$w/home/.claude/projects/-kept/memory/l.md" ]'
+yes_ "  and the log says so"                        'grep -q "exists and is not a link: .*-kept/memory" "$w/home/.claude/claude-link-auto.log"'
+not_ "a dangling link under ~/.claude is still swept" '[ -L "$w/home/.claude/plans" ]'
+out=$(run "$w"); rc=$?
+yes_ "the dry run reports the Desktop's dangling link" '[[ "$out" == *"would remove dangling link"*"rep2/CLAUDE.local.md"* ]]'
+out=$(run "$w" --apply); rc=$?
+not_ "--apply sweeps the dangling layer link"       '[ -L "$w/desk/rep2/CLAUDE.local.md" ]'
+yes_ "  links the arrived layer"                    '[ -L "$w/desk/rep3/CLAUDE.local.md" ]'
+yes_ "  harvests the new scope"                     '[ -f "$w/cfg/memory/-newscope/n.md" ] && [ -L "$w/home/.claude/projects/-newscope/memory" ]'
+yes_ "  and the new permission file"                '[ -f "$w/cfg/repos/fresh/settings.local.json" ] && [ -L "$w/desk/fresh/.claude/settings.local.json" ]'
+not_ "  and still leaves the full scope to --adopt" '[ -L "$w/home/.claude/projects/-kept/memory" ]'
+w=$(mkworld); mkdir -p "$w/home/.claude/projects/-shared/memory"
+out=$(run "$w"); rc=$?
+yes_ "the dry run names the empty directory it would replace" '[[ "$out" == *"would replace the empty directory"*"-shared/memory"* ]]'
+yes_ "  and leaves it"                              '[ -d "$w/home/.claude/projects/-shared/memory" ] && [ ! -L "$w/home/.claude/projects/-shared/memory" ]'
+run "$w" --apply >/dev/null
+yes_ "--apply replaces it too"                      '[ -L "$w/home/.claude/projects/-shared/memory" ]'
+
+echo "== the vendor's skill state stays on its machine (ws-14) =="
+# Today's shape: ~/.claude/skills one link into the shared skills/, where
+# Anthropic's skill sync keeps synced/, .trash/ and .staging/ (live-B section 3).
+skillworld() {
+  local w; w=$(mkworld)
+  mkdir -p "$w/cfg/skills/restore-order/tools" "$w/cfg/skills/wrap-up" "$w/cfg/skills/synced/alpha" \
+           "$w/cfg/skills/synced/beta" "$w/cfg/skills/.trash/old" "$w/cfg/skills/.staging"
+  : > "$w/cfg/skills/.gitkeep"
+  printf -- '---\nname: restore-order\n---\n' > "$w/cfg/skills/restore-order/SKILL.md"
+  printf 'x\n' > "$w/cfg/skills/restore-order/tools/census.py"
+  printf -- '---\nname: wrap-up\n---\n'       > "$w/cfg/skills/wrap-up/SKILL.md"
+  printf 'a\n' > "$w/cfg/skills/synced/alpha/SKILL.md"; printf 'b\n' > "$w/cfg/skills/synced/beta/SKILL.md"
+  printf '{"skills":[]}\n' > "$w/cfg/skills/synced/manifest.json"; : > "$w/cfg/skills/synced/.last-complete-round"
+  printf 't\n' > "$w/cfg/skills/.trash/old/SKILL.md"
+  ln -s "$w/cfg/skills" "$w/home/.claude/skills"
+  echo "$w"
+}
+w=$(skillworld); v0=$(snap "$w/cfg/skills/synced")
+out=$(run "$w"); rc=$?
+yes_ "dry run: names the change"                  '[[ "$out" == *"would make ~/.claude/skills a directory of per-skill links"* ]]'
+yes_ "  each skill it would link"                 '[[ "$out" == *"would link ~/.claude/skills/restore-order"* && "$out" == *"would link ~/.claude/skills/wrap-up"* ]]'
+yes_ "  the vendor's state it would move"         '[[ "$out" == *"would move skills/synced (4 files) out of the shared tree"* && "$out" == *"would move skills/.trash (1 files)"* ]]'
+yes_ "  and changes nothing"                      '[ -L "$w/home/.claude/skills" ] && [ -d "$w/cfg/skills/synced" ]'
+run "$w" --auto >/dev/null
+yes_ "--auto moves nothing"                       '[ -L "$w/home/.claude/skills" ] && [ -f "$w/cfg/skills/synced/manifest.json" ]'
+yes_ "  and the log says what will"               'grep -q "claude-link --apply makes it a directory of per-skill links" "$w/home/.claude/claude-link-auto.log"'
+out=$(run "$w" --apply); rc=$?
+check "--apply: exit 1, changes made"             "$rc" "1"
+yes_ "  ~/.claude/skills a real directory"        '[ -d "$w/home/.claude/skills" ] && [ ! -L "$w/home/.claude/skills" ]'
+check "  each authored skill a link into the shared tree" "$(readlink "$w/home/.claude/skills/restore-order") $(readlink "$w/home/.claude/skills/wrap-up")" "$w/cfg/skills/restore-order $w/cfg/skills/wrap-up"
+yes_ "  the links resolve"                        '[ -f "$w/home/.claude/skills/restore-order/tools/census.py" ] && [ -f "$w/home/.claude/skills/wrap-up/SKILL.md" ]'
+check "  no vendor state left in the shared tree" "$(find "$w/cfg/skills" -path '*synced*' -o -name .trash -o -name .staging | wc -l)" "0"
+check "  the vendor's files moved whole"          "$(snap "$w/home/.claude/skills/synced")" "$v0"
+yes_ "  .trash and .staging with them"            '[ -f "$w/home/.claude/skills/.trash/old/SKILL.md" ] && [ -d "$w/home/.claude/skills/.staging" ]'
+yes_ "  the vendor's directories real, not links" '[ ! -L "$w/home/.claude/skills/synced" ] && [ ! -L "$w/home/.claude/skills/.trash" ]'
+not_ "  a dotfile of the shared skills/ is not linked" '[ -e "$w/home/.claude/skills/.gitkeep" ]'
+yes_ "  and the output says it was a rename"      '[[ "$out" == *"moved skills/synced (4 files) out of the shared tree"*"(a rename on one filesystem)"* ]]'
+not_ "  no scaffolding left behind"               'ls -A "$w/home/.claude" | grep -q "^\.skills\."'
+out=$(run "$w" --apply); rc=$?
+check "a second --apply has nothing to do"        "$rc" "0"
+check "  and says nothing about skills"           "$(printf '%s\n' "$out" | sed -n '/== skills ==/,/^$/p' | grep -c '\[')" "0"
+if [ -x "$HOOKS/session-start.sh" ]; then
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "the hook's sentinels still pass"          '[[ "$j" == *"not linked into org/claude-config"* ]]'
+  not_ "  no link counted as dangling"            '[[ "$j" == *"no longer exists"* ]]'
+  check "  and the user is not interrupted"       "$(sysm "$j")" ""
+fi
+mkdir -p "$w/cfg/skills/fresh"; printf 'f\n' > "$w/cfg/skills/fresh/SKILL.md"
+run "$w" --auto >/dev/null
+check "a new authored skill: --auto links it"     "$(readlink "$w/home/.claude/skills/fresh")" "$w/cfg/skills/fresh"
+rm -f "$w/cfg/skills/fresh/SKILL.md"; rmdir "$w/cfg/skills/fresh"
+run "$w" --auto >/dev/null
+not_ "a skill gone from the shared tree: --auto sweeps its link" '[ -L "$w/home/.claude/skills/fresh" ]'
+mkdir -p "$w/home/.claude/skills/mine"; printf 'm\n' > "$w/home/.claude/skills/mine/SKILL.md"
+out=$(run "$w" --apply)
+yes_ "a skill made here alone is named"           '[[ "$out" == *"a skill on this machine alone: ~/.claude/skills/mine"* ]]'
+yes_ "  and left where it is"                     '[ -f "$w/home/.claude/skills/mine/SKILL.md" ] && [ ! -L "$w/home/.claude/skills/mine" ] && [ ! -e "$w/cfg/skills/mine" ]'
+not_ "  the vendor's synced/ is not named so"     '[[ "$out" == *"alone: ~/.claude/skills/synced"* ]]'
+mkdir -p "$w/cfg/skills/synced/z"; printf 'z\n' > "$w/cfg/skills/synced/z/SKILL.md"   # a machine still in the old shape wrote here
+out=$(run "$w" --apply)
+yes_ "vendor state in both places: warned"        '[[ "$out" == *"skills/synced is both in the shared tree and in ~/.claude/skills"* ]]'
+yes_ "  and neither copy touched"                 '[ -f "$w/cfg/skills/synced/z/SKILL.md" ] && [ -f "$w/home/.claude/skills/synced/manifest.json" ] && [ ! -e "$w/home/.claude/skills/synced/z" ]'
+rm -f "$w/cfg/skills/synced/z/SKILL.md"; rmdir "$w/cfg/skills/synced/z" "$w/cfg/skills/synced"
+run "$w" --unlink >/dev/null
+yes_ "--unlink: each per-skill link a real copy"  '[ -d "$w/home/.claude/skills/restore-order" ] && [ ! -L "$w/home/.claude/skills/restore-order" ] && [ -f "$w/home/.claude/skills/restore-order/tools/census.py" ]'
+yes_ "  the vendor's state stays where it is"     '[ -f "$w/home/.claude/skills/synced/manifest.json" ]'
+check "  and none of it in the shared tree"       "$(find "$w/cfg/skills" -path '*synced*' | wc -l)" "0"
+w=$(mkworld); mkdir -p "$w/cfg/skills/solo" "$w/cfg/skills/synced/v"; printf 's\n' > "$w/cfg/skills/solo/SKILL.md"
+printf 'v\n' > "$w/cfg/skills/synced/v/SKILL.md"   # the vendor's state, still in the shared tree
+run "$w" --auto >/dev/null
+yes_ "a new machine: --auto builds the directory of links" '[ -d "$w/home/.claude/skills" ] && [ ! -L "$w/home/.claude/skills" ] && [ -L "$w/home/.claude/skills/solo" ]'
+yes_ "  and moves nothing out of the shared tree" '[ -f "$w/cfg/skills/synced/v/SKILL.md" ] && [ ! -e "$w/home/.claude/skills/synced" ]'
+yes_ "  the log saying what --apply will move"    'grep -q "skills/synced (1 files) is in the shared tree; claude-link --apply moves it" "$w/home/.claude/claude-link-auto.log"'
+run "$w" --apply >/dev/null
+yes_ "  which it does"                            '[ -f "$w/home/.claude/skills/synced/v/SKILL.md" ] && [ ! -e "$w/cfg/skills/synced" ]'
+
+echo "== before the cutover --auto links an arrived layer, and after it does not (R1 M2) =="
+# Until ~/Desktop is a Syncthing folder a new layer reaches this machine by a
+# git pull, whose hint runs --auto, and nothing else would link it; once a
+# .stfolder marker sits at ~/Desktop or above it, the link arrives with the
+# folder. Removal stays --apply's in both states.
+layerworld() {  # a layer arrived but not linked here, and a link still waiting for its target
+  local w; w=$(mkworld)
+  mkdir -p "$w/cfg/repos/rep3" "$w/desk/rep3" "$w/desk/rep2"
+  printf 'layer\n' > "$w/cfg/repos/rep3/CLAUDE.local.md"
+  ln -s "$w/cfg/repos/rep2/CLAUDE.local.md" "$w/desk/rep2/CLAUDE.local.md"
+  echo "$w"
+}
+w=$(layerworld); cfg0=$(snap "$w/cfg")
+out=$(run "$w" --auto)
+check "no marker: --auto links the arrived layer"    "$(readlink "$w/desk/rep3/CLAUDE.local.md")" "$w/cfg/repos/rep3/CLAUDE.local.md"
+check "  and the arrived permission file"            "$(readlink "$w/desk/rep/.claude/settings.local.json")" "$w/cfg/repos/rep/settings.local.json"
+yes_ "  removes nothing: the waiting link stays"     '[ -L "$w/desk/rep2/CLAUDE.local.md" ]'
+check "  writes nothing in the shared tree"          "$(snap "$w/cfg")" "$cfg0"
+check "  silent"                                     "$out" ""
+yes_ "  and the log says why"                        'grep -qF "lies in no Syncthing folder (no .stfolder at it or above it): --auto makes a missing link here and removes none" "$w/home/.claude/claude-link-auto.log"'
+run "$w" --apply >/dev/null
+not_ "  --apply sweeps the waiting link, as before"  '[ -L "$w/desk/rep2/CLAUDE.local.md" ]'
+for at in desk above; do
+  w=$(layerworld)
+  if [ "$at" = desk ]; then m="$w/desk"; said="at ~/Desktop"; else m="$w"; said="above ~/Desktop"; fi
+  mkdir "$m/.stfolder"; m=$(cd "$m" && pwd -P); desk0=$(snap "$w/desk")
+  run "$w" --auto >/dev/null
+  not_ "a marker $said: --auto links nothing there"  '[ -e "$w/desk/rep3/CLAUDE.local.md" ] || [ -e "$w/desk/rep/.claude/settings.local.json" ]'
+  check "  writes nothing in ~/Desktop"              "$(snap "$w/desk")" "$desk0"
+  yes_ "  and the log names the folder"              'grep -qF "rep3/CLAUDE.local.md  (~/Desktop lies in the Syncthing folder at $m, so the link arrives with it" "$w/home/.claude/claude-link-auto.log"'
+  run "$w" --apply >/dev/null
+  yes_ "  --apply links, as before"                  '[ -L "$w/desk/rep3/CLAUDE.local.md" ] && [ -L "$w/desk/rep/.claude/settings.local.json" ]'
+  not_ "  and sweeps the waiting link, as before"    '[ -L "$w/desk/rep2/CLAUDE.local.md" ]'
+done
+
+echo "== the adversarial read's cases (R2, 2026-10-26) =="
+# Each pins a defect or a surviving mutant of R2's report
+# (transport-5a/reports/R2-adversarial.md): M6, the three lows, and the
+# mutants CL05, CL10, CL11 and CL13. A race is simulated deterministically by
+# a wrapped tool first on the sandbox PATH.
+REAL_LN=$(command -v ln) REAL_MKDIR=$(command -v mkdir) REAL_MV=$(command -v mv)
+raw() { local w=$1; shift   # claude-link with stdout and stderr apart: stdout to $w/out, stderr to $w/err
+  HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
+    "$LINK" "$@" >"$w/out" 2>"$w/err"; }
+for modes in "--auto --apply" "--apply --auto" "--auto --adopt" "--auto --unlink" "--unlink --auto"; do
+  w=$(mkworld); newscope "$w"; cfg0=$(snap "$w/cfg"); desk0=$(snap "$w/desk")
+  # shellcheck disable=SC2086
+  raw "$w" $modes; rc=$?
+  check "$modes: refused, exit 2"                 "$rc" "2"
+  check "  one line on stderr"                    "$(grep -c . "$w/err")" "1"
+  yes_ "  saying --auto runs alone"               'grep -q "auto runs alone" "$w/err"'
+  check "  nothing on stdout"                     "$(cat "$w/out")" ""
+  yes_ "  nothing written: no link, no log"       '[ ! -e "$w/home/.claude/CLAUDE.md" ] && [ ! -e "$w/home/.claude/claude-link-auto.log" ] && [ "$(snap "$w/cfg")" = "$cfg0" ] && [ "$(snap "$w/desk")" = "$desk0" ]'
+done
+w=$(mkworld); : > "$w/home/.claude/.claude-link.lock"; chmod 0444 "$w/home/.claude/.claude-link.lock"
+raw "$w" --auto; rc=$?
+check "a lock file that cannot be opened: --auto exits 0" "$rc" "0"
+check "  silent"                                  "$(cat "$w/out" "$w/err")" ""
+yes_ "  does nothing"                             '[ ! -e "$w/home/.claude/CLAUDE.md" ]'
+yes_ "  and logs one line with the lock and the error" 'grep -qF "claude-link: cannot take the lock $w/home/.claude/.claude-link.lock: Permission denied; nothing done" "$w/home/.claude/claude-link-auto.log"'
+raw "$w" --apply; rc=$?
+check "  --apply: exit 2"                         "$rc" "2"
+check "  with one line, the lock and the error"   "$(cat "$w/err")" "claude-link: cannot take the lock $w/home/.claude/.claude-link.lock: Permission denied; nothing changed."
+chmod 0644 "$w/home/.claude/.claude-link.lock"
+# CL05: a session creates memory/ between the link pass's test and its link.
+w=$(mkworld); mkdir -p "$w/bin"
+printf '#!/bin/sh\nfor a; do d=$a; done\ncase "$d" in */projects/-shared/memory) %s -p "$d" ;; esac\nexec %s "$@"\n' "$REAL_MKDIR" "$REAL_LN" > "$w/bin/ln"; chmod +x "$w/bin/ln"
+out=$(HOME="$w/home" PATH="$w/bin:$PATH" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" "$LINK" --apply 2>&1); rc=$?
+check "a directory appears where the link goes: the run fails, exit 2" "$rc" "2"
+check "  and no link lands inside it"             "$(ls -A "$w/home/.claude/projects/-shared/memory" 2>/dev/null | wc -l)" "0"
+run "$w" --apply >/dev/null
+check "  the next run links it"                   "$(readlink "$w/home/.claude/projects/-shared/memory")" "$w/cfg/memory/-shared"
+# CL13: the other machine's harvest of the same scope arrives between the
+# harvest's test and its copy.
+w=$(mkworld); newscope "$w"; mkdir -p "$w/bin"
+printf '#!/bin/sh\nif [ "$1" = -p ] && [ "$2" = "%s" ] && [ ! -e "$2/-newscope" ]; then\n  %s -p "$2/-newscope"; printf "theirs\\n" > "$2/-newscope/t.md"\nfi\nexec %s "$@"\n' \
+  "$w/cfg/memory" "$REAL_MKDIR" "$REAL_MKDIR" > "$w/bin/mkdir"; chmod +x "$w/bin/mkdir"
+out=$(HOME="$w/home" PATH="$w/bin:$PATH" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" "$LINK" --apply 2>&1); rc=$?
+check "the shared scope arrives mid-harvest: the harvest fails, exit 2" "$rc" "2"
+check "  nothing copied into the arrival"        "$(cd "$w/cfg/memory/-newscope" && find . | sort | tr '\n' ' ')" ". ./t.md "
+yes_ "  and the local scope kept whole, for --adopt" '[ -f "$w/home/.claude/projects/-newscope/memory/n.md" ] && [ ! -L "$w/home/.claude/projects/-newscope/memory" ]'
+# CL10: the new skills directory cannot take the link's name.
+w=$(skillworld); mkdir -p "$w/bin"
+printf '#!/bin/sh\ncase "$*" in *.skills.claude-link.*) echo "mv: simulated failure" >&2; exit 1 ;; esac\nexec %s "$@"\n' "$REAL_MV" > "$w/bin/mv"; chmod +x "$w/bin/mv"
+out=$(HOME="$w/home" PATH="$w/bin:$PATH" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" "$LINK" --apply 2>&1); rc=$?
+check "the swap fails: exit 2"                    "$rc" "2"
+check "  the old link put back"                   "$(readlink "$w/home/.claude/skills")" "$w/cfg/skills"
+yes_ "  the vendor's state left in place"         '[ -f "$w/cfg/skills/synced/manifest.json" ]'
+not_ "  and no scaffolding left behind"           'ls -A "$w/home/.claude" | grep -q "^\.skills\."'
+# CL11: --unlink in the old shape copies the whole directory, as before.
+w=$(skillworld)
+out=$(run "$w" --unlink)
+yes_ "--unlink in the old shape: ~/.claude/skills a real copy" '[ -d "$w/home/.claude/skills" ] && [ ! -L "$w/home/.claude/skills" ] && [ -f "$w/home/.claude/skills/restore-order/tools/census.py" ] && [ -f "$w/home/.claude/skills/synced/manifest.json" ]'
+yes_ "  and it says so"                           '[[ "$out" == *"unlinked, now a real copy: ~/.claude/skills"* ]]'
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  hook() { HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh"; }
+  printf 'z\n' > "$w/cfg/memory/-shared/ctl$(printf '\001')x$(printf '\r')y.md"
+  j=$(hook)
+  yes_ "a control character in a topic name: valid JSON" 'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null'
+  yes_ "  and the name shown as it is"            '[[ "$(sysm "$j")" == *"-shared/ctl"$'"'"'\001'"'"'"x"$'"'"'\r'"'"'"y.md"* ]]'
+  rm -f "$w/cfg/memory/-shared/ctl"*
+  ete=$'\xc3\xa9t\xc3\xa9'                 # e-acute, t, e-acute in UTF-8
+  for n in "a b" "c d" "$ete" "e f"; do printf 'x\n' > "$w/cfg/memory/-shared/$n.md"; done
+  printf -- '- [ab](a%%20b.md) — h\n- [cd](<c d.md>) — h\n- [ete](%%C3%%A9t%%C3%%A9.md) — h\n' >> "$w/cfg/memory/-shared/MEMORY.md"
+  j=$(hook)
+  not_ "a link spelt a%20b.md, <c d.md> or percent-encoded: named, so not reported" '[[ "$j" == *"-shared/a b.md"* || "$j" == *"-shared/c d.md"* || "$j" == *"-shared/$ete.md"* ]]'
+  yes_ "  while a file no link names still is"    '[[ "$(sysm "$j")" == *"1 memory file(s)"*"-shared/e f.md"* ]]'
+fi
 
 echo "== absent repos are skipped, not failed =="
 w=$(mkworld)
@@ -482,18 +785,23 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   not_ "an unlinked /tmp scope does not warn"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
   mkdir -p "$w/home/.claude/projects/-home-bph-Desktop-real/memory"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "an empty one with no shared scope: nothing to adopt, no warning" '[[ "$j" == *"memory scope"* ]]'
+  printf 'r\n' > "$w/home/.claude/projects/-home-bph-Desktop-real/memory/r.md"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "  but a real unlinked scope does"      'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
   yes_ "  and counts only the real one"        '[[ "$j" == *"1 memory scope"* ]]'
 fi
 
 echo "== SessionEnd hook =="
 if [ -x "$HOOKS/session-end.sh" ]; then
-  w=$(mkworld)
+  # The hook finds claude-link at ~/bin, where it is stowed: here, the one under test.
+  w=$(mkworld); mkdir -p "$w/home/bin"; ln -s "$LINK" "$w/home/bin/claude-link"
   mkdir -p "$w/home/.claude/projects/-hooked/memory"; printf 'h\n' > "$w/home/.claude/projects/-hooked/memory/h.md"
-  CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
+  HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
     bash "$HOOKS/session-end.sh"; rc=$?
   check "exits 0"                         "$rc" "0"
-  yes_ "harvests through the hook"        '[ -L "$w/home/.claude/projects/-hooked/memory" ]'
+  yes_ "links the arrived scope through the hook" '[ -L "$w/home/.claude/projects/-shared/memory" ]'
+  not_ "  and harvests nothing (ws-13)"   '[ -e "$w/cfg/memory/-hooked" ]'
   ( PATH=/usr/bin:/bin HOME=/nonexistent timeout 25 bash "$HOOKS/session-end.sh" ) ; rc=$?
   check "exits 0 with claude-link absent" "$rc" "0"
 else
@@ -512,16 +820,102 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   yes_ "  model context kept too"         'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin)[\"hookSpecificOutput\"][\"additionalContext\"] else 1)"'
 fi
 
+echo "== the hook names memories that would not load (ws-15) =="
+if [ -x "$HOOKS/session-start.sh" ]; then
+  w=$(mkworld); run "$w" --apply >/dev/null
+  hook() { HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh"; }
+  valid() { echo "$1" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null; }
+  j=$(hook)
+  not_ "healthy: no memory warning"               '[[ "$j" == *"WARNING: memory"* ]]'
+  printf 'lost\n' > "$w/cfg/memory/-shared/lost.md"
+  j=$(hook)
+  yes_ "a topic file its index does not name: the model is told, scope and file" '[[ "$j" == *"WARNING: memory: 1 memory file(s) that their scope"*"MEMORY.md does not name, so they never load: -shared/lost.md; add each"* ]]'
+  yes_ "  and the user"                           '[[ "$(sysm "$j")" == *"memory: 1 memory file(s)"*"-shared/lost.md"* ]]'
+  printf -- '- [lost](lost.md) — back\n' >> "$w/cfg/memory/-shared/MEMORY.md"
+  j=$(hook)
+  not_ "  named again: silent"                    '[[ "$j" == *"WARNING: memory"* ]]'
+  printf -- '- [s](s.md) — h\n- [n](n.md) — theirs\n' > "$w/cfg/memory/-shared/MEMORY.sync-conflict-20261009-153031-ABCDEFG.md"
+  j=$(hook)
+  yes_ "a conflict copy of the index: named, to both channels" '[[ "$(sysm "$j")" == *"1 conflict copy(ies) among the memories, which never load: -shared/MEMORY.sync-conflict-20261009-153031-ABCDEFG.md"* ]]'
+  yes_ "  the model too"                          '[[ "$j" == *"WARNING: memory: 1 conflict copy(ies)"* ]]'
+  not_ "  and not counted again as an unnamed file" '[[ "$j" == *"does not name"* ]]'
+  printf 'x\n' > "$w/cfg/memory/-shared/s.sync-conflict-20261009-153031-ABCDEFG.md"
+  j=$(hook)
+  yes_ "  a topic file's copy counted beside it"  '[[ "$j" == *"2 conflict copy(ies)"* ]]'
+  rm -f "$w/cfg/memory/-shared/"*.sync-conflict-*
+  mkdir -p "$w/home/.claude/projects/-real/memory"; printf 'u\n' > "$w/home/.claude/projects/-real/memory/u.md"
+  j=$(hook)
+  not_ "a scope still a real directory is the adoption count's alone" '[[ "$j" == *"-real/u.md"* ]]'
+  rm -f "$w/home/.claude/projects/-real/memory/u.md"
+  for i in 1 2 3 4 5 6 7 8 9; do printf 'x\n' > "$w/cfg/memory/-shared/m$i.md"; done
+  j=$(hook)
+  yes_ "nine unnamed: six named, the rest counted" '[[ "$j" == *"9 memory file(s)"*"-shared/m6.md and 3 more; add each"* ]]'
+  rm -f "$w/cfg/memory/-shared/m"?.md
+  printf 'q\n' > "$w/cfg/memory/-shared/we\"ird\\name.md"
+  j=$(hook)
+  yes_ "a hostile file name still yields valid JSON" 'valid "$j"'
+  yes_ "  and is named"                           '[[ "$(sysm "$j")" == *"-shared/we\"ird\\name.md"* ]]'
+  rm -f "$w/cfg/memory/-shared/we"*
+  mkdir -p "$w/cfg/hosts"; printf 'this machine\n' > "$w/cfg/hosts/bigfed.md"
+  ln -s "$w/cfg/hosts/bigfed.md" "$w/home/CLAUDE.md"
+  j=$(hook)
+  not_ "~/CLAUDE.md a link to its file: silent"   '[[ "$j" == *"~/CLAUDE.md"* ]]'
+  ln -sfn "$w/cfg/hosts/gone.md" "$w/home/CLAUDE.md"
+  j=$(hook)
+  yes_ "a dangling ~/CLAUDE.md: the user is told" '[[ "$(sysm "$j")" == *"~/CLAUDE.md is a link to $w/cfg/hosts/gone.md, which is not there, so this machine"*"charter is not loading"* ]]'
+  yes_ "  and the model"                          '[[ "$j" == *"WARNING: ~/CLAUDE.md is a link to"* ]]'
+  printf 'older\n' > "$w/cfg/hosts/bigfed.sync-conflict-20261009-153031-ABCDEFG.md"
+  ln -sfn "$w/cfg/hosts/bigfed.sync-conflict-20261009-153031-ABCDEFG.md" "$w/home/CLAUDE.md"
+  j=$(hook)
+  yes_ "a link aimed at a conflict copy: the user is told" '[[ "$(sysm "$j")" == *"~/CLAUDE.md resolves to a Syncthing conflict copy, $w/cfg/hosts/bigfed.sync-conflict-20261009-153031-ABCDEFG.md, and loads it"* ]]'
+  yes_ "  valid JSON throughout"                  'valid "$j"'
+  rm "$w/home/CLAUDE.md"; printf 'plain\n' > "$w/home/CLAUDE.md"
+  j=$(hook)
+  not_ "a plain ~/CLAUDE.md: silent"              '[[ "$j" == *"~/CLAUDE.md"* ]]'
+  rm "$w/home/CLAUDE.md"
+  # The budget: 400 topic files in 20 linked scopes, every one indexed, and a
+  # gauge that hangs until the hook cuts it.
+  for k in $(seq -w 1 20); do
+    mkdir -p "$w/cfg/memory/-s$k"; : > "$w/cfg/memory/-s$k/MEMORY.md"
+    for i in $(seq -w 1 20); do
+      printf 'body\n' > "$w/cfg/memory/-s$k/topic-$i.md"
+      printf -- '- [topic %s](topic-%s.md) — a hook line long enough to look like the real ones do\n' "$i" "$i" >> "$w/cfg/memory/-s$k/MEMORY.md"
+    done
+  done
+  run "$w" --apply >/dev/null
+  t0=$(date +%s%N); j=$(hook); t1=$(date +%s%N)
+  not_ "400 indexed files: no warning"            '[[ "$j" == *"WARNING"* ]]'
+  yes_ "  read inside 1 s"                        '[ $(( (t1 - t0) / 1000000 )) -lt 1000 ]'
+  mkdir -p "$w/home/bin"; printf '#!/bin/sh\nsleep 6\n' > "$w/home/bin/sync-check"; chmod +x "$w/home/bin/sync-check"
+  t0=$(date +%s%N); j=$(hook); t1=$(date +%s%N)
+  yes_ "  and with a hung gauge, still inside the hook's 5 s" '[ $(( (t1 - t0) / 1000000 )) -lt 4500 ]'
+  echo "     (the hook took $(( (t1 - t0) / 1000000 )) ms with a hung gauge)"
+else
+  no "session-start.sh not found at $HOOKS"
+fi
+
 echo "== the live config holds no directory git cannot carry =="
 # The root cause of the plans breakage, asserted against the real tree: git
 # cannot carry an empty directory, so an empty one here means a link on the
 # other machine is about to dangle. Read-only.
-RCFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
 if [ -d "$RCFG" ]; then
   empties=$(find "$RCFG" -path "$RCFG/.git" -prune -o -type d -empty -print 2>/dev/null)
   if [ -z "$empties" ]; then ok "no empty directories in the shared config"
   else no "empty directories in the shared config: $(echo $empties)"; fi
   yes_ "  plans/ is held open by a keeper" '[ -e "$RCFG/plans/.gitkeep" ]'
+else
+  ok "live config not on this machine, skipped"
+fi
+
+echo "== the live settings keep conflict copies out of context (ws-3) =="
+# Static: the key and its value. That it stops a rule's conflict copy, through
+# the symlinked rules/, was measured by the battery (claude T2b-T2c); a
+# headless re-run belongs after each Claude Code upgrade. Read-only.
+if [ -f "$RCFG/settings.json" ]; then
+  check "claudeMdExcludes is exactly the conflict-copy glob" \
+    "$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1])).get("claudeMdExcludes")))' "$RCFG/settings.json")" '["**/*.sync-conflict-*"]'
+  check "  and .gitignore still guards the vendor's three skill directories" \
+    "$(grep -cxE 'skills/(synced|\.trash|\.staging)/' "$RCFG/.gitignore")" "3"
 else
   ok "live config not on this machine, skipped"
 fi

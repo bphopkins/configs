@@ -22,14 +22,15 @@ restricted to the units each keeps, so a bundle that stops working fails the
 run even though no member's rendering changed.
 
 Exit 0 means nothing changed; 1 lists changed, added, and removed members and
-leaves `build/diff/<member>-<mode>.png` (golden on the left, new on the right);
+leaves `diff/<member>-<mode>.png` under the build directory (golden on the
+left, new on the right);
 2 means the fixture itself did not compile, which is the loudest possible
 regression.
 
-- `gen-fixture.py` — builds `build/fixture.tex` and `build/pages.tsv` from the
+- `gen-fixture.py` — builds `fixture.tex` and `pages.tsv` in the build directory from the
   package files (the hub plus every unit it loads), one page per member and
   mode. A member the mode table marks as failing in a mode is skipped in that
-  mode and listed in `build/skipped.tsv`, so the fixture always compiles.
+  mode and listed in `skipped.tsv` there, so the fixture always compiles.
 - `mode-census.py` — compiles every member alone, twice, and writes
   `modes.tsv`: which modes each member survives, with the first error line.
   Slow, so it is data, not a step: rerun it with `--recensus` when a member's
@@ -51,7 +52,11 @@ regression.
 - `golden/` — `fixture.pdf` (byte-reproducible: no dates, no trailer id) and
   `pages.sha256` (page, member, mode, hash at 200 dpi). Reviewing a golden
   update in git shows exactly which members changed.
-- `build/` — throwaway; ignored by git.
+- The build directory is `~/.cache/configs-tests/french-logic/` (`units/`
+  beneath it for `units.sh`) since 2026-10-26, outside the synced tree
+  (`org/machines/transport-2026-10/rules.md` → ws-9): regenerable output in
+  the tree would cost the hub its bytes for a year at every run. The old
+  in-tree `build/` stays in `.gitignore` as a guard against a stale one.
 
 The page hashes depend on poppler's rasteriser, so a golden accepted on one
 machine can differ on another after a poppler upgrade. If every page changes

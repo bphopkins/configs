@@ -17,9 +17,11 @@
 #
 # fedxps is the reader: Syncthing carries each repository, .git included,
 # between the machines, and bigfed alone commits and pushes. Everything below
-# keeps fedxps's own git from writing .git on a copy Syncthing delivered. The
-# battery of 2026-10-09 measured it on a 46-operation matrix and on a real
-# Claude session; its reports are under org/machines/transport-2026-10/.
+# keeps fedxps's own git from writing .git on a copy Syncthing delivered, and
+# the hook it names refuses a ref update there (fedxps-6). The battery of
+# 2026-10-09 measured the guard on a 46-operation matrix and on a real Claude
+# session; its reports are under org/machines/transport-2026-10/. Suite:
+# configs/tests/git-hosts/run.sh, which reads this file as it stands.
 
 [gsync]
 	# The role the sync commands read. Absent, this machine is a writer; any
@@ -27,19 +29,38 @@
 	# A reader's gpull, gpush, gpullall and gpushall refuse before any git
 	# command runs in a repository, and gstatall -f fetches nothing.
 	#
-	# The pilot first (pilot.md): nousowl becomes a Syncthing folder of its
-	# own at the seeding, 3c. Its step 1 converges nousowl by git one last
-	# time and THEN arms the key below, so it stays a comment until that
-	# chat uncomments it, then logs out and in on fedxps: the sync commands
-	# read this file at every run, but 10-env.sh's export reaches only the
-	# shells and sessions started after it. From then on fedxps's sync
+	# The pilot's key (pilot.md): nousowl is a Syncthing folder of its own
+	# since the seeding, 3c, whose step 1 armed the key below. The sync
+	# commands read this file at every run, but 10-env.sh's export reaches
+	# only the shells and sessions started after a change to it, so arming
+	# or disarming a key takes a logout and login here. fedxps's sync
 	# commands leave nousowl alone and still carry the other twelve by git.
 	# readerRepo repeats for more than one repository; its value is a name
 	# under ~/Desktop, and a value that names no directory is warned about
 	# and refuses nothing.
 	readerRepo = nousowl
-	# At the cutover (5a) readerRepo leaves and fedxps reads every repository:
+	# At the cutover (5d; pilot.md -> The fold-in on cutover day, item 4)
+	# readerRepo leaves and fedxps reads every repository:
 	#role = reader
+
+# The refusing hook (fedxps-6; PLAN.md settled 17, built 2026-10-26). Every
+# ref update this machine makes runs hooks-reader/reference-transaction,
+# which refuses one in a repository the keys above say fedxps reads -- the
+# pilot's nousowl now, every repository under ~/Desktop once `role = reader`
+# is armed -- and passes every other: the twelve repositories fedxps still
+# writes by git until the cutover, and every clone outside the Desktop
+# (~/src/outage, him-5). Armed now, and inert wherever the role lets fedxps
+# write. bigfed.inc sets no hooksPath, so bigfed runs no hook of this kind.
+[core]
+	# Git expands the `~` of a pathname value. The directory is the git
+	# package's hooks-reader/, linked to ~/.config/git/hooks-reader by
+	# `stow -R git`; until that restow the path names nothing and git runs
+	# no hook at all, the settings below unaffected. The value replaces
+	# every repository's own .git/hooks on this machine, none of which held
+	# an active hook when it was armed (read 2026-10-26 under ~/Desktop,
+	# ~/src and lazy.nvim's plugin clones). A `-c core.hooksPath=...` or a
+	# repository-local core.hooksPath bypasses it; agents-2 keeps both off.
+	hooksPath = ~/.config/git/hooks-reader
 
 # The incidental-write guard (fedxps-1). Plain `git status` and `git diff`
 # rewrite .git/index on a copy whose files carry new inodes, as Syncthing's

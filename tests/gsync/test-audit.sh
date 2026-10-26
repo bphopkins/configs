@@ -20,6 +20,11 @@ chmod +x "$SB/stub/uname"
 printf '#!/bin/sh\nexit 0\n' > "$SB/stub/sync-check"
 chmod +x "$SB/stub/sync-check"
 PATH="$SB/stub:$PATH"
+# The gauge's log and the run's snapshot file (2026-10-26) stay in the sandbox:
+# a push writes the one into ~/Desktop/org/machines/<host>/ and the other into
+# the runtime directory, which are this machine's.
+export GAUGE_LOG_ROOT="$SB/machines" XDG_RUNTIME_DIR="$SB/run"
+mkdir -p -m 700 "$SB/run"
 
 pass=0 fail=0
 check() { local d="$1"; shift; if "$@"; then echo "ok   - $d"; ((pass+=1)); else echo "FAIL - $d"; ((fail+=1)); fi; }

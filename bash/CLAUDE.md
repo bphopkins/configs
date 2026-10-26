@@ -1,11 +1,22 @@
 # CLAUDE.md — bash package
 
 Charter for the `bash` stow package: the modular shell configuration stowed to
-`~`. `.bashrc` sources every `~/.bashrc.d/*.sh` in numbered order, and
+`~`. `.bashrc` sources every `~/.bashrc.d/*.sh` in numbered order — a
+Syncthing conflict copy of a module excepted (ws-4, 2026-10-26: it would
+define the loser's functions on top of the winner's) — and
 `~/.bashrc.d` is a whole-directory symlink into this package — so `gpullall` +
 `source ~/.bashrc` deploys edits on the other machine with no restow. A restow
 (`stow -R bash`) is needed only when files are added or removed at the package
-top.
+top. Since 2026-10-26 `.bashrc` also records the inode and ctime of
+`~/.bashrc`, `~/.bash_profile` and every module it sourced, and a check
+appended to `PS0` prints one line before the next command runs when that set
+has changed — `bash modules changed since this shell loaded them: run reload`
+— then re-records, so an arrival (a pull today, Syncthing after the cutover)
+is never inert in silence (ws-8; about 1.7 ms a prompt, one `stat`; bash 5.3's
+`${ ...; }` substitution, so nothing on an older bash). **Run
+`tests/bashrc/run.sh` after any edit to `.bashrc`**: caged, interactive shells
+under both terminal integrations against a fixture HOME, the skip and the
+arrival line.
 
 `.bash_profile` sources the two environment modules, `10-env.sh` and
 `20-path.sh`, before `.bashrc` (2026-09-23). A login shell reads it, and the one
@@ -124,13 +135,25 @@ both terminal integrations. The cage the three share is `tests/cage.sh`
   plus the `_gsync_*` per-repo helpers and vet guards. See "Git sync" below.
 - `60-stow.sh` — `stow-all` / `stow-all-dry` / `unstow-all` and the
   `STOW_TARGETS` / `STOW_ORDER` arrays, the source of truth for package →
-  target. When adding a stow package, update **both** arrays — and see the
-  re-source trap below.
+  target. When adding a stow package, update **both** arrays. Since
+  2026-10-26 (ws-8) the three commands re-read the arrays from this file on
+  disk in their own subshell before they act, so a package that arrived is
+  stowed without a re-source; `stow-all` runs no `git pull` any more (pull
+  first with `gpullall` until the cutover; Syncthing carries the checkout
+  after it), sweeps the dangling links a removed package left — every target
+  walked three levels deep for links that dangle into a checkout directory
+  that is gone, `~/Desktop` excluded, so no package name is needed — and
+  refuses when the file on disk is missing or does not parse.
+  **Run `tests/stow/run.sh` after any edit**: caged, a sandbox checkout of
+  tiny packages, the arrivals (a new file, a new subdirectory, a removal, a
+  rename, a removed package), no pull, the refusal.
 - `70-task-list.sh` — `ls-tasks [PATH]`: recursively lists unchecked `- [ ]`
   items from markdown files.
 - `80-clamav.sh` — `clam {update,home,full}` (logs to `~/clam-scan-*.log`;
   requires `clamav` + `clamav-freshclam`). Its PUA detection flags benign
-  browser/dev content — read hits skeptically.
+  browser/dev content — read hits skeptically. ⚠ On bigfed `clam home` sweeps
+  the two Lean clones under `~/Desktop` and `~/.cache` until `TODO.md` item 37
+  lands.
 - `85-disk.sh` — `disk-check` / `disk-fix`. See "Disk maintenance pair" below.
 - `90-nix.sh` — nix profile loader, guarded twice: on nix being installed, and
   on `NIX_PROFILES` being unset. **Load-bearing on bigfed** (nix since
@@ -149,20 +172,24 @@ minimal known-good rescue configs for recovering from an edit that breaks
 login; sourced by nothing (README §8). And `.stow-global-ignore`, stowed to
 `~` — stow's global ignore list. ⚠ When that file exists stow **replaces its
 built-in defaults with it**, so it reproduces the defaults verbatim before the
-one addition (`CLAUDE\.md`, which keeps per-package charters like this one
-from being symlinked into live config dirs); a `.stow-local-ignore` in any
-package would replace it for that package — don't add one without reproducing
-the patterns.
+two additions (`CLAUDE\.md`, which keeps per-package charters like this one
+from being symlinked into live config dirs, and `__pycache__`, 2026-10-26, so
+a bytecode cache a check left in a package never lands in a target); a
+`.stow-local-ignore` in any package would replace it for that package — don't
+add one without reproducing the patterns.
 
 ## The re-source trap (hazard)
 
-`stow-all` iterates the arrays **as loaded in the running shell**. A pull that
-adds a new stow package updates `60-stow.sh` on disk but not in memory, so
-`stow-all` skips the new package **silently** — no error. `source ~/.bashrc`
-(or `reload`) must precede `stow-all` whenever a pull adds or removes
-packages. The same trap class applies to every function here: a pulled edit is
-inert until re-sourced — which is why `claude-link` / `claude-prune` are
-scripts in `bin/`, not bash functions.
+A function here runs as it was when the shell sourced it: an edit that
+arrives — by a pull today, by Syncthing after the cutover — is inert in every
+open shell until `reload`, which is why `claude-link` / `claude-prune` are
+scripts in `bin/`, not bash functions. Two things narrow the trap since
+2026-10-26 (ws-8): `stow-all`, `stow-all-dry` and `unstow-all` re-read the
+package arrays from `60-stow.sh` on disk before they act, so a package that
+arrived is stowed from an old shell too (until then `stow-all` skipped it in
+silence, and a `source ~/.bashrc` had to come first); and `.bashrc`'s
+arrival line, printed before the next command in any shell whose loaded
+modules have changed on disk, names the `reload` that is due.
 
 ## Git sync (`50-git-sync.sh`)
 
@@ -222,7 +249,16 @@ Guardrails, shared by the single- and all-repo variants:
   rows this machine reads and never for the writer's, whose refresh is what
   keeps bigfed's `add -A` from re-stamping packs; the index half of the guard
   otherwise rides in fedxps's environment and git config (`10-env.sh`,
-  `git/hosts/fedxps.inc`), not here.
+  `git/hosts/fedxps.inc`), not here. Since 2026-10-26 `fedxps.inc` also arms
+  `core.hooksPath`, the tracked `git/hooks-reader/` whose
+  `reference-transaction` hook refuses a ref update in any repository under
+  `~/Desktop` that this machine reads by the same two keys — `nousowl` today,
+  every repository once `role = reader` is set at the cutover — so a `commit`,
+  `pull`, `merge`, `rebase`, `stash` push or `reset` typed there stops before
+  a ref is locked (`rules.md` → fedxps-6; git's reflog moves, a `stash drop`
+  with entries remaining among them, run outside any transaction and are
+  agents-2's by rule). Live only where the `git` package is stowed, since the
+  path is `~/.config/git/hooks-reader`; suite `tests/git-hosts/run.sh`.
 - **A Syncthing conflict copy refuses the repository's push (2026-10-10)**:
   a path matching `*.sync-conflict-*` among the staged paths (new or
   modified; a staged deletion is the remedy) or among the tracked files
@@ -257,7 +293,19 @@ Guardrails, shared by the single- and all-repo variants:
   backup — except a repository with a Syncthing marker (`.stfolder`) at its root
   or above it, the one case the gauge exists for, which is skipped. On a pass
   the gauge's one line for a carried repository prints unindented above the
-  repository's own. Suite: `tests/gsync/test-role.sh`, section 5, against a stub
+  repository's own. **Since 2026-10-26 the reading is logged** (bigfed-2's
+  revision, `pilot/verdict.md` → D3): for every repository the gauge judged,
+  one line — the gauge's first tagged line, the verb and the outcome
+  (`pushed`, `refused`, `failed`, `pending`, `pushed under WARN`, `pushed
+  under DUE`) — goes through `_gauge_log` into this machine's gauge log,
+  `org/machines/<hostname>/gauge-log.md`, the file `bye` and `byebye` write
+  too ("Leaving a machine" below); a repository in no folder, which passes in
+  silence, logs nothing. And `gpushall`, or `gpush` with more than one name,
+  exports `SYNC_CHECK_SNAPSHOT`, a 0600 temporary file under
+  `$XDG_RUNTIME_DIR` made before the loop and removed after it, in which the
+  gauge keeps each folder's cluster readings for the run, so thirteen
+  repositories in one folder read the hub once (`bin/CLAUDE.md`). Suite:
+  `tests/gsync/test-role.sh`, sections 5 and 5b, against a stub
   gauge; every suite stubs it, since the real one reads this machine's
   Syncthing.
 - **New-path vetting**: newly added paths — including rename targets and
@@ -299,7 +347,8 @@ Guardrails, shared by the single- and all-repo variants:
 - **Post-pull hints**: a `configs` pull — via `gpullall` *or* a `gpushall`
   rebase that integrated remote changes — that changed `bash/` files,
   added/removed files in a stow package, or touched `nvim/lazy-lock.json`
-  prints the required follow-up (`source ~/.bashrc`, `stow-all`,
+  prints the required follow-up (`source ~/.bashrc`, `stow-all` — which
+  re-reads the package arrays itself since 2026-10-26 —
   `nvim --headless "+Lazy! restore" +qa`). The stow hint's package list is
   the repo's top-level directories on disk (minus `docs`, `tests`,
   `wallpapers`) unioned with `STOW_ORDER`, so a brand-new package — absent
@@ -324,7 +373,10 @@ To add a new repo, append its path to `REPOS_DESKTOP` — note it spans *all*
 the Desktop repos, not just this one. Commit messages follow
 `{hostname}: {YYYY-MM-DD HH:MM:SS}`; override per-run with `-m`.
 
-**Regression suite:** `tests/gsync/run-all.sh` (five suites, sandboxed under
+**Regression suite:** `tests/gsync/run-all.sh` (four suites since 2026-10-26,
+when `test-two-machine.sh` — both machines pushing and pulling, the model the
+transport campaign ends — was retired, its six live-code checks carried into
+`test-gsync.sh`; sandboxed under
 `$TMPDIR`, no network). Run it after **any** edit to `50-git-sync.sh`, and after
 an edit to `git/hosts/`, whose files the role suite reads. Each suite also runs
 standalone and tests the checkout it lives in; `tests/gsync/README.md` has suite
@@ -342,16 +394,28 @@ laptop when he suspends it by command rather than closing the lid, which he
 rarely does (`org/machines/transport-2026-10/rules.md` → bigfed-3, him-3;
 built at the pilot's seeding, `pilot/seeding.md` there, kept on his word).
 Both run `sync-check sync`, show its lines, and write one line — the reading
-and the verb — into this machine's own file of the pilot's log,
-`org/machines/transport-2026-10/pilot/log-<hostname>.md` (one file per
-machine: two machines appending to one git-synced file would be a merge
-conflict; `LEAVE_LOG_DIR` overrides the directory, and a machine without it
-logs nothing and acts). `byebye` also refuses while `git maintenance` runs or
+and the verb — into this machine's gauge log,
+`org/machines/<hostname>/gauge-log.md` since 2026-10-26 (his choice at step
+5a; until then the pilot's `transport-2026-10/pilot/log-<hostname>.md`),
+through `_gauge_log` in `50-git-sync.sh`, the helper the push hook shares
+(one file per machine, one writer each: two machines appending to one synced
+file would be a merge conflict or a conflict copy; `GAUGE_LOG_ROOT` overrides
+the root for the suites, and a machine without its directory logs nothing
+and acts). The helper writes the file's header when the file is absent and
+turns a `|` in a reading into `/`, so the table holds. `byebye` also refuses while `git maintenance` runs or
 its lock stands under a rotation repository, since a power-off cuts a repack
-short (bigfed-1); `bye` skips that, a suspend cutting nothing. The process is
-matched by argv — `git` then `maintenance` — never by a command line carrying
-the words: a Claude session's own wrapper did, and read as a repack
-(2026-10-10). Flags: `-f` leaves whatever the gauge says, logged as forced;
+short (bigfed-1; `sync-check guard` on a writer reports the same two checks
+since 2026-10-26, and the fix for a stale lock removes the lock before the
+`maintenance run`, which on git 2.56 skips in silence while the lock stands
+— measured that day); `bye` skips that, a suspend cutting nothing. The process is
+matched by argv — `git` as argv[0] and `maintenance` as its subcommand, the
+first word that is not an option, with `-C`, `-c`, `--git-dir`,
+`--work-tree`, `--exec-path`, `--namespace`, `--super-prefix` and
+`--config-env` consuming the word after them (2026-10-26: the plain
+"argv[1]" rule missed `git -C <repo> maintenance run`, the fix line's own
+shape, and would have printed the `rm <lock>` fix over a live lock) — never by
+a command line carrying the words: a Claude session's own wrapper did, and
+read as a repack (2026-10-10). Flags: `-f` leaves whatever the gauge says, logged as forced;
 `-i` is systemctl's `--ignore-inhibitors`. Without the gauge on PATH they act
 as the plain commands did, with one hint. A reading of WARN (exit 2, the
 cluster unreadable) refuses like a FAIL: away from the hub, `bye -f` is the
@@ -365,9 +429,10 @@ shell still holding that alias would otherwise alias-expand the name in the
 definition at `reload` and die with a syntax error, losing every alias after
 it in silence (reproduced and closed 2026-10-10; the suite's last case).
 
-**Regression suite:** `tests/leave/run.sh` (caged), with `systemctl`, the gauge,
+**Regression suite:** `tests/leave/run.sh` (caged, 95 checks), with `systemctl`, the gauge,
 `uname` and `ps` stubbed and the log in a sandbox: the suspend and the power-off
-on OK, the log's header and lines, the refusal on FAIL and on WARN with the
+on OK, the log's header and lines in the new home, a machine without its
+directory, a shell without the helper, the refusal on FAIL and on WARN with the
 gauge's line in the log, the leave on a DUE alone with its line logged and the
 refusal's reading the FAIL even below a DUE, `-f` and `-i`, usage on a bad flag, the maintenance
 process and the stale lock on a power-off and their irrelevance to a suspend, no

@@ -8,6 +8,18 @@ permission measurement (and the built-in read-only command list) in
 `org/claude-config/permission-measurement.md`. This file records the verified
 behaviors and the experiments that established them.
 
+> **Annotation, 2026-10-26.** The SessionEnd half below is superseded by the
+> transport campaign's ws-13 (`org/machines/transport-2026-10/rules.md`;
+> built at its step 5a, `cutover/tools.md` there): `claude-link --auto` now
+> writes only under `~/.claude` — it links memory scopes and skills that have
+> arrived, replaces an empty real `memory/` with its link and repairs
+> `~/.claude`'s own links — and harvests nothing; a new scope or permission
+> file waits for a deliberate `--apply` or `--adopt`, which SessionStart asks
+> for. "Local work is harvested up" in the closing summary reads the same way.
+> Every writing run also holds `~/.claude/.claude-link.lock` (ws-12), and
+> `~/.claude/skills` is a real directory of per-skill links (ws-14). The
+> measurements and the other findings here stand.
+
 ## It maintains itself
 
 Two hooks in `settings.json`, both living in `org/claude-config/hooks/`:

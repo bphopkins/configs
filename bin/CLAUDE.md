@@ -42,48 +42,132 @@ with a conflict.
   transcripts, each premise mutated).
 - `sync-check` — read-only gauge for the Syncthing cluster and the git roles,
   in the `disk-check` shape (2026-10-10, step 3b of
-  `org/machines/transport-2026-10/PLAN.md`; the rules it reads are that
-  directory's `rules.md` → ws-1, ws-2, fedxps-3, bigfed-2; record
-  `pilot/build-gauge.md`). Four lines: `sync` (every folder this machine
-  shares is up to date — a blocking scan, then the local status, this
-  machine's view of the hub, and over batch-mode ssh the hub's view of both
-  workstations and, when the hub shows the other workstation owing or
+  `org/machines/transport-2026-10/PLAN.md`, record `pilot/build-gauge.md`;
+  completed 2026-10-26 at step 5a, record `cutover/tools.md`; the rules it
+  reads are that directory's `rules.md` → ws-1, ws-2, ws-8, fedxps-3,
+  bigfed-1, bigfed-2, hub-1, hub-4, him-2). Six lines: `sync` (every folder
+  this machine shares is up to date — a blocking scan, then the local status,
+  this machine's view of the hub, and over batch-mode ssh the hub's view of
+  both workstations and, when the hub shows the other workstation owing or
   needing something, that workstation's own view, since the hub holds
   ciphertext and names what it needs opaquely; a need that outlives a 15 s
-  settle with every folder idle is stranded, named with him-2's repair,
-  while a transfer still running is `WAIT`; a known stuck item is carried
-  by name in `KNOWN` (none since 2026-10-11, the suite testing the mechanism
-  on a stand-in), and `DUE` says when it no longer shows, or when a
-  folder's watcher is dead), `conflicts` (one `find`
-  over `~/Desktop` and every folder path: copies under a `.git` and stale
-  locks there FAIL, copies in a directory that loads FAIL, the rest DUE),
-  `guard` (the host link, every key of the host file resolving through it,
-  `GIT_OPTIONAL_LOCKS` as the role requires, and no write seen under a `.git`
-  this machine reads in Syncthing's disk events, which are kept from the
-  daemon's start, the last 1,000), and `push REPO…` (bigfed-2: the folder up
-  to date, nothing under the repository's `.git` needed in any view, no
-  phantom ref or conflict copy under `.git`, the other workstation's HEAD
-  equal when it answers, and the age of what GitHub lacks; a repository in
-  no Syncthing folder passes, silently under `-q`, unless a `.stfolder`
-  marker sits at or above it, which is `WARN`; a workstation the hub shows
-  asleep blocks nothing, what the hub lists for it being what it lacks),
-  which `gpush` and `gpushall` run before `add -A`: exit 1 skips the
-  repository, exit 2 pushes with the warning shown, exit 3 pushes with the
-  DUE shown and hinted (`bash/CLAUDE.md` → Git sync). Exit 0 all clear, 1
-  something wrong or not yet (FAIL, WAIT), 2 could not determine, 3 up to
-  date with attention due: DUE lines and nothing worse, which `bye`,
-  `byebye` and the push gauge pass (2026-10-14;
-  `org/machines/transport-2026-10/PLAN.md` → settled 37). The API key is
-  read from `config.xml` into a variable and sent as a header, never printed
-  and never on a command line; the file is parsed for the fields needed, and a
-  folder's `encryptionPassword` only as set or unset; `/rest/config` is never
-  read. The hub and the other workstation run this same file in its
-  `--remote-views` mode from stdin, so the reads have one implementation,
-  and every round of the settle reads them afresh. Suite:
-  `tests/sync-check/run.sh` (caged, three fixture Syncthing instances on
-  loopback, a stub `ssh` and `uname`; 268 checks, reviewed twice and
+  settle with every folder idle is stranded, named with him-2's repair —
+  where both workstations list one path towards the hub, the vector of the
+  path names the losing machine, the one whose counter the current version
+  lacks — while a transfer still running is `WAIT`; a known stuck item is
+  carried by name in `KNOWN`, and `DUE` says when it no longer shows, or when
+  a folder's watcher is dead), `conflicts` (one `find` over `~/Desktop` and
+  every folder path: copies under a `.git` and stale locks there FAIL, copies
+  in a directory that loads FAIL, the rest DUE), `guard` (on a reader: the
+  host link, every key of the host file resolving through it, the refusing
+  hook present and executable where the host file names a `core.hooksPath`
+  (the restow is its fix),
+  `GIT_OPTIONAL_LOCKS` as the role requires, no write seen under a `.git`
+  this machine reads in Syncthing's disk events — kept from the daemon's
+  start, the last 1,000 — and, since 2026-10-26, every file and directory
+  under each such `.git` read from the database with its version vector,
+  which FAILs on this machine's counter, a write the disk events forget at
+  the next daemon start; `KNOWN_WRITES` carries an explained write by its
+  exact counter, since a counter never leaves a vector; on a writer, no
+  `maintenance.lock` under any Desktop repository and no running `git
+  maintenance`, the subcommand read past `-C`, `-c`, `--git-dir` and their
+  kin, since `git -C <repo> maintenance run` is the fix line's own shape),
+  `push REPO…` (bigfed-2: the folder up to date, nothing under
+  the repository's `.git` needed in any view, no phantom ref or conflict copy
+  under `.git`, the other workstation's HEAD equal when it answers, and the
+  age of what GitHub lacks; a repository in no Syncthing folder passes,
+  silently under `-q`, unless a `.stfolder` marker sits at or above it, which
+  is `WARN`; a workstation the hub shows asleep blocks nothing, what the hub
+  lists for it being what it lacks; and, from 2026-10-26's adversarial read,
+  every file and directory under the repository's `.git` read live from
+  this machine's database, a FAIL when any carries another workstation's
+  counter beyond `KNOWN_WRITES` — the discard half of a refused `checkout`
+  or `reset` on the reader, which the hook cannot stop and Syncthing
+  carries here), which `gpush` and `gpushall` run before
+  `add -A`: exit 1 skips the repository, exit 2 pushes with the warning
+  shown, exit 3 pushes with the DUE shown and hinted, and each reading is
+  logged (`bash/CLAUDE.md` → Git sync); `hub` (2026-10-26, hub-4 and hub-1:
+  over one ssh running this file's `--remote-hub` mode on the hub, btrfs's
+  Free (estimated) of the sync volume with the growth commands below 10 GB,
+  every hub folder's pull and folder errors, the index's size as a DUE past
+  1 GB, and the retention drop-in both in the unit's `DropInPaths` and in the
+  running daemon's environment); and `config` (2026-10-26, ws-8: every stow
+  package's entries linked at their target with no dangling link into
+  `configs`, by stow's own ignore list — a dangling link under a target
+  three levels deep included — the fix a `stow -R`; the installed plugins'
+  HEADs against the shared lock on both roles, since a reader's own copy is
+  rewritten by lazy's install pass and would read OK behind an arrival (the
+  code review's H1); the `claude-link` dry run exiting 0 with no `[WARN]` or `[FAIL]` line,
+  since it exits 0 over unlinked configuration too; `bash -n` on every
+  module). The bare run
+  is `sync`, `conflicts`, `guard`, `hub` — the hub's readings riding on the
+  sync line's ssh — and `config` without the claude-link dry run, which
+  costs 1.8 s on bigfed: 1.6 to 1.8 s on bigfed at home, 1.3 s on fedxps,
+  inside the session hook's 4 s. Exit 0 all clear, 1 something wrong or not
+  yet (FAIL, WAIT), 2 could not determine, 3 up to date with attention due:
+  DUE lines and nothing worse, which `bye`, `byebye` and the push gauge pass
+  (2026-10-14; `org/machines/transport-2026-10/PLAN.md` → settled 37). Every
+  ssh tries `<host>` with a 2 s connect timeout and then `<host>-vpn`, his
+  ssh configuration's tailnet alias for every machine, so the gauge reads
+  the hub away from home where it was blind through the pilot (settled 39);
+  a door that failed is not tried again in the run, and one wall budget per
+  host — the connect budget plus `SYNC_CHECK_SSH_GRACE`, 30 s — bounds a
+  door that connects and then hangs, the second door getting what remains. The API key is read from
+  `config.xml` into a variable and sent as a header, never printed and never
+  on a command line; the file is parsed for the fields needed, and a folder's
+  `encryptionPassword` only as set or unset; `/rest/config` is never read. The
+  hub and the other workstation run this same file in its `--remote-views`
+  and `--remote-hub` modes from stdin, so the reads have one implementation,
+  and every round of the settle reads them afresh. The gauge writes no file
+  unless `SYNC_CHECK_SNAPSHOT` names one: then `gpushall`'s thirteen calls
+  read the cluster once and the rest read that file while it is under
+  `SYNC_CHECK_SNAPSHOT_TTL` (300 s) old, the per-repository checks still
+  live. Suite: `tests/sync-check/run.sh` (caged, about 80 s; three fixture
+  Syncthing instances on loopback, stubs for ssh with its two doors, uname,
+  btrfs, df, systemctl and ps, a sandbox configs checkout stowed by the real
+  `stow`, which must be installed; 531 checks, about 100 s, reviewed twice and
   mutation-tested the day it was written, `pilot/build-gauge.md`, its exit-3
-  cases mutation-tested against the prior gauge on 2026-10-14).
+  cases mutation-tested on 2026-10-14, 22 mutants of the 5a code killed on
+  2026-10-26).
+- `syncthing-addfolder` — creates one encrypted Syncthing folder across the
+  cluster, run on bigfed alone (2026-10-26, step 5a of
+  `org/machines/transport-2026-10/PLAN.md`, `rules.md` → mig-4 there, record
+  `cutover/tools.md`; the successor of the 2026-09 bash script in
+  `org/machines/syncthing-2026-09/bin/`, every lesson of which it keeps). It
+  reaches the hub and fedxps as `sync-check` does — its own source over
+  `ssh -o BatchMode=yes` in a `--remote` mode, the `<host>-vpn` door for reads
+  and never for a write — and composes each machine's folder entry on that
+  machine from its own `config.xml`, so the cluster password is never printed
+  and crosses the wire only when the reader holds no encrypted folder yet, a
+  rebuilt machine, and then inside the program text on ssh's own stdin, as
+  the 2026-09 script sent it; the two workstations' passwords are compared
+  by HMAC in memory before anything is written. Two shapes, detected
+  from the reader's path: **fresh** (absent or empty: bigfed's folder, the
+  hub's `receiveencrypted` one with its staggered year set in the POST and in
+  a new, empty directory, fedxps's once the hub holds bigfed's set, the hub
+  device bounced on both workstations and the bounce observed, convergence
+  read on all three) and **join** (a copy already there: the pilot's
+  receive-only join with an outside trashcan, the gate before the revert on
+  the hub's own sequence and equal counts, every local change listed and the
+  run stopped on a path outside `.git`, the revert, the manifests and
+  `git fsck` under the guard, the switch watched for a minute, the versioning
+  back to none, the direct link added after). A preflight refuses before any
+  write: the phone-home settings, a marker above or below either path, an
+  existing hub directory, the hub path off the dedicated volume, a role that
+  is not writer here or is writer there, an overlapping folder, a trashcan
+  inside a folder. Every gate waits for Enter or `--yes`; `--dry-run` writes
+  nothing; `--log` keeps the readings; `--undo ID LABEL` removes the folder
+  from the hub, then bigfed, then fedxps, refusing when a label disagrees.
+  The reader must read a present role other than writer, or a `readerRepo`
+  naming the reader's path (the pilot's shape): an absent role refuses,
+  since it is the net for a host file that has not travelled, and a git
+  that cannot read either machine's configuration stops the run with exit
+  2 (the adversarial read's finding, the same day). Suite:
+  `tests/sync/run.sh addfolder` (149 checks on the real-instance rig, about
+  eight minutes, the race guards and the gates' failing directions driven
+  through the case's own ssh stub; twenty mutants caught after the
+  reviews). Not yet run live: the cutover rehearsal's, whose scratch trees
+  on fedxps need the reader's key for each.
 - `claude-link` / `claude-prune` / `claude-collect.sh` — Claude Code
   configuration linkage; see below.
 - `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose
@@ -232,7 +316,7 @@ otherwise ignored — commands fall through to whichever release is active.
 gpushall                    # on the machine that already upgraded
 # on the other machine:
 gpullall
-source ~/.bashrc            # MUST precede stow-all — bash/CLAUDE.md, the re-source trap
+source ~/.bashrc            # the pulled bash files; stow-all re-reads its own arrays since 2026-10-26
 stow-all
 tl-newyear status && tl-newyear preflight
 tl-newyear install <year> && tl-newyear switch <year>
@@ -300,14 +384,46 @@ claude-link              # dry run — says what would change
 claude-link --apply      # create the links
 claude-link --adopt      # first run on a machine that already has its own state
 claude-link --unlink     # reverse it; keeps the merged content
+claude-link --auto       # SessionEnd's: silent, writes only under ~/.claude
 claude-prune [--apply]   # drop mechanically dead permission entries
 ```
+
+Since 2026-10-26 (`org/machines/transport-2026-10/rules.md` → ws-12 to
+ws-14, his settled 15): every run that may write holds
+`~/.claude/.claude-link.lock` — a second run exits 2 with one line, or 0 in
+silence under `--auto`, and a lock that cannot be taken is said with its
+reason, exit 2 by hand or one log line under `--auto` — because two
+unlocked runs at once corrupted the shared tree in 13 of 30 trials (a nested
+`memory/memory`, a self-link). `--auto` runs alone: beside `--apply`,
+`--adopt` or `--unlink` it is refused with exit 2.
+`--auto` writes nothing into the shared tree and removes nothing in
+`~/Desktop`: it links a memory scope or a skill that has arrived, replaces an
+empty real `memory/` with its link, repairs `~/.claude`'s own dangling links
+and keeps the orphan list, and makes a missing link into `~/Desktop` (a
+private layer or permission file that arrived by git) only while no
+`.stfolder` marker sits at `~/Desktop` or above it — once the Desktop is a
+Syncthing folder those links arrive inside it, and `--auto` makes none
+(reviewer 1's M2, the same day); harvesting a new scope or permission file
+and sweeping `~/Desktop` are `--apply`'s and `--adopt`'s, run by him on one
+machine.
+And `~/.claude/skills` is a real directory of one link per authored skill
+into `org/claude-config/skills/`, so Anthropic's skill sync writes its
+`synced/`, `.trash/` and `.staging/` on each machine alone (they were
+landing in the shared tree through the old directory link); `--apply` makes
+the migration once per machine and moves the vendor's state out of the
+shared tree in the same run, a new authored skill is linked by the next
+`--apply` or `--auto`, and a skill written straight into `~/.claude/skills`
+is reported as on this machine alone.
 
 **`claude-prune` must follow the first `--adopt` on each machine — not
 optional.** Adoption is deliberately lossless and re-admits every previously
 dropped entry, including any secret. It maintains itself through two hooks in
 `settings.json` (SessionEnd runs `claude-link --auto`; SessionStart
-health-checks the links and warns the *user*, not just the model) plus
+health-checks the links and warns the *user*, not just the model — and since
+2026-10-26 names, in both channels, every memory topic file its scope's
+`MEMORY.md` does not index, every conflict copy in a scope, and a
+`~/CLAUDE.md` link that dangles or resolves to a conflict copy's name,
+`rules.md` → ws-15) plus
 `_gsync_pull_hints`, which runs `--auto` when a pull changes
 `claude-config/`. `claude-collect.sh` is the one-shot read-only inventory of
 what a machine holds that is *not* synced.
@@ -331,7 +447,8 @@ worth keeping in view here:
   link pass skips a shared directory that has disappeared —
   `[ -e "$CFG/$e" ] || continue` — so only the sweep sees the dangling link left
   behind, and the sweep walks `~/.claude` as well as `~/Desktop` for exactly
-  that reason. SessionStart counts dangling links into the config and says so in
+  that reason (the `~/Desktop` half under `--apply` and `--adopt` alone since
+  2026-10-26). SessionStart counts dangling links into the config and says so in
   both channels; SessionEnd's `--auto` repairs them. An empty shared directory
   is the cause, since git cannot carry one: `claude-link --apply` drops a
   `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so

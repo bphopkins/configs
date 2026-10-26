@@ -4,9 +4,12 @@
 # a package it does not load, or a member from a unit it does not require, fails here
 # even though the hub, which loads everything, would hide it.
 #   ./units.sh [--sty DIR]      exit 0 if every unit passes, 1 otherwise
+#   The build goes to ${XDG_CACHE_HOME:-~/.cache}/configs-tests/french-logic/units/,
+#   outside the tree, as run.sh's does (rules.md ws-9), and Python writes no bytecode here.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-build="$here/build/units"; sty_dir=""
+build="${XDG_CACHE_HOME:-$HOME/.cache}/configs-tests/french-logic/units"; sty_dir=""
+export PYTHONDONTWRITEBYTECODE=1
 [ "${1:-}" = --sty ] && { sty_dir="$(cd "$2" && pwd)"; export TEXINPUTS="$sty_dir:"; }
 hub="$(kpsewhich french-logic.sty)" || { echo "french-logic.sty not found" >&2; exit 2; }
 rm -rf "$build"; mkdir -p "$build"; fail=0

@@ -774,15 +774,21 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
   launched from the kickoff line its step names, and the rules by its
   `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same day):
   the host files `git/hosts/`, the role and the conflict-copy refusal in
-  `50-git-sync.sh`, the export in `10-env.sh`; and at step 3b the same day
-  (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its four lines
-  and `tests/sync-check`, and the push gauge in `gpush` and `gpushall`. Still to
-  come on this side, in the plan's order: `stow-all` without its pull and the
-  arrival lines (ws-8), the reader's own plugin lock (fedxps-5), the
-  conflict-copy skip in `.bashrc` (ws-4), `init.defaultRefFormat` (ws-6), the
-  test suites building outside the tree (ws-9), `claude-link`'s lock and
-  confinement (ws-12 to ws-14), the `tests/sync` rig, and
-  `tests/gsync/test-two-machine.sh` retired (5a). Do none of it from here: the
+  `50-git-sync.sh`, the export in `10-env.sh`; at step 3b the same day
+  (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its first
+  four lines and `tests/sync-check`, and the push gauge in `gpush` and
+  `gpushall`; at step 5a (2026-10-26, `cutover/tools.md` there, `DECISIONS.md`
+  the same day): the gauge's second door, vector check, `hub` and `config`
+  lines and snapshot; `stow-all` without its pull and the arrival line;
+  the conflict-copy skip in `.bashrc`; the push hook's log line and the
+  gauge log's home; the refusing hook `git/hooks-reader/` and
+  `init.defaultRefFormat`; the reader's own plugin lock; the test builds
+  outside the tree; `claude-link`'s lock, confinement and per-skill links;
+  `syncthing-addfolder` rewritten; the `tests/sync` rig; `test-two-machine.sh`
+  retired. Still this repo's, in the plan's order: the cutover-day flip of
+  `fedxps.inc` (`readerRepo` out, `role = reader` in) and the vector
+  check's place in the bare run at Desktop scale (5d), and the charters'
+  rewrite for the whole Desktop (5b, 6a). Do none of it from here: the
   campaign chats carry the evidence and the record.
 
 ## 36. Two suite defects found by the 2026-10-12 restore-order run
@@ -805,6 +811,30 @@ that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
   AF_UNIX path too long`); 43/43 with the default. Put the sockets under a
   short path (`/tmp/claude-1000/…` or a `mktemp -d -p /tmp`), and say so in
   the cage prelude if the fix belongs there.
+- [ ] `tests/shell-opts/run.sh` lines 110, 134, 142, 190 and 191 use
+  `check … && […]`, the hazard `tests/gsync/README.md` names: the `&&` binds
+  outside `check`, so only the first condition is checked and a false second
+  one fails nothing but the line's own exit status in silence. Found
+  2026-10-26 by the transport campaign's step 5a (`org/machines/transport-2026-10/cutover/tools.md`).
+  Split each into one `check` per condition, as the README says.
+
+## 37. `clam home` sweeps the Lean trees and the cache on bigfed
+
+Found 2026-10-25, when the day's maintenance refreshed the signatures on both
+machines and weighed a scan. `clam home` runs `clamscan -ri --detect-pua=yes
+"$HOME"` with no exclusions, and bigfed's `$HOME` now holds `~/Desktop/math`
+(121,734 Lean files), `~/Desktop/ModalLogic/.lake` (128 thousand files of
+Mathlib sources and cache) and `~/.cache` (23 G of model weights and browser
+caches); `~/Desktop/CLAUDE.md` there keeps the two clones out of Desktop-wide
+sweeps. A home scan would spend hours in them and report nothing that matters. No scan
+has yet been run on either machine; the signatures were current on both as of
+2026-10-25. Due before the first `clam home` on bigfed; one short sitting in
+`bash/.bashrc.d/80-clamav.sh`, with its line in `bash/CLAUDE.md`.
+
+- [ ] Give the wrapper `--exclude-dir` arguments for the two clones and
+  `~/.cache`, or make the scan of `~/Desktop` minus the clones its own
+  subcommand, with `~/.cache` scanned separately or not at all. Keep the log
+  name contract (`~/clam-scan-home-<ts>.log`) unchanged.
 
 ## Closed
 

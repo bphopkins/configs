@@ -53,17 +53,21 @@ a package without a charter keeps its detail in its config's own comments
 | wofi | `~/.config/wofi` | the second launcher since 2026-09-30, same GTK3 dialect |
 | rofi | `~/.config/rofi` | the app menu since 2026-09-30: a whole theme sheet, a silent parser and the two checks that cover it |
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
-| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
+| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check, syncthing-addfolder (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's fonts exposed to GUI apps; the pinned year, the three rejectfont blocks |
-| git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10)* |
+| git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10; `hooks-reader/` is the reader's refusing `reference-transaction` hook, linked to `~/.config/git/hooks-reader`, which `fedxps.inc` names as `core.hooksPath`, 2026-10-26)* |
 | environment.d | `~/.config/environment.d` | *(no charter — each drop-in carries its own)* |
 
 ## Stow Deployment
 
 Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 
-- `stow-all` — `git pull --ff-only`, then restow every package (`stow -R`).
+- `stow-all` — restow every package (`stow -R`) as the checkout stands on
+  disk: it re-reads the package arrays from `60-stow.sh` itself, sweeps the
+  dangling links a removed package left (every target walked three levels
+  deep, `~/Desktop` excluded), and refuses if that file does not parse; no `git pull` since 2026-10-26 (pull first with `gpullall` until the
+  transport cutover; `org/machines/transport-2026-10/rules.md` → ws-8).
   On a conflict (an untracked real file already sitting at a target) it
   **errors out** rather than resolving it — adopt or remove the file manually
   (README §8), then rerun.
@@ -72,8 +76,7 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 
 Editing already-linked files requires no restow; adding or removing files in
 a package does (`stow -R <pkg>`). When adding a new package, update both the
-target map and the ordering array in `60-stow.sh` — and see the re-source
-trap below. `bash/.stow-global-ignore` (stowed to `~`) keeps the per-package
+target map and the ordering array in `60-stow.sh`. `bash/.stow-global-ignore` (stowed to `~`) keeps the per-package
 charters out of the live config tree; ⚠ it **replaces** stow's built-in
 defaults, so its reproduced default patterns must stay (`bash/CLAUDE.md`).
 
@@ -87,11 +90,11 @@ ask the gauge `bin/sync-check` before staging a repository Syncthing
 carries (`bash/CLAUDE.md` → Git sync); the transport campaign
 (`org/machines/transport-2026-10/PLAN.md`) is what changes the host files.
 
-**The re-source is not optional when a pull adds a stow package.**
-`60-stow.sh` is itself a bash file, so a pull that adds a package updates it
-on disk but not the arrays in the running shell — and `stow-all` iterates the
-in-memory arrays, so it skips the new package **silently**, with no error.
-When in doubt, re-source.
+**The re-source trap is narrower since 2026-10-26** (`bash/CLAUDE.md` → "The
+re-source trap"): `stow-all` re-reads the package arrays from disk, so a
+pulled package is stowed from an old shell too; every other bash function
+stays as it was until `reload`, and `.bashrc`'s arrival line says so before
+the next command whenever the loaded modules have changed on disk.
 
 Sync commands (`bash/.bashrc.d/50-git-sync.sh`; the guardrails — vetting,
 in-progress guards, offline handling, hints — and their scope live in
@@ -114,11 +117,34 @@ in-progress guards, offline handling, hints — and their scope live in
 `$TMPDIR`, and touch nothing real.
 
 **Run `tests/gsync/run-all.sh` after any edit to `50-git-sync.sh` or to
-`git/hosts/`.**
+`git/hosts/`.** Four suites since 2026-10-26 (`test-two-machine.sh` retired).
 
-**Run `tests/sync-check/run.sh` after any edit to `bin/sync-check`.** Caged;
-three fixture Syncthing instances on loopback, a stub `ssh` and `uname`;
-nothing real is reached.
+**Run `tests/git-hosts/run.sh` after any edit to `git/config`, `git/hosts/`
+or `git/hooks-reader/`.** Caged; the refusing hook's matrix, the reader
+guard's read matrix against a control, `init.defaultRefFormat`, foreground
+maintenance (2026-10-26).
+
+**Run `tests/lazy-lock/run.sh` after any edit to `nvim/lua/config/role.lua`
+or `lazy.lua`'s setup, or after a lazy.nvim update.** Caged; an isolated XDG
+tree, the reader's own lock copy (2026-10-26).
+
+**Run `tests/bashrc/run.sh` after any edit to `bash/.bashrc`, and
+`tests/stow/run.sh` after any edit to `bash/.bashrc.d/60-stow.sh`.** Both
+caged (2026-10-26; `bash/CLAUDE.md`).
+
+**Run `tests/sync-check/run.sh` after any edit to `bin/sync-check`.** Caged,
+about 100 s; three fixture Syncthing instances on loopback, stubs for `ssh`
+(with its two doors), `uname`, `btrfs`, `df`, `systemctl` and `ps`, a sandbox
+checkout stowed by the real `stow`, which must be installed; nothing real is
+reached.
+
+**Run `tests/sync/run.sh` after any edit under `tests/sync/` and after a
+Syncthing upgrade, and `tests/sync/run.sh addfolder` after any edit to
+`bin/syncthing-addfolder`.** Caged at 1 GiB, 512 tasks and 1500 s; three real
+Syncthing instances on loopback per case, six cases in about fifteen
+minutes, 274 checks (2026-10-26; the transport campaign's rig). One case is built to fail when
+the upgrade to 2.1.7 lands: the hub's deletion retention, whose fault 2.1.7
+fixes upstream.
 
 **Run `tests/leave/run.sh` after any edit to `bye` or `byebye` in
 `bash/.bashrc.d/40-aliases.sh`.** Caged, against a stubbed `systemctl`, gauge,
@@ -180,7 +206,8 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 
 ## Bash Configuration
 
-Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order — `00`
+Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order,
+conflict copies excepted — `00`
 shell-opts (the history contract — 20,000 dated entries, written after every
 command — and four shopts, since 2026-09-23), `10` env, `20` path
 (TeX-Live-first ordering, auto-detected year), `30` prompt (one colour per

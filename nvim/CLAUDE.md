@@ -12,7 +12,9 @@ completion layer) and `DECISIONS.md` (items 2, 9, the Done ledger, the
 ## Layout
 
 - `lua/config/` — core settings (options, keymaps, autocmds, markdown_tasks,
-  pandoc)
+  pandoc) and `role.lua`, which reads this machine's git role from the host
+  files without spawning git and gives `lazy.lua` the lockfile path
+  (2026-10-26, "Plugin lockfile")
 - `lua/plugins/` — plugin specs; `lua/plugins/inactive/` — disabled, kept
   deliberately (parked experiments)
 - `lua/snippets/` — the generated libraries (`pkg/`, `sty/`), the `snipgen.py`
@@ -417,13 +419,31 @@ side). Run it after editing the wrapper or after any live-server.nvim update.
 
 `lazy-lock.json` is tracked **on purpose**: it is the rollback record
 (`git log nvim/lazy-lock.json` + `:Lazy restore` is the one-move return to
-last-known-good) and the only convergence target. Updates stay ad hoc on
-either machine; a pulled lock changes nothing until
-`nvim --headless "+Lazy! restore" +qa` — the gsync hint prints exactly that.
-On a lock conflict during `gpushall`'s rebase: take either side, restore, and
+last-known-good) and the only convergence target. Since 2026-10-26 the lock
+has one writer, bigfed (`org/machines/transport-2026-10/rules.md` →
+fedxps-5): plugins are added, updated and removed there, and on a reader —
+fedxps, by `git/hosts/fedxps.inc`'s role or reader-repository key, read by
+`lua/config/role.lua` the way `10-env.sh` reads it — `lazy.lua` copies the
+shared lock to `stdpath("state")/lazy-lock.json` at every start and passes
+that path as lazy's `lockfile`, so installs, restores and cleans there write
+the copy alone (refreshed at every start: lazy's install pass rewrites the
+copy with a fresh mtime, so copy-if-newer would pin the reader at an old
+commit — measured). The copy falls back to `stdpath("cache")`, then to the
+session's temporary directory, each with a WARN; only when all three fail is
+`lockfile` nil, with a WARN that the shared lock may be written this
+session, and nothing in `role.lua` or `lazy.lua` raises (lazy.nvim itself
+still needs `stdpath("state")` for its own state). An arrived lock changes nothing until
+`nvim --headless "+Lazy! restore" +qa` — the gsync hint prints exactly that;
+after an arrival that adds a plugin the first restore can leave an advanced
+plugin at its old commit and a second converges (lazy's install pass rewrites
+its in-memory lock before restore reads it). On a lock conflict during
+`gpushall`'s rebase: take either side, restore, and
 run the two nvim suites if VimTeX or blink moved. Untracking the lock, and
 auto-running restore inside the pull, were considered and **declined**
-(2026-08-22; `docs/nvim-audit-2026-08-22.md`).
+(2026-08-22; `docs/nvim-audit-2026-08-22.md`). `sync-check config` compares
+the installed plugins' HEADs with the shared lock on both roles, so a lock
+that arrived ahead of a restore reads FAIL there. Suite: `tests/lazy-lock/run.sh`
+(caged; 93 checks).
 
 ## Standing verdicts (don't re-derive)
 

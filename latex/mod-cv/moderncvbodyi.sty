@@ -69,27 +69,36 @@
 \@initializelength{\baseletterheight}
 \settoheight{\baseletterheight}{\sectionstyle{o}}
 \setlength{\baseletterheight}{\baseletterheight-0.95ex}
+% A section keeps to one page. \cvbreakable, given after a section's heading, lets that
+% section break before a subsection or before an entry with a left-column label (2026-10-26).
+\newif\ifcv@keep
+\newcommand*{\cvbreakable}{\cv@keepfalse}
 \RenewDocumentCommand{\section}{sm}{%
-  \par\addvspace{2.2ex \@plus\z@ \@minus.6ex}% trimmed + shrink so small overflows self-heal
+  \cv@keeptrue
+  \par\addpenalty{-300}\addvspace{2.7ex \@plus\z@ \@minus.6ex}% a page may break here; shrink so small overflows self-heal
   \phantomsection{}% reset the anchor for hyperrefs
   \addcontentsline{toc}{section}{#2}%
-  \cvitem[0ex]{\strut\raggedleft\raisebox{\baseletterheight}{\color{color1}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
-  \par\nobreak\addvspace{1ex \@plus\z@ \@minus.3ex}\@afterheading}% to avoid a pagebreak after the heading
+  \cv@itemrow{\strut\raggedleft\raisebox{\baseletterheight}{\color{color1}\rule{\hintscolumnwidth}{0.95ex}}}{\strut\sectionstyle{#2}}%
+  \nobreak\addvspace{1.1ex \@plus\z@ \@minus.3ex}\@afterheading}% no glue between the heading's box and this penalty, so no page break can follow the heading (2026-10-26)
 
 \RenewDocumentCommand{\subsection}{sm}{%
-  \par\addvspace{.85ex \@plus\z@ \@minus.3ex}%
+  \par\ifcv@keep\else\addpenalty{-150}\fi\addvspace{1ex \@plus\z@ \@minus.3ex}% a breakable section may break here
   \phantomsection{}% reset the anchor for hyperrefs
   \addcontentsline{toc}{subsection}{#2}%
-  \cvitem[0ex]{}{\strut\subsectionstyle{#2}}%
-  \par\nobreak\addvspace{.5ex \@plus\z@ \@minus.2ex}\@afterheading}% to avoid a pagebreak after the heading
+  \nobreak% the two whatsits above would otherwise license a break between a section heading and this one
+  \cv@itemrow{}{\strut\subsectionstyle{#2}}%
+  \nobreak\addvspace{.55ex \@plus\z@ \@minus.2ex}\@afterheading}% as for \section
 
-\renewcommand*{\cvitem}[3][.2em]{%
+\newcommand*{\cv@itemrow}[2]{% one hint-and-text row, ending its paragraph and emitting no glue
   \begin{tabular}{@{}p{\hintscolumnwidth}@{\hspace{\separatorcolumnwidth}}p{\maincolumnwidth}@{}}%
-    \raggedleft\hintstyle{#2} &{#3}%
-  \end{tabular}%
-  \par\addvspace{#1 \@plus.03em \@minus.13em}}% rubber gap shrinks to keep a near-overflow on-page
+    \raggedleft\hintstyle{#1} &{#2}%
+  \end{tabular}\par}
+\renewcommand*{\cvitem}[3][.3em]{%
+  \ifcv@keep\else\if\relax\detokenize{#2}\relax\else\addpenalty{0}\fi\fi% a breakable section may break before a labelled entry
+  \cv@itemrow{#2}{#3}%
+  \nobreak\addvspace{#1 \@plus.03em \@minus.13em}}% no break after an entry; the rubber gap shrinks to keep a near-overflow on-page
 
-\renewcommand*{\cvdoubleitem}[5][.25em]{%
+\renewcommand*{\cvdoubleitem}[5][.3em]{%
   \cvitem[#1]{#2}{%
     \begin{minipage}[t]{\doubleitemcolumnwidth}#3\end{minipage}%
     \hfill% fill of \separatorcolumnwidth
@@ -97,17 +106,17 @@
     \hspace*{\separatorcolumnwidth}%
     \begin{minipage}[t]{\doubleitemcolumnwidth}#5\end{minipage}}}
 
-\renewcommand*{\cvlistitem}[2][.25em]{%
+\renewcommand*{\cvlistitem}[2][.3em]{%
   \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listitemcolumnwidth}#2\end{minipage}}}
 
-\renewcommand*{\cvlistdoubleitem}[3][.25em]{%
+\renewcommand*{\cvlistdoubleitem}[3][.3em]{%
   \cvitem[#1]{}{\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#2\end{minipage}%
   \hfill% fill of \separatorcolumnwidth
   \ifthenelse{\equal{#3}{}}%
     {}%
     {\listitemsymbol\begin{minipage}[t]{\listdoubleitemcolumnwidth}#3\end{minipage}}}}
 
-\renewcommand*{\cventry}[7][.25em]{%
+\renewcommand*{\cventry}[7][.3em]{%
   \cvitem[#1]{#2}{%
     {\bfseries#3}%
     \ifthenelse{\equal{#4}{}}{}{, {\slshape#4}}%
@@ -120,7 +129,7 @@
 \@initializebox{\cvitemwithcommentbox}
 \@initializelength{\cvitemwithcommentskilllength}
 \@initializelength{\cvitemwithcommentcommentlength}
-\renewcommand*{\cvitemwithcomment}[4][.25em]{%
+\renewcommand*{\cvitemwithcomment}[4][.3em]{%
   \savebox{\cvitemwithcommentbox}{{#3}}%
   \setlength{\cvitemwithcommentskilllength}{\widthof{\usebox{\cvitemwithcommentbox}}}%
   \setlength{\cvitemwithcommentcommentlength}{\maincolumnwidth-\separatorcolumnwidth-\cvitemwithcommentskilllength}%

@@ -22,10 +22,12 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
 - `test-gsync.sh` — core per-repo behaviors: commit shapes (new / modified-only /
   deleted), size and secrets vetting, rebase-conflict auto-abort, merge-in-progress
   guard, offline pend, non-main warning, hints and the queue/flush contract
-  behind them, argument parsing, completion.
-- `test-two-machine.sh` — the two-machine workflow end to end: repo A ahead on
-  machine 1, repo B ahead on machine 2, dashboards, convergence, non-conflicting
-  and conflicting divergence, composed `gstatall` verdicts.
+  behind them, argument parsing, completion; and, against an origin another
+  writer moved (the hub-outage clone of rule him-5, a web edit), the dashboard's
+  `needs push`, `DIVERGED` and composed `uncommitted; …` verdicts and the pull's
+  still-ahead warning—carried over on 2026-10-26 from `test-two-machine.sh`,
+  retired that day with the model it tested, both machines pushing and pulling
+  (`org/machines/transport-2026-10/rules.md` → mig-1).
 - `test-tty-vet.sh` — the interactive y/N vet prompt under a real pseudo-terminal
   (python3 `pty`), including mixed answers and tty colorization.
 - `test-role.sh` — the machine's role and the conflict-copy refusal
@@ -45,9 +47,18 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   shown and its step hinted (his word, 2026-10-14); the gauge run before `add -A`
   with the repository's path, a pass shown or silent, the gauge missing from
   `PATH` hinted once and pushed, or skipped where a `.stfolder` marker sits
-  at or above the repository, a reader's refusal coming first; and, read-only, the
-  checkout's own host files and include in `git/config`. Its two reviews of
-  2026-10-10 are in `org/machines/transport-2026-10/pilot/build-git.md`.
+  at or above the repository, a reader's refusal coming first; the gauge's log
+  (section 5b, 2026-10-26; the pilot verdict's D3): one line per repository the
+  gauge judged, in the per-machine file under `GAUGE_LOG_ROOT` with its header,
+  its reading the gauge's first tagged line and its note the command, the
+  repository and the outcome – refused, pushed, pushed under WARN or DUE,
+  failed, pending – and nothing for a silent pass or a machine without its
+  directory; the run's snapshot file, one 0600 file in the runtime directory
+  shared by every repository of a `gpushall` or a `gpush` of several names,
+  gone when the run ends, and none for `gpush` of one name or a reader's
+  refusal; and, read-only, the checkout's own host files and include in
+  `git/config`. Its two reviews of 2026-10-10 are in
+  `org/machines/transport-2026-10/pilot/build-git.md`.
 - `test-audit.sh` — regressions for the 2026-07-26 audit findings: revert guard,
   unborn-branch skip, `:(literal)` unstaging, rename/typechange vetting, embedded
   repos, secret directory components, `GSYNC_MAX_MB` validation, `gpushall` parser,
@@ -64,12 +75,16 @@ Harness conventions — keep these when adding tests:
   (in `test-gsync.sh`) `must CMD...` for setup steps that abort the suite.
 - Every suite puts a `uname` stub first on `PATH` (2026-10-10): the sync module
   reads this machine's role from `configs/git/hosts/$(uname -n).inc`, and a
-  suite must not change behaviour with the machine it runs on. The four older
+  suite must not change behaviour with the machine it runs on. The three older
   suites name a host with no file, a writer; `test-role.sh` switches names.
 - Every suite also puts a `sync-check` stub there (2026-10-10): `gpush` and
   `gpushall` run the push gauge before `add -A`, and the real one reads this
-  machine's Syncthing. The four older suites' stub passes in silence;
+  machine's Syncthing. The three older suites' stub passes in silence;
   `test-role.sh`'s answers per repository from `STUB_GAUGE_<name>`.
+- Every suite points `GAUGE_LOG_ROOT` and `XDG_RUNTIME_DIR` into its sandbox
+  (2026-10-26): a push appends the gauge's reading to
+  `~/Desktop/org/machines/<host>/gauge-log.md`, and `gpushall` makes its
+  snapshot file in the runtime directory, both this machine's own.
 - ⚠ One command per `check`: in `check "d" A && B` the `&&` binds outside
   `check`, so B is never checked and a false B only fails the line's exit
   status silently (found 2026-10-10 in 30 lines of `test-role.sh`). Write two

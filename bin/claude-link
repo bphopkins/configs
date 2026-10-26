@@ -9,16 +9,21 @@
 #                            org/claude-config first (needed the first time on
 #                            a machine that already has memory/permissions)
 #   claude-link --unlink     reverse it: replace every symlink with a real copy
-#   claude-link --auto      silent, safe subset; run from the SessionEnd hook
+#   claude-link --auto       silent, safe subset; run from the SessionEnd hook.
+#                            It writes under ~/.claude, harvests nothing, and
+#                            in ~/Desktop only makes a missing link, and only
+#                            while ~/Desktop lies in no Syncthing folder
 #
-# Exit: 0 nothing to do · 1 changes pending or made · 2 conflicts / errors
+# Exit: 0 nothing to do · 1 changes pending or made · 2 conflicts / errors,
+#       or another run holds the lock
 #
 # This is a script, not a bash function, deliberately: a pull can never leave a
 # stale copy loaded in a running shell the way `60-stow.sh`'s arrays can.
 #
 # What it links (all derived from org/claude-config, nothing hardcoded):
-#   <cfg>/CLAUDE.md, settings.json, plans/, agents/, commands/, skills/,
+#   <cfg>/CLAUDE.md, settings.json, plans/, agents/, commands/,
 #   hooks/, output-styles/, rules/, workflows/  ->  ~/.claude/<same>
+#   <cfg>/skills/<name>/, each authored skill   ->  ~/.claude/skills/<name>
 #   <cfg>/memory/<scope>/                       ->  ~/.claude/projects/<scope>/memory
 #   <cfg>/repos/<path>/settings.local.json      ->  ~/Desktop/<path>/.claude/
 #   <cfg>/repos/<path>/CLAUDE.local.md          ->  ~/Desktop/<path>/
@@ -41,17 +46,24 @@ DESK_PRUNE=( \( -name .git -o -name node_modules -o -name archive -o -name 'Deon
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$CC/link-backups/$STAMP"
 
-APPLY=0 ADOPT=0 UNLINK=0 AUTO=0
+APPLY=0 ADOPT=0 UNLINK=0 AUTO=0 OTHER=0
 for a in "$@"; do
   case "$a" in
-    --apply)  APPLY=1 ;;
-    --adopt)  ADOPT=1; APPLY=1 ;;
-    --unlink) UNLINK=1; APPLY=1 ;;
+    --apply)  APPLY=1; OTHER=1 ;;
+    --adopt)  ADOPT=1; APPLY=1; OTHER=1 ;;
+    --unlink) UNLINK=1; APPLY=1; OTHER=1 ;;
     --auto)   AUTO=1; APPLY=1 ;;
-    -h|--help) sed -n '2,28p' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
+    -h|--help) awk 'NR>1 && !/^#/ {exit} NR>1' "$0" | sed 's/^#//;s/^ //'; exit 0 ;;
     *) echo "claude-link: unknown option $a (try --help)" >&2; exit 2 ;;
   esac
 done
+# --auto runs alone. Beside --adopt or --unlink it would write outside
+# ~/.claude, and beside any mode it would do so silently, into the log (R2's
+# M6, 2026-10-26).
+if [ $AUTO = 1 ] && [ $OTHER = 1 ]; then
+  echo "claude-link: --auto runs alone, as the SessionEnd hook runs it; it does not combine with --apply, --adopt or --unlink." >&2
+  exit 2
+fi
 
 if [ -t 1 ]; then
   R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[34m'; D=$'\033[2m'; Z=$'\033[0m'
@@ -73,9 +85,58 @@ n_ok=0 n_link=0 n_adopt=0 n_skip=0 n_warn=0 n_fail=0
 
 case "$CFG" in "$CC"/*) echo "claude-link: refusing — config dir is inside $CC" >&2; exit 2 ;; esac
 
+# One run at a time (org/machines/transport-2026-10/rules.md -> ws-12). Two
+# sessions ending together start two --auto runs, and both pass every "is it
+# there yet" test before either writes: the second `cp -a` lands inside the
+# first one's copy and the second `ln -s` inside its target, which left a
+# nested memory/ or a self-link in the shared tree in 13 of 30 trials (the
+# battery's link/e2.sh, 2026-10-09). So every run that may write first holds
+# an flock on a file of this machine's, and a second run exits at once: in
+# silence under --auto, whose work the first run is doing, and with one line
+# and exit 2 by hand. The dry run writes nothing and takes no lock. The lock
+# lasts as long as the process holding it, so a run that the SessionEnd hook's
+# timeout kills leaves none behind.
+# A lock that cannot be taken at all is said, with its reason: by hand on
+# stderr with exit 2, and under --auto in one line of its log, where it would
+# otherwise make every session end a silent no-op.
+if [ $APPLY = 1 ]; then
+  LOCK="$CC/.claude-link.lock" why=""
+  if ! command -v flock >/dev/null 2>&1; then
+    why="flock is not installed"
+  elif ! { exec {lockfd}>>"$LOCK"; } 2>/dev/null; then
+    why=$( { : >>"$LOCK"; } 2>&1 ); why=${why##*: }; why=${why:-it cannot be opened}
+  fi
+  if [ -n "$why" ]; then
+    if [ $AUTO = 1 ]; then
+      printf -- '--- %s %s auto ---\nclaude-link: cannot take the lock %s: %s; nothing done\n' \
+        "$(date '+%Y-%m-%d %H:%M:%S')" "$(hostname -s)" "$LOCK" "$why" >>"$CC/claude-link-auto.log" 2>/dev/null
+      exit 0
+    fi
+    echo "claude-link: cannot take the lock $LOCK: $why; nothing changed." >&2
+    exit 2
+  fi
+  if ! flock -n "$lockfd"; then
+    [ $AUTO = 1 ] && exit 0
+    echo "claude-link: another claude-link run holds $LOCK; nothing changed. Run it again once that one ends." >&2
+    exit 2
+  fi
+fi
+
 # --auto is for the SessionEnd hook: it must be silent, must only do what
-# cannot possibly need a decision, and must never write into a repo that is
-# mid-operation. Everything it does goes to a log instead of stdout.
+# cannot possibly need a decision, and writes nothing into the shared tree
+# (rules.md -> ws-13; PLAN.md -> settled 15). It harvests nothing, and sweeps
+# nothing in ~/Desktop: a link Syncthing delivers before its target is no
+# dangling link to remove (live-B section 2 saw that removal reach both
+# machines). The repos pass makes a missing link into ~/Desktop only while
+# ~/Desktop lies in no Syncthing folder -- no .stfolder marker at it or above
+# it, read as 50-git-sync.sh's push gauge reads one -- because until the
+# cutover a new layer reaches this machine by a git pull, whose hint runs
+# --auto, and nothing else would link it (R1's M2, 2026-10-26). Once the
+# Desktop is a folder the link arrives with it, and --auto names a missing
+# one and makes none. It still stands down while the shared tree's
+# repository is mid-operation, since a rebase can take a link's target away
+# for a moment and the sweep of ~/.claude would then remove the link.
+# Everything it does goes to a log instead of stdout.
 git_busy() {
   local g="$1/.git"
   [ -e "$g/rebase-merge" ] || [ -e "$g/rebase-apply" ] || [ -e "$g/MERGE_HEAD" ] \
@@ -89,6 +150,15 @@ if [ $AUTO = 1 ]; then
   R= G= Y= B= D= Z=
   echo "--- $(date '+%Y-%m-%d %H:%M:%S') $(hostname -s) auto ---"
 fi
+# The Syncthing folder ~/Desktop lies in, if any: the first directory, from
+# ~/Desktop up to /, that holds a .stfolder marker.
+desk_folder=""
+d=$(cd "$DESK" 2>/dev/null && pwd -P) || d="$DESK"
+while :; do
+  if [ -d "$d/.stfolder" ]; then desk_folder=${d:-/}; break; fi
+  [ -z "$d" ] && break
+  d=${d%/*}
+done
 echo "claude-link — $(hostname -s) — $([ $AUTO = 1 ] && echo AUTO || { [ $APPLY = 1 ] && echo APPLY || echo 'dry run'; })"
 echo "  config : $CFG"
 echo "  target : $CC"
@@ -139,9 +209,16 @@ print(len([l for l in out if l.startswith("- [")]) - before)
 PY
 }
 
-# link_one <src> <dst> <mode>   mode: file | dir | memdir | perms
+# Every link is made with `ln -sT`: should the destination appear between the
+# test and the link -- a session creating its memory/ as it starts -- -T fails
+# where plain `ln -s` would put the link inside it, which is how the self-links
+# of link/e2.sh were made.
+#
+# link_one <src> <dst> <mode> [desk]   mode: file | dir | memdir | perms
+# "desk" marks a link inside ~/Desktop, which --auto makes only while
+# ~/Desktop lies in no Syncthing folder, and otherwise names.
 link_one() {
-  local src=$1 dst=$2 mode=$3 rel; rel=${dst/#$HOME/\~}
+  local src=$1 dst=$2 mode=$3 where=${4:-} rel; rel=${dst/#$HOME/\~}
 
   if [ $UNLINK = 1 ]; then
     if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
@@ -162,11 +239,31 @@ link_one() {
 
   # nothing there: plain link
   if [ ! -e "$dst" ]; then
-    if [ $APPLY = 1 ]; then
+    if [ $AUTO = 1 ] && [ "$where" = desk ] && [ -n "$desk_folder" ]; then
+      skp "not linked: $rel  (~/Desktop lies in the Syncthing folder at $desk_folder, so the link arrives with it; --auto makes none there, claude-link --apply does)"
+      n_skip=$((n_skip+1))
+    elif [ $APPLY = 1 ]; then
       mkdir -p "$(dirname "$dst")" 2>/dev/null
-      ln -s "$src" "$dst" && { lnk "$rel"; n_link=$((n_link+1)); } \
+      ln -sT "$src" "$dst" && { lnk "$rel"; n_link=$((n_link+1)); } \
         || { err "could not link $rel"; n_fail=$((n_fail+1)); }
     else lnk "would link $rel"; n_link=$((n_link+1)); fi
+    return
+  fi
+
+  # An empty real directory where a directory's link belongs holds nothing to
+  # lose, so any run that may write replaces it with the link, --auto among
+  # them (rules.md -> ws-13). Claude Code makes a scope's memory/ when a
+  # session starts, so a first session here in a directory whose shared scope
+  # has arrived but is not linked yet leaves one (r-claude-cases N10), and the
+  # session's end then links it. `rmdir` refuses a directory that has filled
+  # meanwhile, and that run fails rather than losing anything.
+  if [ "$mode" = memdir ] && [ -d "$dst" ] \
+     && ! find "$dst" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null | grep -q .; then
+    if [ $APPLY = 1 ]; then
+      rmdir "$dst" 2>/dev/null && ln -sT "$src" "$dst" \
+        && { lnk "$rel  (was an empty directory)"; n_link=$((n_link+1)); } \
+        || { err "could not replace the empty directory $rel with its link"; n_fail=$((n_fail+1)); }
+    else lnk "would replace the empty directory $rel with its link"; n_link=$((n_link+1)); fi
     return
   fi
 
@@ -180,7 +277,7 @@ link_one() {
   case "$mode" in
     perms)
       local added; added=$(union_json_perms "$src" "$dst" 2>/dev/null || echo "?")
-      rm -f "$dst" && ln -s "$src" "$dst" \
+      rm -f "$dst" && ln -sT "$src" "$dst" \
         && { adp "$rel  (+$added new permissions merged in)"; n_adopt=$((n_adopt+1)); } \
         || { err "adopt failed: $rel"; n_fail=$((n_fail+1)); } ;;
     memdir)
@@ -195,13 +292,13 @@ link_one() {
           cmp -s "$f" "$src/$base" || { cp -a "$f" "$src/$base.$(hostname -s)"; conflict=$((conflict+1)); }
         else cp -a "$f" "$src/$base"; moved=$((moved+1)); fi
       done
-      rm -rf "$dst" && ln -s "$src" "$dst" \
+      rm -rf "$dst" && ln -sT "$src" "$dst" \
         && { adp "$rel  (+$moved memories, +$idx index entries$([ $conflict -gt 0 ] && echo ", $conflict kept side-by-side"))"
              n_adopt=$((n_adopt+1)); } \
         || { err "adopt failed: $rel"; n_fail=$((n_fail+1)); } ;;
     *)
       if cmp -s "$dst" "$src"; then
-        rm -f "$dst" && ln -s "$src" "$dst" && { adp "$rel  (identical, replaced)"; n_adopt=$((n_adopt+1)); }
+        rm -f "$dst" && ln -sT "$src" "$dst" && { adp "$rel  (identical, replaced)"; n_adopt=$((n_adopt+1)); }
       else
         wrn "differs from the shared copy, backed up and skipped: $rel"
         wrn "   yours: $BACKUP/${dst#"$HOME"/}"
@@ -212,13 +309,148 @@ link_one() {
 
 # ------------------------------------------------------ 1. user-level config --
 echo "== ~/.claude =="
-for e in CLAUDE.md settings.json keybindings.json plans agents commands skills \
+# skills/ is linked skill by skill, in the next pass.
+for e in CLAUDE.md settings.json keybindings.json plans agents commands \
          hooks output-styles rules workflows; do
   [ -e "$CFG/$e" ] || continue
   # directories union on adopt (memdir); MEMORY.md handling simply never fires
   [ -d "$CFG/$e" ] && m=memdir || m=file
   link_one "$CFG/$e" "$CC/$e" "$m"
 done
+echo
+
+# ----------------------------------------------------------------- skills --
+# The vendor's skill state stays on its machine (rules.md -> ws-14; PLAN.md ->
+# settled 15). Anthropic's skill sync keeps its state under the user's skills
+# directory -- synced/, with .trash/ for what it removes and .staging/ for what
+# it stages (named so in the 2.1.296 and 2.1.310 binaries) -- and rewrites it
+# at every session start: 227 files the first time, then two with the same
+# bytes (live-B section 3). While ~/.claude/skills was itself a link here, all
+# of it landed in the shared tree. So ~/.claude/skills is a real directory on
+# each machine, holding one link per authored skill -- every directory of the
+# shared skills/ but synced/ and the dot-directories -- and the vendor writes
+# beside those links, on this machine alone.
+#
+# The way over from the old link is a deliberate run's: --apply replaces the
+# link with that directory and moves the vendor's directories out of the
+# shared tree into it, so the sync finds its state and downloads nothing
+# again. --auto makes a missing per-skill link, which sits under ~/.claude,
+# and moves nothing. --unlink makes each per-skill link a real copy. A skill
+# made here alone, in ~/.claude/skills itself, is named and left where it is.
+SKILL_VENDOR=(synced .trash .staging)
+skrel="${CC/#$HOME/\~}/skills"
+authored_skills=()
+if [ -d "$CFG/skills" ]; then
+  for d in "$CFG"/skills/*/; do
+    [ -d "$d" ] || continue
+    s=${d%/}; s=${s##*/}
+    [ "$s" = synced ] && continue
+    authored_skills+=("$s")
+  done
+fi
+
+# move_vendor_state [old]  -- the vendor's directories out of the shared tree,
+# into the local skills directory; a rename where the two share a filesystem.
+# "old": the dry run's report while the local directory is still the link,
+# through which every vendor directory would read as already there.
+move_vendor_state() {
+  local v src dst n how old=${1:-}
+  for v in "${SKILL_VENDOR[@]}"; do
+    src="$CFG/skills/$v" dst="$CC/skills/$v"
+    [ -e "$src" ] || [ -L "$src" ] || continue
+    if [ -L "$src" ] || [ ! -d "$src" ]; then
+      wrn "skills/$v in the shared tree is not a directory; left alone"; n_warn=$((n_warn+1)); continue
+    fi
+    if [ -z "$old" ] && { [ -e "$dst" ] || [ -L "$dst" ]; }; then
+      wrn "skills/$v is both in the shared tree and in $skrel; the shared copy is left for you to remove"
+      n_warn=$((n_warn+1)); continue
+    fi
+    n=$(find "$src" -type f 2>/dev/null | wc -l)
+    if [ $AUTO = 1 ]; then
+      skp "skills/$v ($n files) is in the shared tree; claude-link --apply moves it to $skrel/"
+      n_skip=$((n_skip+1))
+    elif [ $APPLY = 0 ]; then
+      adp "would move skills/$v ($n files) out of the shared tree into $skrel/"
+      n_adopt=$((n_adopt+1))
+    else
+      [ "$(stat -c %d "$CFG/skills")" = "$(stat -c %d "$CC/skills")" ] \
+        && how="a rename on one filesystem" || how="across filesystems: copied, then removed"
+      mv -T "$src" "$dst" \
+        && { adp "moved skills/$v ($n files) out of the shared tree into $skrel/ ($how)"; n_adopt=$((n_adopt+1)); } \
+        || { err "could not move skills/$v out of the shared tree"; n_fail=$((n_fail+1)); }
+    fi
+  done
+}
+
+# make_skills_dir  -- the old link becomes a directory of per-skill links. The
+# directory is built beside it and then takes its name; the link is moved
+# aside first and put back if that fails, so ~/.claude/skills is never left
+# missing.
+make_skills_dir() {
+  local sk="$CC/skills" tmp="$CC/.skills.claude-link.$$" old="$CC/.skills.old-link.$$" s
+  if ! mkdir "$tmp" 2>/dev/null; then
+    err "could not create $tmp; $skrel left as it was"; n_fail=$((n_fail+1)); return 1
+  fi
+  for s in "${authored_skills[@]}"; do
+    if ! ln -sT "$CFG/skills/$s" "$tmp/$s"; then
+      rm -f -- "$tmp"/* 2>/dev/null; rmdir "$tmp" 2>/dev/null
+      err "could not link skill $s; $skrel left as it was"; n_fail=$((n_fail+1)); return 1
+    fi
+  done
+  if mv -T "$sk" "$old" && mv -T "$tmp" "$sk"; then
+    rm -f "$old"
+    adp "$skrel: now a directory of per-skill links (was a link into the shared tree)"
+    n_adopt=$((n_adopt+1))
+    for s in "${authored_skills[@]}"; do lnk "$skrel/$s"; n_link=$((n_link+1)); done
+    return 0
+  fi
+  [ -L "$old" ] && [ ! -e "$sk" ] && [ ! -L "$sk" ] && mv -T "$old" "$sk"
+  rm -f -- "$tmp"/* 2>/dev/null; rmdir "$tmp" 2>/dev/null
+  err "could not replace the link $skrel; left as it was"; n_fail=$((n_fail+1)); return 1
+}
+
+echo "== skills =="
+if [ -d "$CFG/skills" ]; then
+  sk="$CC/skills"
+  if [ -L "$sk" ] && [ "$(readlink -f "$sk")" = "$(readlink -f "$CFG/skills")" ]; then
+    # the old shape: one link for the whole directory
+    if [ $UNLINK = 1 ]; then
+      link_one "$CFG/skills" "$sk" memdir
+    elif [ $AUTO = 1 ]; then
+      skp "$skrel is a link into the shared tree; claude-link --apply makes it a directory of per-skill links"
+      n_skip=$((n_skip+1))
+    elif [ $APPLY = 0 ]; then
+      adp "would make $skrel a directory of per-skill links (now a link into the shared tree)"
+      n_adopt=$((n_adopt+1))
+      for s in "${authored_skills[@]}"; do lnk "would link $skrel/$s"; n_link=$((n_link+1)); done
+      move_vendor_state old
+    else
+      make_skills_dir && move_vendor_state
+    fi
+  elif [ -L "$sk" ]; then
+    wrn "symlink points elsewhere, leaving alone: $skrel -> $(readlink "$sk")"
+    n_warn=$((n_warn+1))
+  elif [ -e "$sk" ] && [ ! -d "$sk" ]; then
+    wrn "$skrel is not a directory; left alone"
+    n_warn=$((n_warn+1))
+  else
+    for s in "${authored_skills[@]}"; do link_one "$CFG/skills/$s" "$sk/$s" memdir; done
+    if [ $UNLINK = 0 ]; then
+      [ $APPLY = 1 ] && [ $AUTO = 0 ] && mkdir -p "$sk"
+      move_vendor_state
+      # A skill written straight into ~/.claude/skills -- where Claude Code's
+      # own instructions put a new one -- reaches no other machine now.
+      for d in "$sk"/*/; do
+        [ -d "$d" ] || continue
+        s=${d%/}; s=${s##*/}
+        if [ "$s" != synced ] && [ ! -L "$sk/$s" ] && [ ! -e "$CFG/skills/$s" ] && [ -f "$sk/$s/SKILL.md" ]; then
+          wrn "a skill on this machine alone: $skrel/$s  (to share it, move it into ${CFG/#$HOME/\~}/skills/ and run claude-link --apply)"
+          n_warn=$((n_warn+1))
+        fi
+      done
+    fi
+  fi
+fi
 echo
 
 # ------------------------------------------------------------- 2. memory ----
@@ -240,6 +472,14 @@ echo
 # and both machines carried a dangling ~/.claude/plans through 337 --auto runs
 # with nothing to notice. A keeper file now holds each such directory open; this
 # sweep is the backstop for the next one.
+#
+# --auto sweeps the ~/.claude half alone (rules.md -> ws-13). A link in
+# ~/Desktop is part of the synced tree, and Syncthing delivers a symlink before
+# its target's blocks -- 18 to 70 ms on the real pair, the whole stall during a
+# seeding -- so a dangling one there may be on its way rather than gone. An
+# --auto sweep deleted a synced link on bigfed on 2026-10-01, and in live-B
+# one still in transit, a removal that then reached the other machine
+# (design-revisions.md -> J). --apply, run by hand, still sweeps both.
 echo "== sweep =="
 swept=0
 while IFS= read -r -d '' f; do
@@ -253,11 +493,12 @@ while IFS= read -r -d '' f; do
   else
     adp "would remove dangling link: $rel"; swept=$((swept+1))
   fi
-done < <( { find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
+done < <( { [ $AUTO = 1 ] || find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
              \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null
-            # depth 3 reaches ~/.claude/<entry> and ~/.claude/projects/<scope>/memory,
-            # which is every link this script creates there. find does not descend
-            # through a symlink without -L, so it never walks into the config tree.
+            # depth 3 reaches ~/.claude/<entry>, ~/.claude/skills/<name> and
+            # ~/.claude/projects/<scope>/memory, which is every link this script
+            # creates there. find does not descend through a symlink without -L,
+            # so it never walks into the config tree.
             find "$CC" -maxdepth 3 -type l -print0 2>/dev/null ; } )
 [ "$swept" -gt 0 ] && n_adopt=$((n_adopt+swept))
 echo
@@ -266,9 +507,12 @@ echo
 # The link passes below are driven by what org/claude-config already contains,
 # so a scope this machine invented today would never be considered. Harvest
 # runs the other way: anything real here with NO counterpart in the shared copy
-# is moved in and linked back. That case cannot conflict, which is why --auto
-# is allowed to do it unattended. Anything that DOES have a counterpart is left
-# alone for a deliberate --adopt.
+# is moved in and linked back. Anything that DOES have a counterpart is left
+# alone for a deliberate --adopt. Harvest is a deliberate run's alone since
+# 2026-10-26 (rules.md -> ws-13): run unattended at the end of a session, it
+# took the same new scope into the shared tree on both machines at once, and
+# one machine's index line ended in a conflict copy (live-B section 2). --auto
+# names what it leaves, and the SessionStart hook counts it.
 # Scopes for ephemeral directories must never be harvested or linked. Claude
 # creates a project scope for whatever cwd a session runs in, including the
 # per-session scratchpad under /tmp -- and --auto would then move that empty
@@ -286,9 +530,23 @@ harvest_one() {  # harvest_one <local-path> <shared-path> <label>
   [ -e "$here" ] || return 0
   [ -L "$here" ] && return 0
   [ -e "$there" ] && return 0
+  if [ $AUTO = 1 ]; then
+    skp "new $label: --auto harvests nothing; claude-link --apply moves it into the shared tree"
+    n_skip=$((n_skip+1)); return 0
+  fi
   if [ $APPLY = 0 ]; then adp "would harvest new $label"; n_adopt=$((n_adopt+1)); return 0; fi
   mkdir -p "$(dirname "$there")" 2>/dev/null
-  if cp -a "$here" "$there" 2>/dev/null && rm -rf "$here" && ln -s "$there" "$here"; then
+  # A directory is claimed with mkdir before its contents are copied: should
+  # the shared path appear after the test above, the claim fails where
+  # `cp -a dir there` would nest the copy inside it (link/e2.sh's
+  # memory/memory).
+  local copied=0
+  if [ -d "$here" ]; then
+    mkdir "$there" 2>/dev/null && cp -a "$here/." "$there/" 2>/dev/null && copied=1
+  else
+    cp -a "$here" "$there" 2>/dev/null && copied=1
+  fi
+  if [ $copied = 1 ] && rm -rf "$here" && ln -sT "$there" "$here"; then
     adp "harvested new $label -> shared"; n_adopt=$((n_adopt+1))
   else
     err "harvest failed: $label"; n_fail=$((n_fail+1))
@@ -306,7 +564,7 @@ while IFS= read -r -d '' f; do
   d=$(dirname "$f"); repo_dir=$(dirname "$d")
   rel=${repo_dir#"$DESK"/}; [ "$rel" = "$repo_dir" ] && rel=_desktop-root
   harvest_one "$f" "$CFG/repos/$rel/settings.local.json" "permissions for $rel"
-done < <(find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
+done < <([ $AUTO = 1 ] || find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
            -type f -path '*/.claude/settings.local.json' -print0 2>/dev/null)
 echo
 
@@ -346,7 +604,17 @@ fi
 echo
 
 # -------------------------------------------------------- 3. repo-level ----
+# Every link this pass makes sits inside ~/Desktop, so under --auto it makes
+# them only while ~/Desktop lies in no Syncthing folder, and never removes one
+# (rules.md -> ws-13; the --auto note above).
 echo "== repos =="
+if [ $AUTO = 1 ]; then
+  if [ -n "$desk_folder" ]; then
+    echo "  ~/Desktop lies in the Syncthing folder at $desk_folder: --auto makes no link here; each arrives with the folder"
+  else
+    echo "  ~/Desktop lies in no Syncthing folder (no .stfolder at it or above it): --auto makes a missing link here and removes none"
+  fi
+fi
 if [ -d "$CFG/repos" ]; then
   while IFS= read -r -d '' f; do
     rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel"); base=$(basename "$rel")
@@ -355,8 +623,8 @@ if [ -d "$CFG/repos" ]; then
       skp "$repo — not on this machine"; n_skip=$((n_skip+1)); continue
     fi
     case "$base" in
-      settings.local.json) link_one "$f" "$target_dir/.claude/$base" perms ;;
-      CLAUDE.local.md)     link_one "$f" "$target_dir/$base" file ;;
+      settings.local.json) link_one "$f" "$target_dir/.claude/$base" perms desk ;;
+      CLAUDE.local.md)     link_one "$f" "$target_dir/$base" file desk ;;
     esac
   done < <(find "$CFG/repos" -type f \( -name settings.local.json -o -name CLAUDE.local.md \) -print0 | sort -z)
 fi

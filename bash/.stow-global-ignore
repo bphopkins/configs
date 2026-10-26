@@ -41,3 +41,9 @@ _darcs
 # live config dirs — a stray ~/CLAUDE.md stowed from the bash package would
 # load into every Claude session under $HOME.
 CLAUDE\.md
+# Python's bytecode caches (2026-10-26): a py_compile check or a suite that
+# imports a module beside its script leaves __pycache__/ in a package, and
+# stow would link it into the target (bin/__pycache__ into ~/bin, found at
+# step 5a of org/machines/transport-2026-10). .gitignore already keeps them
+# off the remote; this keeps them out of the live config tree.
+__pycache__

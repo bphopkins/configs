@@ -1,0 +1,2077 @@
+#!/usr/bin/env python3
+"""syncthing-addfolder -- create one encrypted Syncthing folder across the cluster.
+
+  syncthing-addfolder [options] ID LABEL WRITER-PATH READER-PATH HUB-PATH
+  syncthing-addfolder --undo [--yes] [--dry-run] [--log FILE] ID LABEL
+
+  ID            the folder id: two groups of five over a-z without i and l, and 2-9
+  LABEL         its label, the same on all three machines
+  WRITER-PATH   its absolute path here, on the writer (bigfed); a directory
+  READER-PATH   its absolute path on the other workstation (fedxps): absent or
+                empty makes the fresh shape, a copy already there the join shape
+  HUB-PATH      its absolute path on the hub (nousowl): a directory that does
+                not exist yet (hub-3)
+
+  --trash DIR       join: the reader's trashcan for the revert, absolute and
+                    outside the folder; the join shape requires it
+  --allow-outside   join: go on when the reader's local changes lie outside a
+                    .git (the rehearsal's scratch trees)
+  --hub-only        share through the hub alone, without the direct link (ws-16)
+  --hub NAME        the hub's device name, when no folder here names it yet
+  --peer NAME       the reader's device name, when the hub knows more than two
+  --yes             answer every gate; otherwise each gate waits for Enter
+  --dry-run         read all three machines, print the plan, write nothing
+  --log FILE        append every line printed to FILE as well
+  --undo            remove folder ID from the hub, then here, then the reader;
+                    every file stays on disk
+  -h                this text
+
+Exit: 0 done (a dry run: nothing refused) . 1 stopped: a refusal, a gate that
+      did not hold, a wait that ran out, his word, Ctrl-C . 2 could not
+      determine: a machine that did not answer, a reading that failed, bad
+      arguments
+
+The successor of org/machines/syncthing-2026-09/bin/syncthing-addfolder (bash,
+2026-09-15), rewritten for the transport campaign (org/machines/transport-2026-10,
+rules.md -> mig-4, mig-3, hub-3, ws-7, ws-16; pilot.md -> "Seeding the pilot
+folder", whose hand-run sequence of 2026-10-10 this follows: pilot/seeding.md).
+It runs on the writer, bigfed, and reaches the hub and the reader as the gauge
+does. Every lesson of the 2026-09 script still binds:
+
+  - the hub's folder is receiveencrypted with staggered versioning (maxAge one
+    year) and minDiskFree 1 % set in the same POST, in a new directory: the
+    hub's <defaults><folder> template has no versioning, so a folder added the
+    obvious way silently keeps no history, and two folders on one hub path drop
+    every connection to the hub (hub-3);
+  - folders are made by POST /rest/config/folders, never `syncthing cli config
+    folders add`, which may land maxConflicts 0 (conflicts discarded with no
+    copy, ws-7); maxConflicts 10, fsWatcherDelayS 2 and rescanIntervalS 3600
+    are set in every POST and read back after it;
+  - the hub device is bounced (paused and resumed) on each workstation after
+    its folder exists, since an encrypted folder added to a live connection
+    never pulls; the bounce is verified by the disconnect and the reconnect it
+    causes, and a device paused by this tool is resumed however it exits;
+  - bigfed's folder is written first, so that a password entered on the day the
+    cluster is rebuilt is durable in bigfed's config.xml before anything else
+    can fail; autoAcceptFolders false on every device of all three machines is
+    a preflight check, so nothing can accept bigfed's offer in the window;
+  - the cluster password is asked for once in the life of the cluster.
+
+THE TWO SHAPES. The reader's path decides. Absent or empty: the fresh shape --
+bigfed's folder (sendreceive), the hub's, then once the hub holds bigfed's set
+the reader's (sendreceive), each device list self + hub (with the password) +
+the other workstation over the direct link unless --hub-only. A copy already
+there (a repository seeded by git, or the Desktop at the cutover): the join
+shape, mig-3's gates 5 to 9 as the pilot ran them -- the reader added
+receiveonly with versioning trashcan (cleanoutDays 0, fsPath --trash), bounced;
+gate 7 holds once the reader's view of the hub carries the hub's own sequence
+(its index has arrived; measured 2026-10-26 on 2.1.6: 0 before) and the global
+counts and bytes agree with bigfed's; db/localchanged read and every path
+printed, the run stopping for his word when any lies outside a .git; the
+revert; gate 9 (no receive-only change left, the sha256 manifests of the two
+trees equal under LC_ALL=C with .stfolder/ left out, git fsck clean under
+GIT_OPTIONAL_LOCKS=0 for every .git in the reader's tree, the trashcan holding
+what was listed); the switch to sendreceive with the hub's and bigfed's folder
+sequences read before and after a watch (nothing sent); the reader's versioning
+back to none; then the direct link shared, as the pilot did after its switch.
+Both shapes end with every view at 100 with nothing needed and every view's
+sequence equal to the device's own.
+
+PREFLIGHT, before any write, on all three machines: Syncthing answers; global
+announce, relays, NAT and crash reporting off; autoAcceptFolders false on every
+device; the devices connected and not paused; the id's shape and the label;
+no other folder with this label or a path that contains or lies inside this
+one; no .stfolder marker under either workstation's path or above it; the hub's
+directory absent, and on the dedicated volume when under ~/sync (findmnt);
+this machine's gsync.role reads writer, and the reader's reads another role, or
+its readerRepo names READER-PATH (an absent role refuses); a repository
+at a folder's root ignores .stfolder/ (mig-4, 2026-10-10); one cluster password
+on each workstation, the same on both (compared by an HMAC under a nonce drawn
+for the run, in memory, never printed); the join's trashcan absolute, outside
+the folder and outside every Syncthing folder, absent or empty; an absent hub or
+reader path under a directory. A reading git or the filesystem cannot give is a
+WARN, and the run stops with exit 2.
+
+RE-RUNNABLE. A machine already holding the folder as specified is verified, not
+re-created; one holding it differently stops the run. The states a run can
+leave are bigfed alone, bigfed and the hub, or all three, and any other stops.
+Every stop prints the undo (`--undo`: DELETE on the hub first, then bigfed,
+then the reader; every file stays on disk -- measured 2026-10-26 on 2.1.6, a
+workstation's marker goes and the hub's is renamed .stfolder.removed-<time>
+beside its blobs).
+
+GATES. Each waits for Enter on the terminal (/dev/tty), or is answered by
+--yes: before the first write; in the join, before the reader's receive-only
+POST, before the revert and before the switch. A gate's readings are printed
+before it.
+
+SECRETS. The API key of each machine is read from its own config.xml into a
+header and never printed. The cluster password is read structurally from an
+existing encrypted folder's device entry on the machine where the folder's body
+is composed -- the remote mode composes it there -- so it never crosses the
+wire, argv, stdout or a file. On the day the cluster is rebuilt, when this
+machine holds no encrypted folder, it is asked for once on /dev/tty (echo off,
+twice, refused when it holds whitespace or this command's own arguments, as the
+2026-09 script learnt), and reaches a reader that holds none either inside the
+program text ssh carries on stdin, never on disk or in argv.
+
+REMOTE MODE. The hub and the reader are reached as `sync-check` reaches them:
+this file is sent over `ssh -o BatchMode=yes HOST python3 -I - --remote OP
+JSON` and answers with one JSON line; HOST is the device's name in the config,
+and HOST-vpn the second door when the first does not connect (2 s), a door
+that failed not being tried again in the run. A write is never retried through
+the second door: ssh's exit 255 cannot say whether it ran, so the run stops and
+a re-run verifies what is there. SYNC_CHECK_CONFIG names another config.xml,
+the same variable the gauge reads, so one fixture setting serves both tools.
+
+Clock times come from the clock: every line is stamped, --log appends the same
+lines. Waits are scaled to the folder: 120 s plus a second per 2 MB and 0.02 s
+per file of bigfed's copy, each progress line printed when its reading changes.
+
+The suite's knobs (tests/sync/case_addfolder.py): SYNCTHING_ADDFOLDER_POLL
+(seconds between readings, 2), SYNCTHING_ADDFOLDER_HOLD (seconds a bounce holds
+the device paused, 5), SYNCTHING_ADDFOLDER_WATCH (seconds the switch is
+watched, 60), SYNCTHING_ADDFOLDER_WAIT_SCALE (a factor on every wait, 1).
+"""
+
+import getpass
+import hashlib
+import hmac
+import json
+import os
+import re
+import secrets
+import shlex
+import signal
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+
+HOME = os.path.expanduser("~")
+MAX_CONFLICTS = 10
+WATCH_DELAY_S = 2
+RESCAN_S = 3600
+NO_VERSIONING = {"type": "", "params": {}, "cleanupIntervalS": 3600, "fsPath": "", "fsType": "basic"}
+HUB_VERSIONING = {"type": "staggered", "params": {"maxAge": "31536000"},
+                  "cleanupIntervalS": 3600, "fsPath": "", "fsType": "basic"}
+HUB_MIN_DISK_FREE = {"value": 1, "unit": "%"}
+PHONE_HOME = ("globalAnnounceEnabled", "relaysEnabled", "natEnabled", "crashReportingEnabled")
+SECRET_KEYS = {"encryptionPassword", "apikey", "apiKey", "password", "user"}
+# The cluster's alphabet for a new id (pilot/seeding.md, 2026-10-10): a-z
+# without i and l, and 2-9; two groups of five, 50 bits.
+ID_RE = re.compile(r"[a-hjkm-z2-9]{5}-[a-hjkm-z2-9]{5}")
+HOSTNAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,252}")
+REST_TIMEOUT = 30
+STATUS_KEYS = ("state", "needTotalItems", "needBytes", "pullErrors", "errors", "error",
+               "globalFiles", "globalDirectories", "globalSymlinks", "globalBytes",
+               "localFiles", "localDirectories", "localSymlinks", "localBytes",
+               "receiveOnlyChangedFiles", "receiveOnlyChangedDirectories",
+               "receiveOnlyChangedSymlinks", "receiveOnlyChangedDeletes",
+               "receiveOnlyTotalItems", "sequence")
+VIEW_KEYS = ("completion", "needItems", "needDeletes", "needBytes", "remoteState", "sequence", "globalItems")
+
+
+def env_seconds(name, default):
+    """A positive number from the environment, else the default."""
+    try:
+        v = float(os.environ.get(name, default))
+    except ValueError:
+        return default
+    return v if v > 0 else default
+
+
+POLL = env_seconds("SYNCTHING_ADDFOLDER_POLL", 2.0)
+HOLD = env_seconds("SYNCTHING_ADDFOLDER_HOLD", 5.0)
+WATCH = env_seconds("SYNCTHING_ADDFOLDER_WATCH", 60.0)
+WAIT_SCALE = env_seconds("SYNCTHING_ADDFOLDER_WAIT_SCALE", 1.0)
+WAIT_FLOOR = 120.0
+WAIT_RATE = 2e6          # bytes a second
+WAIT_PER_FILE = 0.02     # seconds a file
+
+
+# =============================================================================
+# The machine side: what runs on each machine, here in-process or there over ssh
+# =============================================================================
+class OpFail(Exception):
+    """A reading or a write on this machine that could not be done."""
+
+
+def config_path():
+    env = os.environ.get("SYNC_CHECK_CONFIG")
+    if env:
+        return env if os.path.exists(env) else None
+    # Syncthing's own order (`syncthing paths`): a legacy configuration
+    # directory holding a config.xml wins over the state directory.
+    cands = []
+    if os.environ.get("XDG_CONFIG_HOME"):
+        cands.append(os.path.join(os.environ["XDG_CONFIG_HOME"], "syncthing", "config.xml"))
+    cands.append(os.path.join(HOME, ".config", "syncthing", "config.xml"))
+    state = os.environ.get("XDG_STATE_HOME")
+    if state and os.path.isabs(state):
+        cands.append(os.path.join(state, "syncthing", "config.xml"))
+    cands.append(os.path.join(HOME, ".local", "state", "syncthing", "config.xml"))
+    for p in cands:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def q(s):
+    return urllib.parse.quote(s, safe="")
+
+
+class Local:
+    """This machine's Syncthing: the address and key from config.xml, which is
+    parsed for the fields needed and read afresh for every operation."""
+
+    def __init__(self):
+        p = config_path()
+        if not p:
+            raise OpFail("no Syncthing configuration on %s (SYNC_CHECK_CONFIG, or config.xml "
+                         "under ~/.config/syncthing or ~/.local/state/syncthing)" % os.uname().nodename)
+        self.path = p
+        self.root = ET.parse(p).getroot()
+        gui = self.root.find("gui")
+        addr = (gui.findtext("address") or "127.0.0.1:8384").strip()
+        if addr.startswith("0.0.0.0:"):
+            addr = "127.0.0.1:" + addr.split(":", 1)[1]
+        if addr.startswith("[::]:"):
+            addr = "127.0.0.1:" + addr.split("]:", 1)[1]
+        scheme = "https" if (gui.get("tls") or "false").lower() == "true" else "http"
+        self.base = "%s://%s/rest/" % (scheme, addr)
+        self.key = (gui.findtext("apikey") or "").strip()
+
+    def call(self, path, method="GET", body=None, timeout=REST_TIMEOUT):
+        """(status, json-or-text); status None when the daemon does not answer."""
+        data = json.dumps(body).encode("utf-8") if body is not None else None
+        req = urllib.request.Request(self.base + path, data=data, method=method,
+                                     headers={"X-API-Key": self.key, "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                text = r.read().decode("utf-8", "replace")
+                status = r.status
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode("utf-8", "replace")[:500]
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            return None, "%s" % (getattr(e, "reason", None) or e)
+        if not text.strip():
+            return status, {}
+        try:
+            return status, json.loads(text)
+        except ValueError:
+            return status, text[:500]
+
+    def must(self, path, method="GET", body=None, timeout=REST_TIMEOUT):
+        st, r = self.call(path, method, body, timeout)
+        if st != 200:
+            raise OpFail("%s /rest/%s answered %s: %s" % (method, path.split("?")[0], st, str(r)[:200]))
+        return r
+
+    def folder(self, fid):
+        """The folder's configuration with every password replaced by <set> or
+        "", or None when this machine does not hold it."""
+        st, f = self.call("config/folders/" + q(fid))
+        if st == 404:
+            return None
+        if st != 200 or not isinstance(f, dict):
+            raise OpFail("GET /rest/config/folders/%s answered %s" % (fid, st))
+        return redact(f)
+
+    def folder_raw(self, fid):
+        """The same, with the password: held in this process only."""
+        st, f = self.call("config/folders/" + q(fid))
+        if st != 200 or not isinstance(f, dict):
+            raise OpFail("GET /rest/config/folders/%s answered %s" % (fid, st))
+        return f
+
+    def passwords(self):
+        """Every distinct encryption password in this machine's folders, from
+        config.xml; held in memory, never returned."""
+        seen = []
+        for f in self.root.findall("folder"):
+            for d in f.findall("device"):
+                pw = d.findtext("encryptionPassword") or ""
+                if pw.strip() and pw not in seen:
+                    seen.append(pw)
+        return seen
+
+
+def redact(o):
+    if isinstance(o, dict):
+        return {k: (("<set>" if o[k] else "") if k in SECRET_KEYS else redact(v)) for k, v in o.items()}
+    if isinstance(o, list):
+        return [redact(x) for x in o]
+    return o
+
+
+def hub_hash(folder):
+    """A digest of the device entries that carry a password, to show in-process
+    that a PATCH of the device list left them as they were."""
+    hub = sorted((d for d in folder.get("devices", []) if d.get("encryptionPassword")),
+                 key=lambda d: d.get("deviceID", ""))
+    return hashlib.sha256(json.dumps(hub, sort_keys=True).encode()).hexdigest()
+
+
+def marker_above(start):
+    """The nearest directory at or above `start` holding a .stfolder marker."""
+    p = os.path.abspath(start)
+    while True:
+        if os.path.isdir(os.path.join(p, ".stfolder")):
+            return p
+        parent = os.path.dirname(p)
+        if parent == p:
+            return None
+        p = parent
+
+
+def path_facts(p, walk):
+    """What the folder's path holds: existence, emptiness, the markers under it
+    and above it, and (walk) its regular files' count and bytes."""
+    f = {"path": p, "exists": os.path.lexists(p), "isdir": os.path.isdir(p), "realpath": os.path.realpath(p),
+         "islink": os.path.islink(p), "marker_above": marker_above(os.path.dirname(os.path.abspath(p)))}
+    if not f["exists"]:
+        a = os.path.dirname(os.path.abspath(p))
+        while not os.path.lexists(a):
+            a = os.path.dirname(a)
+        f["ancestor"] = a
+        f["ancestor_isdir"] = os.path.isdir(a)
+    if not f["isdir"]:
+        return f
+    try:
+        names = os.listdir(p)
+    except OSError as e:
+        f["error"] = str(e)
+        return f
+    f["entries"] = len(names)
+    f["empty"] = not names
+    f["marker_here"] = os.path.isdir(os.path.join(p, ".stfolder"))
+    f["repo_root"] = os.path.lexists(os.path.join(p, ".git"))
+    if walk:
+        below, errors = [], []
+        files = nbytes = 0
+        for dp, dns, fns in os.walk(p, onerror=lambda e: errors.append(str(e))):
+            if dp != p and ".stfolder" in dns:
+                below.append(os.path.relpath(os.path.join(dp, ".stfolder"), p))
+            for n in fns:
+                try:
+                    st = os.lstat(os.path.join(dp, n))
+                except OSError as e:
+                    errors.append(str(e))
+                    continue
+                if not os.path.islink(os.path.join(dp, n)):
+                    files += 1
+                    nbytes += st.st_size
+        f.update(markers_below=below[:20], markers_below_count=len(below),
+                 files=files, bytes=nbytes, walk_errors=errors[:5])
+    return f
+
+
+def mount_facts(p):
+    """Whether the hub path lies under ~/sync, and if so what is mounted where
+    its parent is, read from findmnt's JSON."""
+    sync = os.path.realpath(os.path.join(HOME, "sync"))
+    rp = os.path.realpath(p)
+    out = {"sync": sync, "applies": rp.startswith(sync + os.sep)}
+    if not out["applies"]:
+        return out
+    out["exists"] = os.path.isdir(sync)
+    if not out["exists"]:
+        return out
+    parent = os.path.dirname(rp)
+    while not os.path.isdir(parent):
+        parent = os.path.dirname(parent)
+    try:
+        r = subprocess.run(["findmnt", "-J", "--target", parent], capture_output=True, text=True, timeout=20)
+        fs = json.loads(r.stdout)["filesystems"][0]
+    except (OSError, subprocess.SubprocessError, ValueError, KeyError, IndexError) as e:
+        raise OpFail("findmnt could not read the mount under %s: %s" % (parent, e))
+    out.update(target=fs.get("target"), fstype=fs.get("fstype"), source=fs.get("source"))
+    return out
+
+
+def git_out(args, cwd="/", env_extra=None, timeout=60):
+    env = dict(os.environ, GIT_OPTIONAL_LOCKS="0")
+    if env_extra:
+        env.update(env_extra)
+    try:
+        r = subprocess.run(["git"] + args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+    except FileNotFoundError:
+        return 127, "", "git not installed"
+    except subprocess.TimeoutExpired:
+        return 124, "", "no answer within %d s" % timeout
+    return r.returncode, r.stdout, r.stderr
+
+
+def git_facts(p):
+    """This machine's gsync.role and gsync.readerRepo keys through git's own
+    config (the host include), each readerRepo resolved as 50-git-sync.sh
+    resolves it, $HOME/Desktop/<value>; and whether a repository at the
+    path's root ignores the marker. git exit 1 is "no such key"; above 1 the
+    configuration could not be read."""
+    rc, out, err = git_out(["config", "--get", "gsync.role"])
+    f = {"role_rc": rc, "role": out.strip(), "role_err": err.strip()[:200]}
+    rc, out, err = git_out(["config", "--get-all", "gsync.readerRepo"])
+    repos = [v.strip() for v in out.splitlines() if v.strip()]
+    want = os.path.realpath(p)
+    f.update(reader_repo_rc=rc, reader_repo_err=err.strip()[:200], reader_repos=repos,
+             reader_repo_match=any(os.path.realpath(HOME + "/Desktop/" + v) == want for v in repos))
+    if os.path.lexists(os.path.join(p, ".git")):
+        rc, out, err = git_out(["-C", p, "check-ignore", "-q", ".stfolder/syncthing-folder-check.txt"])
+        f["marker_ignore_rc"] = rc
+        f["marker_ignore_err"] = err.strip()[:200]
+    return f
+
+
+def trash_facts(t):
+    f = {"path": t, "exists": os.path.lexists(t), "isdir": os.path.isdir(t),
+         "marker_above": marker_above(t), "realpath": os.path.realpath(t)}
+    if f["isdir"]:
+        try:
+            f["empty"] = not os.listdir(t)
+        except OSError as e:
+            f["error"] = str(e)
+    return f
+
+
+def op_probe(a):
+    L = Local()
+    s = L.must("system/status")
+    out = {"myID": s.get("myID"), "startTime": s.get("startTime"), "config": L.path, "home": HOME,
+           "node": os.uname().nodename}
+    st, v = L.call("system/version")
+    out["version"] = v.get("version") if isinstance(v, dict) else None
+    o = L.must("config/options")
+    out["options"] = {k: o.get(k) for k in PHONE_HOME}
+    out["devices"] = [{k: d.get(k) for k in ("deviceID", "name", "autoAcceptFolders", "paused")}
+                      for d in L.must("config/devices")]
+    conns = (L.must("system/connections") or {}).get("connections") or {}
+    out["connected"] = {did: bool(c.get("connected")) for did, c in conns.items()}
+    out["folder"] = L.folder(a["fid"]) if a.get("fid") else None
+    folders = []
+    for f in L.root.findall("folder"):
+        folders.append({"id": f.get("id"), "label": f.get("label") or "",
+                        "path": os.path.realpath(os.path.expanduser(f.get("path") or "")),
+                        "type": f.get("type") or "sendreceive",
+                        "enc": [d.get("id") for d in f.findall("device")
+                                if (d.findtext("encryptionPassword") or "").strip()]})
+    out["folders"] = folders
+    pws = L.passwords()
+    out["passwords"] = len(pws)
+    if len(pws) == 1 and a.get("nonce"):
+        out["pw_digest"] = hmac.new(a["nonce"].encode(), pws[0].encode("utf-8", "surrogateescape"),
+                                    hashlib.sha256).hexdigest()
+    pws = None
+    if a.get("path"):
+        out["path"] = path_facts(a["path"], a.get("walk", False))
+        if a.get("git"):
+            out["git"] = git_facts(a["path"])
+        if a.get("mount"):
+            out["mount"] = mount_facts(a["path"])
+    if a.get("trash"):
+        out["trash"] = trash_facts(a["trash"])
+    return out
+
+
+def op_post(a):
+    """POST /rest/config/folders with the body the controller composed, the
+    cluster password put into the hub's device entry here; the folder read
+    back, redacted."""
+    L = Local()
+    body = a["body"]
+    pw = None
+    if a.get("enc_to"):
+        if a.get("password") == "controller":
+            pw = globals().get("_CONTROLLER_PASSWORD")
+            if not isinstance(pw, str) or not pw:
+                raise OpFail("no password came with the program text")
+        else:
+            pws = L.passwords()
+            if len(pws) != 1:
+                raise OpFail("this machine holds %d distinct cluster passwords, not one" % len(pws))
+            pw = pws[0]
+        hit = [d for d in body["devices"] if d.get("deviceID") == a["enc_to"]]
+        if len(hit) != 1:
+            raise OpFail("the body names the hub %d times" % len(hit))
+        hit[0]["encryptionPassword"] = pw
+    try:
+        st, r = L.call("config/folders", "POST", body, timeout=120)
+    finally:
+        if pw:
+            for d in body["devices"]:
+                d.pop("encryptionPassword", None)
+    text = "" if st == 200 else str(r)
+    if pw and pw in text:
+        text = text.replace(pw, "<password>")
+    pw = None
+    return {"code": st, "text": text[:300], "folder": L.folder(body["id"])}
+
+
+def op_patch(a):
+    """PATCH the folder's type, versioning or paused state; never its devices."""
+    fields = a["fields"]
+    if set(fields) - {"type", "versioning", "paused"}:
+        raise OpFail("patch takes type, versioning and paused alone")
+    L = Local()
+    st, r = L.call("config/folders/" + q(a["fid"]), "PATCH", fields)
+    return {"code": st, "text": "" if st == 200 else str(r)[:300], "folder": L.folder(a["fid"])}
+
+
+def op_share(a):
+    """Append one device (the direct link, no password) to the folder's device
+    list; the entries carrying a password compared before and after, here."""
+    L = Local()
+    f = L.folder_raw(a["fid"])
+    h0 = hub_hash(f)
+    devs = f.get("devices") or []
+    if any(d.get("deviceID") == a["device"] for d in devs):
+        return {"code": 200, "already": True, "hub_entry_unchanged": True, "folder": L.folder(a["fid"])}
+    st, r = L.call("config/folders/" + q(a["fid"]), "PATCH", {"devices": devs + [{"deviceID": a["device"]}]})
+    f = devs = None
+    f2 = L.folder_raw(a["fid"])
+    same = hub_hash(f2) == h0
+    f2 = None
+    return {"code": st, "text": "" if st == 200 else str(r)[:300], "already": False,
+            "hub_entry_unchanged": same, "folder": L.folder(a["fid"])}
+
+
+def connection(L, did):
+    conns = (L.must("system/connections") or {}).get("connections") or {}
+    c = conns.get(did) or {}
+    return bool(c.get("connected")), c.get("startedAt") or ""
+
+
+def real_time(t):
+    return bool(t) and not t.startswith("0001-")
+
+
+BOUNCE = {}     # this process's bounce in flight: what an interruption reports
+
+
+def op_bounce(a):
+    """Pause the device, see the connection drop, hold, resume, see it come
+    back. The resume runs however this exits. startedAt flips between the zero
+    time and the real one from read to read (secondary connections, measured
+    2026-10-26), so the first real value after the reconnect is the one kept."""
+    L = Local()
+    did, hold = a["device"], float(a.get("hold", 5))
+    _, before = connection(L, did)
+    t0 = time.time()
+    dropped = None
+    resumed = None
+    BOUNCE.clear()
+    BOUNCE["device"] = did
+    try:
+        BOUNCE["pause_sent"] = True
+        st, r = L.call("config/devices/" + q(did), "PATCH", {"paused": True})
+        if st != 200:
+            raise OpFail("PATCH paused true answered %s: %s" % (st, str(r)[:200]))
+        while time.time() - t0 < max(hold, 10.0):
+            up, _ = connection(L, did)
+            if not up:
+                dropped = round(time.time() - t0, 2)
+                break
+            time.sleep(0.2)
+        left = hold - (time.time() - t0)
+        if left > 0:
+            time.sleep(left)
+    finally:
+        for _ in range(3):
+            st, r = L.call("config/devices/" + q(did), "PATCH", {"paused": False})
+            if st == 200:
+                resumed = round(time.time() - t0, 2)
+                BOUNCE["resumed"] = True
+                break
+            time.sleep(1)
+    if resumed is None:
+        raise OpFail("the device stayed paused: PATCH paused false answered %s" % st)
+    t1 = time.time()
+    back = None
+    after = ""
+    while time.time() - t1 < 120:
+        up, started = connection(L, did)
+        if up:
+            back = back or round(time.time() - t0, 2)
+            if real_time(started):
+                after = started
+                break
+            if time.time() - t1 > 15:
+                break
+        time.sleep(0.25)
+    return {"dropped_after": dropped, "resumed_after": resumed, "back_after": back,
+            "startedAt_before": before, "startedAt_after": after}
+
+
+def op_status(a):
+    L = Local()
+    st, s = L.call("db/status?folder=" + q(a["fid"]))
+    if st != 200 or not isinstance(s, dict):
+        raise OpFail("db/status answered %s: %s" % (st, str(s)[:200]))
+    out = {"status": {k: s.get(k) for k in STATUS_KEYS}, "views": {}, "at": time.time()}
+    for did in a.get("peers", []):
+        st, c = L.call("db/completion?folder=%s&device=%s" % (q(a["fid"]), q(did)))
+        out["views"][did] = {k: c.get(k) for k in VIEW_KEYS} if st == 200 and isinstance(c, dict) else None
+    return out
+
+
+def op_scan(a):
+    L = Local()
+    st, r = L.call("db/scan?folder=" + q(a["fid"]), "POST", timeout=900)
+    return {"code": st, "text": "" if st == 200 else str(r)[:300]}
+
+
+def op_localchanged(a):
+    """Every item db/localchanged lists, page by page."""
+    L = Local()
+    items, page, per = [], 1, 1000
+    while True:
+        r = L.must("db/localchanged?folder=%s&page=%d&perpage=%d" % (q(a["fid"]), page, per))
+        got = r.get("files") or [] if isinstance(r, dict) else []
+        for x in got:
+            items.append({"name": x.get("name"), "type": x.get("type"), "deleted": bool(x.get("deleted")),
+                          "size": x.get("size")})
+        if len(got) < per:
+            return {"items": items}
+        page += 1
+
+
+def op_revert(a):
+    L = Local()
+    st, r = L.call("db/revert?folder=" + q(a["fid"]), "POST", timeout=300)
+    return {"code": st, "text": "" if st == 200 else str(r)[:300]}
+
+
+def manifest_rows(root):
+    """(path, kind) for every entry under root, kind "d", "l:TARGET" or
+    "f:SHA256"; the marker directory .stfolder/ at the root left out, since its
+    file carries each device's own creation time and never syncs (pilot,
+    2026-10-10); sorted by the path's bytes, LC_ALL=C order."""
+    rows, errors = [], []
+    for dp, dns, fns in os.walk(root, onerror=lambda e: errors.append(str(e))):
+        rel = os.path.relpath(dp, root)
+        if rel == ".":
+            dns[:] = [d for d in dns if d != ".stfolder"]
+        for d in dns:
+            p = os.path.join(dp, d)
+            r = os.path.normpath(os.path.join(rel, d))
+            rows.append((r, "l:" + os.readlink(p) if os.path.islink(p) else "d"))
+        for n in fns:
+            p = os.path.join(dp, n)
+            r = os.path.normpath(os.path.join(rel, n))
+            if os.path.islink(p):
+                rows.append((r, "l:" + os.readlink(p)))
+                continue
+            h = hashlib.sha256()
+            try:
+                with open(p, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        h.update(chunk)
+            except OSError as e:
+                errors.append(str(e))
+                continue
+            rows.append((r, "f:" + h.hexdigest()))
+    rows.sort(key=lambda x: x[0].encode("utf-8", "surrogateescape"))
+    return rows, errors
+
+
+def manifest_digest(rows):
+    h = hashlib.sha256()
+    for r, k in rows:
+        h.update(("%s\t%s\n" % (r, k)).encode("utf-8", "surrogateescape"))
+    return h.hexdigest()
+
+
+def op_manifest(a):
+    rows, errors = manifest_rows(a["path"])
+    out = {"count": len(rows), "digest": manifest_digest(rows), "errors": errors[:5]}
+    if a.get("full"):
+        out["rows"] = rows
+    return out
+
+
+def op_fsck(a):
+    """git fsck --connectivity-only, under GIT_OPTIONAL_LOCKS=0, for every .git
+    in the tree; nothing under a .git is walked."""
+    root = a["path"]
+    repos = []
+    for dp, dns, fns in os.walk(root):
+        if ".git" in dns or ".git" in fns:
+            repos.append(dp)
+        dns[:] = [d for d in dns if d != ".git" and not (dp == root and d == ".stfolder")]
+    out = []
+    for r in repos:
+        rc, so, se = git_out(["-C", r, "fsck", "--connectivity-only", "--no-dangling", "--no-progress"],
+                             timeout=1800)
+        out.append({"repo": os.path.relpath(r, root), "rc": rc, "err": (se.strip() or so.strip())[:300]})
+    return {"repos": out}
+
+
+def op_trash(a):
+    t = a["trash"]
+    files = []
+    for dp, dns, fns in os.walk(t):
+        for n in fns:
+            files.append(os.path.relpath(os.path.join(dp, n), t))
+    return {"exists": os.path.isdir(t), "files": sorted(files)}
+
+
+def op_delete(a):
+    L = Local()
+    st, r = L.call("config/folders/" + q(a["fid"]), "DELETE")
+    return {"code": st, "text": "" if st == 200 else str(r)[:300], "absent": L.folder(a["fid"]) is None}
+
+
+OPS = {"probe": op_probe, "post": op_post, "patch": op_patch, "share": op_share, "bounce": op_bounce,
+       "status": op_status, "scan": op_scan, "localchanged": op_localchanged, "revert": op_revert,
+       "manifest": op_manifest, "fsck": op_fsck, "trash": op_trash, "delete": op_delete}
+WRITES = {"post", "patch", "share", "bounce", "revert", "delete", "scan"}
+
+
+def remote_main(op, raw):
+    """The remote mode: one operation, one JSON line, exit 0 always (ssh's 255
+    must mean that ssh itself failed)."""
+    try:
+        if op not in OPS:
+            raise OpFail("unknown operation %r" % op)
+        out = OPS[op](json.loads(raw))
+    except OpFail as e:
+        out = {"error": str(e)}
+    except Exception as e:      # a reading that could not finish is never health
+        out = {"error": "%s: %s" % (type(e).__name__, e)}
+    print(json.dumps(out))
+    return 0
+
+
+# =============================================================================
+# The controller: runs on the writer
+# =============================================================================
+class Stop(Exception):
+    """The run stops here. code 1: stopped (refused, a gate, a wait, his word);
+    2: could not determine."""
+
+    def __init__(self, msg, fix=None, code=1):
+        Exception.__init__(self, msg)
+        self.fix = fix
+        self.code = code
+
+
+class Unreachable(Exception):
+    pass
+
+
+def stamp():
+    t = time.time()
+    return time.strftime("%H:%M:%S", time.localtime(t)) + ".%03d" % int((t % 1) * 1000)
+
+
+class Out:
+    def __init__(self, log_path=None):
+        self.log = None
+        if log_path:
+            try:
+                self.log = open(log_path, "a", encoding="utf-8")
+            except OSError as e:
+                raise Stop("cannot append to the log %s: %s" % (log_path, e), code=2)
+
+    def raw(self, text):
+        print(text, flush=True)
+        if self.log:
+            self.log.write(text + "\n")
+            self.log.flush()
+
+    def say(self, tag, msg):
+        label = {"OK": " OK ", "DO": " DO "}.get(tag, tag)
+        self.raw("%s [%-4s] %s" % (stamp(), label, msg))
+
+    def fix(self, msg):
+        self.raw("%s        fix: %s" % (" " * 12, msg))
+
+    def more(self, msg):
+        self.raw("%s        %s" % (" " * 12, msg))
+
+
+class Machine:
+    """One machine of the cluster, reached in-process (this one) or over ssh."""
+
+    def __init__(self, run, role, name, local=False):
+        self.run = run
+        self.role = role
+        self.name = name
+        self.local = local
+        self.id = None
+        self.door = None
+        self.failed = set()
+
+    def op(self, op, args, timeout=120, password=None):
+        if self.local:
+            if password is not None:
+                globals()["_CONTROLLER_PASSWORD"] = password
+            try:
+                return OPS[op](args)
+            except OpFail as e:
+                raise Stop("%s: %s" % (self.name, e), code=2)
+            finally:
+                globals().pop("_CONTROLLER_PASSWORD", None)
+        if not HOSTNAME_RE.fullmatch(self.name or ""):
+            raise Unreachable("%r is a device name, not a host name ssh can be given" % self.name)
+        doors = [self.name, self.name + "-vpn"]
+        order = ([self.door] if self.door else []) + [d for d in doors if d != self.door and d not in self.failed]
+        if op in WRITES and self.door:
+            order = [self.door]      # a write never retries through another door
+        errors = []
+        for d in order:
+            rc, out, err = self.run.ssh(d, op, args, timeout, password, connect=2 if d == self.name else 8)
+            if rc == 255:
+                self.failed.add(d)
+                if self.door == d:
+                    self.door = None
+                errors.append("%s: %s" % (d, err))
+                if op in WRITES:
+                    break
+                continue
+            self.door = d
+            try:
+                data = json.loads(out.strip().splitlines()[-1])
+            except (ValueError, IndexError):
+                raise Stop("%s answered %s with something that is not this tool's JSON (exit %s%s)"
+                           % (d, op, rc, (": " + err) if err else ""), code=2)
+            if not isinstance(data, dict):
+                raise Stop("%s answered %s with something that is not this tool's JSON" % (d, op), code=2)
+            if data.get("error"):
+                raise Stop("%s: %s" % (self.name, data["error"]), code=2)
+            return data
+        raise Unreachable("; ".join(errors) or "no door left to try")
+
+
+def overlap(a, b):
+    a, b = os.path.normpath(a), os.path.normpath(b)
+    return a == b or a.startswith(b.rstrip(os.sep) + os.sep) or b.startswith(a.rstrip(os.sep) + os.sep)
+
+
+def under(p, root):
+    p, root = os.path.normpath(p), os.path.normpath(root)
+    return p == root or p.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def in_git(name):
+    return ".git" in name.split("/")
+
+
+def unit_for(path):
+    """The systemd mount unit for a plain path (systemd-escape --path)."""
+    s = path.strip("/")
+    s = "".join(c if c.isalnum() or c in "/_." else "\\x%02x" % ord(c) for c in s)
+    return s.replace("/", "-") + ".mount"
+
+
+def human(n):
+    n = float(n or 0)
+    for u in ("B", "KB", "MB", "GB"):
+        if n < 1000 or u == "GB":
+            return ("%d %s" % (n, u)) if u == "B" else ("%.1f %s" % (n, u))
+        n /= 1000
+
+
+class Run:
+    def __init__(self, o):
+        self.o = o
+        self.out = Out(o["log"])
+        self.nonce = secrets.token_hex(16)
+        self.source = None
+        self.fails = 0
+        self.unknowns = 0
+        self.created = []
+        self.password = None
+        self.W = Machine(self, "writer", None, local=True)
+        self.H = self.R = None
+        self.wprobe = self.hprobe = self.rprobe = None
+        self.link = not o["hub_only"]
+        self.held = {}         # role -> folder config at the start (redacted) or None
+        self.shape = None
+        self.trash = o["trash"]
+
+    # --- plumbing -------------------------------------------------------------------
+    def say(self, tag, msg):
+        self.out.say(tag, msg)
+
+    def ok(self, msg):
+        self.say("OK", msg)
+
+    def fail(self, msg, fix=None):
+        self.fails += 1
+        self.say("FAIL", msg)
+        if fix:
+            self.out.fix(fix)
+
+    def check(self, cond, okmsg, failmsg, fix=None):
+        if cond:
+            self.ok(okmsg)
+        else:
+            self.fail(failmsg, fix)
+        return bool(cond)
+
+    def ssh(self, door, op, args, timeout, password, connect):
+        if self.source is None:
+            with open(os.path.realpath(sys.argv[0]), "r", encoding="utf-8") as fh:
+                self.source = fh.read()
+        text = self.source if password is None else ("_CONTROLLER_PASSWORD = %r\n" % password) + self.source
+        cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=%d" % connect,
+               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=2", door,
+               "python3", "-I", "-", "--remote", op, shlex.quote(json.dumps(args))]
+        try:
+            p = subprocess.run(cmd, input=text, capture_output=True, text=True, timeout=timeout + connect + 30)
+        except subprocess.TimeoutExpired:
+            return 255, "", "no answer within %d s" % (timeout + connect + 30)
+        except OSError as e:
+            return 255, "", "cannot run ssh: %s" % e
+        finally:
+            text = None
+        err = p.stderr.strip().splitlines()
+        return p.returncode, p.stdout, err[-1] if err else ""
+
+    def op(self, m, op, args, timeout=120, password=None):
+        try:
+            return m.op(op, args, timeout, password)
+        except Unreachable as e:
+            raise Stop("%s did not answer over ssh: %s" % (m.name, e), code=2,
+                       fix="ssh -o BatchMode=yes %s true   # must answer; then run the same command again" % m.name)
+
+    def name(self, did):
+        for m in (self.W, self.H, self.R):
+            if m is not None and m.id == did:
+                return m.name
+        return did[:7]
+
+    def gate(self, question):
+        self.say("GATE", question)
+        if self.o["yes"]:
+            self.say("GATE", "answered by --yes")
+            return
+        # two handles: text mode "r+" asks for a seekable file, which a
+        # terminal is not, and would refuse every gate on a real one
+        try:
+            tin = open("/dev/tty", "r")
+            tout = open("/dev/tty", "w")
+        except OSError:
+            raise Stop("no terminal to answer the gate on", fix="run it in your own shell, or pass --yes")
+        try:
+            tout.write("%s        Press Enter to proceed, Ctrl-C to stop: " % (" " * 12))
+            tout.flush()
+            line = tin.readline()
+        finally:
+            tin.close()
+            tout.close()
+        if not line:
+            raise Stop("the terminal closed at the gate")
+        self.say("GATE", "passed by Enter")
+
+    def budget(self):
+        pf = (self.wprobe or {}).get("path") or {}
+        return (WAIT_FLOOR + (pf.get("bytes") or 0) / WAIT_RATE + (pf.get("files") or 0) * WAIT_PER_FILE) * WAIT_SCALE
+
+    # --- preflight ---------------------------------------------------------------
+    def args_ok(self):
+        o = self.o
+        self.say("NOTE", "== the arguments ==")
+        self.check(ID_RE.fullmatch(o["id"]), "id %s: two groups of five over the cluster's alphabet" % o["id"],
+                   "id %r is not two groups of five over a-z without i and l, and 2-9" % o["id"],
+                   fix="python3 -c \"import secrets as s; a='abcdefghjkmnopqrstuvwxyz23456789'; "
+                       "print('-'.join(''.join(s.choice(a) for _ in range(5)) for _ in range(2)))\"")
+        lab = o["label"]
+        self.check(lab and lab == lab.strip() and not any(ord(c) < 32 for c in lab),
+                   "label %r" % lab, "label %r is empty, padded or holds a control character" % lab)
+        for what, p in (("writer's path", o["wpath"]), ("reader's path", o["rpath"]), ("hub's path", o["hpath"])):
+            self.check(os.path.isabs(p) and os.path.normpath(p) == p.rstrip("/") or p == "/",
+                       "%s %s" % (what, p), "%s %r is not an absolute, normalised path" % (what, p))
+        if o["trash"] is not None:
+            self.check(os.path.isabs(o["trash"]), "trashcan %s" % o["trash"],
+                       "trashcan %r is not an absolute path" % o["trash"])
+        if self.fails:
+            raise Stop("the arguments do not hold", code=2)
+        for k in ("wpath", "rpath", "hpath", "trash"):
+            if o[k] is not None:
+                o[k] = os.path.normpath(o[k])
+        self.trash = o["trash"]
+
+    def identify(self):
+        """This machine, the hub and the reader, by device names in the configs."""
+        o = self.o
+        self.say("NOTE", "== the machines ==")
+        wp = self.op(self.W, "probe", {"fid": o["id"], "path": o["wpath"], "nonce": self.nonce,
+                                       "walk": True, "git": True}, timeout=1800)
+        self.wprobe = wp
+        self.W.id = wp["myID"]
+        names = {d["deviceID"]: d.get("name") or d["deviceID"][:7] for d in wp["devices"]}
+        self.W.name = names.get(self.W.id) or wp["node"]
+        if o["hub"]:
+            ids = [i for i, n in names.items() if n == o["hub"] and i != self.W.id]
+            if len(ids) != 1:
+                raise Stop("no device here is named %r" % o["hub"], code=2)
+            hub_id = ids[0]
+        else:
+            enc = set()
+            for f in wp["folders"]:
+                enc |= set(f["enc"])
+            enc.discard(self.W.id)
+            if len(enc) != 1:
+                raise Stop("cannot tell the hub: %s carries the cluster password here"
+                           % ("no device" if not enc else "more than one device (%s)" % ", ".join(sorted(names.get(i, i[:7]) for i in enc))),
+                           fix="name it: --hub NAME (its device name in this machine's configuration)", code=2)
+            hub_id = enc.pop()
+        self.H = Machine(self, "hub", names.get(hub_id) or hub_id[:7])
+        self.H.id = hub_id
+        self.ok("this machine, the writer: %s (Syncthing %s, %s)" % (self.W.name, wp["version"], wp["config"]))
+        hp = self.op(self.H, "probe", {"fid": o["id"], "path": o["hpath"], "mount": True})
+        self.hprobe = hp
+        if hp["myID"] != hub_id:
+            raise Stop("ssh %s reached a Syncthing whose device is not the hub's (%s, not %s)"
+                       % (self.H.door, hp["myID"][:7], hub_id[:7]), code=2)
+        self.ok("the hub: %s over ssh %s (Syncthing %s, %s)" % (self.H.name, self.H.door, hp["version"], hp["config"]))
+        hnames = {d["deviceID"]: d.get("name") or d["deviceID"][:7] for d in hp["devices"]}
+        if self.W.id not in hnames:
+            raise Stop("the hub does not know this machine as a device", code=2)
+        if o["peer"]:
+            ids = [i for i, n in list(names.items()) + list(hnames.items())
+                   if n == o["peer"] and i not in (self.W.id, hub_id)]
+            ids = sorted(set(ids))
+            if len(ids) != 1:
+                raise Stop("no device is named %r here or on the hub" % o["peer"], code=2)
+            peer_id = ids[0]
+        else:
+            cands = [i for i in hnames if i not in (self.W.id, hub_id)]
+            if len(cands) != 1:
+                raise Stop("cannot tell the reader: the hub knows %d other devices" % len(cands),
+                           fix="name it: --peer NAME", code=2)
+            peer_id = cands[0]
+        self.R = Machine(self, "reader", names.get(peer_id) or hnames.get(peer_id) or peer_id[:7])
+        self.R.id = peer_id
+        rp = self.op(self.R, "probe", {"fid": o["id"], "path": o["rpath"], "nonce": self.nonce,
+                                       "walk": True, "git": True, "trash": o["trash"]}, timeout=1800)
+        self.rprobe = rp
+        if rp["myID"] != peer_id:
+            raise Stop("ssh %s reached a Syncthing whose device is not the reader's" % self.R.door, code=2)
+        self.ok("the reader: %s over ssh %s (Syncthing %s, %s)" % (self.R.name, self.R.door, rp["version"], rp["config"]))
+
+    def check_machine(self, m, p, peers):
+        """The settings every machine must have before a folder is shared."""
+        opts = p["options"]
+        self.check(not any(opts.get(k) for k in PHONE_HOME),
+                   "%s: global announce, relays, NAT and crash reporting off" % m.name,
+                   "%s: phone-home open: %s" % (m.name, ", ".join(k for k in PHONE_HOME if opts.get(k))),
+                   fix="org/machines/syncthing.md -> \"Settings that must stay off\"")
+        auto = [d.get("name") or d["deviceID"][:7] for d in p["devices"] if d.get("autoAcceptFolders")]
+        self.check(not auto, "%s: autoAcceptFolders off for every device" % m.name,
+                   "%s: autoAcceptFolders on for %s -- a folder could be accepted from its defaults, unversioned"
+                   % (m.name, ", ".join(auto)),
+                   fix="turn it off in %s's GUI: Remote Devices -> Edit -> Sharing -> Auto Accept" % m.name)
+        devs = {d["deviceID"]: d for d in p["devices"]}
+        for did in peers:
+            n = self.name(did)
+            if did not in devs:
+                self.fail("%s: %s is not a device there" % (m.name, n),
+                          fix="--hub-only, or add the device as rules.md -> ws-16 says" if did in (self.W.id, self.R.id) else None)
+                continue
+            self.check(not devs[did].get("paused"), "%s: device %s not paused" % (m.name, n),
+                       "%s: device %s is paused (a bounce cut short leaves it so)" % (m.name, n),
+                       fix="resume it in %s's GUI (Remote Devices -> %s -> Resume)" % (m.name, n))
+            self.check(p["connected"].get(did), "%s: connected to %s" % (m.name, n),
+                       "%s: not connected to %s" % (m.name, n),
+                       fix="check Proton VPN's kill switch and the tailnet first (org/machines/syncthing.md)")
+
+    def check_neighbours(self, m, p, path):
+        """No other folder there with this label, or a path that contains or
+        lies inside this one (both paths resolved on that machine)."""
+        o = self.o
+        real = (p.get("path") or {}).get("realpath") or path
+        for f in p["folders"]:
+            if f["id"] == o["id"]:
+                continue
+            if f["label"] == o["label"]:
+                self.fail("%s: folder %s already carries the label %r" % (m.name, f["id"], o["label"]))
+            if overlap(f["path"], real):
+                self.fail("%s: folder %r at %s contains or lies inside %s" % (m.name, f["label"], f["path"], path))
+
+    def spec_problems(self, f, role):
+        o = self.o
+        probs = []
+        types = {"writer": ("sendreceive",), "hub": ("receiveencrypted",),
+                 "reader": ("sendreceive", "receiveonly")}[role]
+        if f.get("type") not in types:
+            probs.append("type %s" % f.get("type"))
+        want_path = {"writer": o["wpath"], "hub": o["hpath"], "reader": o["rpath"]}[role]
+        if os.path.normpath(f.get("path") or "") != os.path.normpath(want_path):
+            probs.append("path %s" % f.get("path"))
+        if f.get("label") != o["label"]:
+            probs.append("label %r" % f.get("label"))
+        if f.get("maxConflicts") != MAX_CONFLICTS:
+            probs.append("maxConflicts %s" % f.get("maxConflicts"))
+        if not f.get("fsWatcherEnabled") or f.get("fsWatcherDelayS") != WATCH_DELAY_S:
+            probs.append("watcher %s/%s s" % (f.get("fsWatcherEnabled"), f.get("fsWatcherDelayS")))
+        if f.get("rescanIntervalS") != RESCAN_S:
+            probs.append("rescan %s s" % f.get("rescanIntervalS"))
+        if f.get("paused"):
+            probs.append("paused")
+        v = f.get("versioning") or {}
+        if role == "hub":
+            if v.get("type") != "staggered" or (v.get("params") or {}).get("maxAge") != "31536000":
+                probs.append("versioning %s %s" % (v.get("type"), v.get("params")))
+            if (f.get("minDiskFree") or {}) != HUB_MIN_DISK_FREE:
+                probs.append("minDiskFree %s" % f.get("minDiskFree"))
+        elif role == "writer" or v.get("type") != "trashcan":
+            if v.get("type"):
+                probs.append("versioning %s" % v.get("type"))
+        else:
+            if f.get("type") == "receiveonly" or v.get("type") == "trashcan":
+                if (v.get("params") or {}).get("cleanoutDays") != "0" or not os.path.isabs(v.get("fsPath") or "") \
+                        or (self.trash and os.path.normpath(v.get("fsPath")) != os.path.normpath(self.trash)):
+                    probs.append("trashcan %s at %s" % (v.get("params"), v.get("fsPath")))
+        if f.get("type") == "receiveonly" and v.get("type") != "trashcan":
+            probs.append("receiveonly without its trashcan")
+        have = {d["deviceID"]: d.get("encryptionPassword") == "<set>" for d in f.get("devices", [])}
+        me = {"writer": self.W, "hub": self.H, "reader": self.R}[role].id
+        if role == "hub":
+            required = {me: False, self.W.id: False, self.R.id: False}
+            optional = {}
+        else:
+            other = self.R.id if role == "writer" else self.W.id
+            required = {me: False, self.H.id: True}
+            optional = {other: False} if self.link else {}
+        for did, enc in required.items():
+            if did not in have:
+                probs.append("does not share with %s" % self.name(did))
+            elif have[did] != enc:
+                probs.append("%s's entry %s a password" % (self.name(did), "lacks" if enc else "carries"))
+        for did, enc in have.items():
+            if did in required:
+                continue
+            if did in optional and enc == optional[did]:
+                continue
+            probs.append("shares with %s" % self.name(did))
+        return probs
+
+    def describe(self, f):
+        v = f.get("versioning") or {}
+        ver = "none" if not v.get("type") else "%s %s%s" % (
+            v["type"], ",".join("%s=%s" % kv for kv in sorted((v.get("params") or {}).items())),
+            (" at " + v["fsPath"]) if v.get("fsPath") else "")
+        devs = " + ".join("%s%s" % (self.name(d["deviceID"]), " (password set)" if d.get("encryptionPassword") == "<set>" else "")
+                          for d in f.get("devices", []))
+        extra = ", minDiskFree %s %s" % ((f.get("minDiskFree") or {}).get("value"), (f.get("minDiskFree") or {}).get("unit")) \
+            if f.get("type") == "receiveencrypted" else ""
+        return "%s at %s, label %r, maxConflicts %s, watcher %s s, rescan %s s, versioning %s%s, devices %s" % (
+            f.get("type"), f.get("path"), f.get("label"), f.get("maxConflicts"), f.get("fsWatcherDelayS"),
+            f.get("rescanIntervalS"), ver, extra, devs)
+
+    def preflight(self):
+        o = self.o
+        self.args_ok()
+        self.identify()
+        W, H, R = self.W, self.H, self.R
+        wp, hp, rp = self.wprobe, self.hprobe, self.rprobe
+        self.say("NOTE", "== preflight: the three machines ==")
+        self.check_machine(W, wp, [H.id] + ([R.id] if self.link else []))
+        self.check_machine(H, hp, [W.id, R.id])
+        self.check_machine(R, rp, [H.id] + ([W.id] if self.link else []))
+        self.check_roles()
+
+        self.say("NOTE", "== preflight: the folder %s %r ==" % (o["id"], o["label"]))
+        for m, p in ((W, wp), (H, hp), (R, rp)):
+            self.held[m.role] = p["folder"]
+            self.check_neighbours(m, p, {"writer": o["wpath"], "hub": o["hpath"], "reader": o["rpath"]}[m.role])
+        held = tuple(r for r in ("writer", "hub", "reader") if self.held[r] is not None)
+        if held not in ((), ("writer",), ("writer", "hub"), ("writer", "hub", "reader")):
+            self.fail("held by %s alone: a run leaves bigfed, bigfed and the hub, or all three"
+                      % " and ".join(self.name({"writer": W, "hub": H, "reader": R}[r].id) for r in held),
+                      fix="undo it (the line below), then run again with a new hub directory")
+        for m in (W, H, R):
+            f = self.held[m.role]
+            if f is None:
+                self.ok("%s: does not hold the folder yet" % m.name)
+                continue
+            probs = self.spec_problems(f, m.role)
+            self.check(not probs, "%s: holds it as specified, to verify rather than re-create: %s" % (m.name, self.describe(f)),
+                       "%s: holds it differently: %s" % (m.name, "; ".join(probs)),
+                       fix="inspect it in %s's GUI; undo it (the line below) if it is not wanted" % m.name)
+
+        # the writer's path
+        wf = wp["path"]
+        if self.check(wf["isdir"], "%s: %s is a directory: %d files, %s" % (W.name, o["wpath"], wf.get("files") or 0, human(wf.get("bytes"))),
+                      "%s: %s is not a directory" % (W.name, o["wpath"])):
+            self.markers(W, wf)
+        # the hub's path
+        hf = hp["path"]
+        if self.held["hub"] is None:
+            self.check(not hf["exists"], "%s: %s does not exist yet (hub-3)" % (H.name, o["hpath"]),
+                       "%s: %s exists; a new hub folder gets a new, empty directory (hub-3)" % (H.name, o["hpath"]),
+                       fix="choose a new HUB-PATH; the old directory stays until he deletes it")
+            if not hf["exists"]:
+                self.check(hf.get("ancestor_isdir"), "%s: %s, its nearest existing ancestor, is a directory" % (H.name, hf.get("ancestor")),
+                           "%s: %s lies under %s, which is not a directory" % (H.name, o["hpath"], hf.get("ancestor")),
+                           fix="choose a HUB-PATH under a directory")
+        mf = hp.get("mount") or {}
+        if mf.get("applies"):
+            if not mf.get("exists"):
+                self.fail("%s: %s does not exist, so the sync volume is not mounted" % (H.name, mf["sync"]),
+                          fix="ssh %s 'sudo systemctl start %s'" % (H.name, unit_for(mf["sync"])))
+            else:
+                self.check(mf.get("target") == mf["sync"],
+                           "%s: %s is on the dedicated volume (%s, %s)" % (H.name, o["hpath"], mf.get("fstype"), mf.get("source")),
+                           "%s: %s lies on %s (%s), not on a volume mounted at %s -- the sync volume is not mounted"
+                           % (H.name, o["hpath"], mf.get("target"), mf.get("fstype"), mf["sync"]),
+                           fix="ssh %s 'sudo systemctl start %s'" % (H.name, unit_for(mf["sync"])))
+        else:
+            self.ok("%s: %s is not under %s, no volume to check" % (H.name, o["hpath"], mf.get("sync")))
+        # the reader's path, and the shape
+        self.decide_shape()
+        # the passwords
+        self.check_passwords()
+        # a repository at a folder's root
+        for m, p, path in ((W, wp, o["wpath"]), (R, rp, o["rpath"])):
+            g = p.get("git") or {}
+            if "marker_ignore_rc" in g:
+                self.check(g["marker_ignore_rc"] == 0, "%s: the repository at %s ignores .stfolder/" % (m.name, path),
+                           "%s: the repository at %s does not ignore .stfolder/ (check-ignore exit %s), so `git add -A` would commit the marker"
+                           % (m.name, path, g["marker_ignore_rc"]),
+                           fix="add the line .stfolder/ to the global exclude, org/claude-config/git/ignore (rules.md -> mig-4, 2026-10-10)")
+        if self.fails:
+            raise Stop("the preflight refused (%d)" % self.fails)
+        if self.unknowns:
+            raise Stop("the preflight could not determine %d reading(s)" % self.unknowns, code=2)
+
+    def check_roles(self):
+        """This machine reads `gsync.role = writer`; the reader shows a role
+        other than writer, or a readerRepo naming READER-PATH (the pilot's
+        shape). An absent role on the reader refuses: it is the host file that
+        has not travelled yet (pilot.md, the fold-in's step 4 before its step
+        6), and gsync reads an absent role as a writer."""
+        W, R, o = self.W, self.R, self.o
+        g = self.wprobe.get("git") or {}
+        if g.get("role_rc", 0) > 1:
+            self.unknown("%s: git could not read gsync.role (exit %s: %s)" % (W.name, g["role_rc"], g.get("role_err")),
+                         fix="git config --show-origin --get gsync.role")
+        else:
+            self.check(g.get("role") == "writer", "%s: gsync.role reads writer" % W.name,
+                       "%s: gsync.role reads %r, so this is not the writer; the tool runs on bigfed"
+                       % (W.name, g.get("role") or "(absent)"),
+                       fix="git config --show-origin --get gsync.role   # configs/git/hosts/<machine>.inc through ~/.config/git/host.inc")
+        g = self.rprobe.get("git") or {}
+        fix = ("set it in configs/git/hosts/%s.inc -- role = reader, or readerRepo = <name> for one repository -- "
+               "and pull it on %s; there `git config --show-origin --get gsync.role` reads it (rules.md -> fedxps-2)"
+               % (R.name, R.name))
+        if g.get("role_rc", 0) > 1 or g.get("reader_repo_rc", 0) > 1:
+            self.unknown("%s: git could not read its gsync keys (exit %s: %s)" % (
+                R.name, max(g.get("role_rc", 0), g.get("reader_repo_rc", 0)),
+                g.get("role_err") or g.get("reader_repo_err")), fix="ssh %s git config --show-origin --get-regexp '^gsync[.]'" % R.name)
+        elif g.get("role"):
+            self.check(g["role"] != "writer", "%s: gsync.role reads %s" % (R.name, g["role"]),
+                       "%s: gsync.role reads writer: two writers" % R.name, fix=fix)
+        elif g.get("reader_repo_match"):
+            self.ok("%s: no gsync.role, and readerRepo names %s" % (R.name, o["rpath"]))
+        else:
+            self.fail("%s: no gsync.role%s, so nothing there marks it a reader of %s yet" % (
+                R.name, (" and readerRepo names %s alone" % ", ".join(g.get("reader_repos")))
+                if g.get("reader_repos") else "", o["rpath"]), fix=fix)
+
+    def unknown(self, msg, fix=None):
+        self.unknowns += 1
+        self.say("WARN", msg)
+        if fix:
+            self.out.fix(fix)
+
+    def markers(self, m, f):
+        if f.get("walk_errors"):
+            self.fail("%s: parts of %s could not be read: %s" % (m.name, f["path"], "; ".join(f["walk_errors"])))
+        self.check(not f.get("markers_below_count"), "%s: no .stfolder marker under %s" % (m.name, f["path"]),
+                   "%s: %d .stfolder marker(s) under %s: %s -- a folder inside the folder (mig-3 gate 4)"
+                   % (m.name, f.get("markers_below_count") or 0, f["path"], ", ".join(f.get("markers_below") or [])),
+                   fix="remove that folder from Syncthing's configuration on every machine first")
+        self.check(not f.get("marker_above"), "%s: no .stfolder marker above %s" % (m.name, f["path"]),
+                   "%s: %s lies inside the folder at %s" % (m.name, f["path"], f.get("marker_above")))
+        if f.get("marker_here") and self.held[m.role] is None:
+            self.fail("%s: %s holds a .stfolder marker, but no folder here claims it" % (m.name, f["path"]),
+                      fix="never make a marker by hand (org/machines/syncthing.md); find the folder it belonged to")
+
+    def decide_shape(self):
+        o, R = self.o, self.R
+        rf = self.rprobe["path"]
+        held = self.held["reader"]
+        if held is not None:
+            v = held.get("versioning") or {}
+            if held.get("type") == "receiveonly" or v.get("type") == "trashcan":
+                self.shape = "join"
+                if self.trash is None:
+                    self.trash = v.get("fsPath")
+                self.say("NOTE", "shape: join, resumed (%s holds it %s%s)" % (R.name, held.get("type"),
+                         " with its trashcan" if v.get("type") == "trashcan" else ""))
+            else:
+                self.shape = "fresh"
+                self.say("NOTE", "shape: the reader holds it send-receive already; the common tail remains")
+            if rf.get("isdir"):
+                self.markers(R, rf)
+            return
+        if not rf["exists"] or (rf["isdir"] and rf.get("empty")):
+            self.shape = "fresh"
+            self.ok("shape: fresh -- %s's %s is %s" % (R.name, o["rpath"], "absent" if not rf["exists"] else "empty"))
+            if o["trash"] is not None:
+                self.fail("--trash names a trashcan, but %s's path is %s: the fresh shape" % (R.name, "absent" if not rf["exists"] else "empty"),
+                          fix="check READER-PATH; leave --trash out for a fresh folder")
+            if rf.get("marker_above"):
+                self.fail("%s: %s lies inside the folder at %s" % (R.name, o["rpath"], rf["marker_above"]))
+            if not rf["exists"] and not rf.get("ancestor_isdir"):
+                self.fail("%s: %s lies under %s, which is not a directory" % (R.name, o["rpath"], rf.get("ancestor")),
+                          fix="check READER-PATH")
+            return
+        if not rf["isdir"]:
+            self.fail("%s: %s exists and is not a directory" % (R.name, o["rpath"]))
+            return
+        self.shape = "join"
+        self.ok("shape: join -- %s's %s holds %d entries, %d files, %s" % (R.name, o["rpath"], rf.get("entries") or 0,
+                rf.get("files") or 0, human(rf.get("bytes"))))
+        self.markers(R, rf)
+        wf = self.wprobe["path"]
+        if wf.get("isdir"):
+            self.check(not wf.get("empty"), "%s: %s holds the writer's copy" % (self.W.name, o["wpath"]),
+                       "%s: %s is empty while the reader's holds files: a join would revert the reader's whole tree"
+                       % (self.W.name, o["wpath"]))
+        if self.trash is None:
+            self.fail("the join shape needs a trashcan for the reader's revert",
+                      fix="--trash DIR: absolute, on %s, outside the folder and outside every Syncthing folder" % R.name)
+            return
+        tf = self.rprobe.get("trash") or {}
+        self.check(os.path.isabs(self.trash) and not under(tf.get("realpath") or self.trash, rf.get("realpath") or o["rpath"]),
+                   "%s: trashcan %s lies outside the folder" % (R.name, self.trash),
+                   "%s: trashcan %s lies inside the folder %s" % (R.name, self.trash, o["rpath"]))
+        self.check(not tf.get("marker_above"), "%s: trashcan %s lies outside every Syncthing folder" % (R.name, self.trash),
+                   "%s: trashcan %s lies inside the folder at %s" % (R.name, self.trash, tf.get("marker_above")))
+        self.check(not tf.get("exists") or (tf.get("isdir") and tf.get("empty")),
+                   "%s: trashcan %s is %s" % (R.name, self.trash, "absent" if not tf.get("exists") else "empty"),
+                   "%s: trashcan %s exists and is not an empty directory" % (R.name, self.trash),
+                   fix="name a new directory for --trash")
+
+    def check_passwords(self):
+        W, R = self.W, self.R
+        nw, nr = self.wprobe["passwords"], self.rprobe["passwords"]
+        if nw > 1:
+            self.fail("%s holds %d different cluster passwords; the contract says one" % (W.name, nw),
+                      fix="org/machines/syncthing.md -> \"The password\"")
+        elif nw == 1:
+            self.ok("%s: the cluster password is read from its configuration, never printed" % W.name)
+        else:
+            self.say("NOTE", "%s holds no encrypted folder: the password is asked for once, at the first write" % W.name)
+            if self.o["yes"] or self.o["dry_run"]:
+                if not self.o["dry_run"]:
+                    self.fail("the first encrypted folder of the cluster needs the password typed on a terminal",
+                              fix="run it yourself, without --yes")
+        if nr > 1:
+            self.fail("%s holds %d different cluster passwords; the contract says one" % (R.name, nr),
+                      fix="org/machines/syncthing.md -> \"The password\"")
+        elif nr == 1 and nw == 1:
+            self.check(hmac.compare_digest(self.wprobe.get("pw_digest") or "", self.rprobe.get("pw_digest") or "x"),
+                       "%s: holds the same cluster password (compared under a nonce, never printed)" % R.name,
+                       "%s: its cluster password differs from %s's; a mismatch drops the whole device connection" % (R.name, W.name),
+                       fix="org/machines/syncthing.md -> \"The password\"")
+        elif nr == 0 and self.held["reader"] is None:
+            self.say("NOTE", "%s holds no encrypted folder: %s's password reaches it inside the program text over ssh"
+                     % (R.name, W.name))
+
+    # --- the plan ------------------------------------------------------------------
+    def bodies(self):
+        o = self.o
+        W, H, R = self.W, self.H, self.R
+        base = {"label": o["label"], "fsWatcherEnabled": True, "fsWatcherDelayS": WATCH_DELAY_S,
+                "rescanIntervalS": RESCAN_S, "maxConflicts": MAX_CONFLICTS, "paused": False, "id": o["id"]}
+        link_now = self.link and self.shape == "fresh"
+        bw = dict(base, path=o["wpath"], type="sendreceive", versioning=dict(NO_VERSIONING),
+                  devices=[{"deviceID": W.id}, {"deviceID": H.id}] + ([{"deviceID": R.id}] if link_now else []))
+        bh = dict(base, path=o["hpath"], type="receiveencrypted", versioning=dict(HUB_VERSIONING),
+                  minDiskFree=dict(HUB_MIN_DISK_FREE),
+                  devices=[{"deviceID": H.id}, {"deviceID": W.id}, {"deviceID": R.id}])
+        if self.shape == "join":
+            br = dict(base, path=o["rpath"], type="receiveonly",
+                      versioning={"type": "trashcan", "params": {"cleanoutDays": "0"}, "cleanupIntervalS": 3600,
+                                  "fsPath": self.trash, "fsType": "basic"},
+                      devices=[{"deviceID": R.id}, {"deviceID": H.id}])
+        else:
+            br = dict(base, path=o["rpath"], type="sendreceive", versioning=dict(NO_VERSIONING),
+                      devices=[{"deviceID": R.id}, {"deviceID": H.id}] + ([{"deviceID": W.id}] if link_now else []))
+        return bw, bh, br
+
+    def plan(self):
+        W, H, R = self.W, self.H, self.R
+        bw, bh, br = self.bodies()
+        P = lambda s: self.say("PLAN", s)
+        verb = lambda role: "verify" if self.held[role] is not None else "POST /rest/config/folders"
+        devs = lambda b, enc: " + ".join(self.name(d["deviceID"]) + (" (password)" if d["deviceID"] == enc else "") for d in b["devices"])
+        P("shape %s; waits up to %d s each" % (self.shape, self.budget()))
+        P("%s: %s: sendreceive, devices %s; then its scan idle" % (W.name, verb("writer"), devs(bw, H.id)))
+        P("%s: %s: receiveencrypted, staggered maxAge 31536000, minDiskFree 1 %%, devices %s" % (H.name, verb("hub"), devs(bh, None)))
+        P("%s: PATCH /rest/config/devices/<%s> paused true, %g s, false (the bounce); then the hub idle with %s's set"
+          % (W.name, H.name, HOLD, W.name))
+        if self.shape == "join":
+            P("gate: %s joins receive-only; no Claude session there until the switch (mig-3 gate 6)" % R.name)
+            P("%s: %s: receiveonly, trashcan cleanoutDays 0 at %s, devices %s" % (R.name, verb("reader"), self.trash, devs(br, H.id)))
+            P("%s: the bounce of %s; gate 7: its view of the hub at the hub's sequence, global counts and bytes as %s's" % (R.name, H.name, W.name))
+            P("%s: GET /rest/db/localchanged, every path printed; a path outside a .git stops the run%s"
+              % (R.name, " (--allow-outside: goes on)" if self.o["allow_outside"] else ""))
+            P("gate; %s: POST /rest/db/revert; then no receive-only change left" % R.name)
+            P("gate 9: manifests of both trees equal, git fsck clean in every .git on %s, the trashcan holding what was listed" % R.name)
+            P("gate; %s: PATCH type sendreceive; %s's and %s's sequences unchanged after %g s" % (R.name, H.name, W.name, WATCH))
+            P("%s: PATCH versioning none (the trashcan directory stays)" % R.name)
+            if self.link:
+                P("%s and %s: PATCH devices + each other (the direct link, ws-16)" % (W.name, R.name))
+        else:
+            P("%s: %s: sendreceive, devices %s" % (R.name, verb("reader"), devs(br, H.id)))
+            P("%s: the bounce of %s" % (R.name, H.name))
+        P("all three idle, nothing needed, every view 100 at the device's own sequence")
+
+    # --- writes ---------------------------------------------------------------------
+    def post(self, m, body, enc_to, password_mode=None):
+        self.say("DO", "%s: POST /rest/config/folders (%s)" % (m.name, body["type"]))
+        pw = None
+        if password_mode == "controller":
+            pw = self.password
+        r = self.op(m, "post", {"body": body, "enc_to": enc_to, "password": password_mode or "own"}, password=pw)
+        pw = None
+        if r["code"] != 200:
+            raise Stop("%s: the POST answered %s: %s" % (m.name, r["code"], r["text"]))
+        self.created.append(m.role)
+        self.held[m.role] = r["folder"]
+        f = r["folder"]
+        if f is None:
+            raise Stop("%s: the folder is not there after a POST that answered 200" % m.name, code=2)
+        probs = self.spec_problems(f, m.role)
+        if probs:
+            raise Stop("%s: read back differently from the POST: %s" % (m.name, "; ".join(probs)))
+        self.ok("%s: read back as specified: %s" % (m.name, self.describe(f)))
+
+    def bounce(self, m):
+        self.say("DO", "%s: bounce of %s: PATCH paused true, hold %g s, PATCH paused false" % (m.name, self.H.name, HOLD))
+        r = self.op(m, "bounce", {"device": self.H.id, "hold": HOLD}, timeout=int(HOLD) + 180)
+        if r.get("dropped_after") is None or r.get("back_after") is None:
+            raise Stop("%s: the bounce was not seen: dropped after %s s, back after %s s"
+                       % (m.name, r.get("dropped_after"), r.get("back_after")), code=2)
+        self.ok("%s: the connection to %s dropped %.1f s after the pause, resumed at %.1f s, back at %.1f s (startedAt %s)"
+                % (m.name, self.H.name, r["dropped_after"], r["resumed_after"], r["back_after"],
+                   r.get("startedAt_after") or "not yet read"))
+
+    # --- readings and waits ------------------------------------------------------------
+    def read(self, m, peers):
+        return self.op(m, "status", {"fid": self.o["id"], "peers": peers})
+
+    def line(self, m, r):
+        s = r["status"]
+        parts = ["%s %s need=%s files=%s dirs=%s links=%s bytes=%s seq=%s" % (
+            m.name, s.get("state"), s.get("needTotalItems"), s.get("globalFiles"), s.get("globalDirectories"),
+            s.get("globalSymlinks"), s.get("globalBytes"), s.get("sequence"))]
+        if s.get("pullErrors"):
+            parts.append("pullErrors=%s" % s["pullErrors"])
+        if s.get("error"):
+            parts.append("error=%r" % s["error"])
+        if s.get("receiveOnlyTotalItems"):
+            parts.append("receive-only changes=%s" % s["receiveOnlyTotalItems"])
+        for did, v in (r.get("views") or {}).items():
+            if v is None:
+                parts.append("view of %s unread" % self.name(did))
+            else:
+                parts.append("view of %s %s%% need=%s seq=%s %s" % (self.name(did), v.get("completion"), v.get("needItems"),
+                                                                   v.get("sequence"), v.get("remoteState")))
+        return " | ".join(parts)
+
+    def wait(self, what, machines, cond, budget=None):
+        """Read `machines` ({role: (Machine, peers)}) every POLL seconds until
+        cond(readings) returns (True, ...) on two rounds in a row with the same
+        sequences; a reading line whenever it changes."""
+        budget = budget if budget is not None else self.budget()
+        t0 = time.time()
+        shown = {}
+        last_print = 0.0
+        prev = None
+        misses = 0
+        while True:
+            rd = {}
+            try:
+                for role, (m, peers) in machines.items():
+                    rd[role] = self.read(m, peers)
+                misses = 0
+            except Stop as e:
+                # a wait can run half an hour: one failed reading (an ssh
+                # hiccup) is read again, both doors, three times in a row at most
+                misses += 1
+                if e.code != 2 or misses > 3 or time.time() - t0 > budget:
+                    raise
+                self.say("WARN", "a reading failed (%s); reading again" % e)
+                for m, _ in machines.values():
+                    m.failed.clear()
+                time.sleep(max(POLL, 5.0))
+                continue
+            ok, why = cond(rd)
+            now = time.time()
+            for role, (m, peers) in machines.items():
+                ln = self.line(m, rd[role])
+                if shown.get(role) != ln or now - last_print > 30:
+                    self.say("WAIT" if not ok else "READ", ln)
+                    shown[role] = ln
+                    last_print = now
+            key = tuple((rd[r]["status"].get("sequence"), rd[r]["status"].get("globalFiles"),
+                         rd[r]["status"].get("needTotalItems")) for r in sorted(rd))
+            if ok and key == prev:
+                self.ok("%s, %.1f s" % (what, now - t0))
+                return rd
+            prev = key if ok else None
+            if now - t0 > budget:
+                raise Stop("%s did not hold within %d s: %s" % (what, budget, why),
+                           fix="run the same command again to keep waiting; it verifies what is made")
+            time.sleep(POLL)
+
+    @staticmethod
+    def idle(s):
+        return s.get("state") == "idle" and not s.get("needTotalItems") and not s.get("pullErrors") and not s.get("errors")
+
+    def view_ok(self, rd, a, b, ids):
+        v = (rd[a].get("views") or {}).get(ids[b])
+        sb = rd[b]["status"]
+        return v is not None and v.get("completion") == 100 and not v.get("needItems") and not v.get("needDeletes") \
+            and v.get("remoteState") == "valid" and v.get("sequence") == sb.get("sequence")
+
+    def counts_match(self, ws, hs):
+        return hs.get("globalFiles") == ws.get("globalFiles") and \
+            (hs.get("globalDirectories") or 0) + (hs.get("globalSymlinks") or 0) == \
+            (ws.get("globalDirectories") or 0) + (ws.get("globalSymlinks") or 0)
+
+    def ids(self):
+        return {"writer": self.W.id, "hub": self.H.id, "reader": self.R.id}
+
+    def wait_writer_scan(self):
+        def cond(rd):
+            s = rd["writer"]["status"]
+            return s.get("state") == "idle" and not s.get("errors"), "state %s" % s.get("state")
+        self.wait("%s scanned its copy" % self.W.name, {"writer": (self.W, [])}, cond)
+
+    def wait_hub(self):
+        ids = self.ids()
+
+        def cond(rd):
+            ws, hs = rd["writer"]["status"], rd["hub"]["status"]
+            if not (self.idle(ws) and self.idle(hs)):
+                return False, "not idle with nothing needed"
+            if not self.counts_match(ws, hs):
+                return False, "the hub's counts are not %s's" % self.W.name
+            if not (self.view_ok(rd, "writer", "hub", ids) and self.view_ok(rd, "hub", "writer", ids)):
+                return False, "a view is not at 100 at the device's own sequence"
+            return True, ""
+        self.wait("the hub holds %s's set" % self.W.name,
+                  {"writer": (self.W, [self.H.id]), "hub": (self.H, [self.W.id])}, cond)
+
+    def hub_settled_once(self):
+        ids = self.ids()
+        rd = {"writer": self.read(self.W, [self.H.id]), "hub": self.read(self.H, [self.W.id])}
+        ws, hs = rd["writer"]["status"], rd["hub"]["status"]
+        return self.idle(hs) and self.counts_match(ws, hs) and self.view_ok(rd, "hub", "writer", ids) \
+            and self.view_ok(rd, "writer", "hub", ids)
+
+    def reader_has_hub_index(self):
+        ids = self.ids()
+        rd = {"reader": self.read(self.R, [self.H.id]), "hub": self.read(self.H, [])}
+        v = (rd["reader"].get("views") or {}).get(ids["hub"]) or {}
+        return v.get("remoteState") == "valid" and v.get("sequence") == rd["hub"]["status"].get("sequence") \
+            and (rd["hub"]["status"].get("sequence") or 0) > 0
+
+    def wait_gate7(self):
+        """The reader's view of the hub carries the hub's own sequence (its
+        index has arrived), and its global counts and bytes are bigfed's."""
+        ids = self.ids()
+
+        def cond(rd):
+            ws, hs, rs = rd["writer"]["status"], rd["hub"]["status"], rd["reader"]["status"]
+            v = (rd["reader"].get("views") or {}).get(ids["hub"]) or {}
+            if not (self.idle(ws) and self.idle(hs) and self.idle(rs)):
+                return False, "not idle with nothing needed"
+            if not (v.get("remoteState") == "valid" and v.get("sequence") == hs.get("sequence") and (hs.get("sequence") or 0) > 0):
+                return False, "the hub's index has not reached %s (its view of the hub at sequence %s, the hub at %s)" % (
+                    self.R.name, v.get("sequence"), hs.get("sequence"))
+            for k in ("globalFiles", "globalDirectories", "globalSymlinks", "globalBytes"):
+                if rs.get(k) != ws.get(k):
+                    return False, "%s's %s %s, %s's %s" % (self.R.name, k, rs.get(k), self.W.name, ws.get(k))
+            if not self.counts_match(ws, hs):
+                return False, "the hub's counts are not %s's" % self.W.name
+            return True, ""
+        return self.wait("gate 7: the hub's index on %s, its global counts and bytes %s's" % (self.R.name, self.W.name),
+                         {"writer": (self.W, []), "hub": (self.H, []), "reader": (self.R, [self.H.id])}, cond)
+
+    def wait_final(self):
+        ids = self.ids()
+        pairs = [("writer", "hub"), ("hub", "writer"), ("reader", "hub"), ("hub", "reader")]
+        if self.link:
+            pairs += [("writer", "reader"), ("reader", "writer")]
+        peers = {r: [ids[b] for a, b in pairs if a == r] for r in ("writer", "hub", "reader")}
+
+        def cond(rd):
+            ws, hs, rs = rd["writer"]["status"], rd["hub"]["status"], rd["reader"]["status"]
+            if not all(self.idle(x) for x in (ws, hs, rs)):
+                return False, "not idle with nothing needed everywhere"
+            for k in ("globalFiles", "globalDirectories", "globalSymlinks", "globalBytes"):
+                if rs.get(k) != ws.get(k):
+                    return False, "%s's %s %s, %s's %s" % (self.R.name, k, rs.get(k), self.W.name, ws.get(k))
+            if not self.counts_match(ws, hs):
+                return False, "the hub's counts are not %s's" % self.W.name
+            bad = ["%s->%s" % (self.name(ids[a]), self.name(ids[b])) for a, b in pairs if not self.view_ok(rd, a, b, ids)]
+            if bad:
+                return False, "views not at 100 at the device's own sequence: %s" % ", ".join(bad)
+            return True, ""
+        return self.wait("all three converged, every view at 100",
+                         {"writer": (self.W, peers["writer"]), "hub": (self.H, peers["hub"]),
+                          "reader": (self.R, peers["reader"])}, cond)
+
+    # --- the join's middle -------------------------------------------------------------
+    def inspect_and_revert(self):
+        o, R = self.o, self.R
+        items = self.op(R, "localchanged", {"fid": o["id"]}, timeout=600)["items"]
+        st = self.read(R, [])["status"]
+        self.say("READ", "%s: GET /rest/db/localchanged: %d items (receiveOnlyTotalItems %s)"
+                 % (R.name, len(items), st.get("receiveOnlyTotalItems")))
+        outside = []
+        for it in items:
+            tag = "deleted " if it["deleted"] else ""
+            kind = (it.get("type") or "").replace("FILE_INFO_TYPE_", "").lower()
+            self.out.more("%s%s %s" % (tag, kind, it["name"]))
+            if not in_git(it["name"]):
+                outside.append(it["name"])
+        if len(items) != (st.get("receiveOnlyTotalItems") or 0):
+            raise Stop("%s lists %d local changes but counts %s" % (R.name, len(items), st.get("receiveOnlyTotalItems")), code=2)
+        if outside:
+            if not o["allow_outside"]:
+                self.fail("%d of them lie outside a .git: %s" % (len(outside), ", ".join(outside[:10])
+                                                                 + (" ..." if len(outside) > 10 else "")))
+                raise Stop("the revert would move %s's own files outside .git into the trashcan; a look first" % R.name,
+                           fix="look at them on %s; to revert them all into %s, run the same command with --allow-outside"
+                               % (R.name, self.trash))
+            self.say("NOTE", "%d outside a .git, reverted by --allow-outside" % len(outside))
+        else:
+            self.ok("every local change lies inside a .git")
+        if not items:
+            self.ok("%s: nothing to revert" % R.name)
+            return []
+        self.gate("the revert next: %s's %d local changes go into the trashcan %s" % (R.name, len(items), self.trash))
+        self.say("DO", "%s: POST /rest/db/revert" % R.name)
+        r = self.op(R, "revert", {"fid": o["id"]})
+        if r["code"] != 200:
+            raise Stop("%s: the revert answered %s: %s" % (R.name, r["code"], r["text"]))
+
+        def cond(rd):
+            s = rd["reader"]["status"]
+            done = self.idle(s) and not s.get("receiveOnlyTotalItems") and not s.get("receiveOnlyChangedFiles")
+            return done, "receive-only changes %s" % s.get("receiveOnlyTotalItems")
+        self.wait("%s reverted: idle, nothing needed, no receive-only change" % R.name, {"reader": (R, [])}, cond)
+        return items
+
+    def gate9(self, items):
+        o, W, R = self.o, self.W, self.R
+        st = self.read(R, [])["status"]
+        self.check(not any(st.get(k) for k in ("receiveOnlyChangedFiles", "receiveOnlyChangedDirectories",
+                                                "receiveOnlyChangedSymlinks", "receiveOnlyChangedDeletes",
+                                                "receiveOnlyTotalItems")),
+                   "gate 9: %s has no receive-only change" % R.name,
+                   "gate 9: %s still counts receive-only changes: %s" % (R.name, {k: st.get(k) for k in st if k.startswith("receiveOnly")}))
+        mw = self.op(W, "manifest", {"path": o["wpath"], "full": True}, timeout=3600)
+        mr = self.op(R, "manifest", {"path": o["rpath"]}, timeout=3600)
+        for m, mf in ((W, mw), (R, mr)):
+            if mf["errors"]:
+                self.fail("%s: parts of the tree could not be read: %s" % (m.name, "; ".join(mf["errors"])))
+        if mw["digest"] == mr["digest"] and mw["count"] == mr["count"]:
+            self.ok("gate 9: the manifests are equal: %d entries, sha256 %s, .stfolder/ left out" % (mw["count"], mw["digest"][:16]))
+        else:
+            full = self.op(R, "manifest", {"path": o["rpath"], "full": True}, timeout=3600)
+            a, b = dict(map(tuple, mw["rows"])), dict(map(tuple, full["rows"]))
+            diff = [k for k in sorted(set(a) | set(b), key=lambda x: x.encode("utf-8", "surrogateescape")) if a.get(k) != b.get(k)]
+            self.fail("gate 9: the manifests differ in %d entries (%d here, %d there)" % (len(diff), mw["count"], mr["count"]))
+            for k in diff[:20]:
+                self.out.more("%s: %s | %s" % (k, (a.get(k) or "-")[:18], (b.get(k) or "-")[:18]))
+        fk = self.op(R, "fsck", {"path": o["rpath"]}, timeout=7200)["repos"]
+        bad = [x for x in fk if x["rc"] != 0]
+        self.check(not bad, "gate 9: git fsck --connectivity-only clean on %s in %d repositor%s (%s)"
+                   % (R.name, len(fk), "y" if len(fk) == 1 else "ies", ", ".join(x["repo"] for x in fk) or "none"),
+                   "gate 9: git fsck fails on %s in %s" % (R.name, "; ".join("%s (exit %s: %s)" % (x["repo"], x["rc"], x["err"]) for x in bad)))
+        want = sorted(it["name"] for it in items if not it["deleted"] and (it.get("type") or "").endswith("FILE"))
+        tr = self.op(R, "trash", {"trash": self.trash})
+        missing = [n for n in want if n not in set(tr["files"])]
+        self.check(not missing, "gate 9: the trashcan %s holds the %d file(s) listed (%d files there)" % (self.trash, len(want), len(tr["files"])),
+                   "gate 9: the trashcan %s lacks %d listed file(s): %s" % (self.trash, len(missing), ", ".join(missing[:10])))
+        if self.fails:
+            raise Stop("gate 9 does not hold; %s is still receive-only, nothing has been sent" % R.name)
+
+    def switch(self):
+        o, W, H, R = self.o, self.W, self.H, self.R
+        self.gate("the switch next: %s's folder to sendreceive" % R.name)
+        before = {m.role: self.read(m, [])["status"].get("sequence") for m in (H, W, R)}
+        self.say("READ", "sequences before the switch: %s %s, %s %s, %s %s"
+                 % (H.name, before["hub"], W.name, before["writer"], R.name, before["reader"]))
+        self.say("DO", "%s: PATCH /rest/config/folders/%s type sendreceive" % (R.name, o["id"]))
+        r = self.op(R, "patch", {"fid": o["id"], "fields": {"type": "sendreceive"}})
+        if r["code"] != 200 or (r["folder"] or {}).get("type") != "sendreceive":
+            raise Stop("%s: the switch answered %s, type now %s" % (R.name, r["code"], (r["folder"] or {}).get("type")))
+        self.held["reader"] = r["folder"]
+        self.ok("%s: read back type sendreceive" % R.name)
+        self.say("WAIT", "watching the sequences for %g s" % WATCH)
+        time.sleep(WATCH)
+        after = {m.role: self.read(m, [])["status"].get("sequence") for m in (H, W, R)}
+        self.say("READ", "sequences after %g s: %s %s, %s %s, %s %s"
+                 % (WATCH, H.name, after["hub"], W.name, after["writer"], R.name, after["reader"]))
+        if after["hub"] != before["hub"] or after["writer"] != before["writer"]:
+            raise Stop("something was sent at the switch: %s %s -> %s, %s %s -> %s; %s keeps its trashcan versioning for a look"
+                       % (H.name, before["hub"], after["hub"], W.name, before["writer"], after["writer"], R.name),
+                       fix="read %s's db/remoteneed and the hub's versions before anything else" % W.name)
+        self.ok("nothing sent at the switch: %s's sequence %s and %s's %s unchanged" % (H.name, after["hub"], W.name, after["writer"]))
+
+    def versioning_off(self):
+        R = self.R
+        self.say("DO", "%s: PATCH /rest/config/folders/%s versioning none" % (R.name, self.o["id"]))
+        r = self.op(R, "patch", {"fid": self.o["id"], "fields": {"versioning": dict(NO_VERSIONING)}})
+        f = r["folder"] or {}
+        if r["code"] != 200 or (f.get("versioning") or {}).get("type"):
+            raise Stop("%s: versioning answered %s, type now %r" % (R.name, r["code"], (f.get("versioning") or {}).get("type")))
+        self.held["reader"] = f
+        self.ok("%s: versioning none; the trashcan %s stays until he has looked through it" % (R.name, self.trash))
+
+    def share_link(self):
+        for m, other in ((self.W, self.R), (self.R, self.W)):
+            f = self.held[m.role] or {}
+            if any(d["deviceID"] == other.id for d in f.get("devices", [])):
+                continue
+            self.say("DO", "%s: PATCH /rest/config/folders/%s devices + %s (the direct link)" % (m.name, self.o["id"], other.name))
+            r = self.op(m, "share", {"fid": self.o["id"], "device": other.id})
+            if r["code"] != 200 or not r["hub_entry_unchanged"]:
+                raise Stop("%s: the share answered %s, the hub's entry %s" % (
+                    m.name, r["code"], "unchanged" if r["hub_entry_unchanged"] else "CHANGED"))
+            self.held[m.role] = r["folder"]
+            probs = self.spec_problems(r["folder"], m.role)
+            if probs:
+                raise Stop("%s: read back differently: %s" % (m.name, "; ".join(probs)))
+            self.ok("%s: shares with %s, the hub's entry unchanged: %s" % (m.name, other.name, self.describe(r["folder"])))
+
+    # --- the run ---------------------------------------------------------------------
+    def create(self):
+        o = self.o
+        W, H, R = self.W, self.H, self.R
+        if self.held["writer"] is None and self.wprobe["passwords"] == 0:
+            self.password = ask_password(o, self.out)
+            if self.rprobe["passwords"] == 1:
+                d = hmac.new(self.nonce.encode(), self.password.encode("utf-8", "surrogateescape"), hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(d, self.rprobe.get("pw_digest") or ""):
+                    raise Stop("that is not the password %s already holds; nothing has been created" % R.name)
+        bw, bh, br = self.bodies()
+        self.say("NOTE", "== %s, the writer ==" % W.name)
+        if self.held["writer"] is None:
+            self.post(W, bw, H.id, "controller" if self.password else None)
+        else:
+            self.say("SKIP", "%s: holds it as specified" % W.name)
+        self.wait_writer_scan()
+        self.say("NOTE", "== %s, the hub ==" % H.name)
+        if self.held["hub"] is None:
+            self.post(H, bh, None)
+        else:
+            self.say("SKIP", "%s: holds it as specified" % H.name)
+        if set(self.created) & {"writer", "hub"} or not self.hub_settled_once():
+            self.bounce(W)
+        else:
+            self.say("SKIP", "%s: the hub already holds %s's set; no bounce" % (W.name, W.name))
+        self.wait_hub()
+        self.say("NOTE", "== %s, the reader (%s) ==" % (R.name, self.shape))
+        if self.held["reader"] is None:
+            if self.shape == "join":
+                self.gate("%s joins receive-only next; no Claude session there from here to the switch (mig-3 gate 6)" % R.name)
+            pwmode = None
+            if self.rprobe["passwords"] == 0:
+                pwmode = "controller"
+                if self.password is None:
+                    self.password = read_own_password()
+            self.post(R, br, H.id, pwmode)
+        else:
+            self.say("SKIP", "%s: holds it as specified" % R.name)
+        if "reader" in self.created or not self.reader_has_hub_index():
+            self.bounce(R)
+        else:
+            self.say("SKIP", "%s: already holds the hub's index; no bounce" % R.name)
+        f = self.held["reader"]
+        if self.shape == "join" and f.get("type") == "receiveonly":
+            self.wait_gate7()
+            items = self.inspect_and_revert()
+            self.gate9(items)
+            self.switch()
+        if self.shape == "join" and ((self.held["reader"].get("versioning") or {}).get("type") == "trashcan"):
+            self.versioning_off()
+        if self.link:
+            self.share_link()
+        self.say("NOTE", "== the three ==")
+        self.wait_final()
+        self.ok("done: %s %r on %s, %s and %s" % (o["id"], o["label"], W.name, H.name, R.name))
+        self.say("NOTE", "add its row to org/machines/syncthing.md today: a folder's id is half its key")
+        if self.shape == "join":
+            self.say("NOTE", "the trashcan %s on %s stays until he has looked through it" % (self.trash, R.name))
+
+
+def read_own_password():
+    """This machine's one cluster password, for a reader that holds none: read
+    from config.xml into memory only."""
+    pws = Local().passwords()
+    if len(pws) != 1:
+        raise Stop("this machine holds %d cluster passwords, not one" % len(pws))
+    return pws[0]
+
+
+def ask_password(o, out):
+    """Once in the life of the cluster: from /dev/tty, echo off, twice."""
+    try:
+        open("/dev/tty").close()
+    except OSError:
+        raise Stop("the first encrypted folder needs the password typed on a terminal", fix="run it in your own shell")
+    out.say("NOTE", "no encrypted folder exists here yet, so this is the ONE time the password is asked for:")
+    out.more("copy it out of Proton Pass now; it is never echoed, and never stored but in the two")
+    out.more("workstations' own config.xml")
+    pw = getpass.getpass("  password: ")
+    if not pw:
+        raise Stop("empty password; nothing has been created")
+    if any(c.isspace() for c in pw):
+        raise Stop("that holds whitespace, so it is not a generated password -- almost certainly this command "
+                   "line, still on the clipboard. Nothing has been created.")
+    for a in (o["id"], o["wpath"], o["rpath"], o["hpath"]):
+        if a and a in pw:
+            raise Stop("that holds this command's own arguments, so it is the command line rather than the "
+                       "password. Nothing has been created.")
+    if getpass.getpass("  confirm : ") != pw:
+        raise Stop("the two entries differ; nothing has been created")
+    out.say("OK", "accepted (%d characters): this is now the cluster password" % len(pw))
+    return pw
+
+
+def undo_line(o):
+    return "syncthing-addfolder --undo %s %s" % (shlex.quote(o["id"]), shlex.quote(o["label"]))
+
+
+def print_undo(run):
+    o = run.o
+    held = [r for r in ("hub", "writer", "reader") if run.held.get(r) is not None]
+    if not held and len(run.held) == 3:
+        run.out.more("undo: nothing to undo, no machine holds the folder")
+        return
+    if len(run.held) < 3:
+        run.out.more("undo, if any machine holds it (the hub first, then this machine, then the reader): %s" % undo_line(o))
+        return
+    run.out.more("undo, the hub first, then %s, then the reader: %s" % (run.W.name, undo_line(o)))
+    stays = []
+    if run.held.get("hub") is not None:
+        stays.append("the hub's blobs at %s, its marker renamed .stfolder.removed-<time> (a later folder takes a new directory, hub-3)" % o["hpath"])
+    if run.held.get("writer") is not None:
+        stays.append("%s's tree at %s" % (run.W.name, o["wpath"]))
+    if run.held.get("reader") is not None:
+        stays.append("%s's tree at %s" % (run.R.name if run.R else "the reader", o["rpath"]))
+    if run.trash and run.shape == "join":
+        stays.append("the trashcan %s" % run.trash)
+    run.out.more("  what stays on disk: " + "; ".join(stays))
+
+
+def create_main(o):
+    run = Run(o)
+    run.say("NOTE", "syncthing-addfolder %s %r, %s, on %s%s" % (
+        o["id"], o["label"], time.strftime("%Y-%m-%d %H:%M:%S %Z"), os.uname().nodename,
+        ", dry run" if o["dry_run"] else ""))
+    try:
+        run.preflight()
+        run.plan()
+        if o["dry_run"]:
+            run.say("OK", "dry run: the preflight passed and nothing was written")
+            return 0
+        run.gate("the parameters above, the plan above: the first write is next")
+        run.create()
+        return 0
+    except Stop as e:
+        run.say("STOP", str(e))
+        if e.fix:
+            run.out.fix(e.fix)
+        if o["dry_run"]:
+            run.out.more("dry run: nothing was written")
+        else:
+            run.out.more("resume: the same command again; it verifies what is made and goes on")
+            print_undo(run)
+        return e.code
+    except KeyboardInterrupt:
+        run.say("STOP", "interrupted")
+        if BOUNCE.get("pause_sent"):
+            if BOUNCE.get("resumed"):
+                run.out.more("the bounce under way here was cut short; its resume answered 200")
+            else:
+                run.out.more("the bounce under way here was cut short and its resume did not answer: "
+                             "the hub device may stay paused here, which the next run's preflight reads")
+                run.out.fix("resume it in this machine's GUI (Remote Devices -> %s -> Resume)" % (run.H.name if run.H else "the hub"))
+        print_undo(run)
+        return 1
+    except Exception as e:      # a run that could not finish is never a success
+        run.say("STOP", "could not finish: %s: %s" % (type(e).__name__, e))
+        print_undo(run)
+        return 2
+
+
+def undo_main(o):
+    """--undo ID LABEL: remove the folder from the hub, then this machine,
+    then the reader; refuses a folder whose label is not LABEL."""
+    run = Run(o)
+    run.say("NOTE", "syncthing-addfolder --undo %s %r, %s, on %s%s" % (
+        o["id"], o["label"], time.strftime("%Y-%m-%d %H:%M:%S %Z"), os.uname().nodename,
+        ", dry run" if o["dry_run"] else ""))
+    try:
+        if not ID_RE.fullmatch(o["id"]) and not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", o["id"]):
+            raise Stop("id %r does not look like a folder id" % o["id"], code=2)
+        W = run.W
+        wp = run.op(W, "probe", {"fid": o["id"]})
+        W.id = wp["myID"]
+        names = {d["deviceID"]: d.get("name") or d["deviceID"][:7] for d in wp["devices"]}
+        W.name = names.get(W.id) or wp["node"]
+        f = wp["folder"]
+        hub_ids = [i for i, n in names.items() if o["hub"] and n == o["hub"]]
+        if not hub_ids:
+            enc = set()
+            for g in wp["folders"]:
+                enc |= set(g["enc"])
+            enc.discard(W.id)
+            if f is not None:
+                enc = {d["deviceID"] for d in f["devices"] if d.get("encryptionPassword") == "<set>"} or enc
+            hub_ids = sorted(enc)
+        if len(hub_ids) != 1:
+            raise Stop("cannot tell the hub", fix="name it: --hub NAME", code=2)
+        run.H = Machine(run, "hub", names.get(hub_ids[0]))
+        run.H.id = hub_ids[0]
+        hp = run.op(run.H, "probe", {"fid": o["id"]})
+        hnames = {d["deviceID"]: d.get("name") or d["deviceID"][:7] for d in hp["devices"]}
+        peers = [i for i in hnames if i not in (W.id, run.H.id)]
+        if o["peer"]:
+            peers = [i for i in set(hnames) | set(names) if (names.get(i) or hnames.get(i)) == o["peer"]]
+        if len(peers) != 1:
+            raise Stop("cannot tell the reader", fix="name it: --peer NAME", code=2)
+        run.R = Machine(run, "reader", names.get(peers[0]) or hnames.get(peers[0]))
+        run.R.id = peers[0]
+        probes = {"hub": hp, "writer": wp}
+        try:
+            probes["reader"] = run.op(run.R, "probe", {"fid": o["id"]})
+        except Stop as e:
+            probes["reader"] = None
+            run.say("WARN", "%s: %s" % (run.R.name, e))
+        todo = []
+        for role, m in (("hub", run.H), ("writer", W), ("reader", run.R)):
+            p = probes[role]
+            if p is None:
+                continue
+            f = p["folder"]
+            run.held[role] = f
+            if f is None:
+                run.ok("%s: does not hold %s" % (m.name, o["id"]))
+                continue
+            if f.get("label") != o["label"]:
+                raise Stop("%s holds %s with the label %r, not %r: nothing removed" % (m.name, o["id"], f.get("label"), o["label"]))
+            v = f.get("versioning") or {}
+            if v.get("type") == "trashcan":
+                run.trash, run.shape = v.get("fsPath"), "join"
+            run.say("PLAN", "%s: DELETE /rest/config/folders/%s (%s at %s)" % (m.name, o["id"], f.get("type"), f.get("path")))
+            todo.append((role, m, f))
+        if not todo:
+            run.ok("nothing to undo")
+            return 0 if probes["reader"] is not None else 2
+        if o["dry_run"]:
+            run.ok("dry run: nothing removed")
+            return 0
+        run.gate("remove the folder from the configurations above, in that order; every file stays on disk")
+        for role, m, f in todo:
+            run.say("DO", "%s: DELETE /rest/config/folders/%s" % (m.name, o["id"]))
+            r = run.op(m, "delete", {"fid": o["id"]})
+            if r["code"] != 200 or not r["absent"]:
+                raise Stop("%s: the DELETE answered %s: %s" % (m.name, r["code"], r["text"]))
+            run.ok("%s: removed from the configuration; %s stays on disk%s" % (
+                m.name, f.get("path"), ", its marker renamed .stfolder.removed-<time>" if role == "hub" else ""))
+        if run.trash:
+            run.say("NOTE", "%s's trashcan %s stays" % (run.R.name, run.trash))
+        if probes["reader"] is None:
+            raise Stop("%s did not answer; run the same --undo again when it does" % run.R.name, code=2)
+        run.ok("undone")
+        return 0
+    except Stop as e:
+        run.say("STOP", str(e))
+        if e.fix:
+            run.out.fix(e.fix)
+        return e.code
+    except KeyboardInterrupt:
+        run.say("STOP", "interrupted")
+        return 1
+
+
+def usage(code):
+    print(__doc__.split("\n\nThe successor")[0])
+    sys.exit(code)
+
+
+def parse(argv):
+    o = {"trash": None, "allow_outside": False, "hub_only": False, "hub": None, "peer": None,
+         "yes": False, "dry_run": False, "log": None, "undo": False}
+    pos = []
+    takes = {"--trash": "trash", "--hub": "hub", "--peer": "peer", "--log": "log"}
+    flags = {"--allow-outside": "allow_outside", "--hub-only": "hub_only", "--yes": "yes",
+             "--dry-run": "dry_run", "--undo": "undo"}
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a in ("-h", "--help"):
+            usage(0)
+        elif a == "--":
+            pos += argv[i + 1:]
+            break
+        elif a in takes:
+            if i + 1 >= len(argv):
+                raise Stop("%s needs a value" % a, code=2)
+            o[takes[a]] = argv[i + 1]
+            i += 1
+        elif a.split("=", 1)[0] in takes and "=" in a:
+            o[takes[a.split("=", 1)[0]]] = a.split("=", 1)[1]
+        elif a in flags:
+            o[flags[a]] = True
+        elif a.startswith("-") and a != "-":
+            raise Stop("unknown option %s (try -h)" % a, code=2)
+        else:
+            pos.append(a)
+        i += 1
+    want = 2 if o["undo"] else 5
+    if len(pos) != want:
+        raise Stop("%s takes %d arguments, not %d (try -h)" % ("--undo" if o["undo"] else "syncthing-addfolder", want, len(pos)), code=2)
+    o["id"], o["label"] = pos[0], pos[1]
+    if not o["undo"]:
+        o["wpath"], o["rpath"], o["hpath"] = pos[2], pos[3], pos[4]
+    return o
+
+
+def _interrupt(signum, frame):
+    raise KeyboardInterrupt()
+
+
+def main(argv):
+    if argv[:1] == ["--remote"]:
+        if len(argv) != 3:
+            print(json.dumps({"error": "--remote takes OP and one JSON argument"}))
+            return 0
+        return remote_main(argv[1], argv[2])
+    try:
+        o = parse(argv)
+    except Stop as e:
+        print("syncthing-addfolder: %s" % e, file=sys.stderr)
+        return e.code
+    # SIGINT too: a parent that ignores it (a background job) must not make
+    # Ctrl-C a no-op here, since the bounce's resume rides on it
+    for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+        signal.signal(s, _interrupt)
+    try:
+        return undo_main(o) if o["undo"] else create_main(o)
+    except Stop as e:           # the log could not be opened
+        print("syncthing-addfolder: %s" % e, file=sys.stderr)
+        return e.code
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

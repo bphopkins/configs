@@ -21,6 +21,20 @@
 	# and pushes over the key without editing the remote afterwards.
 	insteadOf = https://github.com/
 
+[init]
+	# The files ref backend for every repository made here, by `init` and by
+	# `clone` alike (org/machines/transport-2026-10, rules.md ws-6). Syncthing
+	# carries each repository's .git whole between the machines, and what it
+	# can deliver half-arrived was measured for the files backend alone;
+	# reftable rewrites and deletes its table files at every write, a churn
+	# no one has watched cross the hub. Its turn as git's default for new
+	# repositories is announced for git 3.0 (Documentation/BreakingChanges),
+	# and the machines upgrade on different days, so the backend is named
+	# here, once for both. A move to reftable is one decision, taken by
+	# changing this line.
+	# Test: tests/git-hosts/run.sh.
+	defaultRefFormat = files
+
 [include]
 	# Private and synced: [user] name and email. Git ignores a missing include
 	# silently; useConfigOnly above turns that silence into a refusal.

@@ -3623,3 +3623,118 @@ Nothing else was decided: Zulip at login, a polkit agent and udiskie stay open
 on his word from the 2026-09-30 audit. The same sweep found GNOME's custom
 shortcut `<Super>v` on bigfed still launching `code`, gone since 2026-09-07;
 removed at his word (fedxps not checked).
+
+## The gauge's repair line names the losing machine — 2026-10-25
+
+`sync-check sync`'s fix line for a loser the hub holds — both workstations
+listing the same path towards the hub — said "edit the file once more on
+either machine and read again; repeat if it stays". Measured wrong by half at
+the transport pilot's verdict (`org/machines/transport-2026-10/pilot/verdict.md`
+→ exercise 3, D8): three edits from the race's winner moved nothing, one edit
+from the loser cleared the hub in 12 s. The encrypted hub cannot read
+contents, so it orders concurrent versions by the sum of their counters, and
+the counters are seconds since the epoch; a version carrying one machine's
+counter never outsums one carrying both, whatever that machine does. The
+repair edit is made on the machine whose text is in the conflict copy — the
+one whose counter the current version lacks.
+
+Changed the same day on his word: the three fix strings in `bin/sync-check`
+and the suite's assertion (`tests/sync-check/run.sh`), wording only. The
+fuller form — the gauge reading which counters the local version carries and
+naming the machine — is the pilot plan's step 5a (`PLAN.md` there → settled
+41), with the push hook's log line, the guard line's version-vector check
+and the hub's second door over `nousowl-vpn`. The rule's text is annotated
+at `rules.md` → him-2, that date.
+
+## The pre-cutover tools: the gauge completed, the shell and git sides, claude-link confined, the real-instance rig — 2026-10-26
+
+Step 5a of the transport campaign, `org/machines/transport-2026-10/PLAN.md` →
+Phases; the record with every reading, his four decisions at the pause and the
+workers' reports distilled is `cutover/tools.md` there, and the rules each
+change serves are annotated under their names in that directory's `rules.md`.
+Six builders and two reviewers, Opus 5.5 at xhigh, under one Fable chat on
+bigfed.
+
+- **What landed here.** `bin/sync-check` gains a second door for every ssh
+  (`<host>`, then `<host>-vpn`), the guard line's version-vector check over
+  every `.git` path a reader reads (with `KNOWN_WRITES` for an explained
+  write), him-2's naming of the losing machine, the `hub` and `config` lines,
+  bigfed-1's check on a writer, and the `SYNC_CHECK_SNAPSHOT` reading for
+  `gpushall` (`bin/CLAUDE.md`; suite 268 → 460). `50-git-sync.sh` logs every
+  push gauge reading through `_gauge_log` into `org/machines/<host>/gauge-log.md`,
+  the home `bye` and `byebye` now share, and exports the snapshot for a batch;
+  `60-stow.sh`'s three commands run no pull and re-read their arrays from
+  disk; `.bashrc` skips a module's conflict copy and prints an arrival line
+  before the next command when its loaded files changed on disk
+  (`bash/CLAUDE.md`). `git/config` pins `init.defaultRefFormat`; `fedxps.inc`
+  arms `core.hooksPath` to the new `git/hooks-reader/`, whose
+  `reference-transaction` hook refuses ref updates in the repositories the
+  role names; `nvim/lua/config/role.lua` gives lazy a reader its own lock copy
+  (`nvim/CLAUDE.md`). `bin/claude-link` holds a lock, confines `--auto` to
+  `~/.claude`, and makes `~/.claude/skills` a directory of per-skill links so
+  the vendor's state stays local; the session-start hook names unindexed
+  memory files and conflict copies; `claudeMdExcludes` lands in `settings.json`
+  (`bin/CLAUDE.md`). `bin/syncthing-addfolder` is rewritten in Python with the
+  pilot's receive-only join as its second shape. The test builds of
+  `tests/french-logic` and sylloge's UI suite move to `~/.cache`. New suites:
+  `tests/sync` (three real Syncthing instances on loopback: the guard's two
+  facts, `maxConflicts`, the split of main and its repair, the hub's deletion
+  retention, the addfolder tool; 239 checks in about ten minutes),
+  `tests/git-hosts` (235), `tests/lazy-lock` (93), `tests/bashrc` (53),
+  `tests/stow` (51); `tests/gsync/test-two-machine.sh` retired (the battery
+  443 in four suites); `tests/claude` 174 → 285, `tests/leave` 66 → 75;
+  `tests/cage.sh` takes a size. Every suite green at the close, `tests/claude`
+  among them once `claude-link --apply` had held the empty `bvf` memory
+  scope open with a keeper (12:12, on his word).
+- **Settled by measurement.** The split-of-main repair him-2 had only
+  reasoned holds as written through the real hub's ordering, eleven runs on
+  the rig; the hub's deletion-retention fault is present on 2.1.6 and the
+  rig's case will fail by design when 2.1.7 lands; `db/file` costs 0.29 ms a
+  path on bigfed and 0.46 ms on fedxps, so the rotation's 5,691 `.git` paths
+  put a cutover-scale bare run past the session hook's 4 s away from home,
+  the decision for 5d; on git 2.56 `git maintenance run` skips in silence
+  while a stale `maintenance.lock` stands, so the fix removes the lock
+  first (`byebye`'s line corrected); git's reflog moves run outside any ref
+  transaction, so the hook stops `stash` push and the last entry's drop or
+  pop only; `syncthing cli config folders add` gives `maxConflicts` 10 on
+  2.1.6 despite its help text, so ws-7's reason for the POST-only rule is
+  unproven while the rule stands; two concurrent `claude-link` runs
+  corrupted a sandbox tree in every trial before the lock and in none after.
+- **Declined.** Removing the two ignore lines for the old in-tree build
+  directories, as ws-9's brief asked: fedxps still held a 5.2 MB build, and
+  `gpushall`'s `add -A` would have published it to this public repository;
+  ws-9's own test reads `git ls-files -o -i`, which presupposes the ignore.
+  A second `_leave` implementation of the maintenance check delegating to
+  the gauge: `byebye`'s own stays as tested and the gauge reports the same.
+  Reading the snapshot unless the caller names a file: the gauge stays
+  read-only by default.
+- **For his hand** (`cutover/tools.md` → For him): the restow on both
+  machines (the gauge's `config` line names the two unlinked arrivals until
+  then), `reload` in every open shell, `claude-link --apply` once per machine
+  for the skills migration, and on fedxps the pull first.
+- **The reviews.** Two Opus workers read the whole diff after the builds,
+  a code review and an adversarial read with 128 one-change mutants; every
+  finding was reproduced and went back to its builder, in two rounds. The
+  high ones: the `config` line's lazy check compared against the reader's
+  own copy, blind behind an arrival (the chat's own brief said so; the
+  shared lock now, on both roles); the same line read OK while
+  `claude-link`'s dry run warned, since the dry run exits 0 over `[WARN]`
+  lines (a WARN now); `syncthing-addfolder` let an absent reader role pass
+  (a present non-writer role, or a `readerRepo` naming the path, now
+  required). The medium ones among them: a refused `checkout` on the reader
+  moves the index and the tree before the hook speaks, and the push line
+  read OK with HEAD equal (it now reads the repository's `.git` vectors from
+  bigfed's side); `guard` read OK with a `core.hooksPath` naming nothing
+  (the hook must exist and be executable); `--auto` had stopped linking a
+  layer that arrives by git, which until the cutover is how they arrive (it
+  makes a missing link while no Syncthing marker sits at or above
+  `~/Desktop`); the maintenance matcher missed `git -C <repo> maintenance
+  run`, the fix line's own shape, and would have printed the `rm <lock>`
+  fix over a live lock; the rig's retention case counted a skip as a pass;
+  the addfolder case left the tool's own checks unexercised, sixteen
+  mutants surviving until a case was written for each. The record names
+  every low finding and the three mutants left equivalent in practice
+  (`cutover/tools.md` → The reviews). Suites at the close: sync-check 531,
+  claude 349, gsync 445, leave 95,
+  bashrc 53, stow 63, git-hosts 242, lazy-lock 110, sync 274 in about
+  fifteen minutes.

@@ -61,6 +61,18 @@
 # because refusing every push for a missing tool would stop the backup --
 # except a repository with a Syncthing marker (.stfolder) at its root or
 # above it, the one case the gauge exists for, which is skipped.
+#
+# The gauge's log (2026-10-26; rules.md bigfed-2, the pilot verdict's D3, and
+# mig-1's home for the leaving log): for every repository the push gauge
+# judged -- one in no folder passes in silence and is not logged -- one line
+# goes into this machine's own file, ~/Desktop/org/machines/<hostname>/
+# gauge-log.md, beside bye's and byebye's (_gauge_log below): the gauge's first
+# tagged line, and the command, the repository and the outcome. One file per
+# machine, one writer each, so the file never conflicts; a machine without its
+# directory logs nothing and pushes. And gpushall, or gpush with more than one
+# name, hands the gauge one snapshot file for the run, SYNC_CHECK_SNAPSHOT, so
+# the cluster's folder readings are taken once rather than once a repository
+# (the gauge's docstring has the contract); removed when the run ends.
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
@@ -491,8 +503,9 @@ _gsync_vet_new_files() {
 }
 
 # After a configs pull/rebase moved HEAD, surface the follow-ups the sync
-# itself can't do: stow-all iterates the arrays already loaded in this shell,
-# so a pulled-in package addition is skipped silently until a re-source.
+# itself can't do: a re-source for changed bash files, a restow for added or
+# removed package files (stow-all re-reads its package arrays from disk since
+# 2026-10-26, so it needs no re-source first), and nvim's plugin restore.
 # Parsed NUL-delimited: core.quotePath (default on) C-quotes non-ASCII names
 # in plain output, which would defeat the path matching below.
 _gsync_pull_hints() {
@@ -561,7 +574,7 @@ _gsync_pull_hints() {
     _gsync_hint 'configs: plugin lockfile changed — run: nvim --headless "+Lazy! restore" +qa'
   fi
   if ((${#pkg_hit[@]})); then
-    _gsync_hint "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all (re-source first)"
+    _gsync_hint "configs: files added/removed in stow package(s): ${!pkg_hit[*]} — run: stow-all"
   fi
   # claude-link --auto is narrow (it only acts where nothing can conflict) and
   # idempotent, so running it here is safe. `|| true` is load-bearing: it exits
@@ -623,9 +636,63 @@ _gsync_pull_repo() {
   fi
 }
 
-# Per-repo push: stage -> vet -> commit -> rebase-pull -> push.
+# The gauge's log, one line: `| <YYYY-MM-DD HH:MM> | <reading> | <note> |`
+# appended to ~/Desktop/org/machines/<hostname>/gauge-log.md (GAUGE_LOG_ROOT
+# replaces ~/Desktop/org/machines, for the suites), the file created with its
+# header when absent. The writers are bye and byebye (_leave, 40-aliases.sh,
+# which calls this when it is defined) and the push gauge below. The hostname
+# is uname's, short and lowercased, as the host files' names are. A machine
+# without its directory logs nothing; a | in a field would split the table's
+# row, so it becomes a /. Always returns 0: the log never stops a push or a
+# leaving.
+_gauge_log() { # _gauge_log READING NOTE
+  local reading="$1" note="$2" host dir log when
+  host="$(uname -n 2>/dev/null)"; host="${host%%.*}"; host="${host,,}"
+  [[ -n "$host" ]] || return 0
+  dir="${GAUGE_LOG_ROOT:-$HOME/Desktop/org/machines}/$host"
+  [[ -d "$dir" ]] || return 0
+  log="$dir/gauge-log.md"
+  # noclobber: two writers starting the file at once cannot both write a header
+  [[ -e "$log" ]] || (set -C; printf '%s\n' "# The gauge's log -- $host's lines" "" \
+    "**Dated record**, appended by \`bye\`, \`byebye\` and the push hook: the gauge's reading at every leaving and every push of this machine; one file per machine, one writer each." \
+    "" "| when | reading | note |" "|---|---|---|" >"$log") 2>/dev/null
+  printf -v when '%(%Y-%m-%d %H:%M)T' -1
+  printf '| %s | %s | %s |\n' "$when" "${reading//|//}" "${note//|//}" >>"$log"
+  return 0
+}
+
+# Per-repo push: the push gauge, then stage -> vet -> commit -> rebase-pull ->
+# push (_gsync_push_one), then the gauge's reading into the log when the gauge
+# judged the repository: the note is the command and the repository, then
+# `pushed`, `refused`, `failed` (the gauge passed, the push did not) or
+# `pending` (committed offline), with ` under WARN` or ` under DUE` when the
+# gauge passed on exit 2 or 3. A no-op push is `pushed`: origin holds this
+# machine's state. _GSYNC_CMD names the command (gpush when unset).
 # Returns 0 ok / 1 fail / 2 skip / 3 committed, push pending (offline).
 _gsync_push_repo() {
+  local _GSYNC_GAUGE_READING="" _GSYNC_GAUGE_RC="" rc outcome
+  _gsync_push_one "$@"
+  rc=$?
+  if [[ -n "$_GSYNC_GAUGE_READING" ]]; then
+    case "$_GSYNC_GAUGE_RC" in
+      0 | 2 | 3)
+        case "$rc" in
+          0) outcome=pushed ;;
+          3) outcome=pending ;;
+          2) outcome=skipped ;;
+          *) outcome=failed ;;
+        esac
+        [[ "$_GSYNC_GAUGE_RC" == 2 ]] && outcome+=" under WARN"
+        [[ "$_GSYNC_GAUGE_RC" == 3 ]] && outcome+=" under DUE"
+        ;;
+      *) outcome=refused ;;
+    esac
+    _gauge_log "$_GSYNC_GAUGE_READING" "${_GSYNC_CMD:-gpush} $1, $outcome"
+  fi
+  return "$rc"
+}
+
+_gsync_push_one() {
   local name="$1" repo="$2" msg="$3"
   local branch committed=0 staged_count=0 new_note="" out ahead have_up prepull integrated=0
   local _GSYNC_BRANCH _GSYNC_NEW_FILES=()
@@ -641,7 +708,19 @@ _gsync_push_repo() {
   # as the one line it prints for a repository Syncthing carries.
   if command -v sync-check >/dev/null 2>&1; then
     out="$(sync-check push -q -- "$repo" 2>&1)"
-    case $? in
+    _GSYNC_GAUGE_RC=$?
+    # The reading for the log: the gauge's first tagged line; a gauge that
+    # failed without one is logged by its exit status; a silent pass, a
+    # repository in no folder, leaves it empty and is not logged.
+    local line
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^\[(\ OK\ |FAIL|WAIT|WARN|DUE)\]\  ]]; then
+        _GSYNC_GAUGE_READING="$line"
+        break
+      fi
+    done <<<"$out"
+    [[ -n "$_GSYNC_GAUGE_READING" || "$_GSYNC_GAUGE_RC" == 0 ]] || _GSYNC_GAUGE_READING="the gauge exited $_GSYNC_GAUGE_RC"
+    case $_GSYNC_GAUGE_RC in
       0)
         # A pass prints the gauge's own lines unindented: indented, they read
         # as detail of the repository above this one.
@@ -815,9 +894,20 @@ gpull() {
   ((failed == 0))
 }
 
+# One snapshot file for a run that judges more than one repository: the gauge
+# reads the cluster's folder readings from it while they are younger than
+# SYNC_CHECK_SNAPSHOT_TTL, and reads and writes them there otherwise (bin/
+# sync-check). mktemp makes it 0600, in the user's runtime directory; the
+# variable is local to the command and the file is removed before it returns,
+# after every early return has been passed. No file, no variable: the gauge
+# reads the cluster for each repository, as before.
+_gsync_snapshot_open() { # the file's path into the caller's snap, empty when mktemp fails
+  snap="$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/sync-check-snapshot.XXXXXX" 2>/dev/null)" || snap=""
+}
+
 gpush() {
-  local msg="" names=() name rc failed=0
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
+  local msg="" names=() name rc failed=0 snap=""
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=() _GSYNC_CMD=gpush
   while (($#)); do
     case "$1" in
       -m)
@@ -837,6 +927,8 @@ gpush() {
     return 1
   fi
   [[ -n "$msg" ]] || msg="$(hostname): $(date '+%Y-%m-%d %H:%M:%S')"
+  ((${#names[@]} > 1)) && _gsync_snapshot_open
+  [[ -n "$snap" ]] && local -x SYNC_CHECK_SNAPSHOT="$snap"
   for name in "${names[@]}"; do
     _gsync_push_repo "$name" "$HOME/Desktop/$name" "$msg"
     rc=$?
@@ -844,6 +936,7 @@ gpush() {
     # offline push (3) is the one benign nonzero outcome.
     ((rc != 0 && rc != 3)) && ((failed += 1))
   done
+  [[ -n "$snap" ]] && rm -f -- "$snap"
   _gsync_flush_hints
   ((failed == 0))
 }
@@ -886,9 +979,9 @@ gpullall() {
 }
 
 gpushall() {
-  local msg="" repo name ok=0 skipped=0 failed=0 pending=0
+  local msg="" repo name ok=0 skipped=0 failed=0 pending=0 snap=""
   local fail_list=() skip_list=() pend_list=()
-  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=()
+  local _GSYNC_ONLINE_CACHE="" _GSYNC_HINTS=() _GSYNC_ROLE="" _GSYNC_READER_REPOS=() _GSYNC_CMD=gpushall
   if [[ "${1:-}" == "-m" ]]; then
     if [[ -z "${2:-}" ]]; then
       echo "Usage: gpushall [-m MSG]"
@@ -909,6 +1002,8 @@ gpushall() {
     _gsync_refuse_all pushed
     return 1
   fi
+  _gsync_snapshot_open
+  [[ -n "$snap" ]] && local -x SYNC_CHECK_SNAPSHOT="$snap"
   echo "Committing and pushing ${#REPOS_DESKTOP[@]} repositories..."
   for repo in "${REPOS_DESKTOP[@]}"; do
     name="$(basename "$repo")"
@@ -929,6 +1024,7 @@ gpushall() {
         ;;
     esac
   done
+  [[ -n "$snap" ]] && rm -f -- "$snap"
   echo
   echo "Push complete. ok: $ok  skipped: $skipped  failed: $failed  pending: $pending"
   ((${#skip_list[@]})) && _gsync_say SKIP "skipped: ${skip_list[*]}"

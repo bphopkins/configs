@@ -15,7 +15,28 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- On a reader (config/role.lua: fedxps, by its host file) lazy keeps a lock of
+-- its own under stdpath("state"), refreshed from the shared lazy-lock.json at
+-- every start, so its installs, restores and cleans never write the lock
+-- Syncthing carries to bigfed (org/machines/transport-2026-10, rules.md
+-- fedxps-5). nil on a writer: lazy's default, the tracked lock. A fault in
+-- role.lua costs the lock's separation for the session, said in a WARN, and
+-- never lazy's setup.
+local role_ok, lockfile = pcall(function()
+  return require("config.role").lazy_lockfile()
+end)
+if not role_ok then
+  vim.notify(
+    "config.role: "
+      .. tostring(lockfile)
+      .. " -- lazy may write the shared lazy-lock.json this session",
+    vim.log.levels.WARN
+  )
+  lockfile = nil
+end
+
 require("lazy").setup({
+  lockfile = lockfile,
   spec = {
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },

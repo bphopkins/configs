@@ -223,12 +223,16 @@ hand, once per machine:
 ```bash
 ln -s ../../Desktop/configs/git/hosts/"$(uname -n)".inc ~/.config/git/host.inc
 git config --show-origin core.checkStat   # fedxps: names host.inc; bigfed: prints nothing
+git config --show-origin core.hooksPath   # fedxps: names host.inc; bigfed: prints nothing (2026-10-26)
 sync-check guard                          # the same, plus the environment half, once bin is stowed
 ```
 
 Git ignores a missing include silently, so a forgotten link leaves fedxps
 unguarded. The sync commands and `10-env.sh` read the host file by hostname
-instead and do not depend on the link.
+instead and do not depend on the link. The reader's refusing hook
+(`git/hooks-reader/`, which `fedxps.inc` names as `core.hooksPath` through
+`~/.config/git/hooks-reader`) runs only once the `git` package is stowed:
+until then the path names nothing and git runs no hook, without a word.
 
 
 
@@ -244,7 +248,7 @@ ls -l ~/.config/waybar/config ~/.config/waybar/style.css
 ls -l ~/texmf/tex/latex/french-logic/french-logic.sty
 ls -l ~/bin/tl-newyear
 ls -l ~/.config/okularpartrc
-ls -l ~/.config/git/config ~/.config/git/host.inc
+ls -l ~/.config/git/config ~/.config/git/host.inc ~/.config/git/hooks-reader
 ```
 
 You should see arrows (`->`) pointing into `~/Desktop/configs/...`.
@@ -363,10 +367,11 @@ But honestly, why not just reboot?
   replaced, breaking the next `stow -R bin`.
 
 - **Adding a new stow package?** Update *both* the `STOW_TARGETS` map and the
-  `STOW_ORDER` array in `bash/.bashrc.d/60-stow.sh`, and remember that on the *other*
-  machine you must `source ~/.bashrc` **before** `stow-all` — `stow-all` iterates the
-  arrays as loaded in the running shell, so a pull that adds a package updates the file
-  on disk but not the arrays in memory, and the new package is skipped **silently**.
+  `STOW_ORDER` array in `bash/.bashrc.d/60-stow.sh`. Since 2026-10-26 `stow-all`
+  re-reads the two arrays from that file on disk before it acts, so on the *other*
+  machine the arrived package is stowed from an old shell too; the `source ~/.bashrc`
+  is still due for every other function the pull changed, and the arrival line
+  `.bashrc` prints before the next command says so.
 
 - **Rescue files:** `bash/.bashrc.min` and `bash/.bash_profile.min` are stowed to
   `~/.bashrc.min` and `~/.bash_profile.min`. They are deliberately minimal, known-good

@@ -349,9 +349,11 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # pilot/seeding.md there). `bye` suspends and `byebye` powers off, each only
 # once the Syncthing gauge reads every folder this machine shares up to date
 # -- the laptop before its lid closes, bigfed before it goes dark -- and each
-# writes the reading as one line into this machine's own file of the pilot's
-# log, so the log keeps itself (one file per machine: two machines appending
-# to one git-synced file would be a merge conflict). A DUE alone -- the
+# writes the reading as one line into this machine's own gauge log,
+# ~/Desktop/org/machines/<hostname>/gauge-log.md, through _gauge_log in
+# 50-git-sync.sh, the push hook's writer too (one file per machine: two
+# machines appending to one synced file would conflict; the pilot's log under
+# transport-2026-10/pilot/ until 2026-10-26). A DUE alone -- the
 # gauge's exit 3, every folder up to date with attention due -- leaves, the
 # DUE line logged as the reading (2026-10-14, the pilot's PLAN.md -> settled
 # 37); a refusal logs the FAIL, WAIT or WARN that decided it. On a writer
@@ -360,8 +362,9 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # would carry the halves.
 # Flags: -f leaves whatever the gauge says, logged as forced; -i is systemctl's
 # --ignore-inhibitors. Without the gauge on PATH (a machine not yet stowed)
-# they act as the plain commands did, with one hint. LEAVE_LOG_DIR overrides
-# the log's directory (the suite); a machine without it logs nothing and acts.
+# they act as the plain commands did, with one hint. GAUGE_LOG_ROOT replaces
+# ~/Desktop/org/machines (the suite); a machine without its directory, or a
+# shell without _gauge_log, logs nothing and acts.
 #
 # `shutdown` on its own looks broken but isn't: it's a symlink to systemctl,
 # and for SysV compat a bare invocation defaults to `+1`, so it SCHEDULES for
@@ -371,7 +374,7 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # while a dnf transaction is mid-flight and names the culprit; override with
 # -i. Tests: tests/leave/run.sh.
 _leave() {
-  local verb="$1" cmd=bye force=0 ignore="" a host out rc=0 reading="" note log dir n line lock proc
+  local verb="$1" cmd=bye force=0 ignore="" a out rc=0 reading="" note dir n line lock proc
   local args=()
   shift
   [[ "$verb" == poweroff ]] && cmd=byebye
@@ -382,7 +385,6 @@ _leave() {
       *) echo "Usage: $cmd [-f] [-i]   (-f: leave whatever the gauge says; -i: ignore inhibitors)"; return 1 ;;
     esac
   done
-  host="$(uname -n 2>/dev/null)"; host="${host%%.*}"; host="${host,,}"
   if command -v sync-check >/dev/null 2>&1; then
     out="$(sync-check sync 2>&1)"; rc=$?
     printf '%s\n' "$out"
@@ -410,16 +412,35 @@ _leave() {
           [[ -e "$dir/.git/objects/maintenance.lock" ]] && { lock="$dir/.git/objects/maintenance.lock"; break; }
         done
       fi
-      # The process itself -- argv[0] git, argv[1] maintenance -- never a
-      # shell whose command line merely carries the words (a Claude session's
-      # wrapper did, 2026-10-10, and read as a repack).
-      proc="$(ps -eo pid,args 2>/dev/null | awk '$2 ~ /(^|\/)git$/ && $3 == "maintenance" { print $1; exit }')"
+      # The process itself: argv[0] git and maintenance its subcommand, never
+      # a command line that merely carries the words (a Claude session's
+      # wrapper did, 2026-10-10, and read as a repack). The subcommand is the
+      # first word after git that is no option: -C, -c, --git-dir, --work-tree,
+      # --exec-path, --namespace, --super-prefix and --config-env take the
+      # next word as their value, --<name>=<value> and -<letters> stand alone.
+      # `git -C <repo> maintenance run`, the shape of the fix line below, is a
+      # repack too, and missing it would print that fix over a live lock
+      # (found 2026-10-26 at step 5a's review; the gauge's guard line reads
+      # processes by the same rule). ps joins argv with spaces, so a value
+      # holding a space splits; no repository of the rotation has one.
+      proc="$(ps -eo pid,args 2>/dev/null | awk '
+        $2 ~ /(^|\/)git$/ {
+          for (i = 3; i <= NF; i++) {
+            if ($i ~ /^(-C|-c|--git-dir|--work-tree|--exec-path|--namespace|--super-prefix|--config-env)$/) { i++; continue }
+            if ($i ~ /^-/) continue
+            if ($i == "maintenance") { print $1; exit }
+            break
+          }
+        }')"
       if [[ -n "$proc" ]]; then
         echo "[FAIL] git maintenance is running (pid $proc) -- a power-off now would cut the repack short; wait for it to finish (rules.md -> bigfed-1)"
         ((rc == 0)) && reading="FAIL git maintenance running"
         rc=1
       elif [[ -n "$lock" ]]; then
-        echo "[FAIL] $lock stands with no git maintenance running -- a repack was cut short; run: git -C ${lock%/.git/objects/maintenance.lock} maintenance run --task=gc   (rules.md -> bigfed-1)"
+        # On git 2.56 a maintenance run skips in silence (exit 0) while the
+        # lock stands, so the lock goes first (measured 2026-10-26, step 5a).
+        echo "[FAIL] $lock stands with no git maintenance running -- a repack was cut short (rules.md -> bigfed-1)"
+        echo "       fix: rm $lock && git -C ${lock%/.git/objects/maintenance.lock} maintenance run --task=gc"
         ((rc == 0)) && reading="FAIL stale maintenance lock"
         rc=1
       fi
@@ -428,15 +449,10 @@ _leave() {
     echo "(no sync-check on PATH -- leaving unchecked; stow-all puts the gauge on PATH)"
     reading="unchecked (no sync-check on PATH)"
   fi
-  dir="${LEAVE_LOG_DIR:-$HOME/Desktop/org/machines/transport-2026-10/pilot}"
-  if [[ -d "$dir" && -n "$host" ]]; then
-    log="$dir/log-$host.md"
-    [[ -e "$log" ]] || printf "# The pilot's log — %s's lines\n\n| when | reading | note |\n|---|---|---|\n" "$host" > "$log"
-    note="$cmd"
-    ((force)) && note+=", forced"
-    ((rc != 0 && !force)) && note+=", refused"
-    printf '| %s | %s | %s |\n' "$(date '+%Y-%m-%d %H:%M')" "${reading//|//}" "$note" >> "$log"
-  fi
+  note="$cmd"
+  ((force)) && note+=", forced"
+  ((rc != 0 && !force)) && note+=", refused"
+  declare -F _gauge_log >/dev/null && _gauge_log "$reading" "$note"
   if ((rc == 0 || force)); then
     args=("$verb"); [[ -n "$ignore" ]] && args+=("$ignore")
     systemctl "${args[@]}"

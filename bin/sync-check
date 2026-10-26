@@ -3,10 +3,17 @@
 
   sync-check sync            ws-1: every folder this machine shares is up to date
   sync-check conflicts       ws-2: Syncthing conflict copies, and stale locks under .git
-  sync-check guard           fedxps-3: the reader guard is whole, and no write was
-                             seen under a .git this machine only reads
+  sync-check guard           fedxps-3: the reader guard is whole, and no write under
+                             a .git this machine only reads, in the disk events or
+                             in the version vectors; bigfed-1 on a writer: no git
+                             maintenance running or cut short
+  sync-check hub             hub-4, hub-1: the hub's free space, pull errors, index
+                             and deletion-retention drop-in, over one ssh
+  sync-check config          ws-8: stow's links, the lazy lock, claude-link's dry
+                             run, bash -n on the shell's files
   sync-check push REPO...    bigfed-2: may this machine push these repositories now
-  sync-check                 sync, conflicts and guard, in that order
+  sync-check                 sync, conflicts, guard, hub, and config without its
+                             claude-link dry run (1.8 s), in that order
 
   -v   every reading under its verdict line      -q   (push) silent for a
   -h   this text                                       repository in no folder
@@ -14,19 +21,24 @@
 Exit: 0 all clear . 1 something is wrong, or not yet true . 2 could not determine
       . 3 up to date with attention due: DUE lines and nothing worse
 
-The gauge of org/machines/transport-2026-10 (rules.md: ws-1, ws-2, fedxps-3,
-bigfed-2; pilot/build-gauge.md), built 2026-10-10 at the pilot's step 3b in the
-shape of disk-check and context-check. Syncthing carries each repository, .git
+The gauge of org/machines/transport-2026-10 (rules.md: ws-1, ws-2, ws-8,
+fedxps-3, bigfed-1, bigfed-2, hub-1, hub-4; pilot/build-gauge.md), built
+2026-10-10 at the pilot's step 3b and given its hub, config and vector lines,
+the second door and the snapshot at step 5a (2026-10-26), in the shape of
+disk-check and context-check. Syncthing carries each repository, .git
 included, between bigfed and fedxps through nousowl's encrypted hub, and bigfed
 alone commits and pushes; this is what says whether a machine may be left, a
 repository pushed, or a conflict copy is lying where it loads.
 
-Read-only and unprivileged by construction: no file is written, no sudo, and
-the one request that is not a GET -- POST /rest/db/scan, which makes Syncthing
-read the disk so that a save seconds old is counted -- changes no file. Every
-git call runs under GIT_OPTIONAL_LOCKS=0 and is plumbing that writes nothing.
-It binds to Syncthing's documented REST JSON and to git's plumbing, never to
-anything printed for humans.
+Read-only and unprivileged by construction: no file is written unless the
+caller names one in SYNC_CHECK_SNAPSHOT (below), no sudo, and the one request
+that is not a GET -- POST /rest/db/scan, which makes Syncthing read the disk so
+that a save seconds old is counted -- changes no file. Every git call runs
+under GIT_OPTIONAL_LOCKS=0 and is plumbing that writes nothing; claude-link
+runs in its dry run, which changes nothing. It binds to Syncthing's documented
+REST JSON, to git's plumbing and to systemctl's properties; the two readings
+that have no machine-readable form, btrfs's "Free (estimated)" and the
+process table's argument lists, are read by their field and by argv words.
 
 Where the readings come from:
   - this machine's Syncthing, at the address its config.xml names, with the API
@@ -37,12 +49,32 @@ Where the readings come from:
     in its --remote-views mode (python3 reads it from stdin), so the hub's and
     this machine's reads are one implementation; a hub that does not answer is
     a WARN, since nothing can be known without it;
+  - every ssh goes through two doors (rules.md -> ws-1, settled 39): the host
+    by its device name, the LAN alias, with a 2 s connect timeout, then
+    <name>-vpn, the tailnet alias his ~/.ssh/config defines for every
+    machine, both inside one wall budget per host (the connect budget plus
+    SYNC_CHECK_SSH_GRACE, 30 s), the second door getting what the first left;
+    a door that failed to connect or hung is not tried again in the same run,
+    and -v names the door that answered;
   - the other workstation's views the same way, only when the hub's view shows
     it owing or needing something, since the hub holds ciphertext and lists
     what a workstation needs under opaque names: the plain names come from that
     workstation alone. A workstation the hub shows disconnected is asleep, and
     what waits for it is not this machine's fault; one the hub shows connected
-    but that does not answer leaves the item unverified, a WARN.
+    but that does not answer leaves the item unverified, a WARN;
+  - the version vectors (fedxps-3's durable form, settled 41) from this
+    machine's /rest/db/browse and /rest/db/file over two kept-alive
+    connections: a counter of this device under a .git it only reads records
+    a write since the folder was made, across daemon restarts, and stays in
+    the path's vector for good, so a write found and explained is carried by
+    its counter in KNOWN_WRITES; the push line reads the same from the
+    writer's side, any other device's counter under the repository's .git,
+    since a reader's refused checkout or reset moves the index and the working
+    tree before its hook refuses and a commit here would carry them. db/browse
+    lists no deleted file, so a deletion under .git is seen in the disk events
+    alone, and those only since the daemon started;
+  - the hub's capacity and its unit from the hub itself, in --remote-hub mode
+    (or, in the bare run, beside the sync line's own read of the hub).
 
 Tag semantics, as in disk-check:
   [ OK ]  clear                       [FAIL]  something is wrong
@@ -59,15 +91,27 @@ see KNOWN below. SYNC_CHECK_SETTLE (seconds, default 15) is how long a need
 may persist with every folder idle before it is called stranded, and
 SYNC_CHECK_POLL (default 3) the re-read interval inside that window; the
 suite shortens both. SYNC_CHECK_CONFIG names another config.xml (the suite's
-fixtures). Suite: tests/sync-check/run.sh.
+fixtures), SYNC_CHECK_SSH_GRACE (seconds, default 30) what a remote command
+may take beyond its connect budget. SYNC_CHECK_SNAPSHOT names a file, which
+gpushall creates and removes, where a folder's cluster readings are kept for
+SYNC_CHECK_SNAPSHOT_TTL seconds (default 300): a later call reads the folder
+from there, so a batch reads the cluster once, before its first commit makes
+the folder busy, while each repository's own checks still run live; the file
+holds statuses, completions, device names and need lists, never a key, and is
+written 0600. Suite: tests/sync-check/run.sh.
 """
 
+import glob
+import http.client
 import json
 import os
+import pwd
 import re
 import shlex
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -80,6 +124,16 @@ import xml.etree.ElementTree as ET
 # named and FAILs on any other item (pilot.md -> P9). Delete a line once the
 # item is repaired.
 KNOWN = [
+]
+
+# --- the known writes under a reader's .git -----------------------------------------
+# A device's counter stays in a path's version vector for good once it has
+# modified it, so the vector check (fedxps-3's durable form) would FAIL on an
+# explained write forever after. Each: the machine that wrote, the folder's
+# label, the path in the folder, the counter its write left, when it was
+# found, and the record. A path whose counter is other than the one named
+# FAILs as a new write. Delete a line once the path no longer shows.
+KNOWN_WRITES = [
 ]
 
 # Directories whose files load as standing instructions or configuration on
@@ -108,7 +162,23 @@ REST_TIMEOUT = 20
 SCAN_TIMEOUT = 600
 SSH_HUB_TIMEOUT = 8
 SSH_PEER_TIMEOUT = 4
+# What a remote command may take beyond its connect budget; the whole attempt
+# at one host, both doors together, ends at budget + this (the suite shortens it).
+SSH_GRACE = env_seconds("SYNC_CHECK_SSH_GRACE", 30.0)
+# The LAN door answers in 0.3 s at home and hangs to its timeout away from it
+# (pilot/verdict.md -> D1); 2 s keeps a run away from home inside the session
+# hook's 4 s once the tailnet door answers (settled 39).
+FIRST_DOOR_TIMEOUT = 2
+SECOND_DOOR = "-vpn"
 STALE_LOCK_MINUTES = 10
+VECTOR_LIST_MAX = 20
+# hub-4: his threshold (settled 21, decision 9), "Free (estimated)" in decimal
+# GB as he wrote it; the step is the runbook's 32 GiB.
+HUB_FREE_FLOOR = 10 * 1000 ** 3
+HUB_INDEX_CEILING = 1000 ** 3
+RETENTION_DROPIN = "30-delete-retention.conf"
+RETENTION_VAR = "STDBDELETERETENTIONINTERVAL=0"
+CLAUDE_LINK_TIMEOUT = 20
 GUARD_KEYS = ["core.checkstat", "core.trustctime", "diff.autorefreshindex", "gc.auto", "maintenance.auto"]
 HIM2 = "org/machines/transport-2026-10/rules.md -> him-2"
 
@@ -148,6 +218,11 @@ class Out:
 
     def fix(self, msg):
         print("       fix: %s" % msg)
+
+    def note(self, msg):
+        """What a fix line's command needs said beside it: the fix line holds
+        the command alone, so it runs when pasted whole."""
+        print("       note: %s" % msg)
 
     def det(self, *lines):
         if VERBOSE:
@@ -521,68 +596,131 @@ def views(inst, folder_ids):
     return result
 
 
-def remote_views(host, folder_ids, timeout):
-    """The views of another machine, by running this file there. (data, error).
-    The device's name is the ssh host, so it must look like one. ServerAlive
-    bounds a hang after the connect, which ConnectTimeout does not."""
+# --- the two doors (settled 39; pilot/verdict.md -> D1) ----------------------------
+WANT_HUB_INFO = False   # the bare run: the hub's own readings come with the sync line's read of it
+HUB_INFO = {}           # hub name -> its --remote-hub readings, once had in this run
+DOWN_DOORS = {}     # door -> why it did not connect: not tried again in this run
+DOOR_USED = {}      # host -> the door that last answered for it
+SOURCE = []         # this file's text, read once, for the remote modes
+
+
+def own_source():
+    """This file's text, sent to another machine for its remote modes. Opened
+    by the name it was started under, so a source handed over as
+    /proc/self/fd/N (a file run from stdin elsewhere) still reads."""
+    if not SOURCE:
+        with open(sys.argv[0], "r", encoding="utf-8") as fh:
+            SOURCE.append(fh.read())
+    return SOURCE[0]
+
+
+def ssh_run(host, words, budget, source=None):
+    """Run words on host through its first door that connects: the host by its
+    name with a FIRST_DOOR_TIMEOUT connect timeout, then <host>-vpn with the
+    rest of the budget. ssh's own exit 255 is a door that did not connect, as
+    is no answer in time; such a door is remembered for the run. Returns
+    (completed process or None, the door that answered, each door's failure).
+    stdin is the source when one is given, else closed, so ssh never takes
+    keystrokes meant for gpush's prompts. ServerAlive bounds a hang after the
+    connect, which ConnectTimeout does not."""
+    errors = []
+    # one wall budget for the host, both doors together: a door that connects
+    # and then hangs spends it, and the second door gets what remains
+    deadline = time.monotonic() + budget + SSH_GRACE
+    for i, door in enumerate([host, host + SECOND_DOOR]):
+        if door in DOWN_DOORS:
+            errors.append("%s: %s, earlier in this run" % (door, DOWN_DOORS[door]))
+            continue
+        left = deadline - time.monotonic()
+        if left < 1:
+            errors.append("%s: not tried, the %d s allowed for %s spent" % (door, budget + SSH_GRACE, host))
+            continue
+        connect = FIRST_DOOR_TIMEOUT if i == 0 else max(1, min(budget - FIRST_DOOR_TIMEOUT, int(left)))
+        cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=%d" % connect,
+               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=2", door] + list(words)
+        try:
+            if source is None:
+                p = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=left)
+            else:
+                p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=left)
+        except subprocess.TimeoutExpired:
+            DOWN_DOORS[door] = "no answer within %.0f s" % left
+            errors.append("%s: %s" % (door, DOWN_DOORS[door]))
+            continue
+        except OSError as e:
+            errors.append("cannot run ssh: %s" % e)
+            return None, None, errors
+        if p.returncode == 255:
+            err = p.stderr.strip().splitlines()
+            DOWN_DOORS[door] = err[-1] if err else "ssh exit 255"
+            errors.append("%s: %s" % (door, DOWN_DOORS[door]))
+            continue
+        DOOR_USED[host] = door
+        return p, door, errors
+    return None, None, errors
+
+
+def door_note(host):
+    """' (through <door>)' when the second door answered, else ''."""
+    d = DOOR_USED.get(host)
+    return " (through %s)" % d if d and d != host else ""
+
+
+def remote_json(host, mode, args, timeout):
+    """The JSON another machine's copy of this file prints in a remote mode.
+    (data, error). The device's name is the ssh host, so it must look like one."""
     if not HOSTNAME_RE.fullmatch(host or ""):
         return None, "%r is a device name, not a host name ssh can be given" % host
     try:
-        with open(os.path.realpath(sys.argv[0]), "r", encoding="utf-8") as fh:
-            source = fh.read()
+        source = own_source()
     except OSError as e:
         return None, "cannot read my own source to send to %s: %s" % (host, e)
-    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=%d" % timeout,
-           "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=2", host,
-           "python3", "-I", "-", "--remote-views"] + [shlex.quote(i) for i in folder_ids]
-    try:
-        p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=timeout + 30)
-    except subprocess.TimeoutExpired:
-        return None, "%s did not answer within the time allowed" % host
-    except OSError as e:
-        return None, "cannot run ssh: %s" % e
-    if p.returncode == 255:
-        err = p.stderr.strip().splitlines()
-        return None, "%s did not answer over ssh (exit 255%s)" % (host, ": " + err[-1] if err else "")
+    p, door, errors = ssh_run(host, ["python3", "-I", "-", mode] + [shlex.quote(a) for a in args], timeout, source=source)
+    if p is None:
+        return None, "%s did not answer over ssh (%s)" % (host, "; ".join(errors))
     if p.returncode != 0:
         err = p.stderr.strip().splitlines()
-        return None, "%s answered, but the gauge could not run there (exit %d%s)" % (host, p.returncode, ": " + err[-1] if err else "")
+        return None, "%s answered, but the gauge could not run there (exit %d%s)" % (door, p.returncode, ": " + err[-1] if err else "")
     try:
         data = json.loads(p.stdout.strip().splitlines()[-1])
     except (ValueError, IndexError):
-        return None, "%s answered with something that is not the gauge's JSON" % host
+        return None, "%s answered with something that is not the gauge's JSON" % door
     if not isinstance(data, dict):
-        return None, "%s answered with something that is not the gauge's JSON" % host
+        return None, "%s answered with something that is not the gauge's JSON" % door
     if data.get("error"):
-        return None, "%s: %s" % (host, data["error"])
+        return None, "%s: %s" % (door, data["error"])
     return data, None
+
+
+def remote_views(host, folder_ids, timeout, with_hub=False):
+    """The views of another machine, by running this file there; with_hub adds
+    the hub's own readings (the bare run's hub line), so that line costs no
+    second ssh. (data, error)."""
+    return remote_json(host, "--remote-views", (["--with-hub"] if with_hub else []) + list(folder_ids), timeout)
 
 
 def remote_head(host, repo_path, timeout):
     """(state, value). ("ok", HEAD); ("silent", why) when ssh itself did not get
-    through (its own exit 255, or no answer in time); ("bad", why) when the host
-    answered and git there gave no HEAD -- a .git git cannot read is not a
-    silence. A line a shell rc prints around git's answer is skipped. stdin is
-    closed, so ssh never takes keystrokes meant for gpush's prompts."""
+    through either door (its own exit 255, or no answer in time); ("bad", why)
+    when the host answered and git there gave no HEAD -- a .git git cannot read
+    is not a silence. A line a shell rc prints around git's answer is skipped."""
     if not HOSTNAME_RE.fullmatch(host or ""):
         return "silent", "%r is a device name, not a host name ssh can be given" % host
-    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=%d" % timeout,
-           "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=2", host,
-           "GIT_OPTIONAL_LOCKS=0 git -C %s rev-parse HEAD" % shell_quote_tilde(repo_path)]
-    try:
-        p = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout + 30)
-    except subprocess.TimeoutExpired:
-        return "silent", "no answer within %d s" % (timeout + 30)
-    except OSError as e:
-        return "silent", "cannot run ssh: %s" % e
-    if p.returncode == 255:
-        err = p.stderr.strip().splitlines()
-        return "silent", err[-1] if err else "ssh exit 255"
+    p, door, errors = ssh_run(host, ["GIT_OPTIONAL_LOCKS=0 git -C %s rev-parse HEAD" % shell_quote_tilde(repo_path)], timeout)
+    if p is None:
+        return "silent", "; ".join(errors) or "no door answered"
     heads = [l.strip() for l in p.stdout.splitlines() if re.fullmatch(r"[0-9a-f]{40,64}", l.strip())]
     if p.returncode == 0 and len(heads) == 1:
         return "ok", heads[0]
     err = [l for l in p.stderr.strip().splitlines() if l.startswith("fatal:")] or p.stderr.strip().splitlines()
     return "bad", "exit %d%s" % (p.returncode, (": " + err[0]) if err else "")
+
+
+def shq(path):
+    """A path for a fix line, with this home as ~: bare when it holds nothing a
+    shell would read, else quoted after the ~/ so the shell still expands it."""
+    t = tilde(path)
+    return t if re.fullmatch(r"[~A-Za-z0-9._/+@%=:-]+", t) and not t.startswith("~", 1) else shell_quote_tilde(path)
 
 
 def shell_quote_tilde(path):
@@ -625,10 +763,12 @@ class Cluster:
         for did, name in sorted(hubs.items(), key=lambda x: x[1]):
             if name in self.hub or name in self.hub_err:
                 continue
-            data, err = remote_views(name, self.ids, SSH_HUB_TIMEOUT)
+            data, err = remote_views(name, self.ids, SSH_HUB_TIMEOUT, with_hub=WANT_HUB_INFO and name not in HUB_INFO)
             if err:
                 self.hub_err[name] = err
             else:
+                if isinstance(data.get("hubinfo"), dict):
+                    HUB_INFO[name] = data.pop("hubinfo")
                 self.hub[name] = data
                 for d, n in (data.get("names") or {}).items():
                     if d != me and d not in hubs:
@@ -736,8 +876,8 @@ def folder_reading(cl, f):
             continue
         hst = he.get("status") or {}
         hub_need = hst.get("needTotalItems") or 0
-        r["detail"].append("%s: state %s, needs %d, pull errors %d, global %s items" % (
-            hname, hst.get("state"), hub_need, hst.get("pullErrors") or 0, hst.get("globalTotalItems")))
+        r["detail"].append("%s%s: state %s, needs %d, pull errors %d, global %s items" % (
+            hname, door_note(hname), hst.get("state"), hub_need, hst.get("pullErrors") or 0, hst.get("globalTotalItems")))
         if hst.get("error"):
             r["fail"].append(("folder error on %s: %s" % (hname, hst["error"]),
                               "ssh %s, then the folder's errors there; a missing marker on the hub means its volume is not mounted" % hname))
@@ -792,7 +932,7 @@ def folder_reading(cl, f):
         if not pe.get("present") or pe.get("status_error"):
             continue
         pst = pe.get("status") or {}
-        r["detail"].append("%s: state %s, needs %d" % (pname, pst.get("state"), pst.get("needTotalItems") or 0))
+        r["detail"].append("%s%s: state %s, needs %d" % (pname, door_note(pname), pst.get("state"), pst.get("needTotalItems") or 0))
         if pst.get("state") != "idle":
             r["pending"] = True
             r["wait"].append(("%s is %s" % (pname, pst.get("state")), "wait, then read again"))
@@ -814,6 +954,52 @@ def folder_reading(cl, f):
 
 def known_for(label, on):
     return [k["path"] for k in KNOWN if k["label"] == label and k["on"] == on]
+
+
+def vector_shorts(fileinfo):
+    """The short device ids (seven characters) whose counters a db/file
+    version carries, with each counter: {short: counter}. None when the
+    version is not one of the two shapes Syncthing has served: a list of
+    "<short>:<counter>" strings (2.x, measured 2026-10-26), or of
+    {"id": ..., "value": ...} objects with a textual id."""
+    if not isinstance(fileinfo, dict) or not isinstance(fileinfo.get("version"), list):
+        return None
+    out = {}
+    for v in fileinfo["version"]:
+        if isinstance(v, str) and ":" in v:
+            sid, _, cnt = v.rpartition(":")
+        elif isinstance(v, dict) and isinstance(v.get("id"), str):
+            sid, cnt = v["id"], v.get("value")
+        else:
+            return None
+        try:
+            out[sid[:7]] = int(cnt)
+        except (TypeError, ValueError):
+            return None
+    return out
+
+
+def losing_machine(cl, fid, path, listing):
+    """him-2's fuller form (rules.md -> him-2, 2026-10-25; pilot/verdict.md ->
+    D8): the hub keeps a conflict's loser while the current version carries
+    one workstation's counter alone, since it orders concurrent versions by the
+    sum of their counters; the repair is an edit on the workstation whose
+    counter the current version lacks. (that name, the names it carries), or
+    None when the vector cannot be read or lacks no single listing machine."""
+    st, d = cl.inst.get("db/file?folder=%s&file=%s" % (urllib.parse.quote(fid), urllib.parse.quote(path, safe="")))
+    if st != 200 or not isinstance(d, dict):
+        return None
+    shorts = vector_shorts(d.get("global") or d.get("local"))
+    if not shorts:
+        return None
+    names = {}
+    for did, n in list((cl.local.get("names") or {}).items()) + list(cl.peer_names.items()):
+        names.setdefault(did[:7], n)
+    carried = sorted(names.get(s, s) for s in shorts)
+    lacking = [w for w in listing if w not in carried]
+    if len(lacking) != 1:
+        return None
+    return lacking[0], carried
 
 
 def unresolved(r):
@@ -860,14 +1046,29 @@ def verdict(cl, r, f, settled, ok_line=True):
         if r.get("need_names") is not None and n_need > 0:
             names = r.get("need_names") or []
             failures.append(("needs %s that do not arrive: %s" % (plural(max(len(names), n_need), "item"), ", ".join(names[:6]) or "(unnamed)"),
-                             "both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on either machine and read again (%s)" % HIM2))
+                             "both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again (%s)" % HIM2))
         # him-2, second case: every workstation listing the same path towards
         # the hub means the hub holds a conflict's loser
         lists = [set(x for x in n if not x.startswith("(")) for n in r["stranded"].values()]
         loser = sorted(set.intersection(*lists)) if len(lists) >= 2 else []
         if loser:
+            # the machine to edit on, read from this machine's vector for each path
+            by_machine, unread = {}, []
+            for path in loser[:8]:
+                lm = losing_machine(cl, f["id"], path, sorted(r["stranded"]))
+                if lm:
+                    by_machine.setdefault((lm[0], tuple(lm[1])), []).append(path)
+                else:
+                    unread.append(path)
+            fixes = []
+            for (machine, carried), paths in sorted(by_machine.items()):
+                fixes.append("edit %s once more on %s (the current version carries %s's %s alone) and read again" % (
+                    ", ".join(paths), machine, " and ".join(carried), "counter" if len(carried) == 1 else "counters"))
+            if unread or not fixes:
+                fixes.append("%sedit the file once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again; an edit from the other machine never passes, since the hub orders by the sum of the counters" % (
+                    ("for %s: " % ", ".join(unread)) if fixes else ""))
             failures.append(("listed towards the hub by %s alike, so the hub holds a conflict's loser: %s" % (" and ".join(sorted(r["stranded"])), ", ".join(loser[:8])),
-                             "edit the file once more on either machine and read again; repeat if it stays, since a later edit wins at the hub only once its counters pass the loser's (%s)" % HIM2))
+                             "%s (%s)" % ("; ".join(fixes), HIM2)))
         workstations = set(r["stranded"]) | {myname} | set(cl.peer_names.values())
         # items stranded on a workstation: named by that workstation itself
         for wname, names in sorted(r["stranded"].items()):
@@ -902,7 +1103,7 @@ def verdict(cl, r, f, settled, ok_line=True):
                               "read again; if it stays, run sync-check sync on %s" % wname))
         for wname, names in sorted((r.get("peer_need") or {}).items()):
             failures.append(("%s needs %s that do not arrive: %s" % (wname, plural(len(names) or 1, "item"), ", ".join(names[:6]) or "(unnamed)"),
-                             "the hub may hold a conflict's loser: edit the file once more on either machine (%s)" % HIM2))
+                             "the hub may hold a conflict's loser: edit the file once more on the machine whose text is in the conflict copy (%s)" % HIM2))
         if r["hub_needs"] > 0:
             explained = sum(len(v) for v in r["stranded"].values())
             if r["hub_needs"] > explained:
@@ -917,14 +1118,16 @@ def verdict(cl, r, f, settled, ok_line=True):
             waits.append(("still settling", "read again in a few seconds"))
     for hname, err in sorted(cl.hub_err.items()):
         warns.append(("%s's view unread: %s" % (hname, err), "ssh -o BatchMode=yes %s true   # must answer" % hname))
+    # a reading from the snapshot says so on every line it decides, OK or not
+    snap = (" (from the snapshot taken %s ago)" % age(r["snapshot_age"])) if r.get("snapshot_age") is not None else ""
     for msg, fix in failures:
-        OUT.line("FAIL", "%s: %s" % (label, msg))
+        OUT.line("FAIL", "%s: %s%s" % (label, msg, snap))
         OUT.fix(fix)
     for msg, fix in waits:
-        OUT.line("WAIT", "%s: %s" % (label, msg))
+        OUT.line("WAIT", "%s: %s%s" % (label, msg, snap))
         OUT.fix(fix)
     for msg, fix in warns:
-        OUT.line("WARN", "%s: %s" % (label, msg))
+        OUT.line("WARN", "%s: %s%s" % (label, msg, snap))
         OUT.fix(fix)
     # attention that is not a fault: a known item that no longer shows, so its
     # KNOWN line has outlived its repair; a dead watcher
@@ -942,7 +1145,7 @@ def verdict(cl, r, f, settled, ok_line=True):
         extra = "; ".join(known_notes + notes)
         if dues:
             for msg, fix in dues:
-                OUT.line("DUE", "%s: up to date; %s" % (label, msg))
+                OUT.line("DUE", "%s: up to date; %s%s" % (label, msg, snap))
                 OUT.fix(fix)
             if extra:
                 OUT.det(extra)
@@ -958,9 +1161,130 @@ def verdict(cl, r, f, settled, ok_line=True):
     return not failures and not waits and not warns
 
 
+# --- the folder-once snapshot (pilot/build-gauge.md -> reading 6) ----------------------
+class Snapshot:
+    """The cluster readings of each folder, kept in the file SYNC_CHECK_SNAPSHOT
+    names for SYNC_CHECK_SNAPSHOT_TTL seconds, so that a gpushall reads the
+    cluster once: at the cutover every repository lies in one folder, and the
+    first repository's commit makes that folder busy for the next one's read.
+    Without the variable nothing is read or written here."""
+
+    def __init__(self, path, ttl):
+        self.path, self.ttl = path, ttl
+
+    @classmethod
+    def from_env(cls):
+        path = os.environ.get("SYNC_CHECK_SNAPSHOT")
+        return cls(path, env_seconds("SYNC_CHECK_SNAPSHOT_TTL", 300.0)) if path else None
+
+    def load(self):
+        try:
+            with open(self.path, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            return {}      # empty as the caller made it, or unreadable: read the cluster
+        folders = data.get("folders") if isinstance(data, dict) else None
+        return folders if isinstance(folders, dict) else {}
+
+    def fresh(self, fid):
+        """A folder's record when it is younger than the TTL and whole, else None."""
+        rec = self.load().get(fid)
+        if not isinstance(rec, dict) or not isinstance(rec.get("taken"), (int, float)):
+            return None
+        if not 0 <= time.time() - rec["taken"] < self.ttl:
+            return None
+        local = rec.get("local")
+        if not isinstance(local, dict) or not isinstance(((local.get("folders") or {}).get(fid)), dict):
+            return None
+        if not all(isinstance(rec.get(k), dict) for k in ("hub", "hub_err", "peer", "peer_err", "peer_names")):
+            return None
+        return rec
+
+    def store(self, recs):
+        """Add folders' records; the file is replaced whole, 0600, so a reader
+        never sees half of it. A write that fails leaves the next call to read
+        the cluster, which is the safe direction."""
+        folders = self.load()
+        folders.update(recs)
+        text = json.dumps({"version": 1, "folders": folders})
+        tmp = None
+        try:
+            fd, tmp = tempfile.mkstemp(prefix=".sync-check-snapshot.", dir=os.path.dirname(os.path.abspath(self.path)))
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            os.replace(tmp, self.path)
+        except OSError:
+            if tmp:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+
+
+def snapshot_record(cl, fid, settled):
+    """One folder's readings from a round: every view cut to that folder."""
+    def cut(v):
+        v = dict(v)
+        v["folders"] = {fid: (v.get("folders") or {}).get(fid)}
+        return v
+    return {"taken": time.time(), "settled": settled, "local": cut(cl.local),
+            "hub": {n: cut(v) for n, v in cl.hub.items()}, "hub_err": dict(cl.hub_err),
+            "peer": {n: cut(v) for n, v in cl.peer.items()}, "peer_err": dict(cl.peer_err),
+            "peer_names": dict(cl.peer_names)}
+
+
+def cluster_from(inst, f, rec):
+    cl = Cluster(inst, [f])
+    cl.local, cl.hub, cl.hub_err = rec["local"], rec["hub"], rec["hub_err"]
+    cl.peer, cl.peer_err, cl.peer_names = rec["peer"], rec["peer_err"], rec["peer_names"]
+    cl.hub_names = sorted(set(cl.hub) | set(cl.hub_err))
+    return cl
+
+
 def check_folders(inst, folders, settle=None, ok_line=True):
-    """ws-1 for the folders given: scan, read, settle, verdict. Returns
-    (all_ok, cluster, readings) with the last round's readings."""
+    """ws-1 for the folders given: scan, read, settle, verdict -- or, for a
+    folder the snapshot holds fresh, its stored readings. Returns
+    (all_ok, cluster, readings) with the last round's readings; each reading
+    taken from the snapshot carries its age as 'snapshot_age'."""
+    snap = Snapshot.from_env()
+    stored = {}
+    if snap:
+        for f in folders:
+            rec = snap.fresh(f["id"])
+            if rec is not None:
+                stored[f["id"]] = rec
+    live = [f for f in folders if f["id"] not in stored]
+    results = {}
+    cl = None
+    if live:
+        cl, readings, settled = read_live(inst, live, settle)
+        if readings is None:
+            return False, cl, None
+        for f, r in zip(live, readings):
+            results[f["id"]] = (cl, r, settled)
+        if snap:
+            snap.store({f["id"]: snapshot_record(cl, f["id"], settled) for f in live})
+    for f in folders:
+        rec = stored.get(f["id"])
+        if rec is None:
+            continue
+        c = cluster_from(inst, f, rec)
+        r = folder_reading(c, f)
+        r["snapshot_age"] = max(0.0, time.time() - rec["taken"])
+        r["notes"].append("from the snapshot taken %s ago" % age(r["snapshot_age"]))
+        results[f["id"]] = (c, r, bool(rec.get("settled")))
+    all_ok = True
+    for f in folders:
+        c, r, settled = results[f["id"]]
+        if not verdict(c, r, f, settled, ok_line):
+            all_ok = False
+    readings = [results[f["id"]][1] for f in folders]
+    return all_ok, (results[folders[0]["id"]][0] if len(folders) == 1 else cl), readings
+
+
+def read_live(inst, folders, settle=None):
+    """Scan, read and settle the folders given: (cluster, readings, settled);
+    readings None when the reading could not be had, its WARN printed."""
     if settle is None:
         settle = SETTLE
     for f in folders:
@@ -970,11 +1294,11 @@ def check_folders(inst, folders, settle=None, ok_line=True):
         if st is None:
             OUT.line("WARN", "Syncthing is not answering at %s" % inst.base)
             OUT.fix("systemctl --user status syncthing   # then read again")
-            return False, None, None
+            return None, None, False
         if st == 403:
             OUT.line("WARN", "the API key in %s is refused" % inst.path)
             OUT.fix("the daemon runs with another config: compare `syncthing --paths` with this file")
-            return False, None, None
+            return None, None, False
         if st != 200:
             OUT.line("WARN", "%s: scan answered %s: %s" % (f["label"], st, str(body).strip()[:100]))
             OUT.fix("open the folder in the Syncthing GUI")
@@ -987,7 +1311,7 @@ def check_folders(inst, folders, settle=None, ok_line=True):
         if cl.local.get("error"):
             OUT.line("WARN", cl.local["error"])
             OUT.fix("systemctl --user status syncthing   # then read again")
-            return False, cl, None
+            return cl, None, False
         readings = [folder_reading(cl, f) for f in folders]
         # a workstation the hub shows owing or needing something names it itself
         newly = set()
@@ -1004,11 +1328,7 @@ def check_folders(inst, folders, settle=None, ok_line=True):
             break
         time.sleep(min(POLL, max(0.0, deadline - time.monotonic())) or POLL)
     settled = not any(unresolved(r) for r in readings) or time.monotonic() >= deadline
-    all_ok = True
-    for f, r in zip(folders, readings):
-        if not verdict(cl, r, f, settled, ok_line):
-            all_ok = False
-    return all_ok, cl, readings
+    return cl, readings, settled
 
 
 # --- sync ------------------------------------------------------------------------------
@@ -1170,6 +1490,10 @@ def cmd_guard():
             OUT.fix("the link above, then `git config --show-origin core.checkStat`; a value from elsewhere means a repository's own .git/config or an environment override, remove it")
         else:
             OUT.ok("git resolves every setting in hosts/%s.inc from the link: %s" % (host, ", ".join(sorted(role.keys))))
+    # 2b. the hook the host file arms (fedxps-6): git runs no hook at all
+    # while core.hooksPath names nothing, so the refusal it stands for is off
+    if "core.hookspath" in role.keys:
+        reader_hook(role)
     # 3. the environment half
     env = os.environ.get("GIT_OPTIONAL_LOCKS")
     off = optional_locks_off(env)
@@ -1193,6 +1517,7 @@ def cmd_guard():
     # 4. what this machine's Syncthing saw written under a .git it only reads
     if not role.guards():
         OUT.ok("a writer: its own commits write .git, so the disk-event check does not apply here")
+        writer_maintenance()
         return
     path = config_path()
     if not path:
@@ -1202,13 +1527,20 @@ def cmd_guard():
     inst = Instance(path)
     st, ev = inst.get("events/disk?since=0&limit=1000&timeout=0")
     if st is None:
-        OUT.line("WARN", "Syncthing is not answering at %s: its disk events cannot be read" % inst.base)
+        OUT.line("WARN", "Syncthing is not answering at %s: its disk events cannot be read, nor its version vectors" % inst.base)
         OUT.fix("systemctl --user status syncthing")
         return
     if st != 200 or not isinstance(ev, list):
         OUT.line("WARN", "events/disk answered %s" % st)
         OUT.fix("curl -H 'X-API-Key: ...' '%sevents/disk?since=0&limit=5&timeout=0'" % inst.base)
-        return
+    else:
+        disk_events(role, inst, ev)
+    vectors(role, inst)
+
+
+def disk_events(role, inst, ev):
+    """fedxps-3: LocalChangeDetected under a .git this machine reads, in the
+    disk events the daemon keeps from its start, the last 1,000."""
     st2, status = inst.get("system/status")
     started = status.get("startTime") if isinstance(status, dict) else None
     writes = []
@@ -1241,6 +1573,315 @@ def cmd_guard():
         OUT.ok("no write under a .git this machine reads, in %s (%s)" % (plural(len(ev), "disk event"), span))
 
 
+def reader_hook(role):
+    """fedxps-6: the directory the host file's core.hooksPath names holds an
+    executable reference-transaction. The path is git's own reading of the
+    value (--type=path expands the ~), else the host file's value expanded the
+    same way. Until the git package is restowed the directory is absent and a
+    commit on the reader goes through with no refusal."""
+    val = role.keys["core.hookspath"]
+    rc, out, _ = git_rc(["-C", "/", "config", "--type=path", "--get", "core.hooksPath"])
+    path = out.strip() if rc == 0 and out.strip() else os.path.expanduser(val)
+    if not os.path.isabs(path):
+        OUT.line("WARN", "core.hooksPath = %s is relative: git reads it from each repository's top, which this cannot check" % val)
+        OUT.fix("git config --show-origin core.hooksPath")
+        return
+    hook = os.path.join(path, "reference-transaction")
+    if not os.path.isfile(hook):
+        OUT.line("FAIL", "core.hooksPath names %s, which holds no reference-transaction: git runs no hook, and a ref update on this reader goes through (rules.md -> fedxps-6)" % tilde(path))
+        OUT.note("the git package's hooks-reader/ reaches %s only by its stow link" % tilde(path))
+        OUT.fix("cd ~/Desktop/configs && stow -Rt ~/.config/git git")
+    elif not os.access(hook, os.X_OK):
+        OUT.line("FAIL", "%s is not executable: git skips it, and a ref update on this reader goes through (rules.md -> fedxps-6)" % tilde(hook))
+        OUT.note("the bit belongs on the package's file, which the link resolves to: %s" % tilde(os.path.realpath(hook)))
+        OUT.fix("chmod +x %s" % shq(os.path.realpath(hook)))
+    else:
+        OUT.ok("core.hooksPath = %s holds an executable reference-transaction (fedxps-6)" % tilde(path))
+
+
+class Keepalive:
+    """GETs to this machine's Syncthing over one kept-alive connection: db/file
+    costs about 0.29 ms a call this way on bigfed and 0.46 ms on fedxps,
+    against 0.45 ms on bigfed with a connection each (measured 2026-10-26),
+    and the rotation's .git paths number 5,691. A connection the daemon has
+    closed is opened again once."""
+
+    def __init__(self, inst):
+        u = urllib.parse.urlsplit(inst.base)
+        self.cls = http.client.HTTPSConnection if u.scheme == "https" else http.client.HTTPConnection
+        self.netloc, self.prefix, self.key = u.netloc, u.path, inst.key
+        self.conn = None
+
+    def get(self, path):
+        for attempt in (0, 1):
+            try:
+                if self.conn is None:
+                    self.conn = self.cls(self.netloc, timeout=REST_TIMEOUT)
+                self.conn.request("GET", self.prefix + path, headers={"X-API-Key": self.key})
+                resp = self.conn.getresponse()
+                body = resp.read().decode("utf-8", "replace")
+                status = resp.status
+                break
+            except (http.client.HTTPException, OSError):
+                self.close()
+                if attempt:
+                    return None, ""
+        if not body.strip():
+            return status, {}
+        try:
+            return status, json.loads(body)
+        except ValueError:
+            return status, body
+
+    def close(self):
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
+
+
+def read_repos(role, inst):
+    """The repositories this machine reads, as (path, folder or None): the
+    readerRepo keys, and under role = reader every repository at the top of
+    ~/Desktop or of a folder, or one level below it."""
+    cands = list(role.reader_repos)
+    if role.reader:
+        for top in [DESKTOP] + [f["path"] for f in inst.folders]:
+            try:
+                below = sorted(os.listdir(top))
+            except OSError:
+                continue
+            for p in [top] + [os.path.join(top, n) for n in below]:
+                if os.path.isdir(os.path.join(p, ".git")):
+                    cands.append(os.path.realpath(p))
+    out, seen = [], set()
+    for p in cands:
+        if p in seen:
+            continue
+        seen.add(p)
+        out.append((p, containing_folder(inst, p)))
+    return out
+
+
+def git_records(inst, repos):
+    """The database's record of every path under the .git of each repository
+    given as (path, folder): the .git itself and every file and directory below
+    it, by db/browse, then each path's db/file. Returns (records, unread):
+    records a list of (folder, path, [(shorts, fileinfo) for the local and the
+    global version]), unread what could not be read, never silently dropped.
+    db/browse lists no deleted file, so a deletion's record is out of reach
+    here; the disk events see one only while the daemon that saw it runs."""
+    q = urllib.parse.quote
+    # every path first, by db/browse, then each one's record
+    todo, unread = [], []
+    ka = Keepalive(inst)
+    try:
+        for repo, folder in repos:
+            rel = os.path.relpath(repo, folder["path"])
+            prefix = ".git" if rel == "." else rel + "/.git"
+            st, tree = ka.get("db/browse?folder=%s&prefix=%s" % (q(folder["id"]), q(prefix, safe="")))
+            if st != 200 or not isinstance(tree, list):
+                unread.append("%s: db/browse answered %s" % (tilde(repo), st))
+                continue
+            todo.append((repo, folder, prefix, prefix))
+            stack = [(prefix, tree)]
+            while stack:
+                base, items = stack.pop()
+                for it in items:
+                    if isinstance(it, dict) and it.get("name"):
+                        p = base + "/" + it["name"]
+                        todo.append((repo, folder, prefix, p))
+                        if isinstance(it.get("children"), list):
+                            stack.append((p, it["children"]))
+    finally:
+        ka.close()
+    # Two connections at once: the daemon answers db/file in about 0.3 ms on
+    # bigfed and 0.46 ms on fedxps, and a second connection takes a third off
+    # that; more add nothing (measured 2026-10-26).
+    answers = [None] * len(todo)
+
+    def fetch(start):
+        k = Keepalive(inst)
+        try:
+            for i in range(start, len(todo), 2):
+                repo, folder, prefix, p = todo[i]
+                answers[i] = k.get("db/file?folder=%s&file=%s" % (q(folder["id"]), q(p, safe="")))
+        finally:
+            k.close()
+    workers = [threading.Thread(target=fetch, args=(s,)) for s in (0, 1)]
+    for w in workers:
+        w.start()
+    for w in workers:
+        w.join()
+    records, gone = [], set()
+    for (repo, folder, prefix, p), ans in zip(todo, answers):
+        if repo in gone:
+            continue
+        st, d = ans if ans else (None, "")
+        if st == 404 and p == prefix:
+            unread.append("%s: its .git is not in the folder's index" % tilde(repo))
+            gone.add(repo)
+            continue
+        if st != 200 or not isinstance(d, dict):
+            unread.append("%s: db/file answered %s" % (tilde(os.path.join(folder["path"], p)), st))
+            continue
+        sides = []
+        for side in ("local", "global"):
+            fi = d.get(side)
+            if fi is None:
+                continue
+            shorts = vector_shorts(fi)
+            if shorts is None:
+                unread.append("%s: a %s version the gauge cannot parse" % (tilde(os.path.join(folder["path"], p)), side))
+                continue
+            sides.append((shorts, fi))
+        records.append((folder, p, sides))
+    return records, unread
+
+
+def counter_date(counter):
+    """A version counter as the time it records: Syncthing sets a device's
+    counter to the larger of its last plus one and the seconds since the
+    epoch (pilot/verdict.md -> D8)."""
+    return time.strftime("%Y-%m-%d %H:%M", time.localtime(counter)) if 10 ** 9 < counter < 10 ** 10 else "not a time"
+
+
+def vectors(role, inst):
+    """fedxps-3's durable form (rules.md, 2026-10-25; settled 41): every path
+    under the .git of each repository this machine reads, by this machine's
+    database (git_records); a version, local or global, carrying this device's
+    counter records a write here since the folder was made, whichever daemon
+    run it fell in. A deletion is out of the vectors' reach (git_records), so
+    the OK line says the disk events are its only witness."""
+    st, me = inst.get("system/status")
+    myid = me.get("myID") if st == 200 and isinstance(me, dict) else None
+    if not myid:
+        OUT.line("WARN", "system/status gave no device id (answered %s): the version vectors cannot be read" % st)
+        OUT.fix("systemctl --user status syncthing")
+        return
+    mine = myid[:7]
+    myname = inst.names.get(myid, short_hostname())
+    repos = read_repos(role, inst)
+    skipped = [p for p, f in repos if f is None]
+    records, unread = git_records(inst, [(p, f) for p, f in repos if f is not None])
+    total, hits = len(records), []
+    for folder, p, sides in records:
+        counter, info = None, {}
+        for shorts, fi in sides:
+            if mine in shorts and (counter is None or shorts[mine] > counter):
+                counter, info = shorts[mine], fi
+        if counter is not None:
+            hits.append((folder, p, counter, info))
+    by_short = {did[:7]: n for did, n in inst.names.items()}
+    known, new = [], []
+    for folder, p, counter, info in hits:
+        k = [x for x in KNOWN_WRITES if x["on"] == myname and x["label"] == folder["label"] and x["path"] == p and x["counter"] == counter]
+        (known if k else new).append((folder, p, counter, info, k[0] if k else None))
+    where = ", ".join(sorted(set(os.path.basename(p) for p, f in repos if f is not None)))
+    skip_note = ("in no folder, skipped: %s" % ", ".join(tilde(p) for p in skipped)) if skipped else ""
+    for u in unread[:1]:
+        OUT.line("WARN", "version vectors unread: %s%s" % (u, (" (and %d more)" % (len(unread) - 1)) if len(unread) > 1 else ""))
+        OUT.det(*unread[1:])
+        OUT.fix("sync-check guard -v")
+    if new:
+        OUT.line("FAIL", "%s under a .git this machine reads %s this machine's counter: a write here since the folder was made (the version vectors, which outlive daemon restarts)" % (
+            plural(len(new), "path"), "carries" if len(new) == 1 else "carry"))
+        for folder, p, counter, info, _ in new[:VECTOR_LIST_MAX]:
+            mb = info.get("modifiedBy") or "?"
+            print("       %s  %s  last modified by %s; this machine's counter %d (%s)" % (
+                str(info.get("modified") or "?")[:19], tilde(os.path.join(folder["path"], p)), by_short.get(mb, mb),
+                counter, counter_date(counter)))
+        if len(new) > VECTOR_LIST_MAX:
+            print("       ... and %d more" % (len(new) - VECTOR_LIST_MAX))
+        OUT.note("a counter stays in a path's vector for good: once the write's cause is found, carry each path with its counter in KNOWN_WRITES in bin/sync-check (configs), or the line fails on it forever")
+        OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`); the pilot stops on a write with no known cause (pilot.md)")
+    elif not unread:
+        extra = " beyond the known %s %s" % ("write" if len(known) == 1 else "writes", ", ".join("%s in %s (since %s: %s)" % (
+            p, folder["label"], k["since"], k["note"]) for folder, p, counter, info, k in known)) if known else ""
+        if where:
+            OUT.ok("no .git path of %d carries this machine's counter%s, in the version vectors (%s%s); a deletion under .git is seen in the disk events alone, since the daemon started" % (
+                total, extra, where, ("; " + skip_note) if skip_note else ""))
+        elif skipped:
+            OUT.ok("version vectors: no repository this machine reads lies in a Syncthing folder (%s)" % skip_note)
+        else:
+            OUT.ok("version vectors: this machine reads no repository here")
+    # a known write that no longer shows, in a folder read whole: its line has outlived it
+    if not unread:
+        for k in KNOWN_WRITES:
+            if k["on"] != myname or not any(f is not None and f["label"] == k["label"] for _, f in repos):
+                continue
+            if not any(folder["label"] == k["label"] and p == k["path"] and counter == k["counter"] for folder, p, counter, info in hits):
+                OUT.line("DUE", "the known write %s in %s no longer shows in the version vectors" % (k["path"], k["label"]))
+                OUT.fix("delete its line from KNOWN_WRITES in bin/sync-check (configs): nothing carries it any more")
+
+
+# git's options before its subcommand that take the next word as their value
+# (git.c, handle_options); --exec-path takes one only as --exec-path=<path>
+GIT_VALUE_OPTIONS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix", "--config-env")
+
+
+def git_subcommand(argv):
+    """The subcommand of a git command line given as words, argv[0] first:
+    the first word after argv[0] that is not an option, where the options of
+    GIT_VALUE_OPTIONS take the next word with them, and --<name>=<value> or
+    -<letters> stand alone. None when argv[0] is not git or no subcommand
+    follows."""
+    if not argv or os.path.basename(argv[0]) != "git":
+        return None
+    i = 1
+    while i < len(argv):
+        w = argv[i]
+        if w in GIT_VALUE_OPTIONS:
+            i += 2
+        elif w.startswith("-"):
+            i += 1
+        else:
+            return w
+    return None
+
+
+def writer_maintenance():
+    """bigfed-1 on a writer: no git maintenance running, and no
+    objects/maintenance.lock under ~/Desktop/*/.git that one cut short. The
+    process is matched by its argv words, argv[0] git and its subcommand
+    maintenance however the options before it run (`git -C <repo> maintenance
+    run`, the fix line's own shape), never by a command line carrying the
+    words (a Claude session's wrapper did, 2026-10-10). byebye keeps its own
+    copy of this."""
+    def running():
+        try:
+            p = subprocess.run(["ps", "-eo", "pid,args"], capture_output=True, text=True, errors="backslashreplace", timeout=10)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if p.returncode != 0:
+            return None
+        pids = []
+        for line in p.stdout.splitlines():
+            w = line.split()
+            if len(w) >= 3 and w[0].isdigit() and git_subcommand(w[1:]) == "maintenance":
+                pids.append(w[0])
+        return pids
+    pids = running()
+    if pids is None:
+        OUT.line("WARN", "the process table cannot be read (ps -eo pid,args): a running git maintenance cannot be ruled out")
+        OUT.fix("ps -eo pid,args")
+        return
+    locks = sorted(glob.glob(os.path.join(glob.escape(DESKTOP), "*", ".git", "objects", "maintenance.lock")))
+    if locks and not pids:
+        pids = running() or []      # one that started between the two reads holds its own lock
+    if pids:
+        OUT.line("FAIL", "git maintenance is running (pid %s): a power-off now would cut the repack short (rules.md -> bigfed-1)" % ", ".join(pids))
+        OUT.note("wait for it to finish; the command returns when it has")
+        OUT.fix("tail --pid=%s -f /dev/null" % pids[0])
+    elif locks:
+        repos = [l[:-len("/.git/objects/maintenance.lock")] for l in locks]
+        OUT.line("FAIL", "%s with no git maintenance running: a repack was cut short (rules.md -> bigfed-1)" % (
+            ", ".join(tilde(l) for l in locks) + (" stands" if len(locks) == 1 else " stand")))
+        OUT.note("git skips maintenance while the lock stands (git 2.56, measured 2026-10-26), so the lock goes first")
+        OUT.fix(" && ".join("rm %s && git -C %s maintenance run --task=gc" % (shq(l), shq(r)) for l, r in zip(locks, repos)))
+    else:
+        OUT.ok("no git maintenance running, and no maintenance.lock under ~/Desktop/*/.git (bigfed-1)")
+
+
 # --- push (bigfed-2) ------------------------------------------------------------------------
 def resolve_repo(arg):
     """A bare name is ~/Desktop/<name> wherever the command is typed (gpush's
@@ -1260,6 +1901,50 @@ def containing_folder(inst, repo):
             if best is None or len(f["path"]) > len(best["path"]):
                 best = f
     return best
+
+
+def push_vectors(inst, cl, repo, folder, name):
+    """bigfed-2 beside D5: no path under the repository's .git carries another
+    device's counter, beyond KNOWN_WRITES. Prints its FAIL or WARN; returns
+    (a note for the OK line naming the known writes, whether it reads clear)."""
+    mine = (cl.local.get("myID") or "")[:7]
+    names = {did[:7]: n for did, n in list(inst.names.items()) + list(cl.peer_names.items())}
+    records, unread = git_records(inst, [(repo, folder)])
+    hits, known = [], []
+    for f, p, sides in records:
+        others = {}
+        for shorts, fi in sides:
+            for s, c in shorts.items():
+                if s != mine and c > others.get(s, (0, None))[0]:
+                    others[s] = (c, fi)
+        for s, (c, fi) in sorted(others.items()):
+            who = names.get(s, s)
+            k = [x for x in KNOWN_WRITES if x["on"] == who and x["label"] == f["label"] and x["path"] == p and x["counter"] == c]
+            (known if k else hits).append((p, who, c, fi, k[0] if k else None))
+    vok = True
+    if unread:
+        OUT.line("WARN", "%s: the version vectors under its .git cannot be read: %s%s" % (name, unread[0], (" (and %d more)" % (len(unread) - 1)) if len(unread) > 1 else ""))
+        OUT.det(*unread[1:])
+        OUT.fix("sync-check push -v %s" % shlex.quote(name))
+        vok = False
+    if hits:
+        OUT.line("FAIL", "%s: %s under its .git %s another machine's counter: a write there, which a commit here would carry (rules.md -> fedxps-3, him-2)" % (
+            name, plural(len(hits), "path"), "carries" if len(hits) == 1 else "carry"))
+        for p, who, c, fi, _ in hits[:VECTOR_LIST_MAX]:
+            mb = fi.get("modifiedBy") or "?"
+            print("       %s  %s  last modified by %s; %s's counter %d (%s)" % (
+                str(fi.get("modified") or "?")[:19], tilde(os.path.join(folder["path"], p)), names.get(mb, mb), who, c, counter_date(c)))
+        if len(hits) > VECTOR_LIST_MAX:
+            print("       ... and %d more" % (len(hits) - VECTOR_LIST_MAX))
+        OUT.note("a reader's refused checkout or reset moves the index and the working tree before its hook refuses; read the status here before any commit, and once the write is explained carry each path with its counter in KNOWN_WRITES in bin/sync-check (configs)")
+        OUT.fix("git -C %s status" % shq(repo))
+        vok = False
+    note = ""
+    if known:
+        note = "; the known %s %s" % ("write" if len(known) == 1 else "writes", ", ".join(
+            "%s from %s (since %s: %s)" % (p, who, k["since"], k["note"]) for p, who, c, fi, k in known))
+    OUT.det("%s: %d paths under .git read, %s" % (name, len(records), "none carries another machine's counter" if not hits and not known else "%d carry another machine's counter" % (len(hits) + len(known))))
+    return note, vok
 
 
 def unpushed_line(repo):
@@ -1323,7 +2008,7 @@ def cmd_push(args):
                     name, "" if inst else " (no Syncthing here)", unpushed_line(repo)))
             continue
         ok, cl, readings = check_folders(inst, [folder], ok_line=False)
-        if cl is None or readings is None:
+        if cl is None or not readings:
             OUT.line("WARN", "%s: cannot be judged without the folder's readings" % name)
             OUT.fix("read again once Syncthing answers; the hub-outage route is rules.md -> him-5")
             continue
@@ -1362,6 +2047,13 @@ def cmd_push(args):
             OUT.line("WARN", "%s: %s at the hub whose names only the other workstation can give" % (name, plural(unexplained, "item")))
             OUT.fix("wake it, or run sync-check sync there; a push waits until the folder's .git is known clear")
             ok = False
+        # another machine's write under .git, which a commit here would carry:
+        # the writer's side of fedxps-3's vector check, read live for this
+        # repository (a reader's refused checkout or reset has moved the index
+        # and the working tree before its hook refuses)
+        known_note, vok = push_vectors(inst, cl, repo, folder, name)
+        if not vok:
+            ok = False
         # phantom refs and conflict copies under .git
         refs = git(["-C", repo, "for-each-ref", "--format=%(refname)"])
         if refs is None:
@@ -1396,6 +2088,7 @@ def cmd_push(args):
             state, ph = remote_head(pname, repo, SSH_PEER_TIMEOUT)
             if state == "silent":
                 head_note += "; %s did not answer: HEAD comparison skipped, the hub's view of it stands" % pname
+                OUT.det("%s: %s" % (pname, ph))
             elif state == "bad":
                 OUT.line("WARN", "%s: %s answered but gave no HEAD for %s (%s)" % (name, pname, tilde(repo), ph))
                 OUT.fix("on %s: GIT_OPTIONAL_LOCKS=0 git -C %s rev-parse HEAD; a .git git cannot read there is a split until shown otherwise (%s)" % (pname, tilde(repo), HIM2))
@@ -1405,33 +2098,644 @@ def cmd_push(args):
                 OUT.fix("a split of main: do not push; read sync-check sync on both machines, then the split repair (%s)" % HIM2)
                 ok = False
             else:
-                head_note += "; HEAD equal on %s" % pname
+                head_note += "; HEAD equal on %s%s" % (pname, door_note(pname))
         if not peers:
             head_note += "; no other workstation on this folder"
+        head_note += known_note
+        snap_note = (" from the snapshot taken %s ago" % age(r["snapshot_age"])) if r.get("snapshot_age") is not None else ""
         if ok:
-            OUT.ok("%s: folder %s up to date, nothing under .git needed, no phantom ref%s; %s" % (name, folder["label"], head_note, unpushed_line(repo)))
+            OUT.ok("%s: folder %s up to date%s, nothing under .git needed, no phantom ref%s; %s" % (name, folder["label"], snap_note, head_note, unpushed_line(repo)))
         else:
             OUT.det("%s: %s" % (name, unpushed_line(repo)))
 
 
-# --- remote mode ----------------------------------------------------------------------------
-def cmd_remote_views(ids):
+# --- hub (hub-4, hub-1) ------------------------------------------------------------------------
+def gb(n):
+    """Decimal GB to one place, cut rather than rounded, so a figure under the
+    floor never prints as the floor itself."""
+    q = int(n) // 10 ** 8
+    return "%d.%d GB" % (q // 10, q % 10)
+
+
+def hubs_of(inst):
+    """{hub name: [folder labels]}: the devices whose entry on a folder carries
+    an encryption password, the hub by reading 8 of pilot/build-gauge.md."""
+    hubs = {}
+    for f in inst.folders:
+        for did, enc in f["devices"]:
+            if enc:
+                hubs.setdefault(inst.names.get(did, did[:7]), []).append(f["label"])
+    return hubs
+
+
+def cmd_hub():
+    path = config_path()
+    if not path:
+        OUT.line("WARN", "no Syncthing configuration on this machine (config.xml not found): no hub to read")
+        OUT.fix("SYNC_CHECK_CONFIG=<path> if it lives elsewhere")
+        return
+    inst = Instance(path)
+    hubs = hubs_of(inst)
+    if not hubs:
+        OUT.ok("no hub: no folder here is shared with a device that carries an encryption password")
+        return
+    for name in sorted(hubs):
+        info = HUB_INFO.get(name)
+        if info is None:
+            info, err = remote_json(name, "--remote-hub", [], SSH_HUB_TIMEOUT)
+            if err:
+                OUT.line("WARN", "hub %s: its readings unread: %s" % (name, err))
+                OUT.fix("ssh -o BatchMode=yes %s true" % name)
+                continue
+        hub_verdict(name, info)
+
+
+def hub_verdict(name, info):
+    """The hub's lines from its readings (hub_readings, run there)."""
+    if info.get("error"):
+        OUT.line("WARN", "hub %s: %s" % (name, info["error"]))
+        OUT.fix("ssh -o BatchMode=yes %s true" % name)
+        return
+    h = "hub %s%s" % (name, door_note(name))
+
+    def grow(d):
+        OUT.note("online, mounted, Syncthing running; afterwards `btrfs filesystem usage %s` names the new Device size (nousowl/docs/sync-volume-runbook.md, \"Growing the volume\")" % d)
+        OUT.fix("ssh -t %s 'sudo lvextend -L +32G fedora/sync && sudo btrfs filesystem resize max %s'" % (name, d))
+    # 1. free space on each volume the hub's folders lie on (hub-4)
+    for v in info.get("volumes") or []:
+        d = v.get("dir") or "?"
+        if not isinstance(v.get("free"), int):
+            OUT.line("WARN", "%s: the free space of %s cannot be read (btrfs: %s; df: %s)" % (h, d, v.get("btrfs") or "?", v.get("error") or "?"))
+            OUT.fix("ssh %s btrfs filesystem usage -b %s" % (name, shlex.quote(d)))
+            continue
+        how = "btrfs, Free (estimated)" if v.get("source") == "btrfs" else "df, since btrfs gave none: %s" % (v.get("btrfs") or "?")
+        if v["free"] < HUB_FREE_FLOOR:
+            OUT.line("FAIL", "%s: %s has %s free (%s), under the %s floor: grow it now (rules.md -> hub-4)" % (h, d, gb(v["free"]), how, gb(HUB_FREE_FLOOR)))
+            grow(d)
+        else:
+            OUT.ok("%s: %s has %s free (%s), above the %s floor" % (h, d, gb(v["free"]), how, gb(HUB_FREE_FLOOR)))
+    if not info.get("volumes"):
+        OUT.line("WARN", "%s: no folder path to read a volume from" % h)
+        OUT.fix("ssh %s syncthing cli config folders list" % name)
+    # 2. pull errors and folder errors, every hub folder
+    folders = info.get("folders") or []
+    unread = [f for f in folders if f.get("read_error")]
+    space = [f for f in folders if f.get("space")]
+    errs = [f for f in folders if (f.get("pull_errors") or 0) > 0 or f.get("folder_error")]
+    for f in unread[:1]:
+        OUT.line("WARN", "%s: the errors of %s cannot be read: %s%s" % (h, f.get("label"), f["read_error"], (" (and %d more folders)" % (len(unread) - 1)) if len(unread) > 1 else ""))
+        OUT.fix("ssh %s systemctl status 'syncthing*'" % name)
+    if errs:
+        OUT.line("FAIL", "%s: %s in %s%s" % (h, plural(sum(f.get("pull_errors") or 0 for f in errs), "pull error"),
+                                                ", ".join("%s (%d%s)" % (f.get("label"), f.get("pull_errors") or 0, ", folder error" if f.get("folder_error") else "") for f in errs),
+                                                ": insufficient space (rules.md -> hub-4)" if space else ""))
+        for f in errs:
+            for e in ([f["folder_error"]] if f.get("folder_error") else []) + list(f.get("errors") or [])[:3]:
+                print("       %s: %s" % (f.get("label"), e))
+        dirs = [v.get("dir") for v in info.get("volumes") or [] if v.get("dir")]
+        if space and dirs:
+            grow(dirs[0])
+        else:
+            OUT.note("the hub's own names are encrypted; the sync line names what each workstation still lacks")
+            OUT.fix("sync-check hub")
+    elif folders and not unread:
+        OUT.ok("%s: no pull error and no folder error in %s" % (h, plural(len(folders), "folder")))
+    # 3. the index (hub-4; hub-2 names where it lives)
+    ix = info.get("index") or {}
+    if not isinstance(ix.get("bytes"), int):
+        OUT.line("WARN", "%s: the index's size cannot be read: %s" % (h, ix.get("error") or "no reading"))
+        OUT.fix("ssh %s du -sb %s" % (name, shlex.quote(ix.get("path") or "~/.local/state/syncthing/index-v2")))
+    elif ix["bytes"] > HUB_INDEX_CEILING:
+        OUT.line("DUE", "%s: the index is %s, past %s (%s; rules.md -> hub-4)" % (h, gb(ix["bytes"]), gb(HUB_INDEX_CEILING), ix.get("path")))
+        OUT.note("it lives on the hub's root volume, apart from the sync volume (rules.md -> hub-2); read the root's free space")
+        OUT.fix("ssh %s df -h %s" % (name, shlex.quote(ix.get("path") or "/")))
+    else:
+        OUT.ok("%s: the index is %s (%s)" % (h, "%.1f MB" % (ix["bytes"] / 1e6), ix.get("path")))
+    # 4. the deletion-retention drop-in (hub-1)
+    u = info.get("unit") or {}
+    if u.get("error") or not u.get("name"):
+        OUT.line("WARN", "%s: %s" % (h, u.get("error") or "no reading of its Syncthing unit"))
+        OUT.fix("ssh %s systemctl status 'syncthing*'" % name)
+        return
+    unit, user = u["name"], u.get("scope") == "user"
+    has = any(os.path.basename(p) == RETENTION_DROPIN for p in u.get("dropins") or [])
+    sc = "systemctl --user" if user else "sudo systemctl"
+    if not has:
+        ddir = ("~/.config/systemd/user/%s.d" if user else "/etc/systemd/system/%s.d") % unit
+        sudo = "" if user else "sudo "
+        OUT.line("FAIL", "%s: %s carries no %s: a deletion made while a workstation's link is down can be lost at the hub (rules.md -> hub-1)" % (h, unit, RETENTION_DROPIN))
+        OUT.note("the drop-in is %s/%s, two lines: [Service] and Environment=%s" % (ddir, RETENTION_DROPIN, RETENTION_VAR))
+        OUT.fix("ssh -t %s '%smkdir -p %s && printf \"[Service]\\nEnvironment=%s\\n\" | %stee %s/%s >/dev/null && %s daemon-reload && %s restart %s'" % (
+            name, sudo, ddir, RETENTION_VAR, sudo, ddir, RETENTION_DROPIN, sc, sc, unit))
+    elif u.get("daemon_env") is False:
+        OUT.line("FAIL", "%s: %s carries %s, but its running daemon (pid %s) lacks %s: it started before the drop-in (rules.md -> hub-1)" % (h, unit, RETENTION_DROPIN, u.get("pid"), RETENTION_VAR))
+        OUT.fix("ssh -t %s '%s daemon-reload && %s restart %s'" % (name, sc, sc, unit))
+    elif u.get("daemon_env") is None and not u.get("unit_env"):
+        OUT.line("FAIL", "%s: %s carries %s, but the unit's environment lacks %s (rules.md -> hub-1)" % (h, unit, RETENTION_DROPIN, RETENTION_VAR))
+        OUT.fix("ssh %s systemctl cat %s" % (name, unit))
+    else:
+        OUT.ok("%s: %s carries %s, and %s %s" % (h, unit, RETENTION_DROPIN,
+                                              "its daemon runs with" if u.get("daemon_env") else "its environment sets (the daemon's own unread)",
+                                              RETENTION_VAR))
+
+
+def volume_free(d):
+    """Free space of the volume d lies on: btrfs's "Free (estimated)", the
+    runbook's measure, read by its field from `btrfs filesystem usage -b`
+    (btrfs-progs 7.1 offers no JSON for it); df's avail when btrfs refuses."""
+    v = {"dir": d}
+    why = None
+    try:
+        p = subprocess.run(["btrfs", "filesystem", "usage", "-b", d], capture_output=True, text=True, errors="backslashreplace", timeout=30)
+        if p.returncode == 0:
+            for line in p.stdout.splitlines():
+                label, sep, rest = line.partition(":")
+                m = re.match(r"\s*(\d+)(\s|$)", rest)
+                if sep and label.strip() == "Free (estimated)" and m:
+                    v.update(free=int(m.group(1)), source="btrfs")
+                    return v
+            why = "no Free (estimated) field"
+        else:
+            err = p.stderr.strip().splitlines()
+            why = "exit %d%s" % (p.returncode, (": " + err[-1]) if err else "")
+    except (OSError, subprocess.SubprocessError) as e:
+        why = str(e)
+    v["btrfs"] = why
+    try:
+        p = subprocess.run(["df", "-B1", "--output=avail", d], capture_output=True, text=True, errors="backslashreplace", timeout=30)
+        words = p.stdout.split()
+        if p.returncode == 0 and len(words) >= 2 and words[-1].isdigit():
+            v.update(free=int(words[-1]), source="df")
+        else:
+            err = p.stderr.strip().splitlines()
+            v["error"] = "exit %d%s" % (p.returncode, (": " + err[-1]) if err else "")
+    except (OSError, subprocess.SubprocessError) as e:
+        v["error"] = str(e)
+    return v
+
+
+def index_size(cfgpath):
+    """Bytes under the index-v2 directory beside the configuration (Syncthing
+    2's state directory), apparent sizes as `du -sb` counts them."""
+    cands = [os.path.join(os.path.dirname(cfgpath), "index-v2")]
+    state = os.environ.get("XDG_STATE_HOME")
+    if state and os.path.isabs(state):
+        cands.append(os.path.join(state, "syncthing", "index-v2"))
+    cands.append(os.path.join(HOME, ".local", "state", "syncthing", "index-v2"))
+    for d in cands:
+        if os.path.isdir(d):
+            total, problems = 0, []
+            for root, dirs, files in os.walk(d, onerror=problems.append):
+                for n in files:
+                    try:
+                        total += os.lstat(os.path.join(root, n)).st_size
+                    except OSError as e:
+                        problems.append(e)
+            if problems:
+                return {"path": d, "error": "cannot read all of it: %s" % problems[0]}
+            return {"path": d, "bytes": total}
+    return {"path": cands[0], "error": "no index-v2 directory at %s" % ", ".join(cands)}
+
+
+def systemctl_show(scope, unit, props):
+    """{property: value} from `systemctl show -p ...`, its documented Key=Value
+    form; None when systemctl cannot answer."""
+    cmd = ["systemctl"] + scope + ["show"] + [a for p in props for a in ("-p", p)] + [unit]
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, errors="backslashreplace", timeout=15, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if p.returncode != 0:
+        return None
+    out = {}
+    for line in p.stdout.splitlines():
+        k, sep, v = line.partition("=")
+        if sep:
+            out[k] = v
+    return out
+
+
+def retention_unit():
+    """The running Syncthing unit of this user, system (syncthing@<user>, the
+    hub's) or user (syncthing.service): its drop-ins, the unit's environment,
+    and the running daemon's own, from /proc/<MainPID>/environ, which says
+    whether the drop-in was in place when it started."""
+    try:
+        user = pwd.getpwuid(os.getuid()).pw_name
+    except KeyError:
+        user = os.environ.get("USER") or ""
+    tried = []
+    for scope, unit in (([], "syncthing@%s.service" % user), (["--user"], "syncthing.service")):
+        props = systemctl_show(scope, unit, ["LoadState", "ActiveState", "MainPID", "DropInPaths", "Environment"])
+        if props is None:
+            tried.append("%s: systemctl%s cannot say" % (unit, " --user" if scope else ""))
+            continue
+        if props.get("ActiveState") != "active":
+            tried.append("%s: %s, %s" % (unit, props.get("LoadState") or "?", props.get("ActiveState") or "?"))
+            continue
+        pid = props.get("MainPID") or ""
+        daemon_env = None
+        if pid.isdigit() and int(pid) > 0:
+            try:
+                with open("/proc/%s/environ" % pid, "rb") as fh:
+                    daemon_env = RETENTION_VAR.encode() in fh.read().split(b"\0")
+            except OSError:
+                daemon_env = None
+        return {"name": unit, "scope": "user" if scope else "system", "dropins": (props.get("DropInPaths") or "").split(),
+                "unit_env": RETENTION_VAR in (props.get("Environment") or "").split(), "daemon_env": daemon_env,
+                "pid": int(pid) if pid.isdigit() else None}
+    return {"error": "no running Syncthing unit for %s (%s)" % (user or "this user", "; ".join(tried))}
+
+
+def hub_readings(inst, cfgpath):
+    """What `sync-check hub` judges, read on the hub itself: free space under
+    the directory that holds its folders, every folder's pull errors and
+    folder error, the index's size, and the unit's retention drop-in."""
+    info = {"host": short_hostname()}
+    parents = sorted(set(os.path.dirname(f["path"]) for f in inst.folders if f["path"] not in ("", "/")))
+    info["volumes"] = [volume_free(d) for d in parents]
+    folders = []
+    for f in inst.folders:
+        e = {"label": f["label"]}
+        q = urllib.parse.quote(f["id"])
+        st, body = inst.get("folder/errors?folder=" + q)
+        if st == 200 and isinstance(body, dict):
+            errs = [x for x in (body.get("errors") or []) if isinstance(x, dict)]
+            e["pull_errors"] = len(errs)
+            e["errors"] = [str(x.get("error") or "")[:200] for x in errs[:3]]
+            e["space"] = any("insufficient space" in str(x.get("error") or "").lower() for x in errs)
+        else:
+            e["read_error"] = "folder/errors answered %s" % st
+        st, status = inst.get("db/status?folder=" + q)
+        if st == 200 and isinstance(status, dict):
+            e["folder_error"] = str(status.get("error") or "")
+            if "insufficient space" in e["folder_error"].lower():
+                e["space"] = True
+        else:
+            e["read_error"] = e.get("read_error") or "db/status answered %s" % st
+        folders.append(e)
+    info["folders"] = folders
+    info["index"] = index_size(cfgpath)
+    info["unit"] = retention_unit()
+    return info
+
+
+# --- config (ws-8) ---------------------------------------------------------------------------
+# stow 2.4.1's built-in ignore list (Stow.pm's __DATA__), which applies when
+# ~/.stow-global-ignore cannot be read
+STOW_DEFAULT_IGNORE = ["RCS", ".+,v", "CVS", "\\.\\#.+", "\\.cvsignore", "\\.svn", "_darcs", "\\.hg", "\\.git",
+                       "\\.gitignore", "\\.gitmodules", ".+~", "\\#.*\\#", "^/README.*", "^/LICENSE.*", "^/COPYING"]
+
+
+def stow_ignore(pkgdir):
+    """(path regex, segment regex) as stow compiles them: the package's
+    .stow-local-ignore, else ~/.stow-global-ignore, else stow's defaults
+    (Stow.pm: get_ignore_regexps_from_fh, compile_ignore_regexps)."""
+    pats = None
+    for f in (os.path.join(pkgdir, ".stow-local-ignore"), os.path.join(HOME, ".stow-global-ignore")):
+        try:
+            with open(f, "r", encoding="utf-8") as fh:
+                lines = fh.read().splitlines()
+        except OSError:
+            continue
+        pats = []
+        for l in lines:
+            l = l.strip()
+            if not l or l.startswith("#"):
+                continue
+            l = re.sub(r"\s+#.+", "", l).replace("\\#", "#")
+            pats.append(l)
+        break
+    if pats is None:
+        pats = [p.replace("\\#", "#") for p in STOW_DEFAULT_IGNORE]
+    pats.append("^/\\.stow-local-ignore$")
+    seg = [p for p in pats if "/" not in p]
+    path = [p for p in pats if "/" in p]
+    return (re.compile("(^|/)(%s)(/|$)" % "|".join(path)) if path else None,
+            re.compile("^(%s)$" % "|".join(seg)) if seg else None)
+
+
+def stow_map(root):
+    """{package: target} from 60-stow.sh's [pkg]="target" lines, $HOME at the
+    start of a target read as this home; None when the file cannot be read."""
+    try:
+        with open(os.path.join(root, "bash", ".bashrc.d", "60-stow.sh"), "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return None
+    out = {}
+    for line in text.splitlines():
+        m = re.match(r'\s*\[([A-Za-z0-9._+-]+)\]="([^"]*)"\s*(#.*)?$', line)
+        if not m:
+            continue
+        t = m.group(2)
+        for h in ("${HOME}", "$HOME"):
+            if t == h or t.startswith(h + "/"):
+                t = HOME + t[len(h):]
+        if "$" in t or "`" in t or not os.path.isabs(t):
+            continue
+        out[m.group(1)] = os.path.normpath(t)
+    return out
+
+
+def check_stow(root):
+    """ws-8 (a): each top-level entry of every package in the map linked at its
+    target, resolving into the package -- a directory stow has unfolded is
+    walked, its entries in turn -- and no dangling link into the checkout in
+    any directory walked."""
+    smap = stow_map(root)
+    if not smap:
+        OUT.line("WARN", "stow: no package map read from %s" % tilde(os.path.join(root, "bash", ".bashrc.d", "60-stow.sh")))
+        OUT.fix("grep -n 'STOW_TARGETS' %s" % shell_quote_tilde(os.path.join(root, "bash", ".bashrc.d", "60-stow.sh")))
+        return
+    rroot = os.path.realpath(root)
+    bad, walked, pkgs = [], {}, 0
+    for pkg, target in sorted(smap.items()):
+        pkgdir = os.path.join(root, pkg)
+        if not os.path.isdir(pkgdir):
+            continue        # stow-all skips it too
+        pkgs += 1
+        pathre, segre = stow_ignore(pkgdir)
+        stack = [""]
+        walked.setdefault(target, (pkg, target))
+        while stack:
+            rel = stack.pop()
+            try:
+                names = sorted(os.listdir(os.path.join(pkgdir, rel)))
+            except OSError as e:
+                bad.append((pkg, target, os.path.join(pkgdir, rel), "the package cannot be read: %s" % e.strerror))
+                continue
+            for n in names:
+                r = os.path.join(rel, n) if rel else n
+                if (pathre and pathre.search("/" + r)) or (segre and segre.match(n)):
+                    continue
+                src, tgt = os.path.join(pkgdir, r), os.path.join(target, r)
+                if os.path.islink(tgt):
+                    if os.path.realpath(tgt) != os.path.realpath(src):
+                        bad.append((pkg, target, tgt, "links to %s" % os.readlink(tgt)))
+                elif os.path.isdir(tgt) and os.path.isdir(src) and not os.path.islink(src):
+                    walked.setdefault(tgt, (pkg, target))
+                    stack.append(r)
+                elif os.path.lexists(tgt):
+                    bad.append((pkg, target, tgt, "a real file where stow would link"))
+                else:
+                    bad.append((pkg, target, tgt, "missing"))
+    # Dangling links into the checkout: in every directory walked above, and
+    # under every target three levels down through real directories, as the
+    # removed-package sweep in 60-stow.sh walks. A link inside a directory
+    # stow unfolded outlives the package subdirectory it pointed into, and
+    # stow -R, which cleans only the directories the package still has,
+    # leaves it; so the fix removes the link by name. Links inside ~/Desktop
+    # are the repositories' own and are left out.
+    bases = (os.path.normpath(root), rroot)
+    desk = os.path.realpath(DESKTOP)
+    owners = {}
+    for pkg, target in sorted(smap.items()):
+        if os.path.isdir(os.path.join(root, pkg)):
+            owners.setdefault(target, pkg)
+    cands = []
+    for d in walked:
+        try:
+            cands += [os.path.join(d, n) for n in os.listdir(d)]
+        except OSError:
+            pass
+    for target in sorted(owners):
+        try:
+            p = subprocess.run(["find", target, "-xdev", "-maxdepth", "3", "-type", "l", "-print0"],
+                               capture_output=True, text=True, errors="backslashreplace", timeout=60)
+            cands += [x for x in p.stdout.split("\0") if x]
+        except (OSError, subprocess.SubprocessError):
+            pass
+    dangling, seen_links = [], set()
+    for l in sorted(set(cands)):
+        if l in seen_links or not os.path.islink(l) or os.path.exists(l):
+            continue
+        seen_links.add(l)
+        ld = os.path.realpath(os.path.dirname(l))
+        if ld == desk or ld.startswith(desk + "/"):
+            continue
+        dest = os.path.normpath(os.path.join(os.path.dirname(l), os.readlink(l)))
+        base = next((b for b in bases if dest == b or dest.startswith(b + "/")), None)
+        if base is None:
+            continue
+        # the package: the link's own, when the map stows it at a target that
+        # holds the link; else the one stowed at the deepest such target
+        comp = dest[len(base) + 1:].split("/")[0]
+        holders = sorted((t for t in owners if l.startswith(t + "/")), key=len, reverse=True)
+        if comp in smap and smap[comp] in holders and os.path.isdir(os.path.join(root, comp)):
+            pkg = comp
+        elif holders:
+            pkg = owners[holders[0]]
+        else:
+            continue
+        dangling.append((pkg, smap[pkg], l, "dangling, to %s" % os.readlink(l)))
+    if not bad and not dangling:
+        OUT.ok("stow: every top-level entry of %s linked into place, no dangling link into %s" % (plural(pkgs, "package"), tilde(root)))
+        return
+    parts = []
+    if bad:
+        parts.append("%s not linked into place" % plural(len(bad), "entry").replace("entrys", "entries"))
+    if dangling:
+        parts.append("%s into %s" % (plural(len(dangling), "dangling link"), tilde(root)))
+    OUT.line("FAIL", "stow: %s (rules.md -> ws-8)" % " and ".join(parts))
+    for pkg, target, p, why in bad + dangling:
+        print("       %s  %s (%s)" % (tilde(p), why, pkg))
+    real = [p for pkg, target, p, why in bad if why.startswith("a real file")]
+    cmds = []
+    if real:
+        OUT.note("stow refuses to link over a real file: the fix moves each aside as <name>.pre-stow first (README.md section 8)")
+        cmds += ["mv %s %s" % (shq(p), shq(p + ".pre-stow")) for p in real]
+    if dangling:
+        cmds.append("rm -- %s" % " ".join(shq(p) for pkg, target, p, why in dangling))
+    seen = []
+    for pkg, target, p, why in bad + dangling:
+        if (pkg, target) not in seen:
+            seen.append((pkg, target))
+    cmds.append("cd ~/Desktop/configs")
+    cmds += ["stow -Rt %s %s" % (shq(target), shlex.quote(pkg)) for pkg, target in seen]
+    OUT.fix(" && ".join(cmds))
+
+
+def check_lazy(root):
+    """ws-8 (b): each plugin the shared lock names and this machine has
+    installed sits at the lock's commit, on either role. A reader's own copy
+    (fedxps-5, config/role.lua) plays no part: it is made from the shared lock
+    only at nvim's start and lazy's install pass rewrites it from the commits
+    already installed, so it follows what is being judged; the restore the fix
+    runs refreshes it from the shared lock first."""
+    shared = os.path.join(root, "nvim", "lazy-lock.json")
+    data = os.environ.get("XDG_DATA_HOME")
+    data = data if data and os.path.isabs(data) else os.path.join(HOME, ".local", "share")
+    lock = shared
+    try:
+        with open(lock, "r", encoding="utf-8") as fh:
+            entries = json.load(fh)
+        if not isinstance(entries, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as e:
+        if lock == shared and not os.path.exists(shared):
+            OUT.ok("lazy: no lock at %s, nothing to compare" % tilde(shared))
+            return
+        OUT.line("WARN", "lazy: the lock %s cannot be read: %s" % (tilde(lock), e))
+        OUT.fix("python3 -m json.tool %s" % shell_quote_tilde(lock))
+        return
+    plugdir = os.path.join(data, "nvim", "lazy")
+    off, unread, n = [], [], 0
+    for name, ent in sorted(entries.items()):
+        d = os.path.join(plugdir, name)
+        if not os.path.isdir(os.path.join(d, ".git")):
+            continue        # not installed here (lazy-loaded, disabled, or never started)
+        n += 1
+        want = ent.get("commit") if isinstance(ent, dict) else None
+        head = git(["-C", d, "rev-parse", "HEAD"])
+        if not want or head is None:
+            unread.append(name)
+        elif head.strip() != want:
+            off.append("%s (%s, the lock %s)" % (name, head.strip()[:7], want[:7]))
+    which = "the lock %s" % tilde(lock)
+    if off:
+        OUT.line("FAIL", "lazy: %s of %d installed away from the commits of %s: %s" % (plural(len(off), "plugin"), n, which, ", ".join(off[:8]) + (" ..." if len(off) > 8 else "")))
+        OUT.fix('nvim --headless "+Lazy! restore" +qa')
+    if unread:
+        OUT.line("WARN", "lazy: the HEAD or the locked commit of %s cannot be read" % ", ".join(unread[:8]))
+        OUT.fix("git -C %s rev-parse HEAD" % shell_quote_tilde(os.path.join(plugdir, unread[0])))
+    if not off and not unread:
+        OUT.ok("lazy: %s at the commits of %s" % (plural(n, "installed plugin"), which))
+
+
+def check_claude_link(root):
+    """ws-8 (c): claude-link's dry run, which changes nothing, exits 0."""
+    exe = None
+    for c in (os.path.join(HOME, "bin", "claude-link"), os.path.join(root, "bin", "claude-link")):
+        if os.access(c, os.X_OK):
+            exe = c
+            break
+    if exe is None:
+        OUT.line("WARN", "claude-link: not found in ~/bin or the checkout's bin")
+        OUT.fix("cd ~/Desktop/configs && stow -Rt ~/bin bin")
+        return
+    try:
+        p = subprocess.run([exe], capture_output=True, text=True, errors="backslashreplace", timeout=CLAUDE_LINK_TIMEOUT, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        OUT.line("WARN", "claude-link: its dry run did not finish within %d s" % CLAUDE_LINK_TIMEOUT)
+        OUT.fix("claude-link")
+        return
+    except OSError as e:
+        OUT.line("WARN", "claude-link: cannot run %s: %s" % (tilde(exe), e))
+        OUT.fix("claude-link")
+        return
+    lines = p.stdout.splitlines()
+    flagged = [l.strip() for l in lines if re.match(r"\s*\[(WARN|FAIL)\]", l)]
+    if p.returncode == 0 and not flagged:
+        OUT.ok("claude-link: its dry run has nothing to change")
+        return
+    shown = [l.strip() for l in lines if re.match(r"\s*\[(LINK|ADPT|WARN|FAIL)\]", l)][:8]
+    if "== summary ==" in [l.strip() for l in lines]:
+        shown += [l.strip() for l in lines[[l.strip() for l in lines].index("== summary ==") + 1:] if l.strip()][:6]
+    if p.returncode == 0:
+        # claude-link exits 0 on warnings alone, among them a configuration
+        # file standing as a real copy where its link should be (after
+        # --unlink, or a real memory scope): nothing to call clean
+        OUT.line("WARN", "claude-link: its dry run exits 0 but warns: %s" % plural(len(flagged), "line"))
+        for l in shown:
+            print("       %s" % l)
+        OUT.note("each [WARN] line names its own step; most read `re-run with --adopt`, which absorbs the copy into org/claude-config")
+        OUT.fix("claude-link")
+        return
+    if p.returncode == 1:
+        OUT.line("FAIL", "claude-link: its dry run has changes pending (exit 1)")
+        for l in shown:
+            print("       %s" % l)
+        OUT.note("the dry run names each change; read it whole with `claude-link` first")
+        OUT.fix("claude-link --apply")
+    else:
+        OUT.line("FAIL", "claude-link: its dry run reports conflicts or errors (exit %d)" % p.returncode)
+        for l in shown + [l for l in p.stderr.strip().splitlines()[-2:]]:
+            print("       %s" % l)
+        OUT.note("each [FAIL] line is resolved by hand (bin/CLAUDE.md -> Claude Code configuration linkage); --apply does not")
+        OUT.fix("claude-link")
+
+
+def check_bash_n():
+    """ws-8 (d): bash -n on ~/.bashrc, ~/.bash_profile and every module the
+    .bashrc loop sources (~/.bashrc.d/*.sh); a conflict copy, which ws-2 names
+    and the loop skips, is left out."""
+    files = [p for p in (os.path.join(HOME, ".bashrc"), os.path.join(HOME, ".bash_profile")) if os.path.isfile(p)]
+    mods = sorted(p for p in glob.glob(os.path.join(glob.escape(os.path.join(HOME, ".bashrc.d")), "*.sh"))
+                  if os.path.isfile(p) and ".sync-conflict-" not in os.path.basename(p))
+    bad = []
+    for f in files + mods:
+        try:
+            p = subprocess.run(["bash", "-n", f], capture_output=True, text=True, errors="backslashreplace", timeout=15, stdin=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError) as e:
+            bad.append((f, None, str(e)))
+            continue
+        if p.returncode != 0:
+            err = p.stderr.strip().splitlines()
+            m = re.search(r": line (\d+): ", err[0]) if err else None
+            bad.append((f, m.group(1) if m else None, err[0] if err else "exit %d" % p.returncode))
+    if not files and not mods:
+        OUT.line("WARN", "bash -n: no ~/.bashrc, ~/.bash_profile or module here to read")
+        OUT.fix("cd ~/Desktop/configs && stow -Rt ~ bash")
+        return
+    if bad:
+        OUT.line("FAIL", "bash -n: %s %s not parse: %s" % (plural(len(bad), "file"), "does" if len(bad) == 1 else "do", ", ".join(tilde(f) for f, _, _ in bad)))
+        for f, ln, err in bad:
+            print("       %s" % err)
+        f, ln, _ = bad[0]
+        OUT.fix(("nvim +%s %s" % (ln, shq(f))) if ln and len(bad) == 1 else "nvim -p %s" % " ".join(shq(f) for f, _, _ in bad))
+    else:
+        OUT.ok("bash -n: %s and %s in ~/.bashrc.d parse" % (" and ".join(tilde(f) for f in files) or "no rc file", plural(len(mods), "module")))
+
+
+def cmd_config(claude_link=True):
+    root = os.path.join(DESKTOP, "configs")
+    if not os.path.isdir(root):
+        OUT.line("WARN", "config: no checkout at %s" % tilde(root))
+        OUT.fix("ls ~/Desktop")
+        return
+    check_stow(root)
+    check_lazy(root)
+    if claude_link:
+        check_claude_link(root)
+    else:
+        OUT.det("claude-link's dry run is left to `sync-check config`: 1.8 s on bigfed (2026-10-26), past the bare run's budget")
+    check_bash_n()
+
+
+# --- remote modes ----------------------------------------------------------------------------
+def cmd_remote_views(args):
+    with_hub = "--with-hub" in args
+    ids = [a for a in args if a != "--with-hub"]
     path = config_path()
     if not path:
         print(json.dumps({"error": "no Syncthing configuration on %s" % short_hostname()}))
         return
     inst = Instance(path)
     data = views(inst, ids)
+    if with_hub and not data.get("error"):
+        try:
+            data["hubinfo"] = hub_readings(inst, path)
+        except Exception as e:        # the views stand; the hub line says what failed
+            data["hubinfo"] = {"error": "its readings failed there: %s: %s" % (type(e).__name__, e)}
     print(json.dumps(data))
 
 
+def cmd_remote_hub():
+    path = config_path()
+    if not path:
+        print(json.dumps({"error": "no Syncthing configuration on %s" % short_hostname()}))
+        return
+    print(json.dumps(hub_readings(Instance(path), path)))
+
+
 def usage(code):
-    print(__doc__.split("\n\n")[0] + "\n\n" + "\n".join(__doc__.split("\n\n")[1:3]))
+    print("\n\n".join(__doc__.split("\n\n")[0:4]))
     sys.exit(code)
 
 
 def main(argv):
-    global VERBOSE, QUIET
+    global VERBOSE, QUIET, WANT_HUB_INFO
     args = []
     for a in argv:
         if a == "-v" or a == "--verbose":
@@ -1449,18 +2753,28 @@ def main(argv):
     if cmd == "--remote-views":
         cmd_remote_views(rest)
         return 0
+    if cmd == "--remote-hub":
+        cmd_remote_hub()
+        return 0
     if cmd == "sync":
         cmd_sync()
     elif cmd == "conflicts":
         cmd_conflicts()
     elif cmd == "guard":
         cmd_guard()
+    elif cmd == "hub":
+        cmd_hub()
+    elif cmd == "config":
+        cmd_config()
     elif cmd == "push":
         cmd_push(rest)
     elif cmd == "all":
+        WANT_HUB_INFO = True
         cmd_sync()
         cmd_conflicts()
         cmd_guard()
+        cmd_hub()
+        cmd_config(claude_link=False)
     else:
         print("sync-check: unknown line '%s' (try -h)" % cmd, file=sys.stderr)
         return 2
@@ -1472,7 +2786,7 @@ if __name__ == "__main__":
     try:
         sys.exit(main(sys.argv[1:]))
     except Exception as e:                # a reading the gauge could not finish is never health
-        if "--remote-views" in sys.argv[1:]:
+        if "--remote-views" in sys.argv[1:] or "--remote-hub" in sys.argv[1:]:
             print(json.dumps({"error": "sync-check failed there: %s: %s" % (type(e).__name__, e)}))
             sys.exit(0)     # the caller reads the error from the JSON, which it parses on exit 0
         OUT.line("WARN", "sync-check could not finish: %s: %s" % (type(e).__name__, e))

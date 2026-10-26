@@ -7,8 +7,10 @@
 # one rotation repository; `systemctl` stubbed to record its arguments and act
 # on nothing; the gauge stubbed to answer from STUB_LEAVE_RC / STUB_LEAVE_TEXT;
 # `uname` stubbed to name the machine; `ps` stubbed to print STUB_PS_TEXT. The
-# log goes to LEAVE_LOG_DIR in the sandbox. Nothing real is suspended, powered
-# off, read or written. Last line follows the tests/gsync convention:
+# log goes to the gauge log's per-machine directories under GAUGE_LOG_ROOT in
+# the sandbox (since 2026-10-26, through _gauge_log in 50-git-sync.sh; the
+# pilot's log before). Nothing real is suspended, powered off, read or
+# written. Last line follows the tests/gsync convention:
 # "passed: N  failed: M"; exit 0 iff nothing failed.
 set -u
 CFG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -27,7 +29,7 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$SB/home"
 HOSTS="$HOME/Desktop/configs/git/hosts"
-mkdir -p "$HOSTS" "$SB/stub" "$SB/pilot"
+mkdir -p "$HOSTS" "$SB/stub" "$SB/machines/bigfed" "$SB/machines/fedxps"
 printf '[gsync]\n\trole = writer\n' > "$HOSTS/bigfed.inc"
 printf '[gsync]\n\treaderRepo = nousowl\n' > "$HOSTS/fedxps.inc"
 must git init -q -b main "$HOME/Desktop/nousowl"
@@ -41,13 +43,14 @@ exit "${STUB_LEAVE_RC:-0}"
 STUB
 printf '#!/bin/sh\nprintf "  PID COMMAND\\n"; [ -n "${STUB_PS_TEXT:-}" ] && printf "%%b\\n" "$STUB_PS_TEXT"; exit 0\n' > "$SB/stub/ps"
 chmod +x "$SB"/stub/*
-export STUB_LEAVE_LOG="$SB/gauge.log" LEAVE_LOG_DIR="$SB/pilot"
+export STUB_LEAVE_LOG="$SB/gauge.log" GAUGE_LOG_ROOT="$SB/machines"
 PATH="$SB/stub:/usr/bin:/bin"; hash -r   # never the real ~/bin: the gauge there must not be reachable
 
 source "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh"
 source "$CFG_ROOT/bash/.bashrc.d/40-aliases.sh"
 REPOS_DESKTOP=("$HOME/Desktop/nousowl")
 be() { printf '%s\n' "$1" > "$SB/host"; _GSYNC_ROLE=""; }
+LF="$SB/machines/fedxps/gauge-log.md" LB="$SB/machines/bigfed/gauge-log.md"
 reset() { : > "$SB/systemctl.log"; : > "$SB/gauge.log"; unset STUB_LEAVE_RC STUB_LEAVE_TEXT STUB_PS_TEXT; rm -f "$HOME/Desktop/nousowl/.git/objects/maintenance.lock"; }
 OKTEXT='[ OK ] nousowl: up to date\n[ OK ] readings: up to date\n[ OK ] teaching: up to date\n[ OK ] personal: up to date\n[ OK ] opuscula: up to date\n[ OK ] adelotype-data: up to date -- the known item log stays stranded on bigfed\n[ OK ] finances: up to date\n[ OK ] adelotype: up to date\n\nall clear'
 FAILTEXT='[ OK ] readings: up to date\n[FAIL] nousowl: stranded on bigfed: docs/a.md | docs/b.md\n       fix: edit each listed path on fedxps\n\n1 needing attention, 0 unknown'
@@ -62,22 +65,26 @@ check "bye: exit 0"                                   [ "$rc" -eq 0 ]
 check "bye: the gauge was asked for sync"             contains "$(cat "$SB/gauge.log")" "sync"
 check "bye: systemctl suspend, once"                  [ "$(cat "$SB/systemctl.log")" = "suspend" ]
 check "bye: the gauge's lines shown"                  contains "$out" "[ OK ] nousowl: up to date"
-check "bye: the log file is this machine's"           [ -f "$SB/pilot/log-fedxps.md" ]
-check "bye: no log for the other machine"             [ ! -e "$SB/pilot/log-bigfed.md" ]
-check "bye: the log has its header"                   contains "$(head -1 "$SB/pilot/log-fedxps.md")" "fedxps's lines"
-check "bye: the line reads OK, 8 folders"             contains "$(tail -1 "$SB/pilot/log-fedxps.md")" "| OK, 8 folders | bye |"
-check "bye: the line is dated today"                  contains "$(tail -1 "$SB/pilot/log-fedxps.md")" "| $(date '+%Y-%m-%d')"
-n_before=$(wc -l < "$SB/pilot/log-fedxps.md")
+check "bye: the log file is this machine's"           [ -f "$LF" ]
+check "bye: no log for the other machine"             [ ! -e "$LB" ]
+check "bye: nothing in the pilot's old place"          [ -z "$(find "$SB" -name 'log-*.md')" ]
+check "bye: the log has its header"                   [ "$(head -1 "$LF")" = "# The gauge's log -- fedxps's lines" ]
+check "bye: the header's kind line"                   [ "$(sed -n 3p "$LF")" = "**Dated record**, appended by \`bye\`, \`byebye\` and the push hook: the gauge's reading at every leaving and every push of this machine; one file per machine, one writer each." ]
+check "bye: the table head, then the line"            [ "$(sed -n '5,6p' "$LF" | tr '\n' '#')" = "| when | reading | note |#|---|---|---|#" ]
+check "bye: header and one line, nothing else"        [ "$(wc -l < "$LF")" -eq 7 ]
+check "bye: the line reads OK, 8 folders"             contains "$(tail -1 "$LF")" "| OK, 8 folders | bye |"
+check "bye: the line is dated today"                  contains "$(tail -1 "$LF")" "| $(date '+%Y-%m-%d')"
+n_before=$(wc -l < "$LF")
 out="$(bye 2>&1)"
-check "bye again: the header is not repeated"         [ "$(grep -c "fedxps's lines" "$SB/pilot/log-fedxps.md")" -eq 1 ]
-check "bye again: one more line"                      [ "$(wc -l < "$SB/pilot/log-fedxps.md")" -eq $((n_before + 1)) ]
+check "bye again: the header is not repeated"         [ "$(grep -c "fedxps's lines" "$LF")" -eq 1 ]
+check "bye again: one more line"                      [ "$(wc -l < "$LF")" -eq $((n_before + 1)) ]
 
 echo "== byebye on bigfed, the gauge all clear =="
 reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT"
 out="$(byebye 2>&1)"; rc=$?
 check "byebye: exit 0"                                [ "$rc" -eq 0 ]
 check "byebye: systemctl poweroff, once"              [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
-check "byebye: logged to bigfed's file"               contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| OK, 8 folders | byebye |"
+check "byebye: logged to bigfed's file"               contains "$(tail -1 "$LB")" "| OK, 8 folders | byebye |"
 
 echo "== the gauge refuses =="
 reset; be bigfed; export STUB_LEAVE_RC=1 STUB_LEAVE_TEXT="$FAILTEXT"
@@ -86,14 +93,14 @@ check "FAIL: exit 1"                                  [ "$rc" -eq 1 ]
 check "FAIL: nothing powered off"                     [ ! -s "$SB/systemctl.log" ]
 check "FAIL: the gauge's FAIL line shown"             contains "$out" "[FAIL] nousowl: stranded on bigfed"
 check "FAIL: the SKIP line names -f"                  contains "$out" "byebye -f leaves regardless"
-check "FAIL: logged as refused"                       contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| byebye, refused |"
-check "FAIL: the reading is the FAIL line"            contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "[FAIL] nousowl: stranded on bigfed"
-check "FAIL: a | in the gauge's line does not break the table" [ "$(tail -1 "$SB/pilot/log-bigfed.md" | tr -cd '|' | wc -c)" -eq 4 ]
+check "FAIL: logged as refused"                       contains "$(tail -1 "$LB")" "| byebye, refused |"
+check "FAIL: the reading is the FAIL line"            contains "$(tail -1 "$LB")" "[FAIL] nousowl: stranded on bigfed"
+check "FAIL: a | in the gauge's line does not break the table" [ "$(tail -1 "$LB" | tr -cd '|' | wc -c)" -eq 4 ]
 reset; be fedxps; export STUB_LEAVE_RC=2 STUB_LEAVE_TEXT="$WARNTEXT"
 out="$(bye 2>&1)"; rc=$?
 check "WARN (could not determine): exit 1"            [ "$rc" -eq 1 ]
 check "WARN: nothing suspended"                       [ ! -s "$SB/systemctl.log" ]
-check "WARN: logged as refused with the WARN line"    contains "$(tail -1 "$SB/pilot/log-fedxps.md")" "[WARN] nousowl: nousowl's view unread"
+check "WARN: logged as refused with the WARN line"    contains "$(tail -1 "$LF")" "[WARN] nousowl: nousowl's view unread"
 
 echo "== a DUE alone (the gauge's exit 3) leaves; it never decides a refusal (settled 37) =="
 reset; be bigfed; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT"
@@ -102,7 +109,7 @@ check "DUE alone: exit 0"                             [ "$rc" -eq 0 ]
 check "DUE alone: powered off, once"                  [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
 check "DUE alone: the DUE line shown"                 contains "$out" "[DUE] adelotype-data: up to date"
 check "DUE alone: no SKIP line"                       lacks "$out" "[SKIP]"
-check "DUE alone: the reading is the DUE line, neither refused nor forced" contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| [DUE] adelotype-data: up to date; the known item log no longer shows stranded on bigfed | byebye |"
+check "DUE alone: the reading is the DUE line, neither refused nor forced" contains "$(tail -1 "$LB")" "| [DUE] adelotype-data: up to date; the known item log no longer shows stranded on bigfed | byebye |"
 reset; be fedxps; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT"
 out="$(bye 2>&1)"; rc=$?
 check "DUE alone, bye: exit 0"                        [ "$rc" -eq 0 ]
@@ -111,19 +118,19 @@ reset; be bigfed; export STUB_LEAVE_RC=1 STUB_LEAVE_TEXT="$DUEFAILTEXT"
 out="$(byebye 2>&1)"; rc=$?
 check "a DUE above a FAIL: refused"                   [ "$rc" -eq 1 ]
 check "  nothing powered off"                         [ ! -s "$SB/systemctl.log" ]
-check "  the reading is the FAIL that decided, not the DUE printed first" contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| [FAIL] nousowl: stranded on bigfed: docs/a.md | byebye, refused |"
+check "  the reading is the FAIL that decided, not the DUE printed first" contains "$(tail -1 "$LB")" "| [FAIL] nousowl: stranded on bigfed: docs/a.md | byebye, refused |"
 reset; be bigfed; export STUB_LEAVE_RC=3 STUB_LEAVE_TEXT="$DUETEXT" STUB_PS_TEXT=' 4242 git maintenance run --auto --no-quiet'
 out="$(byebye 2>&1)"; rc=$?
 check "a DUE alone with git maintenance running: refused" [ "$rc" -eq 1 ]
 check "  nothing powered off"                         [ ! -s "$SB/systemctl.log" ]
-check "  the reading is the maintenance FAIL"         contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| FAIL git maintenance running | byebye, refused |"
+check "  the reading is the maintenance FAIL"         contains "$(tail -1 "$LB")" "| FAIL git maintenance running | byebye, refused |"
 
 echo "== -f and -i =="
 reset; be bigfed; export STUB_LEAVE_RC=1 STUB_LEAVE_TEXT="$FAILTEXT"
 out="$(byebye -f 2>&1)"; rc=$?
 check "-f under FAIL: exit 0"                         [ "$rc" -eq 0 ]
 check "-f under FAIL: powered off"                    [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
-check "-f under FAIL: logged as forced"               contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| byebye, forced |"
+check "-f under FAIL: logged as forced"               contains "$(tail -1 "$LB")" "| byebye, forced |"
 reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT"
 out="$(byebye -i 2>&1)"
 check "-i: passed to systemctl"                       [ "$(cat "$SB/systemctl.log")" = "poweroff -i" ]
@@ -144,12 +151,13 @@ out="$(byebye 2>&1)"; rc=$?
 check "git maintenance running: refused"              [ "$rc" -eq 1 ]
 check "git maintenance running: named with its pid"   contains "$out" "git maintenance is running (pid 4242)"
 check "git maintenance running: nothing powered off"  [ ! -s "$SB/systemctl.log" ]
-check "git maintenance running: logged"               contains "$(tail -1 "$SB/pilot/log-bigfed.md")" "| FAIL git maintenance running | byebye, refused |"
+check "git maintenance running: logged"               contains "$(tail -1 "$LB")" "| FAIL git maintenance running | byebye, refused |"
 unset STUB_PS_TEXT
 mkdir -p "$HOME/Desktop/nousowl/.git/objects"; : > "$HOME/Desktop/nousowl/.git/objects/maintenance.lock"
 out="$(byebye 2>&1)"; rc=$?
 check "stale lock, no process: refused"               [ "$rc" -eq 1 ]
 check "stale lock: the lock named with its repair"    contains "$out" "maintenance.lock stands with no git maintenance running"
+check "stale lock: the fix removes the lock first (git 2.56 skips in silence while it stands)" contains "$out" "fix: rm $HOME/Desktop/nousowl/.git/objects/maintenance.lock && git -C $HOME/Desktop/nousowl maintenance run --task=gc"
 out="$(byebye -f 2>&1)"; rc=$?
 check "stale lock: -f leaves, exit 0"                 [ "$rc" -eq 0 ]
 check "stale lock: -f powered off"                    [ "$(tail -1 "$SB/systemctl.log")" = "poweroff" ]
@@ -161,19 +169,45 @@ check "bye: suspended regardless of the lock"         [ "$(cat "$SB/systemctl.lo
 out="$(byebye 2>&1)"; rc=$?
 check "byebye on the same machine refuses it"         [ "$rc" -eq 1 ]
 
+echo "== bigfed-1: the subcommand after git's own options (2026-10-26) =="
+# `git -C <repo> maintenance run` is the fix line's own shape: missed, its lock
+# would read as stale and the fix would remove a live lock under a repack.
+for spec in 'git -C /x/Desktop/nousowl maintenance run --task=gc' 'git -c maintenance.auto=false maintenance run --auto' 'git --git-dir=/x/.git maintenance run' '/usr/bin/git --no-pager -p maintenance run'; do
+  reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT" STUB_PS_TEXT=" 4242 $spec"
+  : > "$HOME/Desktop/nousowl/.git/objects/maintenance.lock"   # the lock such a process holds
+  out="$(byebye 2>&1)"; rc=$?
+  check "'$spec': refused"                              [ "$rc" -eq 1 ]
+  check "'$spec': seen running, its pid named"          contains "$out" "git maintenance is running (pid 4242)"
+  check "'$spec': no fix line removing its live lock"   lacks "$out" "fix: rm"
+done
+for spec in 'less maintenance' 'bash -c git maintenance run --task=gc' 'git log --grep maintenance' 'git -C maintenance status'; do
+  reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT" STUB_PS_TEXT=" 4242 $spec"
+  out="$(byebye 2>&1)"; rc=$?
+  check "'$spec': no repack, so it leaves"              [ "$rc" -eq 0 ]
+  check "'$spec': powered off"                          [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
+done
+
 echo "== no gauge; no log directory =="
 reset; be fedxps; rm "$SB/stub/sync-check"; hash -r
 out="$(bye 2>&1)"; rc=$?
 check "no gauge: acts, exit 0"                        [ "$rc" -eq 0 ]
 check "no gauge: suspended"                           [ "$(cat "$SB/systemctl.log")" = "suspend" ]
 check "no gauge: one hint"                            contains "$out" "no sync-check on PATH"
-check "no gauge: logged as unchecked"                 contains "$(tail -1 "$SB/pilot/log-fedxps.md")" "| unchecked (no sync-check on PATH) | bye |"
+check "no gauge: logged as unchecked"                 contains "$(tail -1 "$LF")" "| unchecked (no sync-check on PATH) | bye |"
 printf '#!/usr/bin/env bash\nprintf "%%b\\n" "$STUB_LEAVE_TEXT"; exit "${STUB_LEAVE_RC:-0}"\n' > "$SB/stub/sync-check"; chmod +x "$SB/stub/sync-check"; hash -r
-reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT" LEAVE_LOG_DIR="$SB/nowhere"
+reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT" GAUGE_LOG_ROOT="$SB/nowhere"
 out="$(byebye 2>&1)"; rc=$?
 check "no log directory: acts, exit 0"                [ "$rc" -eq 0 ]
 check "no log directory: nothing written anywhere"    [ ! -e "$SB/nowhere" ]
-export LEAVE_LOG_DIR="$SB/pilot"
+export GAUGE_LOG_ROOT="$SB/machines"
+reset; be nousowl
+out="$(byebye 2>&1)"; rc=$?
+check "a machine without its own directory: acts, exit 0" [ "$rc" -eq 0 ]
+check "  and writes no file for it, nor creates its directory" [ ! -e "$SB/machines/nousowl" ]
+reset; be fedxps; n_before=$(wc -l < "$LF")
+out="$(bash -c 'source "$1"; unset -f _gauge_log; source "$2"; bye' _ "$CFG_ROOT/bash/.bashrc.d/50-git-sync.sh" "$CFG_ROOT/bash/.bashrc.d/40-aliases.sh" 2>&1)"; rc=$?
+check "a shell without _gauge_log: acts, exit 0"       [ "$rc" -eq 0 ]
+check "  and logs nothing"                             [ "$(wc -l < "$LF")" -eq "$n_before" ]
 
 echo "== the re-source trap: a shell still holding the old byebye alias =="
 # Every open shell on both machines holds `alias byebye='systemctl poweroff'`

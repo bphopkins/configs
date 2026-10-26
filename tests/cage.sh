@@ -35,8 +35,14 @@
 #     cage env "$@"
 # Inside the scope, `cage` prints the cage line and returns. Outside it, it
 # runs the suite in a fresh scope and exits with the suite's status; with no
-# user manager, or under 1.5G available, it prints the tests/gsync-shaped
-# failure line and exits 2.
+# user manager, or under the ceiling plus a 1G floor available, it prints the
+# tests/gsync-shaped failure line and exits 2.
+#
+# A suite that needs more than the defaults names it before calling `cage`,
+# in the three variables below (2026-10-26, for tests/sync, whose three
+# Syncthing instances and git repositories outgrow 512M and 120 s):
+#     CAGE_MEMORY_MAX=1G CAGE_TASKS_MAX=512 CAGE_RUNTIME_MAX_SEC=900
+# MemoryMax takes systemd's suffixes, M or G; the floor check reads it.
 cage() {
   local name=$1; shift
   local suite=${BASH_SOURCE[1]}
@@ -55,16 +61,22 @@ cage() {
     echo "passed: 0  failed: 1"
     exit 2
   fi
-  local avail_kb
+  local mem="${CAGE_MEMORY_MAX:-512M}" tasks="${CAGE_TASKS_MAX:-256}" runtime="${CAGE_RUNTIME_MAX_SEC:-120}"
+  local mem_mb avail_kb
+  case "$mem" in
+    *G) mem_mb=$(( ${mem%G} * 1024 )) ;;
+    *M) mem_mb=${mem%M} ;;
+    *) echo "$name tests: CAGE_MEMORY_MAX='$mem' is not NNNM or NG -- not running" >&2; echo "passed: 0  failed: 1"; exit 2 ;;
+  esac
   avail_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
-  if ((avail_kb < (512 + 1024) * 1024)); then
-    echo "$name tests: less than 1.5G available; the 512M cage plus a 1G floor does not fit -- not running" >&2
+  if ((avail_kb < (mem_mb + 1024) * 1024)); then
+    echo "$name tests: less than $((mem_mb + 1024))M available; the $mem cage plus a 1G floor does not fit -- not running" >&2
     echo "passed: 0  failed: 1"
     exit 2
   fi
   local unit="$name-tests-$$-$RANDOM" rc
   systemd-run --user --scope --quiet --collect --unit="$unit" \
-    -p MemoryMax=512M -p MemorySwapMax=0 -p TasksMax=256 -p RuntimeMaxSec=120 \
+    -p "MemoryMax=$mem" -p MemorySwapMax=0 -p "TasksMax=$tasks" -p "RuntimeMaxSec=$runtime" \
     -p TimeoutStopSec=10 -p OOMPolicy=continue \
     -- bash "$suite" "$@"
   rc=$?

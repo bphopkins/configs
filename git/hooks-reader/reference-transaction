@@ -1,0 +1,118 @@
+#!/bin/sh
+# reference-transaction -- the reader's refusing hook (2026-10-26;
+# org/machines/transport-2026-10: rules.md fedxps-6, PLAN.md settled 17).
+#
+# Syncthing carries each repository under ~/Desktop, .git included, between
+# the machines, and bigfed alone commits and pushes. A ref moved on the reader
+# splits the history between the machines with no conflict copy to notice
+# (rules.md fedxps-6, him-5). The role is the backstop's key: fedxps.inc
+# points core.hooksPath here on fedxps alone, and this hook refuses a ref
+# update only where the role says this machine reads:
+#
+#   - gsync.role, any value but `writer`, in git's configuration: every
+#     repository whose common git directory lies under ~/Desktop (the
+#     cutover's `role = reader`);
+#   - gsync.readerRepo = <name>, repeatable: a repository whose common git
+#     directory lies under ~/Desktop/<name> (the pilot's nousowl), nested
+#     repositories and submodules included, since the folder carries them;
+#   - neither: a writer, and every update passes.
+#
+# Keyed on the common directory (`git rev-parse --git-common-dir`), so a
+# linked worktree outside the tree and a `--git-dir` call reach the .git they
+# write, and a clone outside the Desktop (~/src/outage, him-5) passes. The
+# role is read through git's whole configuration chain, every value of each
+# key, so a repository's own .git/config or a `-c` can add a reader key and
+# never take one away. A configuration git cannot read counts as a reader. A
+# repository git cannot name yet -- the first transaction of an `init` or a
+# `clone`, before HEAD exists -- is judged by the directory git hands the
+# hook; so on a reader an `init` or a `clone` into the Desktop is refused
+# too, and leaves at most a .git without HEAD, which git does not take for a
+# repository.
+#
+# It refuses in `preparing`, before any ref is locked (git 2.54 and later),
+# and again in `prepared` for a git older than that state, which never asks
+# in `preparing`; every other state passes at once. What it cannot stop, by
+# construction (rules.md fedxps-6, agents-1, agents-2): `add`; `gc`, which
+# repacks and exits 0, printing this refusal for its pack-refs step alone;
+# `.git/config` writes; the working-tree half of `reset --hard`, `checkout`,
+# `switch`, `rebase`, `cherry-pick` and `stash pop`, which runs before any
+# ref update -- so the refusal says the index and the tree may already have
+# moved, and names the read that shows it; `-c core.hooksPath=...` or a
+# repository-local core.hooksPath, which bypass every hook; and git's reflog
+# machinery, which writes a ref outside any transaction when told to update
+# it (`reflog delete|expire --updateref`, and so `stash drop` or `pop` while
+# another entry remains). The agents' rules keep all of these off.
+#
+# Cost, measured on bigfed 2026-10-26 over 100 update-refs: a ref transaction
+# takes 1.8 ms with no hook, 10.5 ms with it in a repository outside the
+# Desktop, 15.5 ms in a Desktop repository fedxps still writes: three shell
+# starts a transaction, and in each of the two states that ask, one git call
+# outside the Desktop and two inside it.
+# Suite: configs/tests/git-hosts/run.sh.
+case "$1" in
+  preparing | prepared) ;;
+  *) exit 0 ;;
+esac
+
+# Where the repository's .git is, first: a repository outside the Desktop
+# passes after one git call. Canonical on both sides, so a symlink into or
+# out of the tree cannot change the answer.
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+if [ -z "$common" ]; then
+  common=$(cd -P -- "${GIT_DIR:-.}" 2>/dev/null && pwd -P) || common=$(pwd -P)
+fi
+desk=$(cd -P -- "$HOME/Desktop" 2>/dev/null && pwd -P) || exit 0
+case "$common/" in
+  "$desk"/*) ;;
+  *) exit 0 ;;
+esac
+
+# The role: the second git call. Exit 1 is "no such key"; anything above it
+# means the configuration could not be read, and counts as a reader. (A
+# repository still being made has its config already, and git reads it.)
+keys=$(git config --get-regexp '^gsync\.(role|readerrepo)$' 2>/dev/null)
+rc=$?
+reader=
+repos=
+if [ "$rc" -gt 1 ]; then
+  reader=1
+else
+  while read -r key val; do
+    case "$key" in
+      gsync.role) [ "$val" = writer ] || reader=1 ;;
+      gsync.readerrepo) [ -n "$val" ] && repos="$repos$val
+" ;;
+    esac
+  done <<EOF
+$keys
+EOF
+fi
+[ -n "$reader$repos" ] || exit 0
+if [ -z "$reader" ]; then
+  hit=
+  while read -r r; do
+    [ -n "$r" ] || continue
+    # A value naming no directory refuses nothing, as in the sync commands.
+    base=$(cd -P -- "$desk/$r" 2>/dev/null && pwd -P) || continue
+    case "$common/" in
+      "$base"/*)
+        hit=1
+        break
+        ;;
+    esac
+  done <<EOF
+$repos
+EOF
+  [ -n "$hit" ] || exit 0
+fi
+
+host=$(uname -n 2>/dev/null)
+host=${host%%.*}
+name=${common%/.git}
+name=${name#"$desk"/}
+url=$(git config --get remote.origin.url 2>/dev/null)
+echo "refused: ${host:-this machine} reads ~/Desktop/$name -- Syncthing carries its .git and bigfed alone moves its refs (org/machines/transport-2026-10/rules.md -> fedxps-6)" >&2
+echo "  the index and the working tree may already have moved: checkout, switch, reset, rebase, cherry-pick and stash pop change them before any ref, and Syncthing carries that to bigfed" >&2
+echo "  read it with: GIT_OPTIONAL_LOCKS=0 git status --porcelain -- and on either machine run no command that discards (rules.md -> agents-1)" >&2
+echo "  work on bigfed; or, with the hub down, in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/${name%%/*} (rules.md -> him-5)" >&2
+exit 1

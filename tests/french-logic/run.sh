@@ -9,10 +9,18 @@
 #   ./run.sh --dpi N         render resolution (default 200)
 #
 # Exit 0 when nothing changed, 1 when members render differently (side-by-side
-# images in build/diff/), 2 when the fixture itself failed to compile.
+# images in the build's diff/), 2 when the fixture itself failed to compile.
+#
+# The build goes to ${XDG_CACHE_HOME:-~/.cache}/configs-tests/french-logic/,
+# outside the tree (2026-10-26; org/machines/transport-2026-10, rules.md ws-9):
+# Syncthing carries ~/Desktop whole and reads no .gitignore, so a build in here
+# would cross to the other machine and the hub at every run. Python writes no
+# bytecode beside its scripts here. Only golden/ and modes.tsv are written in
+# the tree.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-build="$here/build"; golden="$here/golden"
+build="${XDG_CACHE_HOME:-$HOME/.cache}/configs-tests/french-logic"; golden="$here/golden"
+export PYTHONDONTWRITEBYTECODE=1
 sty_dir=""; update=0; recensus=0; dpi=200
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -89,7 +97,7 @@ for k in changed:
     out = os.path.join(b, 'diff', f'{k[0].strip(chr(92)).replace(":", "_")}-{k[1]}')
     subprocess.run(['pdftoppm', '-r', dpi, '-png', '-f', str(po), '-l', str(po), '-singlefile', os.path.join(g, 'fixture.pdf'), out + '-golden'], capture_output=True)
     subprocess.run(['magick', out + '-golden.png', newpngs[pn - 1], '-bordercolor', 'gray50', '-border', '4', '+append', out + '.png'], capture_output=True)
-    print(f'~ changed: {k[0]} ({k[1]})  -> build/diff/{os.path.basename(out)}.png  (golden | new)')
+    print(f'~ changed: {k[0]} ({k[1]})  -> {out}.png  (golden | new)')
 n = len(added) + len(removed) + len(changed)
 print(f'{len(new)} pages rendered; {len(changed)} changed, {len(added)} added, {len(removed)} removed')
 sys.exit(1 if n else 0)

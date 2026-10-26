@@ -15,6 +15,13 @@ by a dotted path into the spec below and sets it, e.g.
     nousowl.connected.BIG=false
 Device ids may be written as the aliases FED, BIG, HUB. Ports come from
 SB/ports (three lines: fedxps, bigfed, nousowl) and the key from SB/key.
+
+The database's per-file records (db/browse, db/file) are each instance's
+"files": folder id -> path -> record; the base gives each workstation the
+pilot repository's .git in f2, every version bigfed's counter alone. A path
+holds dots, so its override has a form of its own, merged into the record:
+    file:fedxps:f2:.git/index={"version":["FEDXPSX:1792640450","BIGFEDX:1791668457"]}
+A folder's pull errors on any instance are "pullErrorList" (folder/errors).
 """
 import json
 import os
@@ -35,10 +42,17 @@ FOLDERS = [("f1", "alpha", "Desktop/alpha"), ("f2", "nousowl", "Desktop/nousowl"
 # label KNOWN names, so every other case reads a folder nothing is known about.
 
 
+GIT_TREE = {".git": "dir", ".git/HEAD": "file", ".git/index": "file", ".git/config": "file", ".git/refs": "dir",
+            ".git/refs/heads": "dir", ".git/refs/heads/main": "file", ".git/refs/tags": "dir", ".git/objects": "dir",
+            ".git/objects/pack": "dir", ".git/objects/pack/pack-1.pack": "file", ".git/objects/pack/pack-1.idx": "file",
+            "README.md": "file"}
+
+
 def workstation(alias):
     other = "BIG" if alias == "FED" else "FED"
     spec = {"myID": IDS[alias], "startTime": "2026-10-10T10:04:50-07:00", "connected": {"HUB": True},
-            "devices": ["HUB", alias], "folders": {}, "events": [], "hub_enc": True, "type": "sendreceive"}
+            "devices": ["HUB", alias], "folders": {}, "events": [], "hub_enc": True, "type": "sendreceive",
+            "files": {"f2": {p: {"type": k, "version": ["BIGFEDX:1791668457"], "modifiedBy": "BIGFEDX"} for p, k in GIT_TREE.items()}}}
     for fid, label, rel in FOLDERS:
         spec["folders"][fid] = {"label": label, "path": os.path.join(HOMES[NAMES[alias]], rel), "paused": False, "maxConflicts": 10,
                                 "state": "idle", "needTotalItems": 0, "needDeletes": 0, "needNames": [], "pullErrors": 0, "error": "",
@@ -62,6 +76,11 @@ def hub():
 specs = {"fedxps": workstation("FED"), "bigfed": workstation("BIG"), "nousowl": hub()}
 
 for ov in sys.argv[3:]:
+    if ov.startswith("file:"):
+        where, val = ov.split("=", 1)
+        _, host, fid, fpath = where.split(":", 3)
+        specs[host].setdefault("files", {}).setdefault(fid, {}).setdefault(fpath, {"type": "file"}).update(json.loads(val))
+        continue
     path, val = ov.split("=", 1)
     parts = path.split(".")
     cur = specs
@@ -123,6 +142,9 @@ def write_responses(host, spec):
             t["GET /rest/db/completion?folder=%s&device=%s" % (fid, did)] = {"body": {"completion": c["completion"], "globalBytes": 1, "needBytes": 0, "globalItems": f["globalTotalItems"],
                                                                                    "needItems": c["needItems"], "needDeletes": c["needDeletes"], "remoteState": c["remoteState"], "sequence": 1}}
             t["GET /rest/db/remoteneed?folder=%s&device=%s" % (fid, did)] = {"body": {"files": [{"name": n, "type": "FILE_INFO_TYPE_FILE"} for n in c["names"]], "page": 1, "perpage": 65536}}
+    for fid, f in spec["folders"].items():
+        t["GET /rest/folder/errors?folder=%s" % fid] = {"body": {"folder": fid, "errors": f.get("pullErrorList") or None, "page": 1, "perpage": 65536}}
+    t["__files__"] = spec.get("files") or {}
     t["GET /rest/events/disk?since=0&limit=1000&timeout=0"] = {"body": spec["events"]}
     with open(os.path.join(d, "responses.json"), "w") as fh:
         json.dump(t, fh, indent=1)

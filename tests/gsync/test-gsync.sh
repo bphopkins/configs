@@ -21,6 +21,11 @@ chmod +x "$SANDBOX/stub/uname"
 printf '#!/bin/sh\nexit 0\n' > "$SANDBOX/stub/sync-check"
 chmod +x "$SANDBOX/stub/sync-check"
 PATH="$SANDBOX/stub:$PATH"
+# The gauge's log and the run's snapshot file (2026-10-26) stay in the sandbox:
+# a push writes the one into ~/Desktop/org/machines/<host>/ and the other into
+# the runtime directory, which are this machine's.
+export GAUGE_LOG_ROOT="$SANDBOX/machines" XDG_RUNTIME_DIR="$SANDBOX/run"
+mkdir -p -m 700 "$SANDBOX/run"
 
 pass=0 fail=0
 check() { # check DESC EXPR...
@@ -189,6 +194,9 @@ git -C "$SANDBOX/hintrepo" add -A && git -C "$SANDBOX/hintrepo" commit -qm c6
 out="$(_gsync_pull_hints configs "$SANDBOX/hintrepo" "$old"; _gsync_flush_hints)"
 check "hints: new package dir => stow hint"     contains "$out" "stow-all"
 check "hints: new package dir named"            contains "$out" "newpkg"
+# stow-all re-reads its arrays from 60-stow.sh on disk (2026-10-26, ws-8), so
+# the restow hint no longer asks for a re-source first.
+check "hints: the stow hint asks no re-source"  [ "${out//re-source first/}" = "$out" ]
 check "hints: docs/ is not a package"           [ "${out//docs/}" = "$out" ]
 check "hints: tests/ is not a package"          [ "${out//tests/}" = "$out" ]
 check "hints: wallpapers/ is not a package"     [ "${out//wallpapers/}" = "$out" ]
@@ -235,6 +243,50 @@ COMP_WORDS=(gpush diss); COMP_CWORD=1
 _gsync_complete
 check "completion: dissertation*"   contains "${COMPREPLY[*]}" "dissertation"
 check "completion: two matches"     [ "${#COMPREPLY[@]}" -eq 2 ]
+
+# --- 12. the dashboard and the pull against an origin another writer moved.
+# Carried over from test-two-machine.sh when that suite retired (2026-10-26):
+# with one writer of every .git the second machine is gone, but GitHub still
+# takes commits from elsewhere -- the hub-outage clone (rules.md him-5), a web
+# edit -- so these verdicts stay live and nothing else tests them. The peer
+# clone stands in for that other writer.
+_gsync_online() { return 0; }   # gstatall and gpullall probe afresh: no network here
+must git init -q --bare -b main "$SANDBOX/origin-desk.git"
+must git clone -q "$SANDBOX/origin-desk.git" "$SANDBOX/desk" 2>/dev/null   # empty yet: git warns
+echo base > "$SANDBOX/desk/base.txt"
+must git -C "$SANDBOX/desk" add -A
+must git -C "$SANDBOX/desk" commit -qm base
+must git -C "$SANDBOX/desk" push -qu origin main
+must git clone -q "$SANDBOX/origin-desk.git" "$SANDBOX/peer-desk"
+row() { grep -E "^$2 " <<<"$1"; }
+REPOS_DESKTOP=("$SANDBOX/desk")
+echo mine > "$SANDBOX/desk/mine.txt"
+must git -C "$SANDBOX/desk" add -A
+must git -C "$SANDBOX/desk" commit -qm "local, unpushed"
+out="$(gstatall -f)"
+check "dashboard: a local commit reads needs push" contains "$(row "$out" desk)" "needs push"
+out="$(gpullall)"
+check "pull: still ahead is said, not called done" contains "$out" "desk: ahead by 1 unpushed commit(s)"
+echo theirs > "$SANDBOX/peer-desk/theirs.txt"
+must git -C "$SANDBOX/peer-desk" add -A
+must git -C "$SANDBOX/peer-desk" commit -qm "elsewhere"
+must git -C "$SANDBOX/peer-desk" push -q
+out="$(gstatall -f)"
+check "dashboard: both sides moved reads DIVERGED" contains "$(row "$out" desk)" "DIVERGED"
+echo wip > "$SANDBOX/desk/wip.txt"
+out="$(gstatall -f)"
+check "dashboard: dirty work is not elided by DIVERGED" contains "$(row "$out" desk)" "uncommitted; DIVERGED"
+rm "$SANDBOX/desk/wip.txt"
+out="$(_gsync_push_repo desk "$SANDBOX/desk" "converge")"
+check "push: the divergence rebased and pushed" contains "$out" "desk: pushed"
+echo more > "$SANDBOX/peer-desk/more.txt"
+must git -C "$SANDBOX/peer-desk" add -A
+must git -C "$SANDBOX/peer-desk" commit -qm "elsewhere again"
+must git -C "$SANDBOX/peer-desk" pull -q --rebase
+must git -C "$SANDBOX/peer-desk" push -q
+echo wip > "$SANDBOX/desk/wip.txt"
+out="$(gstatall -f)"
+check "dashboard: dirty and behind, both said" contains "$(row "$out" desk)" "uncommitted; needs pull"
 
 echo
 echo "passed: $pass  failed: $fail"

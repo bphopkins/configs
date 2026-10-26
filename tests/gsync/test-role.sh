@@ -28,6 +28,8 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
 export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$SB/home"   # the sync commands and the role helper key on $HOME
+export XDG_RUNTIME_DIR="$SB/run"   # where gpushall's snapshot file goes (2026-10-26)
+mkdir -p -m 700 "$SB/run"
 HOSTS="$HOME/Desktop/configs/git/hosts"
 mkdir -p "$HOSTS" "$SB/stub"
 printf '#!/bin/sh\ncat "%s/host"\n' "$SB" > "$SB/stub/uname"
@@ -35,12 +37,17 @@ chmod +x "$SB/stub/uname"
 # The push gauge (bigfed-2, 2026-10-10), stubbed: it records every call with
 # whether anything was staged when it ran, and answers for a repository from
 # STUB_GAUGE_<name> as "rc:text" (default: pass in silence). Section 5 drives it;
-# every other section needs it to pass.
+# every other section needs it to pass. Since 2026-10-26 it also records, into
+# STUB_GAUGE_SNAPLOG, the snapshot file the run handed it (SYNC_CHECK_SNAPSHOT)
+# and that file's mode as it ran, for section 5b.
 cat > "$SB/stub/sync-check" <<'EOF'
 #!/usr/bin/env bash
 repo="${@: -1}"; name="$(basename "$repo")"
 staged=clean; git -C "$repo" diff --cached --quiet 2>/dev/null || staged=staged
 printf '%s %s %s\n' "$name" "$staged" "$*" >> "${STUB_GAUGE_LOG:-/dev/null}"
+snap="${SYNC_CHECK_SNAPSHOT-unset}"; mode=none
+[ "$snap" != unset ] && mode="$(stat -c %a -- "$snap" 2>/dev/null || echo missing)"
+printf '%s %s %s\n' "$name" "$snap" "$mode" >> "${STUB_GAUGE_SNAPLOG:-/dev/null}"
 var="STUB_GAUGE_${name//[^A-Za-z0-9]/_}"; spec="${!var:-0:}"
 rc="${spec%%:*}"; text="${spec#*:}"
 [ -n "$text" ] && printf '%s\n' "$text"
@@ -509,6 +516,116 @@ check "fedxps reading nousowl: refused before the gauge (1/2)" contains "$out" "
 check "fedxps reading nousowl: refused before the gauge (2/2)" [ ! -s "$STUB_GAUGE_LOG" ]
 unset STUB_GAUGE_nousowl
 hostfile fedxps ''
+
+# --- 5b. the gauge's log (D3) and the run's snapshot (2026-10-26) -------------
+echo "== bigfed: the push gauge's reading logged, one snapshot a run =="
+be bigfed
+export GAUGE_LOG_ROOT="$SB/machines" STUB_GAUGE_SNAPLOG="$SB/snap.log"
+mkdir -p "$SB/machines/bigfed"
+check "the runtime directory is empty before 5b (no snapshot left by sections 1-5)" [ -z "$(ls -A "$SB/run")" ]
+GL="$SB/machines/bigfed/gauge-log.md"
+lastlog() { tail -1 "$GL" 2>/dev/null; }
+lines() { wc -l < "$GL" 2>/dev/null || echo 0; }
+today="$(date '+%Y-%m-%d')"
+export STUB_GAUGE_nousowl='1:[FAIL] nousowl: stranded on fedxps: a.md | b.md'
+echo log1 > "$N/log1.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a refusal: not pushed (rc=1)"                    [ "$rc" -eq 1 ]
+check "the log file is created with its header"         [ "$(head -1 "$GL")" = "# The gauge's log -- bigfed's lines" ]
+check "  its kind line"                                 [ "$(sed -n 3p "$GL")" = "**Dated record**, appended by \`bye\`, \`byebye\` and the push hook: the gauge's reading at every leaving and every push of this machine; one file per machine, one writer each." ]
+check "  its table head"                                [ "$(sed -n '5,6p' "$GL" | tr '\n' '#')" = "| when | reading | note |#|---|---|---|#" ]
+check "a refusal: one line, the FAIL line as the reading, refused" [ "$(lastlog | sed 's/^| [0-9-]* [0-9:]* |/| WHEN |/')" = "| WHEN | [FAIL] nousowl: stranded on fedxps: a.md / b.md | gpush nousowl, refused |" ]
+check "  dated today, to the minute"                    bash -c '[[ "$1" =~ ^\|\ $2\ [0-9]{2}:[0-9]{2}\ \| ]]' _ "$(lastlog)" "$today"
+check "  a | in the gauge's line does not break the row" [ "$(lastlog | tr -cd '|' | wc -c)" -eq 4 ]
+check "  exactly one line written"                      [ "$(lines)" -eq 7 ]
+n0="$(lines)"
+out="$(gpushall)"; rc=$?
+check "gpushall: nousowl refused, org passed in silence" contains "$out" "ok: 1  skipped: 1"
+check "gpushall: one line, nousowl's"                   [ "$(lines)" -eq $((n0 + 1)) ]
+check "gpushall: the note names gpushall"               bash -c '[[ "$1" == *"| [FAIL] nousowl: stranded on fedxps: a.md / b.md | gpushall nousowl, refused |" ]]' _ "$(lastlog)"
+check "gpushall: org, judged by no folder, is not logged" bash -c '! grep -q " org," "$1"' _ "$GL"
+export STUB_GAUGE_nousowl='2:[WARN] alpha: nousowl did not answer over ssh'
+out="$(gpush nousowl)"; rc=$?
+check "exit 2: pushed under WARN, logged so (1/2)"      [ "$rc" -eq 0 ]
+check "exit 2: pushed under WARN, logged so (2/2)"      bash -c '[[ "$1" == *"| [WARN] alpha: nousowl did not answer over ssh | gpush nousowl, pushed under WARN |" ]]' _ "$(lastlog)"
+export STUB_GAUGE_nousowl='3:[DUE] nousowl: up to date; the watcher reports: failed to setup inotify handler'
+echo log2 > "$N/log2.txt"
+out="$(gpush nousowl)"; rc=$?
+check "exit 3: pushed under DUE, logged so (1/2)"       [ "$rc" -eq 0 ]
+check "exit 3: pushed under DUE, logged so (2/2)"       bash -c '[[ "$1" == *"| [DUE] nousowl: up to date; the watcher reports: failed to setup inotify handler | gpush nousowl, pushed under DUE |" ]]' _ "$(lastlog)"
+export STUB_GAUGE_nousowl='0:[ OK ] nousowl: folder nousowl up to date; HEAD equal on fedxps'
+echo log3 > "$N/log3.txt"
+out="$(gpush nousowl)"; rc=$?
+check "exit 0 with a line: pushed, logged (1/2)"        [ "$rc" -eq 0 ]
+check "exit 0 with a line: pushed, logged (2/2)"        bash -c '[[ "$1" == *"| [ OK ] nousowl: folder nousowl up to date; HEAD equal on fedxps | gpush nousowl, pushed |" ]]' _ "$(lastlog)"
+# the first tagged line is the reading, though a later one passes (GS10, the
+# 2026-10-26 review: a last-line reading survived the suite)
+export STUB_GAUGE_nousowl=$'2:[WARN] alpha: nousowl did not answer over ssh\n[ OK ] nousowl: folder nousowl up to date'
+echo log6 > "$N/log6.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a WARN line, then an OK line: pushed under WARN (1/2)" [ "$rc" -eq 0 ]
+check "a WARN line, then an OK line: the WARN is the reading (2/2)" bash -c '[[ "$1" == *"| [WARN] alpha: nousowl did not answer over ssh | gpush nousowl, pushed under WARN |" ]]' _ "$(lastlog)"
+export STUB_GAUGE_nousowl='0:[ OK ] nousowl: folder nousowl up to date; HEAD equal on fedxps'
+echo conflict > "$N/notes.sync-conflict-20261026-101010-ABCDEFG.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a pass, then the push refused by the vet: rc=1"  [ "$rc" -eq 1 ]
+check "  logged as failed, not pushed"                  bash -c '[[ "$1" == *"| [ OK ] nousowl: folder nousowl up to date; HEAD equal on fedxps | gpush nousowl, failed |" ]]' _ "$(lastlog)"
+rm -f "$N/notes.sync-conflict-20261026-101010-ABCDEFG.txt"
+echo log4 > "$N/log4.txt"
+_gsync_online() { return 1; }
+out="$(gpush nousowl)"; rc=$?
+_gsync_online() { return 0; }
+check "a pass, then offline: committed, push pending"   contains "$out" "nousowl: committed 1 path(s); push pending (offline)"
+check "  logged as pending"                             bash -c '[[ "$1" == *"| gpush nousowl, pending |" ]]' _ "$(lastlog)"
+out="$(gpush nousowl)"   # pushes the pending commit
+export STUB_GAUGE_nousowl='1:Traceback (most recent call last):'
+n0="$(lines)"
+out="$(gpush nousowl)"; rc=$?
+check "a gauge failing with no tagged line: refused"    [ "$rc" -eq 1 ]
+check "  logged by its exit status"                     bash -c '[[ "$1" == *"| the gauge exited 1 | gpush nousowl, refused |" ]]' _ "$(lastlog)"
+unset STUB_GAUGE_nousowl
+n0="$(lines)"
+echo log5 > "$N/log5.txt"
+out="$(gpush nousowl)"; rc=$?
+check "a silent pass: pushed, nothing logged (1/2)"     contains "$out" "nousowl: committed 1 path(s); pushed"
+check "a silent pass: pushed, nothing logged (2/2)"     [ "$(lines)" -eq "$n0" ]
+export STUB_GAUGE_nousowl='1:[FAIL] nousowl: stranded on fedxps: c.md'
+mv "$SB/machines/bigfed" "$SB/machines/bigfed.away"
+out="$(gpush nousowl)"; rc=$?
+check "no directory for this machine: the refusal stands (rc=1)" [ "$rc" -eq 1 ]
+check "  nothing written, no directory made"            [ ! -e "$SB/machines/bigfed" ]
+mv "$SB/machines/bigfed.away" "$SB/machines/bigfed"
+unset STUB_GAUGE_nousowl
+# the snapshot: one file for a run over several repositories, gone at its end
+: > "$STUB_GAUGE_SNAPLOG"
+echo s1 > "$N/s1.txt"; echo s1 > "$O/s1.txt"
+out="$(gpushall)"; rc=$?
+snaps="$(awk '{print $2}' "$STUB_GAUGE_SNAPLOG" | sort -u)"
+check "gpushall: the gauge ran for both repositories"   [ "$(wc -l < "$STUB_GAUGE_SNAPLOG")" -eq 2 ]
+check "gpushall: one snapshot path for both"            bash -c '[ "$(printf "%s\n" "$1" | wc -l)" -eq 1 ] && [ "$1" != unset ]' _ "$snaps"
+check "gpushall: in the runtime directory"              bash -c '[[ "$1" == "$2"/sync-check-snapshot.* ]]' _ "$snaps" "$SB/run"
+check "gpushall: the file existed, mode 600, at each call" [ "$(awk '{print $3}' "$STUB_GAUGE_SNAPLOG" | sort -u)" = 600 ]
+check "gpushall: gone after the run"                    bash -c '[ "$1" != unset ] && [ ! -e "$1" ]' _ "$snaps"
+check "gpushall: the runtime directory is left empty"   [ -z "$(ls -A "$SB/run")" ]
+check "gpushall: the variable does not outlive the run" [ -z "${SYNC_CHECK_SNAPSHOT+set}" ]
+: > "$STUB_GAUGE_SNAPLOG"
+out="$(gpush nousowl)"
+check "gpush with one name: no snapshot"                [ "$(cat "$STUB_GAUGE_SNAPLOG")" = "nousowl unset none" ]
+: > "$STUB_GAUGE_SNAPLOG"
+out="$(gpush org nousowl)"
+snaps="$(awk '{print $2}' "$STUB_GAUGE_SNAPLOG" | sort -u)"
+check "gpush with two names: one snapshot for both (1/2)" [ "$(wc -l < "$STUB_GAUGE_SNAPLOG")" -eq 2 ]
+check "gpush with two names: one snapshot for both (2/2)" bash -c '[[ "$1" == "$2"/sync-check-snapshot.* ]]' _ "$snaps" "$SB/run"
+check "gpush with two names: gone after"                [ -z "$(ls -A "$SB/run")" ]
+be fedxps
+hostfile fedxps '[gsync]\n\trole = reader\n'
+: > "$STUB_GAUGE_SNAPLOG"
+out="$(gpushall)"; rc=$?
+check "a reader's gpushall refuses before any snapshot (1/2)" [ "$rc" -eq 1 ]
+check "a reader's gpushall refuses before any snapshot (2/2)" [ -z "$(ls -A "$SB/run")" ]
+hostfile fedxps ''
+be bigfed
+unset GAUGE_LOG_ROOT STUB_GAUGE_SNAPLOG
 
 # --- 6. the live contract: the checkout's own host files (read only) --------
 echo "== the checkout's host files and include =="
