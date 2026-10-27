@@ -150,7 +150,8 @@ fi
 echo
 
 # --------------------------------------------------------- 4. home-level ----
-# Machine-local by deliberate decision, collected for comparison only.
+# Machine-local until the transport cutover (one text on both machines since
+# 2026-10-26, carried by hand), collected for comparison only.
 echo "== home-level (reference) =="
 record "$HOME/Desktop/CLAUDE.md" "home/Desktop-CLAUDE.md"       && echo "  + ~/Desktop/CLAUDE.md"
 record "$HOME/.config/git/ignore" "home/git-ignore"             && echo "  + ~/.config/git/ignore"

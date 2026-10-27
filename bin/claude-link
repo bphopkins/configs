@@ -27,6 +27,7 @@
 #   <cfg>/memory/<scope>/                       ->  ~/.claude/projects/<scope>/memory
 #   <cfg>/repos/<path>/settings.local.json      ->  ~/Desktop/<path>/.claude/
 #   <cfg>/repos/<path>/CLAUDE.local.md          ->  ~/Desktop/<path>/
+#   <cfg>/hosts/<host>.md, <host> = hostname -s ->  ~/CLAUDE.md, never by --auto
 #
 # It never deletes unique data. Adoption moves a file into org/claude-config or
 # backs it up; anything ambiguous is reported and skipped.
@@ -135,7 +136,8 @@ fi
 # Desktop is a folder the link arrives with it, and --auto names a missing
 # one and makes none. It still stands down while the shared tree's
 # repository is mid-operation, since a rebase can take a link's target away
-# for a moment and the sweep of ~/.claude would then remove the link.
+# for a moment and the sweep of ~/.claude would then remove the link. It
+# makes no ~/CLAUDE.md, which lies outside ~/.claude (the host pass, below).
 # Everything it does goes to a log instead of stdout.
 git_busy() {
   local g="$1/.git"
@@ -317,6 +319,40 @@ for e in CLAUDE.md settings.json keybindings.json plans agents commands \
   [ -d "$CFG/$e" ] && m=memdir || m=file
   link_one "$CFG/$e" "$CC/$e" "$m"
 done
+echo
+
+# ------------------------------------------------------------------- host --
+# ~/CLAUDE.md is this machine's own charter: a link to hosts/<host>.md in the
+# shared tree, one file per machine, so it loads in every session under ~
+# here and on no other machine (org/machines/transport-2026-10/decisions.md
+# -> 12; PLAN.md -> settled 24 and 59). The deliberate runs treat it as any
+# linked file: the dry run names it missing, --apply links it, --adopt
+# replaces an identical copy and backs up a differing one, --unlink leaves a
+# real copy. --auto makes none and removes none: ~/CLAUDE.md lies outside
+# ~/.claude, where rules.md -> ws-13 confines it, so a missing link is named
+# in its log for claude-link --apply, as a Desktop link is once the Desktop
+# is a Syncthing folder, and the next deliberate run makes it. With no host
+# file for this machine there is nothing to link; a link into hosts/ that
+# dangles is still named, since Claude Code skips one without a word
+# (r-claude-cases D2) and `sync-check config` reads this dry run, as the
+# SessionStart hook reads the link.
+echo "== host =="
+host=$(hostname -s 2>/dev/null)
+hsrc="$CFG/hosts/$host.md" hdst="$HOME/CLAUDE.md"
+if [ -n "$host" ] && [ -f "$hsrc" ]; then
+  if [ $AUTO = 1 ] && [ ! -e "$hdst" ] && [ ! -L "$hdst" ]; then
+    skp "not linked: ~/CLAUDE.md  (it lies outside ~/.claude, so --auto makes none; claude-link --apply does)"
+    n_skip=$((n_skip+1))
+  else
+    link_one "$hsrc" "$hdst" file
+  fi
+elif [ -L "$hdst" ] && [ ! -e "$hdst" ]; then
+  case "$(readlink -m "$hdst")" in
+    "$(readlink -m "$CFG")"/hosts/*)
+      wrn "~/CLAUDE.md is a link to $(readlink "$hdst"), which is not there, so this machine's own charter is not loading (once ${CFG/#$HOME/\~}/hosts/${host:-<host>}.md is in place: rm ~/CLAUDE.md && claude-link --apply)"
+      n_warn=$((n_warn+1)) ;;
+  esac
+fi
 echo
 
 # ----------------------------------------------------------------- skills --

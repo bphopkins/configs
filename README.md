@@ -234,6 +234,10 @@ instead and do not depend on the link. The reader's refusing hook
 `~/.config/git/hooks-reader`) runs only once the `git` package is stowed:
 until then the path names nothing and git runs no hook, without a word.
 
+Claude Code's per-machine charter, `~/CLAUDE.md`, needs no hand-made link:
+`claude-link --apply` makes it, to `org/claude-config/hosts/<hostname>.md`
+(2026-10-26), and its dry run names a missing one.
+
 
 
 ### 6. Verify

@@ -443,7 +443,7 @@ auto-running restore inside the pull, were considered and **declined**
 (2026-08-22; `docs/nvim-audit-2026-08-22.md`). `sync-check config` compares
 the installed plugins' HEADs with the shared lock on both roles, so a lock
 that arrived ahead of a restore reads FAIL there. Suite: `tests/lazy-lock/run.sh`
-(caged; 93 checks).
+(caged; 110 checks).
 
 ## Standing verdicts (don't re-derive)
 

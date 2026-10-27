@@ -3708,10 +3708,10 @@ bigfed.
   the gauge: `byebye`'s own stays as tested and the gauge reports the same.
   Reading the snapshot unless the caller names a file: the gauge stays
   read-only by default.
-- **For his hand** (`cutover/tools.md` → For him): the restow on both
-  machines (the gauge's `config` line names the two unlinked arrivals until
-  then), `reload` in every open shell, `claude-link --apply` once per machine
-  for the skills migration, and on fedxps the pull first.
+- **Live on both machines the same day**: the restows, `reload`, and
+  `claude-link --apply` once per machine for the skills migration, by his
+  hand from bigfed over ssh for the laptop's half, both gauges all clear
+  afterwards (`cutover/tools.md` → For him).
 - **The reviews.** Two Opus workers read the whole diff after the builds,
   a code review and an adversarial read with 128 one-change mutants; every
   finding was reproduced and went back to its builder, in two rounds. The
@@ -3738,3 +3738,18 @@ bigfed.
   claude 349, gsync 445, leave 95,
   bashrc 53, stow 63, git-hosts 242, lazy-lock 110, sync 274 in about
   fifteen minutes.
+
+## `claude-link` links `~/CLAUDE.md` to the machine's host file — 2026-10-26
+
+Step 5b of the transport campaign (`org/machines/transport-2026-10/PLAN.md` →
+settled 59, his word at the texts chat's pause, 13:58, carrying decision 12's
+letter): a host pass in `bin/claude-link`, after the user-level pass, links
+`~/CLAUDE.md` to `org/claude-config/hosts/$(hostname -s).md` when that file
+exists, and the deliberate runs treat it as any linked file. `--auto` never
+makes it, since `~/CLAUDE.md` lies outside `~/.claude`, where ws-13 confines
+that mode, and names a missing one in its log; a link into `hosts/` that
+dangles is named by every run, so `sync-check config` reads it as the
+session-start hook does. Declined at the pause: a hand-made link per machine,
+which nothing would notice missing. Suite `tests/claude` 349 → 387, eleven
+one-change mutants of the pass, all caught. The record is `cutover/texts.md`
+there (`bin/CLAUDE.md` → Claude Code configuration linkage).

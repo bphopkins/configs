@@ -102,8 +102,8 @@ with a conflict.
   module). The bare run
   is `sync`, `conflicts`, `guard`, `hub` — the hub's readings riding on the
   sync line's ssh — and `config` without the claude-link dry run, which
-  costs 1.8 s on bigfed: 1.6 to 1.8 s on bigfed at home, 1.3 s on fedxps,
-  inside the session hook's 4 s. Exit 0 all clear, 1 something wrong or not
+  alone costs 1.8 s on bigfed; the bare run takes 1.6 to 1.9 s on bigfed at
+  home and 1.3 s on fedxps, inside the session hook's 4 s. Exit 0 all clear, 1 something wrong or not
   yet (FAIL, WAIT), 2 could not determine, 3 up to date with attention due:
   DUE lines and nothing worse, which `bye`, `byebye` and the push gauge pass
   (2026-10-14; `org/machines/transport-2026-10/PLAN.md` → settled 37). Every
@@ -122,10 +122,10 @@ with a conflict.
   unless `SYNC_CHECK_SNAPSHOT` names one: then `gpushall`'s thirteen calls
   read the cluster once and the rest read that file while it is under
   `SYNC_CHECK_SNAPSHOT_TTL` (300 s) old, the per-repository checks still
-  live. Suite: `tests/sync-check/run.sh` (caged, about 80 s; three fixture
-  Syncthing instances on loopback, stubs for ssh with its two doors, uname,
-  btrfs, df, systemctl and ps, a sandbox configs checkout stowed by the real
-  `stow`, which must be installed; 531 checks, about 100 s, reviewed twice and
+  live. Suite: `tests/sync-check/run.sh` (caged, about 100 s on bigfed; three
+  fixture Syncthing instances on loopback, stubs for ssh with its two doors,
+  uname, btrfs, df, systemctl and ps, a sandbox configs checkout stowed by the
+  real `stow`, which must be installed; 531 checks, reviewed twice and
   mutation-tested the day it was written, `pilot/build-gauge.md`, its exit-3
   cases mutation-tested on 2026-10-14, 22 mutants of the 5a code killed on
   2026-10-26).
@@ -384,7 +384,7 @@ claude-link              # dry run — says what would change
 claude-link --apply      # create the links
 claude-link --adopt      # first run on a machine that already has its own state
 claude-link --unlink     # reverse it; keeps the merged content
-claude-link --auto       # SessionEnd's: silent, writes only under ~/.claude
+claude-link --auto       # SessionEnd's: silent, confined (below)
 claude-prune [--apply]   # drop mechanically dead permission entries
 ```
 
@@ -414,6 +414,13 @@ the migration once per machine and moves the vendor's state out of the
 shared tree in the same run, a new authored skill is linked by the next
 `--apply` or `--auto`, and a skill written straight into `~/.claude/skills`
 is reported as on this machine alone.
+And since the same day the deliberate runs link `~/CLAUDE.md`, the
+machine's own charter, to `org/claude-config/hosts/$(hostname -s).md` when
+that file exists, treating it as any linked file (the dry run names it
+missing, `--adopt` backs up a differing copy, `--unlink` leaves a real one),
+while `--auto` never makes it, since it lies outside `~/.claude`, and a
+dangling link into `hosts/` is named by every run (decision 12 of the
+transport campaign; its `PLAN.md` → settled 59).
 
 **`claude-prune` must follow the first `--adopt` on each machine — not
 optional.** Adoption is deliberately lossless and re-admits every previously

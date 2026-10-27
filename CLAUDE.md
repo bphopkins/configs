@@ -66,8 +66,9 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 - `stow-all` — restow every package (`stow -R`) as the checkout stands on
   disk: it re-reads the package arrays from `60-stow.sh` itself, sweeps the
   dangling links a removed package left (every target walked three levels
-  deep, `~/Desktop` excluded), and refuses if that file does not parse; no `git pull` since 2026-10-26 (pull first with `gpullall` until the
-  transport cutover; `org/machines/transport-2026-10/rules.md` → ws-8).
+  deep, `~/Desktop` excluded), and refuses if that file does not parse; no
+  `git pull` since 2026-10-26 (pull first with `gpullall` until the transport
+  cutover; `org/machines/transport-2026-10/rules.md` → ws-8).
   On a conflict (an untracked real file already sitting at a target) it
   **errors out** rather than resolving it — adopt or remove the file manually
   (README §8), then rerun.
@@ -76,9 +77,10 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
 
 Editing already-linked files requires no restow; adding or removing files in
 a package does (`stow -R <pkg>`). When adding a new package, update both the
-target map and the ordering array in `60-stow.sh`. `bash/.stow-global-ignore` (stowed to `~`) keeps the per-package
-charters out of the live config tree; ⚠ it **replaces** stow's built-in
-defaults, so its reproduced default patterns must stay (`bash/CLAUDE.md`).
+target map and the ordering array in `60-stow.sh`. `bash/.stow-global-ignore`
+(stowed to `~`) keeps the per-package charters out of the live config tree;
+⚠ it **replaces** stow's built-in defaults, so its reproduced default
+patterns must stay (`bash/CLAUDE.md`).
 
 ## Daily Sync Workflow
 
@@ -274,9 +276,10 @@ languages — see `sway/CLAUDE.md` before changing it.
   by name: a secret pasted into a tracked file, or private data under an
   innocent name, ships regardless — the content scan is `TODO.md` item 7.
   Don't park secrets, private data, or large binaries here. Note also that
-  stow's ignore list (the reproduced defaults + `CLAUDE\.md`) does **not**
-  cover `*.bak`/`*.save` — `.gitignore` keeps such backups off the remote;
-  stow does not keep them out of `~/.config`.
+  stow's ignore list (the reproduced defaults + `CLAUDE\.md` and, since
+  2026-10-26, `__pycache__`) does **not** cover `*.bak`/`*.save` —
+  `.gitignore` keeps such backups off the remote; stow does not keep them out
+  of `~/.config`.
 - **A stow package cannot ship a systemd drop-in or `.wants` directory into
   `~/.config/systemd/user`**: stow folds a new directory into a relative
   symlink, which systemd 259 silently skips (measured 2026-09-30). Target the

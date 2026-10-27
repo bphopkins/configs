@@ -674,6 +674,90 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   yes_ "  while a file no link names still is"    '[[ "$(sysm "$j")" == *"1 memory file(s)"*"-shared/e f.md"* ]]'
 fi
 
+echo "== the host pass: ~/CLAUDE.md, this machine's own charter (decision 12; 5b, 2026-10-26) =="
+# A link to hosts/<hostname -s>.md in the shared tree, made by the deliberate
+# runs and never by --auto, since ~/CLAUDE.md lies outside ~/.claude (ws-13).
+# hostname is a stub first on the sandbox PATH: testhost with -s, a full name
+# without it, so a pass that drops the -s finds no file.
+hrun() { local w=$1; shift
+  PATH="$w/bin:$PATH" HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
+    "$LINK" "$@" 2>&1; }
+hostworld() {  # this machine's host file and the other's, everything else linked, no ~/CLAUDE.md
+  local w; w=$(mkworld); mkdir -p "$w/bin" "$w/cfg/hosts"
+  printf '#!/bin/sh\ncase "$1" in -s) echo testhost ;; *) echo testhost.example.org ;; esac\n' > "$w/bin/hostname"; chmod +x "$w/bin/hostname"
+  printf 'this machine\n' > "$w/cfg/hosts/testhost.md"
+  printf 'the other\n'    > "$w/cfg/hosts/otherhost.md"
+  hrun "$w" --apply >/dev/null; rm -f "$w/home/CLAUDE.md"
+  echo "$w"
+}
+hostlines() { printf '%s\n' "$1" | sed -n '/^== host ==$/,/^$/p' | grep '\['; }
+w=$(hostworld)
+out=$(hrun "$w"); rc=$?
+check "dry run, the host file present and no link: exit 1" "$rc" "1"
+check "  naming it"                                "$(hostlines "$out")" "  [LINK] would link ~/CLAUDE.md"
+check "  its only pending change"                  "$(printf '%s\n' "$out" | grep -c '^  \[\(LINK\|ADPT\)\]')" "1"
+not_ "  and it makes nothing"                      '[ -e "$w/home/CLAUDE.md" ] || [ -L "$w/home/CLAUDE.md" ]'
+out=$(hrun "$w" --auto)
+check "--auto, the link missing: silent"           "$out" ""
+not_ "  makes none"                                '[ -e "$w/home/CLAUDE.md" ] || [ -L "$w/home/CLAUDE.md" ]'
+yes_ "  and its log names claude-link --apply"     'grep -qF "not linked: ~/CLAUDE.md  (it lies outside ~/.claude, so --auto makes none; claude-link --apply does)" "$w/home/.claude/claude-link-auto.log"'
+out=$(hrun "$w" --apply); rc=$?
+check "--apply links it: exit 1"                   "$rc" "1"
+check "  to this machine's host file"              "$(readlink "$w/home/CLAUDE.md")" "$w/cfg/hosts/testhost.md"
+check "  and says so"                              "$(hostlines "$out")" "  [LINK] ~/CLAUDE.md"
+out=$(hrun "$w" --apply); rc=$?
+check "a second --apply: all correct, exit 0"      "$rc" "0"
+check "  nothing said about it"                    "$(hostlines "$out")" ""
+out=$(hrun "$w"); rc=$?
+check "  and the dry run exits 0"                  "$rc" "0"
+if [ -x "$HOOKS/session-start.sh" ]; then
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  not_ "  the hook reads the made link as healthy" '[[ "$j" == *"~/CLAUDE.md"* ]]'
+fi
+rm -f "$w/home/.claude/claude-link-auto.log"
+out=$(hrun "$w" --auto)
+check "--auto, the link correct: leaves it"        "$(readlink "$w/home/CLAUDE.md")" "$w/cfg/hosts/testhost.md"
+not_ "  with nothing to log about it"              'grep -qF "~/CLAUDE.md" "$w/home/.claude/claude-link-auto.log"'
+hrun "$w" --unlink >/dev/null
+yes_ "--unlink: ~/CLAUDE.md a real copy"           '[ -f "$w/home/CLAUDE.md" ] && [ ! -L "$w/home/CLAUDE.md" ]'
+check "  with the host file's content"             "$(cat "$w/home/CLAUDE.md")" "this machine"
+check "  the host file untouched"                  "$(cat "$w/cfg/hosts/testhost.md")" "this machine"
+w=$(hostworld); rm "$w/cfg/hosts/testhost.md"
+out=$(hrun "$w"); rc=$?
+check "no host file for this machine: the dry run exits 0" "$rc" "0"
+check "  silent about ~/CLAUDE.md"                 "$(hostlines "$out")" ""
+hrun "$w" --apply >/dev/null
+not_ "  --apply makes no link"                     '[ -e "$w/home/CLAUDE.md" ] || [ -L "$w/home/CLAUDE.md" ]'
+printf 'by hand\n' > "$w/home/CLAUDE.md"
+out=$(hrun "$w" --apply); rc=$?
+check "  a plain ~/CLAUDE.md beside no host file: silent, exit 0" "$(hostlines "$out") $rc" " 0"
+w=$(hostworld); printf 'my own\n' > "$w/home/CLAUDE.md"
+out=$(hrun "$w" --apply)
+check "a real differing ~/CLAUDE.md: --apply warns" "$(hostlines "$out")" "  [WARN] exists and is not a link: ~/CLAUDE.md   (re-run with --adopt)"
+check "  and leaves it"                            "$(cat "$w/home/CLAUDE.md")" "my own"
+out=$(hrun "$w" --adopt)
+check "--adopt backs it up"                        "$(cat "$w"/home/.claude/link-backups/*/CLAUDE.md 2>/dev/null)" "my own"
+yes_ "  skips it, saying so"                       '[[ "$out" == *"differs from the shared copy, backed up and skipped: ~/CLAUDE.md"* ]]'
+yes_ "  the file still his"                        '[ -f "$w/home/CLAUDE.md" ] && [ ! -L "$w/home/CLAUDE.md" ] && [ "$(cat "$w/home/CLAUDE.md")" = "my own" ]'
+check "  and the host file untouched"              "$(cat "$w/cfg/hosts/testhost.md")" "this machine"
+w=$(hostworld); printf 'this machine\n' > "$w/home/CLAUDE.md"
+out=$(hrun "$w" --adopt)
+check "an identical ~/CLAUDE.md: --adopt replaces it with the link" "$(readlink "$w/home/CLAUDE.md")" "$w/cfg/hosts/testhost.md"
+yes_ "  and says so"                               '[[ "$out" == *"~/CLAUDE.md  (identical, replaced)"* ]]'
+w=$(hostworld); hrun "$w" --apply >/dev/null; rm "$w/cfg/hosts/testhost.md"
+out=$(hrun "$w"); rc=$?
+check "the host file gone, the link dangling: one warning" "$(hostlines "$out" | grep -c .)" "1"
+yes_ "  naming the missing file"                   '[[ "$(hostlines "$out")" == "  [WARN] ~/CLAUDE.md is a link to $w/cfg/hosts/testhost.md, which is not there"* ]]'
+check "  the dry run exiting 0 over it, a WARN of sync-check config" "$rc" "0"
+yes_ "  and counting it in the summary"            '[[ "$out" == *"warnings        : 1"* ]]'
+hrun "$w" --apply >/dev/null
+check "  --apply leaves the link"                  "$(readlink "$w/home/CLAUDE.md")" "$w/cfg/hosts/testhost.md"
+out=$(hrun "$w" --auto)
+check "  --auto silent"                            "$out" ""
+ln -sfn "$w/elsewhere/CLAUDE.md" "$w/home/CLAUDE.md"
+out=$(hrun "$w")
+check "a dangling ~/CLAUDE.md not into hosts/: not named" "$(hostlines "$out")" ""
+
 echo "== absent repos are skipped, not failed =="
 w=$(mkworld)
 mkdir -p "$w/cfg/repos/ghost"; printf '{"permissions":{"allow":[]}}\n' > "$w/cfg/repos/ghost/settings.local.json"
