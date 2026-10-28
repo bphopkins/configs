@@ -38,10 +38,9 @@
 	# readerRepo repeats for more than one repository; its value is a name
 	# under ~/Desktop, and a value that names no directory is warned about
 	# and refuses nothing.
-	readerRepo = nousowl
 	# At the cutover (5d; pilot.md -> The fold-in on cutover day, item 4)
 	# readerRepo leaves and fedxps reads every repository:
-	#role = reader
+	role = reader
 
 # The refusing hook (fedxps-6; PLAN.md settled 17, built 2026-10-26). Every
 # ref update this machine makes runs hooks-reader/reference-transaction,
