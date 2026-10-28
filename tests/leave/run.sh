@@ -35,9 +35,11 @@ printf '[gsync]\n\treaderRepo = nousowl\n' > "$HOSTS/fedxps.inc"
 must git init -q -b main "$HOME/Desktop/nousowl"
 printf '#!/bin/sh\ncat "%s/host"\n' "$SB" > "$SB/stub/uname"
 printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/systemctl.log"\nexit 0\n' "$SB" > "$SB/stub/systemctl"
+# the stub logs its words and, since 2026-10-27, the caller's name the gauge
+# keeps its reading under (SYNC_CHECK_CALLER; PLAN.md -> settled 76)
 cat > "$SB/stub/sync-check" <<'STUB'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >> "${STUB_LEAVE_LOG:-/dev/null}"
+printf '%s caller=%s\n' "$*" "${SYNC_CHECK_CALLER-unset}" >> "${STUB_LEAVE_LOG:-/dev/null}"
 [ -n "${STUB_LEAVE_TEXT:-}" ] && printf '%b\n' "$STUB_LEAVE_TEXT"
 exit "${STUB_LEAVE_RC:-0}"
 STUB
@@ -63,6 +65,7 @@ reset; be fedxps; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT"
 out="$(bye 2>&1)"; rc=$?
 check "bye: exit 0"                                   [ "$rc" -eq 0 ]
 check "bye: the gauge was asked for sync"             contains "$(cat "$SB/gauge.log")" "sync"
+check "bye: the gauge is told the reading is bye's"   [ "$(cat "$SB/gauge.log")" = "sync caller=bye" ]
 check "bye: systemctl suspend, once"                  [ "$(cat "$SB/systemctl.log")" = "suspend" ]
 check "bye: the gauge's lines shown"                  contains "$out" "[ OK ] nousowl: up to date"
 check "bye: the log file is this machine's"           [ -f "$LF" ]
@@ -84,6 +87,7 @@ reset; be bigfed; export STUB_LEAVE_RC=0 STUB_LEAVE_TEXT="$OKTEXT"
 out="$(byebye 2>&1)"; rc=$?
 check "byebye: exit 0"                                [ "$rc" -eq 0 ]
 check "byebye: systemctl poweroff, once"              [ "$(cat "$SB/systemctl.log")" = "poweroff" ]
+check "byebye: the gauge is told the reading is byebye's" [ "$(cat "$SB/gauge.log")" = "sync caller=byebye" ]
 check "byebye: logged to bigfed's file"               contains "$(tail -1 "$LB")" "| OK, 8 folders | byebye |"
 
 echo "== the gauge refuses =="

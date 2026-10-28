@@ -386,7 +386,10 @@ _leave() {
     esac
   done
   if command -v sync-check >/dev/null 2>&1; then
-    out="$(sync-check sync 2>&1)"; rc=$?
+    # The gauge keeps this reading in its reading file under the command's
+    # name, and the session hook reports it at the next start as "by byebye
+    # 9 h ago" (org/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
+    out="$(SYNC_CHECK_CALLER="$cmd" sync-check sync 2>&1)"; rc=$?
     printf '%s\n' "$out"
     if ((rc == 0)); then
       n="$(grep -c -E '^\[ OK \] [^:]+: up to date' <<<"$out")"

@@ -785,11 +785,23 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
   `init.defaultRefFormat`; the reader's own plugin lock; the test builds
   outside the tree; `claude-link`'s lock, confinement and per-skill links;
   `syncthing-addfolder` rewritten; the `tests/sync` rig; `test-two-machine.sh`
-  retired. Still this repo's, in the plan's order: the cutover-day flip of
-  `fedxps.inc` (`readerRepo` out, `role = reader` in) and the vector
-  check's place in the bare run at Desktop scale (5d), and the charters'
-  rewrite for the whole Desktop (5b, 6a). Do none of it from here: the
-  campaign chats carry the evidence and the record.
+  retired; at step 5c-b (2026-10-27, `cutover/builds.md` there, `DECISIONS.md`
+  the same day): `syncthing-addfolder`'s bodies without the block index and
+  its rig checks; the gauge's reading file and `session` line, which the
+  session hook runs, the vector check out of that run; `KNOWN_WRITES` by
+  machine and counter with the lines to paste, the `.git` fix texts of the
+  sync and push lines and a listed directory's permission change, the hub's
+  index DUE at 2 GB; the callers' names in `bye`, `byebye`, `gpush` and
+  `gpushall`; R3's `case_split_reverse.py` applied by his hand and the
+  refuter's readings folded into `case_split.py`, whose first run forces the
+  shared fan-out directory. Still this repo's, in the plan's order: the
+  cutover-day flip of `fedxps.inc` (`readerRepo` out, `role = reader` in,
+  committed on bigfed and pulled once with the hook bypassed:
+  `cutover/rehearsal/runbook-5d.md` B1) at 5d, and the charters' rewrite for
+  the whole Desktop (5b, 6a). Do none of it from here: the campaign chats
+  carry the evidence and the record. Open beside it, for a later chat: a rig
+  case for a split whose bigfed commit is already on GitHub (`rules.md` →
+  him-2's last bullet, `refute-b.md` F5), before him-2 gets text for it.
 
 ## 36. Two suite defects found by the 2026-10-12 restore-order run
 

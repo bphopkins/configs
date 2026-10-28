@@ -45,7 +45,7 @@ with a conflict.
   `org/machines/transport-2026-10/PLAN.md`, record `pilot/build-gauge.md`;
   completed 2026-10-26 at step 5a, record `cutover/tools.md`; the rules it
   reads are that directory's `rules.md` → ws-1, ws-2, ws-8, fedxps-3,
-  bigfed-1, bigfed-2, hub-1, hub-4, him-2). Six lines: `sync` (every folder
+  bigfed-1, bigfed-2, hub-1, hub-4, him-2). Seven lines: `sync` (every folder
   this machine shares is up to date — a blocking scan, then the local status,
   this machine's view of the hub, and over batch-mode ssh the hub's view of
   both workstations and, when the hub shows the other workstation owing or
@@ -54,7 +54,23 @@ with a conflict.
   settle with every folder idle is stranded, named with him-2's repair —
   where both workstations list one path towards the hub, the vector of the
   path names the losing machine, the one whose counter the current version
-  lacks — while a transfer still running is `WAIT`; a known stuck item is
+  lacks, its repair an edit there, or a `touch` for a path under a
+  repository's `.git`, never an edit (2026-10-27, settled 79; the two fixes
+  for needs that do not arrive split their paths the same way), and a path
+  under a repository's `.git` names him-2's split repair
+  when it is stranded on the writer (the touch on the reader — and for a
+  path that is a directory here, which a touch does not move, its
+  permissions changed and set back there, the second sanctioned reader
+  write, his word of the same day; the push line's fix says the same — then the
+  phantom on the writer, `sync-check push <repo>` naming each step; for a
+  path absent here, a deletion the hub refused while it held the reader's
+  copy first, the reader's touch and then the deletion here again, its own
+  line) and the
+  reader's own `guard` line when it is stranded on the reader, never an
+  edit, the two machines read from this one's role (2026-10-27, settled 80),
+  and with no reading of the role a text naming no machine and no delete,
+  `sync-check push <repo>` on the writer naming the repair
+  — while a transfer still running is `WAIT`; a known stuck item is
   carried by name in `KNOWN`, and `DUE` says when it no longer shows, or when
   a folder's watcher is dead), `conflicts` (one `find` over `~/Desktop` and
   every folder path: copies under a `.git` and stale locks there FAIL, copies
@@ -67,14 +83,25 @@ with a conflict.
   start, the last 1,000 — and, since 2026-10-26, every file and directory
   under each such `.git` read from the database with its version vector,
   which FAILs on this machine's counter, a write the disk events forget at
-  the next daemon start; `KNOWN_WRITES` carries an explained write by its
-  exact counter, since a counter never leaves a vector; on a writer, no
+  the next daemon start (a repository nested deeper than one level below
+  `~/Desktop` or a folder's top lies outside it, a named gap: fifteen in
+  `ModalLogic/.lake` on 2026-10-27, settled 77); `KNOWN_WRITES` carries an explained write by
+  machine and counter on any path, `path` optional and narrowing, since a
+  counter never leaves a vector and returns on a path git deletes and
+  writes again, and each vector FAIL prints the entries to paste, one per
+  counter, as Python literals; a counter-keyed entry no path shows is a
+  `DUE` only once its counter is older than the 10,920 h a workstation
+  keeps a deleted record (2026-10-27, settled 79); on a writer, no
   `maintenance.lock` under any Desktop repository and no running `git
   maintenance`, the subcommand read past `-C`, `-c`, `--git-dir` and their
   kin, since `git -C <repo> maintenance run` is the fix line's own shape),
   `push REPO…` (bigfed-2: the folder up to date, nothing under
   the repository's `.git` needed in any view, no phantom ref or conflict copy
-  under `.git`, the other workstation's HEAD equal when it answers, and the
+  under `.git` (either beside needed `.git` paths makes the fix the touch
+  that clears the hub's loser, then the phantom repair: settled 79; refs git
+  cannot list make it say a phantom could not be ruled out; a needed path
+  absent here gets the refused deletion's text, as on the sync line), the
+  other workstation's HEAD equal when it answers, and the
   age of what GitHub lacks; a repository in no Syncthing folder passes,
   silently under `-q`, unless a `.stfolder` marker sits at or above it, which
   is `WARN`; a workstation the hub shows asleep blocks nothing, what the hub
@@ -90,20 +117,48 @@ with a conflict.
   over one ssh running this file's `--remote-hub` mode on the hub, btrfs's
   Free (estimated) of the sync volume with the growth commands below 10 GB,
   every hub folder's pull and folder errors, the index's size as a DUE past
-  1 GB, and the retention drop-in both in the unit's `DropInPaths` and in the
-  running daemon's environment); and `config` (2026-10-26, ws-8: every stow
-  package's entries linked at their target with no dangling link into
-  `configs`, by stow's own ignore list — a dangling link under a target
-  three levels deep included — the fix a `stow -R`; the installed plugins'
+  2 GB (settled 83, 2026-10-27), and the retention drop-in both in the unit's
+  `DropInPaths` and in the running daemon's environment); and `config`
+  (2026-10-26, ws-8: every stow package's entries linked at their target
+  with no dangling link into `configs`, by stow's own ignore list — a
+  dangling link under a target three levels deep included — the fix a
+  `stow -R`; the installed plugins'
   HEADs against the shared lock on both roles, since a reader's own copy is
   rewritten by lazy's install pass and would read OK behind an arrival (the
   code review's H1); the `claude-link` dry run exiting 0 with no `[WARN]` or `[FAIL]` line,
   since it exits 0 over unlinked configuration too; `bash -n` on every
-  module). The bare run
-  is `sync`, `conflicts`, `guard`, `hub` — the hub's readings riding on the
-  sync line's ssh — and `config` without the claude-link dry run, which
-  alone costs 1.8 s on bigfed; the bare run takes 1.6 to 1.9 s on bigfed at
-  home and 1.3 s on fedxps, inside the session hook's 4 s. Exit 0 all clear, 1 something wrong or not
+  module), and `session` (the session hook's since 2026-10-27, settled 76
+  and 77: `org/claude-config/hooks/session-start.sh` runs it under `timeout
+  4`, all clear to the model alone as `2 folders up to date by the newest
+  full reading, byebye 9 h ago`, anything else to both channels, a cut
+  naming the lines printed before it; each folder's newest full reading
+  reprinted from the reading file below, ` (the newest full reading, by
+  byebye 9 h ago, before this boot)` after the message on each tagged
+  line, so an OK line still begins
+  `<label>: up to date`, and `WARN <label>: no full reading on record` for a
+  folder with none or with one another device took (a reading file carried
+  to the other machine), a record dated more than 60 s ahead of the clock a
+  `WARN` of its own, and one older than seven days (`READING_MAX_AGE_DAYS`,
+  his word at the pause of 5c-b, 2026-10-27: on fedxps after the cutover the
+  readings come from `byebye`, `bye` and hand runs alone, and a week-old all
+  clear is no reading) `WARN <label>: the newest full reading is <age> old
+  (by <caller>): too old to stand as a reading`, the stored verdict under
+  `-v` alone; then `conflicts`, `guard` without the version vectors,
+  `config` without the claude-link dry run, and `hub` last, read live; no
+  scan, no `--remote-views`, no `db/browse` or `db/file`, and of this
+  machine's daemon one `system/status` first, so a daemon dead since the
+  reading is a WARN above the reprinted lines, on a writer too, where the
+  live lines ask it nothing. At Desktop scale
+  `sync` costs 44 s on bigfed and 66 s on fedxps, the blocking scan 39.5 and
+  60.4 s of it, and the hook's bare run was cut at 4.1 s on both machines
+  having read nothing (`cutover/rehearsal/r5.md`, t7, 2026-10-27); the
+  stored lines print in milliseconds, so a cut at the hook's 4 s away from
+  home, where the hub's first door costs 2 s, loses the hub's line alone).
+  The bare run is `sync`, `conflicts`, `guard` with the version vectors,
+  `hub` — the hub's readings riding on the sync line's ssh — and `config`
+  without the claude-link dry run, which alone costs 1.8 s on bigfed; on
+  today's folders it took 1.6 to 1.9 s on bigfed at home and 1.3 s on
+  fedxps, and it is no longer the hook's. Exit 0 all clear, 1 something wrong or not
   yet (FAIL, WAIT), 2 could not determine, 3 up to date with attention due:
   DUE lines and nothing worse, which `bye`, `byebye` and the push gauge pass
   (2026-10-14; `org/machines/transport-2026-10/PLAN.md` → settled 37). Every
@@ -118,17 +173,35 @@ with a conflict.
   `encryptionPassword` only as set or unset; `/rest/config` is never read. The
   hub and the other workstation run this same file in its `--remote-views`
   and `--remote-hub` modes from stdin, so the reads have one implementation,
-  and every round of the settle reads them afresh. The gauge writes no file
-  unless `SYNC_CHECK_SNAPSHOT` names one: then `gpushall`'s thirteen calls
+  and every round of the settle reads them afresh. The gauge writes one
+  file of its own, the reading file (settled 76): every live read of the
+  sync line's folders — the bare run, `sync`, `push` — keeps each folder's
+  verdict lines there, tags, messages and fix texts (a fix can name a
+  stranded path; no key is ever in it), with the time, the caller,
+  `SYNC_CHECK_CALLER` as `bye`, `byebye`, `gpush` and `gpushall` set it to
+  their own names, else `sync-check <line>` (`sync-check` alone for the bare
+  run), and the first seven characters of the daemon's device ID; the file is
+  `SYNC_CHECK_READINGS` when set (set empty, none), else
+  `$XDG_STATE_HOME/sync-check/readings.json`, else
+  `~/.local/state/sync-check/readings.json`, machine-local, replaced whole at
+  0600 in a 0700 directory, never written by the `--remote-*` modes nor for
+  a folder read from the snapshot, and a write that fails is silent, the next
+  `session` then reading no reading on record. And when
+  `SYNC_CHECK_SNAPSHOT` names a file, `gpushall`'s thirteen calls
   read the cluster once and the rest read that file while it is under
   `SYNC_CHECK_SNAPSHOT_TTL` (300 s) old, the per-repository checks still
-  live. Suite: `tests/sync-check/run.sh` (caged, about 100 s on bigfed; three
+  live. Suite: `tests/sync-check/run.sh` (caged, about 140 s on bigfed; three
   fixture Syncthing instances on loopback, stubs for ssh with its two doors,
   uname, btrfs, df, systemctl and ps, a sandbox configs checkout stowed by the
-  real `stow`, which must be installed; 531 checks, reviewed twice and
+  real `stow`, which must be installed; 741 checks, reviewed twice and
   mutation-tested the day it was written, `pilot/build-gauge.md`, its exit-3
   cases mutation-tested on 2026-10-14, 22 mutants of the 5a code killed on
-  2026-10-26).
+  2026-10-26, 14 of step 5c-b's repairs on 2026-10-27, and 18 of its
+  `session` line, reading file and `.git` touch the same day, a nineteenth,
+  the remote modes' guard on the reading file, equivalent while no remote
+  mode reads a folder through `check_folders`; after the review that
+  evening, six of its surviving mutants and five of the fixes' own killed,
+  each by its case).
 - `syncthing-addfolder` — creates one encrypted Syncthing folder across the
   cluster, run on bigfed alone (2026-10-26, step 5a of
   `org/machines/transport-2026-10/PLAN.md`, `rules.md` → mig-4 there, record
@@ -163,11 +236,20 @@ with a conflict.
   since it is the net for a host file that has not travelled, and a git
   that cannot read either machine's configuration stops the run with exit
   2 (the adversarial read's finding, the same day). Suite:
-  `tests/sync/run.sh addfolder` (149 checks on the real-instance rig, about
+  `tests/sync/run.sh addfolder` (156 checks on the real-instance rig, about
   eight minutes, the race guards and the gates' failing directions driven
   through the case's own ssh stub; twenty mutants caught after the
-  reviews). Not yet run live: the cutover rehearsal's, whose scratch trees
-  on fedxps need the reader's key for each.
+  reviews). Run live at the cutover rehearsal of 2026-10-26
+  (`org/machines/transport-2026-10/cutover/rehearsal/REPORT.md`): the fresh
+  shape on seven stand-in folders, the join end to end on a 336-thousand-file
+  scratch Desktop. Since 2026-10-27 (step 5c-b; `PLAN.md` there
+  → settled 67, 69) all three bodies carry `blockIndexing` false, which the
+  dry run's plan names and the read-back after each POST and every re-run
+  verify, a folder held with the index on stopping the run: a POST without
+  the key inherits the index from the defaults template, and with it the
+  rehearsal's hub fell from 81 files a second to 10–12 as its folder grew,
+  against 80–94 flat without. Seven of the suite's checks are this
+  change's, each shown failing against the tool before it.
 - `claude-link` / `claude-prune` / `claude-collect.sh` — Claude Code
   configuration linkage; see below.
 - `vimtex-warm` — pays VimTeX's per-package resolution cost on purpose

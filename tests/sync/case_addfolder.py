@@ -20,18 +20,21 @@ folder id:
      an existing hub directory (hub-3); a hub path under ~/sync that is no
      mount; a repository at the writer's root that does not ignore .stfolder/
   3. --dry-run: the plan, nothing written (config.xml bytes on all three),
-     with fedxps's first door down and its -vpn door answering
+     with fedxps's first door down and its -vpn door answering; each of its
+     three POST lines names no block index (PLAN.md -> settled 67, 69)
   4. fresh end to end: A and B equal by manifest, H ciphertext only,
-     maxConflicts 10 everywhere, H staggered maxAge 31536000 and minDiskFree
-     1 %, the device lists, the bounce seen in startedAt, every view clear;
-     then a re-run that verifies and writes nothing; then --undo
+     maxConflicts 10 and blockIndexing false everywhere (each POST's read-back
+     naming the block index off), H staggered maxAge 31536000 and
+     minDiskFree 1 %, the device lists, the bounce seen in startedAt, every
+     view clear; then a re-run that verifies and writes nothing; then --undo
   5. a half-made cluster: Ctrl-C while bigfed bounces the hub (the hub's
      folder made, fedxps's not), the paused device resumed; the re-run
      completes without re-creating (markers' inodes kept), --hub-only
   6. join end to end: B's repository gc'd (packs against A's loose objects)
      and one .git file edited; every B-only and differing .git path listed by
      localchanged and found in the trashcan, the manifests equal, the hub's
-     sequence unchanged across the switch, fsck clean, the link shared
+     sequence unchanged across the switch, fsck clean, the link shared;
+     blockIndexing false on all three, and the join's plan naming it
   7. join stopping on a path outside .git; the re-run with --allow-outside
   8. the rebuild's password paths: fedxps holding no encrypted folder (bigfed's
      password reaches it in the program text); then neither workstation, the
@@ -48,8 +51,9 @@ folder id:
      gate 9 with a file changed at the same size and a trashcan file gone; an
      edit on bigfed during the switch's watch (real, with the hub's link
      paused); a hub view a sequence behind; one good round and then none
-  4 also refuses a re-run on a folder at maxConflicts 0, and on a hub folder
-  at minDiskFree 0; 8 also refuses two different passwords
+  4 also refuses a re-run on a folder at maxConflicts 0, on a hub folder at
+  minDiskFree 0, and on the hub's and bigfed's folders with the block index
+  on; 8 also refuses two different passwords
   and over every run: no password in any line printed, none and no API key
   in any ssh command line
 
@@ -392,6 +396,9 @@ def case_dry_run(B):
     C.check("dry run: exit 0, the plan printed, nothing written said",
             rc == 0 and "[PLAN]" in out and "nothing was written" in out, rc)
     C.check("dry run: config.xml byte-identical on all three", B.config_hashes() == before)
+    posts = [l for l in out.splitlines() if "[PLAN]" in l and "POST /rest/config/folders" in l]
+    C.check("dry run: each of the plan's three POST lines names no block index (67, 69)",
+            len(posts) == 3 and all("no block index" in l for l in posts), posts)
     B.untouched("dry run", fid, P)
     C.check("dry run: the reader's path still absent", not os.path.exists(P["B"]))
     log = B.ssh_log()
@@ -427,6 +434,10 @@ def case_fresh(B):
     C.check("fresh: maxConflicts 10 on A, B and H",
             all((B.folder(n, fid) or {}).get("maxConflicts") == 10 for n in ("A", "B", "H")),
             {n: (B.folder(n, fid) or {}).get("maxConflicts") for n in ("A", "B", "H")})
+    bi = {n: r.folder_config(n, fid).get("blockIndexing") for n in ("A", "B", "H")}
+    C.check("fresh: blockIndexing false on A, B and H (67, 69)", all(v is False for v in bi.values()), bi)
+    backs = re.findall(r"\] (\w+): read back as specified: .*, block index off, devices ", out)
+    C.check("fresh: each POST read back with the block index named off", backs == ["bigfed", "nousowl", "fedxps"], backs)
     hf = r.folder_config("H", fid)
     C.check("fresh: the hub receiveencrypted, staggered maxAge 31536000, minDiskFree 1 %",
             hf["type"] == "receiveencrypted" and hf["versioning"]["type"] == "staggered"
@@ -473,6 +484,15 @@ def case_fresh(B):
     r.patch_folder("H", fid, minDiskFree={"value": 1, "unit": "%"})
     C.check("a re-run on the hub's folder with minDiskFree 0: exit 1, held differently, no write",
             rc == 1 and re.search(r"\[FAIL\] nousowl: holds it differently: minDiskFree", out7) and not do_lines(out7), rc)
+    for n, host in (("H", "nousowl"), ("A", "bigfed")):
+        r.patch_folder(n, fid, blockIndexing=True)
+        on = r.folder_config(n, fid).get("blockIndexing")
+        rc, out8, _ = B.tool(B.args(fid, "fresh", P, "--yes"), label="re-run, %s's block index on" % host)
+        r.patch_folder(n, fid, blockIndexing=False)
+        C.check("a re-run on %s's folder with the block index on: exit 1, held differently, no write (%s)"
+                % (host, "67" if n == "H" else "69"),
+                on is True and rc == 1 and re.search(r"\[FAIL\] %s: holds it differently: blockIndexing True" % host, out8)
+                and not do_lines(out8), (on, rc))
     rc, out3, _ = B.tool(B.args(fid, "other-label", P, "--yes"), label="re-run, another label")
     C.check("a re-run with another label: exit 1, held differently", rc == 1 and "holds it differently" in out3, rc)
     C.check("... and the undo printed", "syncthing-addfolder --undo %s" % fid in out3)
@@ -614,6 +634,12 @@ def case_join(B):
             (B.devices("A", fid), B.devices("B", fid)))
     C.check("join: maxConflicts 10 on A, B and H",
             all((B.folder(n, fid) or {}).get("maxConflicts") == 10 for n in ("A", "B", "H")))
+    bi = {n: r.folder_config(n, fid).get("blockIndexing") for n in ("A", "B", "H")}
+    C.check("join: blockIndexing false on A, B and H, B's through the switch (67, 69)",
+            all(v is False for v in bi.values()), bi)
+    posts = [l for l in out.splitlines() if "[PLAN]" in l and "POST /rest/config/folders" in l]
+    C.check("join: each of the plan's three POST lines names no block index, the reader's receive-only one too",
+            len(posts) == 3 and all("no block index" in l for l in posts) and "receiveonly" in posts[2], posts)
     v = B.views_all(fid)
     C.check("join: every view 100 with nothing needed, the link's too", rig.Rig.views_clear(v), v)
     C.check("join: the trashcan left in place", os.path.isdir(trash))

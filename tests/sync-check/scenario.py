@@ -110,9 +110,13 @@ def write_config(host, spec):
     for alias in spec["devices"]:
         lines.append('    <device id=%s name=%s compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy=""><address>dynamic</address></device>'
                      % (X.quoteattr(IDS[alias]), X.quoteattr(NAMES[alias])))
-    for d in spec.get("extra_devices", []):     # devices known to the instance but on no folder
+    # devices known to the instance but on no folder; `dev`, never `d`, which
+    # names the directory written into below (until 2026-10-27 the loop reused
+    # it, and a spec with extra devices crashed here, leaving the previous
+    # case's config.xml and responses.json in place)
+    for dev in spec.get("extra_devices", []):
         lines.append('    <device id=%s name=%s compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy=""><address>dynamic</address></device>'
-                     % (X.quoteattr(d["id"]), X.quoteattr(d["name"])))
+                     % (X.quoteattr(dev["id"]), X.quoteattr(dev["name"])))
     lines.append('    <gui enabled="true" tls="false" sendBasicAuthPrompt="false"><address>127.0.0.1:%s</address><apikey>%s</apikey></gui>' % (ports[host], key))
     lines.append("    <options><listenAddress>tcp://127.0.0.1:0</listenAddress></options>")
     lines.append("</configuration>")

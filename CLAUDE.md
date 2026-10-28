@@ -135,7 +135,7 @@ tree, the reader's own lock copy (2026-10-26).
 caged (2026-10-26; `bash/CLAUDE.md`).
 
 **Run `tests/sync-check/run.sh` after any edit to `bin/sync-check`.** Caged,
-about 100 s; three fixture Syncthing instances on loopback, stubs for `ssh`
+about 140 s; three fixture Syncthing instances on loopback, stubs for `ssh`
 (with its two doors), `uname`, `btrfs`, `df`, `systemctl` and `ps`, a sandbox
 checkout stowed by the real `stow`, which must be installed; nothing real is
 reached.
@@ -143,8 +143,9 @@ reached.
 **Run `tests/sync/run.sh` after any edit under `tests/sync/` and after a
 Syncthing upgrade, and `tests/sync/run.sh addfolder` after any edit to
 `bin/syncthing-addfolder`.** Caged at 1 GiB, 512 tasks and 1500 s; three real
-Syncthing instances on loopback per case, six cases in about fifteen
-minutes, 274 checks (2026-10-26; the transport campaign's rig). One case is built to fail when
+Syncthing instances on loopback per case, seven cases in about twenty
+minutes, 379 checks (2026-10-27; the transport campaign's rig, R3's reverse
+split among its cases since that day). One case is built to fail when
 the upgrade to 2.1.7 lands: the hub's deletion retention, whose fault 2.1.7
 fixes upstream.
 

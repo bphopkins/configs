@@ -3753,3 +3753,93 @@ session-start hook does. Declined at the pause: a hand-made link per machine,
 which nothing would notice missing. Suite `tests/claude` 349 → 387, eleven
 one-change mutants of the pass, all caught. The record is `cutover/texts.md`
 there (`bin/CLAUDE.md` → Claude Code configuration linkage).
+
+## The rehearsal's builds: the gauge's session line and reading file, `KNOWN_WRITES` by counter, the tool without the block index — 2026-10-27
+
+Step 5c-b of the transport campaign (`org/machines/transport-2026-10/PLAN.md` →
+Phases, 5c-b; his decisions 67, 69, 76, 77, 79, 80, 81, 83 of the rehearsal's
+pause and 84–86 of this chat's; the record `cutover/builds.md` there, with the
+builders' briefs, the suites' logs and every measurement). Run on bigfed by one
+Fable chat, three Opus builders in two waves, the gauge's builder resumed four
+times, and one Opus reviewer.
+
+- **`bin/syncthing-addfolder` makes every folder without a block index** (67,
+  69): `blockIndexing: false` in all three bodies, `spec_problems` stopping on
+  a folder held with the index on or without the key, `describe` and the dry
+  run's plan naming it. Measured at the rehearsal: the index cut the hub's
+  receipt from 81 to 10–12 files a second as a 336-thousand-file folder
+  filled, against 80–94 flat without it. A folder made before this day — the
+  nine live ones among them — refuses a re-run until its `--undo` or a PATCH.
+- **`bin/sync-check` gained `session` and a reading file** (76, 77): every live
+  read of the sync line's folders (the bare run, `sync`, `push`) stores each
+  folder's verdict lines, the time, the caller (`SYNC_CHECK_CALLER`, set by
+  `bye`, `byebye`, `gpush` and `gpushall` in `40-aliases.sh` and
+  `50-git-sync.sh`) and the daemon's device in
+  `~/.local/state/sync-check/readings.json`, machine-local and 0600; `session`
+  reprints the newest with its age ("the newest full reading, by byebye 9 h
+  ago", ", before this boot" when older than the boot), a WARN for a folder
+  with none, with another device's, with one dated ahead of the clock or older
+  than seven days (86), then runs conflicts, guard without the version vectors,
+  config without claude-link's dry run and hub live, one `system/status` of the
+  local daemon first; no scan, no `--remote-views`. The session hook runs it.
+  Why: at Desktop scale the blocking scan costs 39.5 s on bigfed and 60.4 s on
+  fedxps and the hook's bare run was cut at 4.1 s having read nothing
+  (`cutover/rehearsal/r5.md`). The bare run keeps the vectors; the leavings
+  keep `sync-check sync` alone (85). Declined: a `db/status`-only criterion
+  (reads a split as up to date), a 70 s hook budget, the guard line in the
+  leavings.
+- **`KNOWN_WRITES` is keyed by machine and counter on any path** (79), `path`
+  optional and narrowing, since a counter returns on a path git deletes and
+  writes again (R3's path-keyed closing step was undone by bigfed's next
+  commit, measured); each vector FAIL prints the entries to paste, one per
+  counter, as Python literals; a counter-keyed entry no path shows is a DUE
+  only once its counter is older than the 10,920 h a workstation keeps a
+  deleted record. The push line lists every needed `.git` path, opens its
+  touch fix as "the hub holds the loser of these .git paths" when a phantom or
+  copy is present, and says a phantom could not be ruled out when git cannot
+  list the refs.
+- **The sync line's fix for a `.git` path stranded on the writer names the
+  split repair** (80): the touch on the reader, the phantom on the writer,
+  `sync-check push <repo>` for each step; stranded on the reader, `sync-check
+  guard` there; never an edit, never a deleted copy; the machines read from this
+  one's role, a text naming no machine when it cannot be read. The two "do not
+  arrive" fixes and the hub-held-loser fix say touch for a `.git` path too.
+- **A directory the touch does not move** (84, measured here): when both
+  commits make the same fan-out directory under `.git`, its two versions carry
+  one counter each, the hub cannot order them, and a touch is no change to
+  Syncthing for a directory. A permission change on fedxps and back cleared it
+  in five of five forced rig runs; a `git gc` on bigfed in none of five, a
+  concurrent modification beating a deletion. The sync and push fix lines name
+  a listed directory with the chmod; `tests/sync/case_split.py` forces the
+  coincidence in its first run (B's commit line carrying a nonce that lands
+  both new blobs in `objects/78`) and measures the remedies in order.
+- **A conflict copy's deletion the hub refuses** (measured once in seven forced
+  rig runs, the whole rig's second run of the day): both machines create the
+  same conflict copies in the same second, each with its own counter; where
+  the hub recorded fedxps's copy first, bigfed's deletion of it at the phantom
+  repair meets a concurrent modification, which beats a deletion, and fedxps
+  keeps the file, the phantom ref among them. him-2's first case from the
+  other side closes it: touch the copy on fedxps, it returns to bigfed, delete
+  it on bigfed again (measured once: the race recurred in the whole rig's last
+  run of the day and the step cleared it; the gauge names a listed path absent
+  on bigfed with that write).
+- **The hub's index DUE sits at 2 GB** (83): the rehearsal measured 880 MB for
+  the Desktop folder alone, 88 % of the 1 GB first built.
+- **R3's `case_split_reverse.py` applied by his hand** (81), the refuter's
+  readings folded into `case_split.py`: after the repair the push line's
+  printed lines pasted as printed read OK, fedxps's restart clears its guard,
+  bigfed's gc and next commit still read OK.
+- **Suites at the close**, run by the chat from the final tree: sync-check 741
+  in 142 s, claude 403 in 38 s, leave 97, bashrc 53, gsync 447; the rig's
+  split 100 in 350 s, split-reverse 50, addfolder 159 in 500 s, the whole rig
+  379 in 1,188 s (its seven cases; 19:01–19:19). Mutants: 14 of the repairs' code, 19 of the session
+  line's, 45 of the reviewer's across the three builds, every survivor a case
+  gap closed or an equivalent named (`cutover/builds.md` → Workers). The
+  reviewer's two medium findings — a future-dated reading shown fresh, the
+  generic "delete the copy" text for a `.git` path when the role cannot be
+  read — are closed with cases.
+- **Live at the close** (bigfed, 16:52, today's nine folders): `sync-check
+  sync` 0.99 s; the hook 1.24 s, all clear to the model alone by the stored
+  reading. On fedxps nothing changes until the push and pull; its first
+  session start after them reads "no full reading on record" until a `sync`,
+  a leaving or a push has run there.

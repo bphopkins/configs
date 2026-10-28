@@ -270,8 +270,10 @@ Guardrails, shared by the single- and all-repo variants:
   unstaged, without a prompt, so a commit made by any other route afterwards
   carries none of them. The rest of the batch still pushes.
 - **The push gauge runs before anything is staged (2026-10-10)**: `gpush` and
-  `gpushall` run `sync-check push -q` on each repository before its `add -A`
-  (`rules.md` → bigfed-2; the gauge is `bin/sync-check`, `bin/CLAUDE.md`). For a
+  `gpushall` run `sync-check push -q` on each repository before its `add -A`,
+  with `SYNC_CHECK_CALLER` naming the command for the gauge's reading file
+  (2026-10-27, settled 76; `rules.md` → bigfed-2; the gauge is `bin/sync-check`,
+  `bin/CLAUDE.md`). For a
   repository Syncthing carries that means the folder up to date on both machines
   and the hub, nothing under its `.git` needed in any view, no phantom ref or
   conflict copy under `.git`, and the other workstation at the same HEAD when it
@@ -402,7 +404,10 @@ through `_gauge_log` in `50-git-sync.sh`, the helper the push hook shares
 file would be a merge conflict or a conflict copy; `GAUGE_LOG_ROOT` overrides
 the root for the suites, and a machine without its directory logs nothing
 and acts). The helper writes the file's header when the file is absent and
-turns a `|` in a reading into `/`, so the table holds. `byebye` also refuses while `git maintenance` runs or
+turns a `|` in a reading into `/`, so the table holds. Each runs the gauge
+with `SYNC_CHECK_CALLER` set to its own name, so the gauge's reading file
+records who took the reading and the session hook can say "up to date by the
+newest full reading, byebye 9 h ago" (2026-10-27, step 5c-b, settled 76). `byebye` also refuses while `git maintenance` runs or
 its lock stands under a rotation repository, since a power-off cuts a repack
 short (bigfed-1; `sync-check guard` on a writer reports the same two checks
 since 2026-10-26, and the fix for a stale lock removes the lock before the

@@ -238,6 +238,26 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "all clear: the model is told, with the count" '[[ "$j" == *"sync-check: all clear (8 folders up to date)"* ]]'
   not_ "  and the user is not interrupted"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  # the session line (2026-10-27, settled 76, 77): the stub records its words,
+  # and prints the newest full reading's suffix on its folders' OK lines
+  printf '#!/bin/sh\necho "$*" > "%s/gauge-args"\nfor f in a b; do echo "[ OK ] $f: up to date (the newest full reading, by byebye 9 h ago, before this boot)"; done\necho "[ OK ] under .git: no conflict copy, no lock older than 10 min"\necho "[ OK ] hub nousowl: the index is 1.0 MB"\necho; echo "all clear"\n' "$w" > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  check "the hook runs the gauge's session line, no other word" "$(cat "$w/gauge-args" 2>/dev/null)" "session"
+  yes_ "all clear by the newest reading: its caller and age, and the live lines said" '[[ "$j" == *"sync-check: all clear (2 folders up to date by the newest full reading, byebye 9 h ago, before this boot; conflicts, guard, config and hub read live)."* ]]'
+  not_ "  and the user is not interrupted"  'echo "$j" | python3 -c "import json,sys;sys.exit(0 if json.load(sys.stdin).get(\"systemMessage\") else 1)"'
+  printf '#!/bin/sh\necho "[ OK ] a: up to date (the newest full reading, by byebye 9 h ago, before this boot)"\necho "[ OK ] b: up to date -- fedxps is offline: 1 item wait for it at the hub (the newest full reading, by gpush 2 h ago)"\necho "[ OK ] c: up to date (the newest full reading, by byebye 9 h ago, before this boot)"\necho; echo "all clear"\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "readings that differ: each named once, in the folders' order" '[[ "$j" == *"sync-check: all clear (3 folders up to date by the newest full readings, from byebye 9 h ago (before this boot) and gpush 2 h ago; conflicts, guard, config and hub read live)."* ]]'
+  printf '#!/bin/sh\necho "[ OK ] a: up to date (the newest full reading, by sync-check sync 40 s ago)"\necho; echo "all clear"\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "one folder: singular, a caller of two words kept whole" '[[ "$j" == *"sync-check: all clear (1 folder up to date by the newest full reading, sync-check sync 40 s ago; conflicts"* ]]'
+  printf '#!/bin/sh\necho "[WARN] alpha: no full reading on record"; echo "       fix: sync-check sync"; echo "[ OK ] under .git: no conflict copy"; echo; echo "0 needing attention, 1 unknown"; exit 2\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "no reading on record (exit 2): reaches the user, the line named" '[[ "$(sysm "$j")" == *"sync-check exit 2: [WARN] alpha: no full reading on record"* ]]'
+  # a reading older than seven days takes the same exit-2 path (2026-10-27)
+  printf '#!/bin/sh\necho "[WARN] alpha: the newest full reading is 8 d old (by byebye, before this boot): too old to stand as a reading"; echo "       fix: sync-check sync"; echo; echo "0 needing attention, 1 unknown"; exit 2\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  yes_ "a reading too old to stand (exit 2): reaches the user, the WARN named" '[[ "$(sysm "$j")" == *"sync-check exit 2: [WARN] alpha: the newest full reading is 8 d old (by byebye, before this boot): too old to stand as a reading"* ]]'
   printf '#!/bin/sh\necho "[ OK ] a: up to date"; echo "[FAIL] nousowl: stranded on bigfed: docs/x.md"; echo "       fix: edit it on fedxps"; echo; echo "1 needing attention, 0 unknown"; exit 1\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "a FAIL: reaches the user"           'echo "$j" | python3 -c "import json,sys;m=json.load(sys.stdin).get(\"systemMessage\",\"\");sys.exit(0 if \"sync-check exit 1: [FAIL] nousowl: stranded on bigfed\" in m else 1)"'
@@ -253,6 +273,27 @@ if [ -x "$HOOKS/session-start.sh" ]; then
   printf '#!/bin/sh\nsleep 6\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
   yes_ "a hung gauge: cut at 4 s and said so" '[[ "$j" == *"did not answer within 4 s"* ]]'
+  check "  with nothing printed, the message as before" "$(sysm "$j")" "sync-check did not answer within 4 s; run 'sync-check' by hand."
+  # a cut after lines were printed: the stored reading prints at once, so the
+  # cut falls on a live line, the hub's away from home (2026-10-27)
+  printf '#!/bin/sh\necho "[ OK ] a: up to date (the newest full reading, by byebye 9 h ago)"\nsleep 6\n' > "$w/home/bin/sync-check"
+  t0=$(date +%s%N); j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh"); t1=$(date +%s%N)
+  check "one OK line, then a hang: the line's reading and the cut, to the user" "$(sysm "$j")" "sync-check did not answer within 4 s. Before the cut it printed: 1 folder up to date by the newest full reading, byebye 9 h ago. The rest did not answer; run 'sync-check' by hand."
+  yes_ "  and the model, as a warning"      '[[ "$j" == *"WARNING: sync-check did not answer within 4 s. Before the cut it printed: 1 folder up to date"* ]]'
+  yes_ "  still inside the hook's 5 s"        '[ $(( (t1 - t0) / 1000000 )) -lt 4500 ]'
+  printf '#!/bin/sh\necho "[ OK ] a: up to date (the newest full reading, by gpush 3 min ago)"\necho "[FAIL] under a .git: 1 conflict copy and 0 lock files older than 10 min"\necho "       fix: rename it"\necho "[ OK ] in the directories that load: no conflict copy"\necho "[ OK ] elsewhere under ~/Desktop: no conflict copy"\nsleep 6\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  check "a FAIL before the cut: shown first, then the reading, the live OK lines counted" "$(sysm "$j")" "sync-check did not answer within 4 s. Before the cut it printed: [FAIL] under a .git: 1 conflict copy and 0 lock files older than 10 min; 1 folder up to date by the newest full reading, gpush 3 min ago; 2 more lines OK. The rest did not answer; run 'sync-check' by hand."
+  not_ "  the fix line left to the gauge"     '[[ "$j" == *"rename it"* ]]'
+  printf '#!/bin/sh\necho "[ OK ] under .git: no conflict copy, no lock older than 10 min"\nsleep 6\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  check "live OK lines alone before the cut: counted, no folder claimed" "$(sysm "$j")" "sync-check did not answer within 4 s. Before the cut it printed: 1 line OK. The rest did not answer; run 'sync-check' by hand."
+  # (f) no FAIL and no OK before the cut: a WARN, a WAIT and a DUE each kept
+  # (the reviewer's surviving mutant, 2026-10-27)
+  printf '#!/bin/sh\necho "[WARN] alpha: no full reading on record"\necho "       fix: sync-check sync"\necho "[WAIT] nousowl: paused on this machine"\necho "[DUE] gamma: up to date; the watcher reports: x"\nsleep 6\n' > "$w/home/bin/sync-check"
+  j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
+  check "(f) a WARN, a WAIT and a DUE alone before the cut: each kept, in order" "$(sysm "$j")" "sync-check did not answer within 4 s. Before the cut it printed: [WARN] alpha: no full reading on record; [WAIT] nousowl: paused on this machine; [DUE] gamma: up to date; the watcher reports: x. The rest did not answer; run 'sync-check' by hand."
+  yes_ "  valid JSON with the gauge text in it" 'echo "$j" | python3 -c "import json,sys;json.load(sys.stdin)"'
   ln -s "$w/cfg/gone" "$w/home/.claude/plans"
   printf '#!/bin/sh\necho "[FAIL] y: z"; exit 1\n' > "$w/home/bin/sync-check"
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")

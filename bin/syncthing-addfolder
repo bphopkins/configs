@@ -77,6 +77,17 @@ back to none; then the direct link shared, as the pilot did after its switch.
 Both shapes end with every view at 100 with nothing needed and every view's
 sequence equal to the device's own.
 
+NO BLOCK INDEX. All three bodies carry blockIndexing false, and a machine
+holding the folder with the index on, or without the key, holds it
+differently (2026-10-27; org/machines/transport-2026-10/PLAN.md -> settled
+67, 69, the stakes in cutover/rehearsal/decisions.md there). The POST would
+inherit true from the defaults template, and at the rehearsal of 2026-10-26
+the index cut the hub's receipt from 81 to 10-12 files a second as the folder
+grew (80-94 flat without it) and fedxps's pull from 40 to 17 (61-74 flat
+without); upstream calls it never useful for an encrypted folder. Without it
+a workstation fetches again from its peers what is moved, renamed or copied
+inside the folder, rather than assembling it from blocks it holds.
+
 PREFLIGHT, before any write, on all three machines: Syncthing answers; global
 announce, relays, NAT and crash reporting off; autoAcceptFolders false on every
 device; the devices connected and not paused; the id's shape and the label;
@@ -1108,6 +1119,10 @@ class Run:
             probs.append("label %r" % f.get("label"))
         if f.get("maxConflicts") != MAX_CONFLICTS:
             probs.append("maxConflicts %s" % f.get("maxConflicts"))
+        # no block index on any of the three (2026-10-27, PLAN.md -> settled
+        # 67, 69); a reading without the key cannot show it off, so it stops too
+        if f.get("blockIndexing") is not False:
+            probs.append("blockIndexing %r" % (f.get("blockIndexing"),))
         if not f.get("fsWatcherEnabled") or f.get("fsWatcherDelayS") != WATCH_DELAY_S:
             probs.append("watcher %s/%s s" % (f.get("fsWatcherEnabled"), f.get("fsWatcherDelayS")))
         if f.get("rescanIntervalS") != RESCAN_S:
@@ -1161,9 +1176,11 @@ class Run:
                           for d in f.get("devices", []))
         extra = ", minDiskFree %s %s" % ((f.get("minDiskFree") or {}).get("value"), (f.get("minDiskFree") or {}).get("unit")) \
             if f.get("type") == "receiveencrypted" else ""
-        return "%s at %s, label %r, maxConflicts %s, watcher %s s, rescan %s s, versioning %s%s, devices %s" % (
+        bi = f.get("blockIndexing")
+        index = "off" if bi is False else "on" if bi is True else "absent" if bi is None else repr(bi)
+        return "%s at %s, label %r, maxConflicts %s, watcher %s s, rescan %s s, versioning %s%s, block index %s, devices %s" % (
             f.get("type"), f.get("path"), f.get("label"), f.get("maxConflicts"), f.get("fsWatcherDelayS"),
-            f.get("rescanIntervalS"), ver, extra, devs)
+            f.get("rescanIntervalS"), ver, extra, index, devs)
 
     def preflight(self):
         o = self.o
@@ -1382,7 +1399,8 @@ class Run:
         o = self.o
         W, H, R = self.W, self.H, self.R
         base = {"label": o["label"], "fsWatcherEnabled": True, "fsWatcherDelayS": WATCH_DELAY_S,
-                "rescanIntervalS": RESCAN_S, "maxConflicts": MAX_CONFLICTS, "paused": False, "id": o["id"]}
+                "rescanIntervalS": RESCAN_S, "maxConflicts": MAX_CONFLICTS, "paused": False, "id": o["id"],
+                "blockIndexing": False}
         link_now = self.link and self.shape == "fresh"
         bw = dict(base, path=o["wpath"], type="sendreceive", versioning=dict(NO_VERSIONING),
                   devices=[{"deviceID": W.id}, {"deviceID": H.id}] + ([{"deviceID": R.id}] if link_now else []))
@@ -1406,13 +1424,15 @@ class Run:
         verb = lambda role: "verify" if self.held[role] is not None else "POST /rest/config/folders"
         devs = lambda b, enc: " + ".join(self.name(d["deviceID"]) + (" (password)" if d["deviceID"] == enc else "") for d in b["devices"])
         P("shape %s; waits up to %d s each" % (self.shape, self.budget()))
-        P("%s: %s: sendreceive, devices %s; then its scan idle" % (W.name, verb("writer"), devs(bw, H.id)))
-        P("%s: %s: receiveencrypted, staggered maxAge 31536000, minDiskFree 1 %%, devices %s" % (H.name, verb("hub"), devs(bh, None)))
+        P("%s: %s: sendreceive, no block index, devices %s; then its scan idle" % (W.name, verb("writer"), devs(bw, H.id)))
+        P("%s: %s: receiveencrypted, staggered maxAge 31536000, minDiskFree 1 %%, no block index, devices %s"
+          % (H.name, verb("hub"), devs(bh, None)))
         P("%s: PATCH /rest/config/devices/<%s> paused true, %g s, false (the bounce); then the hub idle with %s's set"
           % (W.name, H.name, HOLD, W.name))
         if self.shape == "join":
             P("gate: %s joins receive-only; no Claude session there until the switch (mig-3 gate 6)" % R.name)
-            P("%s: %s: receiveonly, trashcan cleanoutDays 0 at %s, devices %s" % (R.name, verb("reader"), self.trash, devs(br, H.id)))
+            P("%s: %s: receiveonly, trashcan cleanoutDays 0 at %s, no block index, devices %s"
+              % (R.name, verb("reader"), self.trash, devs(br, H.id)))
             P("%s: the bounce of %s; gate 7: its view of the hub at the hub's sequence, global counts and bytes as %s's" % (R.name, H.name, W.name))
             P("%s: GET /rest/db/localchanged, every path printed; a path outside a .git stops the run%s"
               % (R.name, " (--allow-outside: goes on)" if self.o["allow_outside"] else ""))
@@ -1423,7 +1443,7 @@ class Run:
             if self.link:
                 P("%s and %s: PATCH devices + each other (the direct link, ws-16)" % (W.name, R.name))
         else:
-            P("%s: %s: sendreceive, devices %s" % (R.name, verb("reader"), devs(br, H.id)))
+            P("%s: %s: sendreceive, no block index, devices %s" % (R.name, verb("reader"), devs(br, H.id)))
             P("%s: the bounce of %s" % (R.name, H.name))
         P("all three idle, nothing needed, every view 100 at the device's own sequence")
 

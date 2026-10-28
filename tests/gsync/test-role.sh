@@ -39,12 +39,14 @@ chmod +x "$SB/stub/uname"
 # STUB_GAUGE_<name> as "rc:text" (default: pass in silence). Section 5 drives it;
 # every other section needs it to pass. Since 2026-10-26 it also records, into
 # STUB_GAUGE_SNAPLOG, the snapshot file the run handed it (SYNC_CHECK_SNAPSHOT)
-# and that file's mode as it ran, for section 5b.
+# and that file's mode as it ran, for section 5b; and since 2026-10-27 the
+# caller's name the gauge keeps its reading under (SYNC_CHECK_CALLER;
+# PLAN.md -> settled 76), last on each line of STUB_GAUGE_LOG.
 cat > "$SB/stub/sync-check" <<'EOF'
 #!/usr/bin/env bash
 repo="${@: -1}"; name="$(basename "$repo")"
 staged=clean; git -C "$repo" diff --cached --quiet 2>/dev/null || staged=staged
-printf '%s %s %s\n' "$name" "$staged" "$*" >> "${STUB_GAUGE_LOG:-/dev/null}"
+printf '%s %s %s caller=%s\n' "$name" "$staged" "$*" "${SYNC_CHECK_CALLER-unset}" >> "${STUB_GAUGE_LOG:-/dev/null}"
 snap="${SYNC_CHECK_SNAPSHOT-unset}"; mode=none
 [ "$snap" != unset ] && mode="$(stat -c %a -- "$snap" 2>/dev/null || echo missing)"
 printf '%s %s %s\n' "$name" "$snap" "$mode" >> "${STUB_GAUGE_SNAPLOG:-/dev/null}"
@@ -453,6 +455,8 @@ check "gpush nousowl: nothing committed, the new file still untracked" bash -c "
 check "gpush nousowl: nothing under .git changed"      [ "$(gitsnap "$N")" = "$snapN" ]
 check "gpush nousowl: the gauge ran before add -A (nothing staged)" contains "$(cat "$STUB_GAUGE_LOG")" "nousowl clean push -q -- $N"
 check "gpush nousowl: the gauge was called with the repository's path" contains "$(cat "$STUB_GAUGE_LOG")" "-- $N"
+check "gpush nousowl: the gauge is told the reading is gpush's" [ "$(cat "$STUB_GAUGE_LOG")" = "nousowl clean push -q -- $N caller=gpush" ]
+: > "$STUB_GAUGE_LOG"
 out="$(gpushall)"; rc=$?
 check "gpushall: rc=0 (a refusal is a skip, not a failure)" [ "$rc" -eq 0 ]
 check "gpushall: counters"                             contains "$out" "ok: 1  skipped: 1  failed: 0  pending: 0"
@@ -460,6 +464,7 @@ check "gpushall: nousowl in the skipped list"          contains "$out" "skipped:
 check "gpushall: org carried"                          contains "$out" "org: committed 1 path(s); pushed"
 check "gpushall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
 check "gpushall: the gauge ran for org too, before its add -A" contains "$(cat "$STUB_GAUGE_LOG")" "org clean push -q -- $O"
+check "gpushall: the gauge is told the reading is gpushall's, for each repository" [ "$(grep -c ' caller=gpushall$' "$STUB_GAUGE_LOG")" -eq 2 -a "$(grep -vc ' caller=gpushall$' "$STUB_GAUGE_LOG")" -eq 0 ]
 export STUB_GAUGE_nousowl='2:[WARN] alpha: nousowl did not answer over ssh'
 out="$(gpush nousowl)"; rc=$?
 check "a cluster that cannot be read (exit 2): pushed, under a WARN (his word 2026-10-10) (1/4)" [ "$rc" -eq 0 ]

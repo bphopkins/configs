@@ -707,7 +707,10 @@ _gsync_push_one() {
   # output is shown either way: on a refusal under the SKIP line, on a pass
   # as the one line it prints for a repository Syncthing carries.
   if command -v sync-check >/dev/null 2>&1; then
-    out="$(sync-check push -q -- "$repo" 2>&1)"
+    # The command's name rides along: the gauge keeps the folder's reading in
+    # its reading file under it, which the session hook reports as "by gpush
+    # 2 h ago" (org/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
+    out="$(SYNC_CHECK_CALLER="${_GSYNC_CMD:-gpush}" sync-check push -q -- "$repo" 2>&1)"
     _GSYNC_GAUGE_RC=$?
     # The reading for the log: the gauge's first tagged line; a gauge that
     # failed without one is logged by its exit status; a silent pass, a

@@ -15,11 +15,15 @@
 #   maxconflicts ws-7: a folder made by the POST reads maxConflicts 10 everywhere
 #   split        him-2's last case and bigfed-2: the split of main through the
 #                hub and its repair, SYNC_SPLIT_RUNS times (default 3)
+#   split-reverse the same in the reverse order: A commits first, B's unguarded
+#                commit 0.3 s after, with A's gc and without, and bigfed-2's
+#                push line read as A (case_split_reverse.py),
+#                SYNC_SPLIT_REVERSE_RUNS times each (default 1)
 #   retention    hub-1: a deletion lost at a hub maintenance pass, then kept
 #                with STDBDELETERETENTIONINTERVAL=0; its two halves in parallel
 #   addfolder    mig-4: bin/syncthing-addfolder, fresh and join end to end, its
 #                refusals, re-runs, dry run and undo (case_addfolder.py)
-# `run.sh CASE...` runs those named; with none, all six.
+# `run.sh CASE...` runs those named; with none, all seven.
 #
 # Sandboxed and caged (tests/cage.sh, at 1G, 512 tasks and 1500 s): HOME, the
 # XDG directories and every instance's home under one mktemp directory; git
@@ -31,8 +35,8 @@
 # stub called, the live Syncthing's config.xml unchanged.
 #
 # Run after any edit to tests/sync/, and after a Syncthing upgrade: the cases
-# assert Syncthing's own behaviour, measured on 2.1.6 (the five cases before
-# addfolder take about seven minutes). retention's `lost` half asserts the
+# assert Syncthing's own behaviour, measured on 2.1.6 (the six cases before
+# addfolder take about nine minutes). retention's `lost` half asserts the
 # hub fault that 2.1.7 fixes upstream (rules.md hub-1, PR #10916), so after
 # that upgrade its FAIL is the fix arriving, and the half is to be revised.
 # Python runs with -B, so no bytecode is written into the tree. Each case prints
@@ -118,7 +122,7 @@ tally() {
 }
 
 CASES=("$@")
-((${#CASES[@]})) || CASES=(smoke guard maxconflicts split retention addfolder)
+((${#CASES[@]})) || CASES=(smoke guard maxconflicts split split-reverse retention addfolder)
 T0=$(date +%s)
 for c in "${CASES[@]}"; do
   case $c in
@@ -127,6 +131,8 @@ for c in "${CASES[@]}"; do
     maxconflicts) echo "== maxconflicts: ws-7";                          run_case maxconflicts case_maxconflicts.py ;;
     split)        echo "== split: him-2's split of main and its repair, ${SYNC_SPLIT_RUNS:-3} runs"
                   run_case split case_split.py "${SYNC_SPLIT_RUNS:-3}" ;;
+    split-reverse) echo "== split-reverse: the split of main in the reverse order, ${SYNC_SPLIT_REVERSE_RUNS:-1} run(s) each of ${SYNC_SPLIT_REVERSE_VARIANTS:-gc,nogc}"
+                  run_case split-reverse case_split_reverse.py "${SYNC_SPLIT_REVERSE_RUNS:-1}" "${SYNC_SPLIT_REVERSE_VARIANTS:-gc,nogc}" ;;
     retention)
       echo "== retention: hub-1, its two halves in parallel (output when both are done)"
       t0=$(date +%s)
@@ -138,7 +144,7 @@ for c in "${CASES[@]}"; do
       cat "$SB/cases/retention-kept.out"; tally retention-kept "$SB/cases/retention-kept.out" "$rk" "$secs"
       ;;
     addfolder)    echo "== addfolder: mig-4, bin/syncthing-addfolder";   run_case addfolder case_addfolder.py ;;
-    *) echo "sync tests: no case '$c' (smoke guard maxconflicts split retention addfolder)" >&2; echo "passed: 0  failed: 1"; exit 2 ;;
+    *) echo "sync tests: no case '$c' (smoke guard maxconflicts split split-reverse retention addfolder)" >&2; echo "passed: 0  failed: 1"; exit 2 ;;
   esac
 done
 

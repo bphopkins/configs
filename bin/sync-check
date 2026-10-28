@@ -12,6 +12,10 @@
   sync-check config          ws-8: stow's links, the lazy lock, claude-link's dry
                              run, bash -n on the shell's files
   sync-check push REPO...    bigfed-2: may this machine push these repositories now
+  sync-check session         the session hook's: each folder's newest full reading
+                             from the reading file, with its age; then conflicts,
+                             guard without the version vectors, config without
+                             claude-link's dry run, and hub; no scan
   sync-check                 sync, conflicts, guard, hub, and config without its
                              claude-link dry run (1.8 s), in that order
 
@@ -30,8 +34,9 @@ included, between bigfed and fedxps through nousowl's encrypted hub, and bigfed
 alone commits and pushes; this is what says whether a machine may be left, a
 repository pushed, or a conflict copy is lying where it loads.
 
-Read-only and unprivileged by construction: no file is written unless the
-caller names one in SYNC_CHECK_SNAPSHOT (below), no sudo, and the one request
+Read-only and unprivileged by construction: the one file written is the
+reading file, and the snapshot when the caller names one in
+SYNC_CHECK_SNAPSHOT (both below); no sudo; and the one request
 that is not a GET -- POST /rest/db/scan, which makes Syncthing read the disk so
 that a save seconds old is counted -- changes no file. Every git call runs
 under GIT_OPTIONAL_LOCKS=0 and is plumbing that writes nothing; claude-link
@@ -81,7 +86,9 @@ Tag semantics, as in disk-check:
   [WAIT]  not yet: syncing, paused    [DUE]   attention, nothing broken
   [WARN]  could not determine -- never silently assumed healthy
 Every line that is not OK prints the paste-ready command or the step that
-clears it (rules.md -> him-2 for the stranded cases). A DUE prints only for a
+clears it (rules.md -> him-2 for the stranded cases; on the sync and the push
+line, a .git path stranded on the writer and absent there, a deletion the hub
+refused, gets the reader's touch and the deletion again). A DUE prints only for a
 folder otherwise up to date, so a run whose only flags are DUE lines exits 3,
 which `bye`, `byebye` and the push gauge in `gpush` pass, the DUE shown
 (2026-10-14; org/machines/transport-2026-10/PLAN.md -> settled 37).
@@ -99,11 +106,35 @@ from there, so a batch reads the cluster once, before its first commit makes
 the folder busy, while each repository's own checks still run live; the file
 holds statuses, completions, device names and need lists, never a key, and is
 written 0600. Suite: tests/sync-check/run.sh.
+
+The reading file (org/machines/transport-2026-10/PLAN.md -> settled 76,
+2026-10-27): every live read of the sync line's folders -- the bare run, sync,
+push -- keeps each folder's verdict there, its lines' tags, messages and fix
+texts with the time it was taken, the caller (SYNC_CHECK_CALLER, which bye,
+byebye, gpush and gpushall set, else "sync-check <line>", "sync-check" alone
+for the bare run) and the device that took it (this daemon's ID, its first
+seven characters), and `session` reprints the newest with its age: a record
+another device took (a file carried to the other machine) reads as no reading
+on record, one dated more than 60 s ahead of the clock is a WARN of its own,
+as the snapshot refuses a record from the future, and one older than
+READING_MAX_AGE_DAYS (7 days) is a WARN too, its stored verdict under -v
+alone, since a week-old all clear is no reading. At Desktop scale the
+blocking scan alone costs 39.5 s on bigfed and 60.4 s on fedxps, and the
+session hook's run was cut at its 4 s before it read anything
+(cutover/rehearsal/r5.md, t7). The
+file is SYNC_CHECK_READINGS when set (set empty: none read or written), else
+$XDG_STATE_HOME/sync-check/readings.json, else
+~/.local/state/sync-check/readings.json: machine-local, in no Syncthing folder,
+replaced whole at 0600 in a 0700 directory, never written by the --remote-*
+modes nor for a folder read from the snapshot. A fix text in it can name a
+stranded path; no key is ever in it. A write that fails is silent, and the
+next `session` says "no full reading on record", the safe direction.
 """
 
 import glob
 import http.client
 import json
+import math
 import os
 import pwd
 import re
@@ -128,13 +159,28 @@ KNOWN = [
 
 # --- the known writes under a reader's .git -----------------------------------------
 # A device's counter stays in a path's version vector for good once it has
-# modified it, so the vector check (fedxps-3's durable form) would FAIL on an
-# explained write forever after. Each: the machine that wrote, the folder's
-# label, the path in the folder, the counter its write left, when it was
-# found, and the record. A path whose counter is other than the one named
-# FAILs as a new write. Delete a line once the path no longer shows.
+# modified it, so the vector check (fedxps-3's durable form, and the push
+# line's reading of it from the writer's side) would FAIL on an explained write
+# forever after. Each entry: "on" the machine that wrote, "label" the folder's,
+# "counter" the counter its write left, "since" when it was found and "note"
+# the record; "path" is optional and, when present, narrows the entry to that
+# one path. Keyed by machine and counter on any path (2026-10-27,
+# settled 79): git deletes and writes again the paths under .git, and the new
+# version is built on the deleted record's vector, so the counter returns on
+# them -- after a gc, bigfed's next commit wrote refs/heads/main again carrying
+# fedxps's counter, and a later object did the same to a fan-out directory
+# fedxps once made, each refusing a line keyed by path
+# (cutover/rehearsal/refute-b.md -> A9, F2). A counter is the time of its write
+# to about a second (counter_date), so an entry passes what its machine wrote at
+# that moment and nothing later; the FAIL lines print each entry ready to
+# paste, one per counter. Any other counter FAILs as a new write. A path-keyed
+# entry whose path no longer shows it is a DUE; a counter-keyed one only once
+# no path shows it and its counter is older than a deleted record is kept
+# (DB_DELETE_RETENTION_HOURS). Delete a line at its DUE.
 KNOWN_WRITES = [
 ]
+# The note a printed entry carries until he writes the record in its place.
+KNOWN_WRITE_NOTE = "<why: e.g. him-2's split repair, the sanctioned touch>"
 
 # Directories whose files load as standing instructions or configuration on
 # the next start, relative to ~/Desktop (ws-2); a conflict copy there is a FAIL,
@@ -175,12 +221,29 @@ VECTOR_LIST_MAX = 20
 # hub-4: his threshold (settled 21, decision 9), "Free (estimated)" in decimal
 # GB as he wrote it; the step is the runbook's 32 GiB.
 HUB_FREE_FLOOR = 10 * 1000 ** 3
-HUB_INDEX_CEILING = 1000 ** 3
+# hub-4's index line, a DUE past 2 GB (settled 83, 2026-10-27): the rehearsal
+# measured 880 MB for the Desktop folder alone, 88 % of the 1 GB first built,
+# and the hub keeps every deletion record (hub-1), so the line moved rather than
+# firing from the first day; the index's growth is read weekly in the
+# cutover's first month.
+HUB_INDEX_CEILING = 2 * 1000 ** 3
+# How long a workstation keeps a deleted record, its version vector with it:
+# the default of Syncthing's --db-delete-retention-interval, 10920h, read in
+# v2.1.6's cmd/syncthing/main.go (cutover/rehearsal/refute-b.md). git writing a
+# deleted path again builds on that record, so a counter-keyed KNOWN_WRITES
+# entry no path shows may still return until its counter -- a time -- is this
+# old; its DUE waits for that (settled 79).
+DB_DELETE_RETENTION_HOURS = 10920
 RETENTION_DROPIN = "30-delete-retention.conf"
 RETENTION_VAR = "STDBDELETERETENTIONINTERVAL=0"
 CLAUDE_LINK_TIMEOUT = 20
 GUARD_KEYS = ["core.checkstat", "core.trustctime", "diff.autorefreshindex", "gc.auto", "maintenance.auto"]
 HIM2 = "org/machines/transport-2026-10/rules.md -> him-2"
+# The oldest stored reading the session line reprints (settled at the pause of
+# 5c-b, 2026-10-27): on fedxps after the cutover the readings come from byebye,
+# bye and hand runs alone, since it leaves by the lid, so one can be weeks old,
+# and a week-old all clear is no reading.
+READING_MAX_AGE_DAYS = 7
 
 HOME = os.path.expanduser("~")
 DESKTOP = os.path.join(HOME, "Desktop")
@@ -410,6 +473,52 @@ class Role:
         top = git(["-C", repo_path, "rev-parse", "--show-toplevel"])
         have = os.path.realpath(top.strip() if top else repo_path)
         return have in self.reader_repos
+
+
+_ROLE = []
+
+
+def this_role():
+    """This machine's Role, read once in a run and kept (settled 80): the
+    guard, the push line and the sync line's .git fixes all read the same."""
+    if not _ROLE:
+        _ROLE.append(Role())
+    return _ROLE[0]
+
+
+def writer_and_reader(workstations, myname):
+    """(writer, reader) by name for a folder's two workstations, from this
+    machine's role: a machine whose role guards nothing is the writer, else the
+    other workstation is (settled 80, 2026-10-27). None with other than two
+    workstations, or with the role read under a warning -- a dangling or wrong
+    host.inc link, a host file git cannot read -- since such a machine is a
+    reader by caution, not by its file."""
+    ws = sorted(set(workstations))
+    if len(ws) != 2 or myname not in ws:
+        return None
+    role = this_role()
+    if role.warnings:
+        return None
+    other = ws[0] if ws[1] == myname else ws[1]
+    return (other, myname) if role.guards() else (myname, other)
+
+
+def git_prefix(path):
+    """For a folder-relative path under a repository's .git, the path of that
+    repository in the folder ('' for the folder's own); None outside any .git."""
+    parts = path.split("/")
+    if ".git" not in parts:
+        return None
+    return "/".join(parts[:parts.index(".git")])
+
+
+def repo_word(folder, prefix):
+    """The repository at prefix in folder as `sync-check push` takes it: the
+    bare name for ~/Desktop/<name>, which push resolves there, else its path."""
+    p = os.path.realpath(os.path.join(folder["path"], prefix) if prefix else folder["path"])
+    if os.path.dirname(p) == os.path.realpath(DESKTOP):
+        return os.path.basename(p)
+    return shq(p)
 
 
 # --- Syncthing: the configuration file, read structurally ------------------------------
@@ -808,7 +917,7 @@ def folder_reading(cl, f):
     le = cl.local["folders"].get(fid) or {}
     myname = cl.local["names"].get(me, short_hostname())
     if f["paused"]:
-        r["wait"].append(("paused on this machine", "resume it in the Syncthing GUI, or: curl -X PATCH -H 'X-API-Key: ...' -d '{\"paused\":false}' %sconfig/folders/<id>   # the id: syncthing cli config folders list" % cl.inst.base))
+        r["wait"].append(("paused on this machine", paused_fix(cl.inst)))
         return r
     if f["maxConflicts"] == 0:
         r["fail"].append(("maxConflicts is 0 here: the losing side of a conflict would be discarded with no copy (rules.md -> ws-7)", "set maxConflicts to 10 on this folder in the GUI (Advanced), on every device"))
@@ -952,6 +1061,57 @@ def folder_reading(cl, f):
     return r
 
 
+def edit_or_touch(names, edit, edit_named, touch_named):
+    """The repair for paths whose loser the hub may hold: an edit outside any
+    .git, a touch under one, never an edit there (settled 79, 2026-10-27).
+    `edit` is today's text, naming no path, for when no named path lies under
+    a .git; else each clause names its paths (git_prefix decides), the edit's
+    first."""
+    under = [n for n in names if git_prefix(n) is not None]
+    if not under:
+        return edit
+    plain = [n for n in names if git_prefix(n) is None]
+
+    def listed(paths):
+        return ", ".join(paths[:6]) + ((" and %d more" % (len(paths) - 6)) if len(paths) > 6 else "")
+    return "; ".join(([edit_named % listed(plain)] if plain else []) + [touch_named % listed(under)])
+
+
+def deleted_fix(paths, reader):
+    """For .git paths stranded on the writer that are absent here: this
+    machine deleted them, and the hub, holding the reader's copy first,
+    refused the deletion, since a concurrent modification beats a deletion
+    (tests/sync/case_split.py, the lead's rig run of 2026-10-27, two phantom
+    copies created on both machines in one second). The reader's touch makes
+    its copy a descendant that returns here, and a second deletion here then
+    passes."""
+    return ("%s deleted here but refused by the hub, which recorded %s's copy first (a concurrent modification beats "
+            "a deletion): on %s, touch exactly these paths; they return here; then delete them here again (rules.md -> him-2)") % (
+        ", ".join(paths), reader, reader)
+
+
+def directory_clause(folder, paths, reader):
+    """For the fixes that ask the reader's touch: the listed paths that are
+    directories here, which a touch does not move for Syncthing (a directory's
+    time is no change to it; tests/sync/case_split.py's forced run, 2026-10-27),
+    with the reader's other sanctioned write, a permission change set back
+    (his word at the pause of 5c-b, settled 79). '' when none is one."""
+    dirs = [p for p in paths if os.path.isdir(os.path.join(folder["path"], p))]
+    if not dirs:
+        return ""
+    where = " ".join(shq(os.path.join(folder["path"], p)) for p in dirs)
+    return ("; %s %s, which a touch does not move for Syncthing: on %s, change %s permissions and set them back "
+            "(chmod g+w %s; chmod g-w %s), the second sanctioned reader write (settled 79, 2026-10-27)") % (
+        ", ".join(dirs), "is a directory" if len(dirs) == 1 else "are directories", reader,
+        "its" if len(dirs) == 1 else "their", where, where)
+
+
+def paused_fix(inst):
+    """The fix for a folder paused on this machine, which config.xml says: the
+    sync line's and the session line's alike."""
+    return "resume it in the Syncthing GUI, or: curl -X PATCH -H 'X-API-Key: ...' -d '{\"paused\":false}' %sconfig/folders/<id>   # the id: syncthing cli config folders list" % inst.base
+
+
 def known_for(label, on):
     return [k["path"] for k in KNOWN if k["label"] == label and k["on"] == on]
 
@@ -1046,7 +1206,11 @@ def verdict(cl, r, f, settled, ok_line=True):
         if r.get("need_names") is not None and n_need > 0:
             names = r.get("need_names") or []
             failures.append(("needs %s that do not arrive: %s" % (plural(max(len(names), n_need), "item"), ", ".join(names[:6]) or "(unnamed)"),
-                             "both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again (%s)" % HIM2))
+                             "both workstations listing the same path towards the hub means the hub holds a conflict's loser: %s (%s)" % (edit_or_touch(
+                                 names,
+                                 "edit the file once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again",
+                                 "edit %s once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again",
+                                 "touch %s on the machine whose counter the current version lacks (never edit a .git path) and read again"), HIM2)))
         # him-2, second case: every workstation listing the same path towards
         # the hub means the hub holds a conflict's loser
         lists = [set(x for x in n if not x.startswith("(")) for n in r["stranded"].values()]
@@ -1060,13 +1224,25 @@ def verdict(cl, r, f, settled, ok_line=True):
                     by_machine.setdefault((lm[0], tuple(lm[1])), []).append(path)
                 else:
                     unread.append(path)
+            # under a repository's .git the write is the sanctioned touch and
+            # never an edit: it covers any .git path the gauge lists towards the
+            # hub (settled 79, 2026-10-27; refute-b.md -> F1)
             fixes = []
             for (machine, carried), paths in sorted(by_machine.items()):
-                fixes.append("edit %s once more on %s (the current version carries %s's %s alone) and read again" % (
-                    ", ".join(paths), machine, " and ".join(carried), "counter" if len(carried) == 1 else "counters"))
-            if unread or not fixes:
+                whose = "the current version carries %s's %s alone" % (" and ".join(carried), "counter" if len(carried) == 1 else "counters")
+                plain = [p for p in paths if git_prefix(p) is None]
+                under = [p for p in paths if git_prefix(p) is not None]
+                if plain:
+                    fixes.append("edit %s once more on %s (%s) and read again" % (", ".join(plain), machine, whose))
+                if under:
+                    fixes.append("touch %s on %s (never edit a .git path; %s) and read again" % (", ".join(under), machine, whose))
+            u_plain = [p for p in unread if git_prefix(p) is None]
+            u_under = [p for p in unread if git_prefix(p) is not None]
+            if u_plain:
                 fixes.append("%sedit the file once more on the machine whose text is in the conflict copy (the one whose counter the current version lacks) and read again; an edit from the other machine never passes, since the hub orders by the sum of the counters" % (
-                    ("for %s: " % ", ".join(unread)) if fixes else ""))
+                    ("for %s: " % ", ".join(u_plain)) if (fixes or u_under) else ""))
+            if u_under:
+                fixes.append("for %s: touch each on the machine whose counter the current version lacks (never edit a .git path) and read again; a touch from the other machine never passes, since the hub orders by the sum of the counters" % ", ".join(u_under))
             failures.append(("listed towards the hub by %s alike, so the hub holds a conflict's loser: %s" % (" and ".join(sorted(r["stranded"])), ", ".join(loser[:8])),
                              "%s (%s)" % ("; ".join(fixes), HIM2)))
         workstations = set(r["stranded"]) | {myname} | set(cl.peer_names.values())
@@ -1081,8 +1257,50 @@ def verdict(cl, r, f, settled, ok_line=True):
             if unknown:
                 rest = sorted(workstations - {wname})
                 other = rest[0] if len(rest) == 1 else "the other workstation"
-                failures.append(("stranded on %s: %s" % (wname, ", ".join(unknown[:8])),
-                                 "edit each listed path on %s, never on %s (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (%s)" % (other, wname, HIM2)))
+                # under a repository's .git the generic repair is wrong twice: an
+                # edit there is a reader write beyond him-2's one sanctioned touch,
+                # and a copy deleted before the phantom is renamed breaks the ref
+                # (settled 80, 2026-10-27; cutover/rehearsal/refute-b.md -> A11).
+                # The machines come from this one's role; with no reading of it,
+                # the generic text stands.
+                # With no reading of it -- an unreadable role, a role read under
+                # a warning, other than two workstations -- a .git path gets a
+                # text that names no machine and no delete (settled 80 forbids
+                # "delete the copy" under .git); a plain path keeps the generic one.
+                git_paths = [n for n in unknown if git_prefix(n) is not None]
+                roles = writer_and_reader(workstations, myname) if git_paths else None
+                under = git_paths if roles else []
+                unroled = [] if roles else git_paths
+                plain = [n for n in unknown if git_prefix(n) is None]
+                if unroled:
+                    by_repo = {}
+                    for n in unroled:
+                        by_repo.setdefault(git_prefix(n), []).append(n)
+                    for prefix, paths in sorted(by_repo.items()):
+                        failures.append(("stranded on %s: %s" % (wname, ", ".join(paths)),
+                                         "under a repository's .git: never edit and never delete a copy there; sync-check push %s on the writer names the repair (rules.md -> him-2)" % repo_word(f, prefix)))
+                if plain:
+                    failures.append(("stranded on %s: %s" % (wname, ", ".join(plain[:8])),
+                                     "edit each listed path on %s, never on %s (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (%s)" % (other, wname, HIM2)))
+                if under and wname == roles[0]:
+                    # every path, never cut: the touch is of exactly these
+                    by_repo = {}
+                    for n in under:
+                        by_repo.setdefault(git_prefix(n), []).append(n)
+                    for prefix, paths in sorted(by_repo.items()):
+                        # a path absent here is a deletion the hub refused, a
+                        # line of its own (2026-10-27; deleted_fix)
+                        here = [p for p in paths if os.path.lexists(os.path.join(f["path"], p))]
+                        gone = [p for p in paths if p not in here]
+                        if here:
+                            failures.append(("stranded on %s: %s" % (wname, ", ".join(here)),
+                                             "a split of main: on %s, touch exactly these paths under the repository's .git and nothing else (him-2's one sanctioned reader write; never edit them); the phantom branch then appears on %s: rename it before deleting any *sync-conflict* file under .git, commit the working tree, then delete the inert copies; sync-check push %s names each step (rules.md -> him-2)%s" % (
+                                                 roles[1], roles[0], repo_word(f, prefix), directory_clause(f, here, roles[1]))))
+                        if gone:
+                            failures.append(("stranded on %s: %s" % (wname, ", ".join(gone)), deleted_fix(gone, roles[1])))
+                elif under:
+                    failures.append(("stranded on %s: %s" % (wname, ", ".join(under)),
+                                     "a write under a .git on %s: run sync-check guard there, which names the write; no touch and no edit (rules.md -> fedxps-3, him-2)" % wname))
         # the hub's counts about each workstation, against what that workstation names
         for wname, count in sorted((r.get("hub_side") or {}).items()):
             named = r["stranded"].get(wname, [])
@@ -1103,7 +1321,11 @@ def verdict(cl, r, f, settled, ok_line=True):
                               "read again; if it stays, run sync-check sync on %s" % wname))
         for wname, names in sorted((r.get("peer_need") or {}).items()):
             failures.append(("%s needs %s that do not arrive: %s" % (wname, plural(len(names) or 1, "item"), ", ".join(names[:6]) or "(unnamed)"),
-                             "the hub may hold a conflict's loser: edit the file once more on the machine whose text is in the conflict copy (%s)" % HIM2))
+                             "the hub may hold a conflict's loser: %s (%s)" % (edit_or_touch(
+                                 names,
+                                 "edit the file once more on the machine whose text is in the conflict copy",
+                                 "edit %s once more on the machine whose text is in the conflict copy",
+                                 "touch %s on the machine whose counter the current version lacks (never edit a .git path)"), HIM2)))
         if r["hub_needs"] > 0:
             explained = sum(len(v) for v in r["stranded"].values())
             if r["hub_needs"] > explained:
@@ -1118,17 +1340,23 @@ def verdict(cl, r, f, settled, ok_line=True):
             waits.append(("still settling", "read again in a few seconds"))
     for hname, err in sorted(cl.hub_err.items()):
         warns.append(("%s's view unread: %s" % (hname, err), "ssh -o BatchMode=yes %s true   # must answer" % hname))
+    # every line printed for the folder is kept in r["lines"] as [tag, message,
+    # fix], the reading file's record of it, which `session` reprints (settled
+    # 76, 2026-10-27); what is printed is as it was
+    lines = r["lines"] = []
+
+    def emit(tag, msg, fix):
+        OUT.line(tag, msg)
+        OUT.fix(fix)
+        lines.append([tag, msg, fix])
     # a reading from the snapshot says so on every line it decides, OK or not
     snap = (" (from the snapshot taken %s ago)" % age(r["snapshot_age"])) if r.get("snapshot_age") is not None else ""
     for msg, fix in failures:
-        OUT.line("FAIL", "%s: %s%s" % (label, msg, snap))
-        OUT.fix(fix)
+        emit("FAIL", "%s: %s%s" % (label, msg, snap), fix)
     for msg, fix in waits:
-        OUT.line("WAIT", "%s: %s%s" % (label, msg, snap))
-        OUT.fix(fix)
+        emit("WAIT", "%s: %s%s" % (label, msg, snap), fix)
     for msg, fix in warns:
-        OUT.line("WARN", "%s: %s%s" % (label, msg, snap))
-        OUT.fix(fix)
+        emit("WARN", "%s: %s%s" % (label, msg, snap), fix)
     # attention that is not a fault: a known item that no longer shows, so its
     # KNOWN line has outlived its repair; a dead watcher
     dues = list(r.get("due") or [])
@@ -1145,14 +1373,19 @@ def verdict(cl, r, f, settled, ok_line=True):
         extra = "; ".join(known_notes + notes)
         if dues:
             for msg, fix in dues:
-                OUT.line("DUE", "%s: up to date; %s%s" % (label, msg, snap))
-                OUT.fix(fix)
+                emit("DUE", "%s: up to date; %s%s" % (label, msg, snap), fix)
             if extra:
                 OUT.det(extra)
-        elif ok_line:
-            OUT.ok("%s: up to date%s" % (label, (" -- " + extra) if extra else ""))
-        elif extra:
-            OUT.det(extra)
+        else:
+            okmsg = "%s: up to date%s" % (label, (" -- " + extra) if extra else "")
+            # with ok_line False the caller prints its own OK line (the push
+            # line's); the record carries the folder's all the same, since
+            # `session` reprints a folder from its record alone
+            lines.append(["OK", okmsg, None])
+            if ok_line:
+                OUT.ok(okmsg)
+            elif extra:
+                OUT.det(extra)
     elif notes or known_notes:
         OUT.det(*(known_notes + notes))
     OUT.det(*r["detail"])
@@ -1233,6 +1466,133 @@ def snapshot_record(cl, fid, settled):
             "peer_names": dict(cl.peer_names)}
 
 
+# --- the reading file (settled 76, 2026-10-27) -------------------------------------------
+TAGS = ("OK", "FAIL", "WAIT", "WARN", "DUE")
+REMOTE = False      # a --remote-* mode: nothing is read from or written to the reading file
+LINE = "all"        # the line this run reads, for the caller a reading names
+
+
+class Readings:
+    """The newest full reading of each folder: the sync line's verdict lines as
+    a live read printed them, one record per folder id, {"label", "taken"
+    (epoch seconds), "caller", "settled", "ok", "lines": [[tag, msg, fix or
+    None], ...]}. Every live read of the sync line's folders stores its
+    folders (check_folders); `session` reprints them with their age, so a
+    session start reads the criterion's last answer without the scan that
+    costs 39.5 s on bigfed and 60.4 s on fedxps at Desktop scale (r5.md)."""
+
+    def __init__(self, path):
+        self.path = path
+
+    @classmethod
+    def from_env(cls):
+        """The reading file in play, or None: none in a remote mode, none when
+        SYNC_CHECK_READINGS is set to the empty string; else that variable, or
+        the state directory's (XDG_STATE_HOME when absolute, as the XDG spec
+        reads it, else ~/.local/state)."""
+        if REMOTE:
+            return None
+        env = os.environ.get("SYNC_CHECK_READINGS")
+        if env is not None:
+            return cls(os.path.expanduser(env)) if env else None
+        state = os.environ.get("XDG_STATE_HOME")
+        base = state if state and os.path.isabs(state) else os.path.join(HOME, ".local", "state")
+        return cls(os.path.join(base, "sync-check", "readings.json"))
+
+    def load(self):
+        """{folder id: record}; empty when the file is absent, unreadable or not
+        the shape written, so a corrupt file reads as no reading on record."""
+        try:
+            with open(self.path, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            return {}
+        folders = data.get("folders") if isinstance(data, dict) else None
+        return folders if isinstance(folders, dict) else {}
+
+    @staticmethod
+    def record(rec):
+        """A stored record when it is whole, else None."""
+        if not isinstance(rec, dict):
+            return None
+        taken = rec.get("taken")
+        # finite and a time: json reads NaN and Infinity, and a taken of 1e20
+        # would reach strftime
+        if isinstance(taken, bool) or not isinstance(taken, (int, float)) or not math.isfinite(taken) or abs(taken) >= 10 ** 10:
+            return None
+        if not isinstance(rec.get("label"), str) or not isinstance(rec.get("caller"), str):
+            return None
+        lines = rec.get("lines")
+        if not isinstance(lines, list) or not lines:
+            return None
+        for l in lines:
+            if not (isinstance(l, list) and len(l) == 3 and l[0] in TAGS and isinstance(l[1], str)
+                    and (l[2] is None or isinstance(l[2], str))):
+                return None
+        return rec
+
+    def store(self, recs):
+        """Merge folders' records by id into the file and replace it whole,
+        0600 (mkstemp's mode) in a directory made 0700; of two records for one
+        folder the newer stays, so two runs at once leave a true reading either
+        way. A write that fails is silent: the next `session` then says "no
+        full reading on record", which is the safe direction."""
+        tmp = None
+        try:
+            d = os.path.dirname(os.path.abspath(self.path))
+            os.makedirs(d, mode=0o700, exist_ok=True)
+            folders = self.load()
+            for fid, rec in recs.items():
+                old = self.record(folders.get(fid))
+                if old is None or old["taken"] <= rec["taken"]:
+                    folders[fid] = rec
+            text = json.dumps({"version": 1, "folders": folders})
+            fd, tmp = tempfile.mkstemp(prefix=".readings.", dir=d)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            os.replace(tmp, self.path)
+            tmp = None
+        except (OSError, ValueError, TypeError):
+            pass
+        finally:
+            if tmp:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+
+
+def reading_caller():
+    """Who took a reading: SYNC_CHECK_CALLER, which the shell callers set (bye,
+    byebye, gpush, gpushall), one line of at most 60 characters; else this
+    run's line, "sync-check" alone for the bare run."""
+    c = re.sub(r"[\x00-\x1f\x7f]+", " ", os.environ.get("SYNC_CHECK_CALLER") or "").strip()[:60]
+    return c or ("sync-check" if LINE == "all" else "sync-check %s" % LINE)
+
+
+def reading_record(f, r, settled, taken, ok, device):
+    """One folder's record for the reading file: the lines its verdict printed,
+    after any scan WARN read_live printed for it, and the device that read it
+    (myID's first seven characters), so that a reading file carried to the
+    other machine is never reprinted there as that machine's own."""
+    pre = r.get("pre_lines") or []
+    return {"label": f["label"], "taken": taken, "caller": reading_caller(), "settled": bool(settled),
+            "ok": bool(ok) and not pre, "device": device, "lines": pre + list(r.get("lines") or [])}
+
+
+def boot_time():
+    """This boot's start in epoch seconds, /proc/stat's btime; None unread."""
+    try:
+        with open("/proc/stat", "r", encoding="ascii", errors="replace") as fh:
+            for line in fh:
+                w = line.split()
+                if len(w) == 2 and w[0] == "btime" and w[1].isdigit():
+                    return int(w[1])
+    except OSError:
+        pass
+    return None
+
+
 def cluster_from(inst, f, rec):
     cl = Cluster(inst, [f])
     cl.local, cl.hub, cl.hub_err = rec["local"], rec["hub"], rec["hub_err"]
@@ -1256,10 +1616,12 @@ def check_folders(inst, folders, settle=None, ok_line=True):
     live = [f for f in folders if f["id"] not in stored]
     results = {}
     cl = None
+    taken = None
     if live:
         cl, readings, settled = read_live(inst, live, settle)
         if readings is None:
             return False, cl, None
+        taken = time.time()
         for f, r in zip(live, readings):
             results[f["id"]] = (cl, r, settled)
         if snap:
@@ -1274,10 +1636,19 @@ def check_folders(inst, folders, settle=None, ok_line=True):
         r["notes"].append("from the snapshot taken %s ago" % age(r["snapshot_age"]))
         results[f["id"]] = (c, r, bool(rec.get("settled")))
     all_ok = True
+    oks = {}
     for f in folders:
         c, r, settled = results[f["id"]]
-        if not verdict(c, r, f, settled, ok_line):
+        oks[f["id"]] = verdict(c, r, f, settled, ok_line)
+        if not oks[f["id"]]:
             all_ok = False
+    # the reading file (settled 76): each folder read live, never one read from
+    # the snapshot, whose record the run that read it live has stored
+    if live:
+        rd = Readings.from_env()
+        if rd:
+            rd.store({f["id"]: reading_record(f, results[f["id"]][1], results[f["id"]][2], taken, oks[f["id"]],
+                                              (results[f["id"]][0].local.get("myID") or "")[:7]) for f in live})
     readings = [results[f["id"]][1] for f in folders]
     return all_ok, (results[folders[0]["id"]][0] if len(folders) == 1 else cl), readings
 
@@ -1287,6 +1658,7 @@ def read_live(inst, folders, settle=None):
     readings None when the reading could not be had, its WARN printed."""
     if settle is None:
         settle = SETTLE
+    scan_lines = {}     # a folder's scan WARN, for its record in the reading file
     for f in folders:
         if f["paused"]:
             continue
@@ -1300,8 +1672,10 @@ def read_live(inst, folders, settle=None):
             OUT.fix("the daemon runs with another config: compare `syncthing --paths` with this file")
             return None, None, False
         if st != 200:
-            OUT.line("WARN", "%s: scan answered %s: %s" % (f["label"], st, str(body).strip()[:100]))
-            OUT.fix("open the folder in the Syncthing GUI")
+            msg, fix = "%s: scan answered %s: %s" % (f["label"], st, str(body).strip()[:100]), "open the folder in the Syncthing GUI"
+            OUT.line("WARN", msg)
+            OUT.fix(fix)
+            scan_lines.setdefault(f["id"], []).append(["WARN", msg, fix])
     cl = Cluster(inst, folders)
     deadline = time.monotonic() + settle
     want = set()
@@ -1328,6 +1702,8 @@ def read_live(inst, folders, settle=None):
             break
         time.sleep(min(POLL, max(0.0, deadline - time.monotonic())) or POLL)
     settled = not any(unresolved(r) for r in readings) or time.monotonic() >= deadline
+    for f, r in zip(folders, readings):
+        r["pre_lines"] = scan_lines.get(f["id"], [])
     return cl, readings, settled
 
 
@@ -1343,6 +1719,104 @@ def cmd_sync():
         OUT.ok("no Syncthing folders configured on this machine")
         return
     check_folders(inst, inst.folders)
+
+
+# --- session (settled 76, 77; 2026-10-27) ---------------------------------------------------
+def cmd_session():
+    """The session hook's line. At Desktop scale `sync-check sync` costs 44 s on
+    bigfed and 66 s on fedxps, the blocking scan 39.5 and 60.4 s of it, and the
+    hook's bare run was cut at its 4 s on both machines having read nothing,
+    the scan running on in the daemon (cutover/rehearsal/r5.md, t7, 2026-10-27).
+    So this line reprints each folder's newest full reading from the reading
+    file, with its age, then runs the cheap lines live: conflicts (0.9-1.3 s
+    there), guard without the version vectors (0.1-0.3 s), config without
+    claude-link's dry run, and the hub last, whose first door costs 2 s away
+    from home, so a cut at the hook's 4 s loses that line alone. It starts no
+    scan and reads no --remote-views, db/browse or db/file; of this machine's
+    daemon it asks system/status first, so a daemon dead since the reading
+    is a WARN above it, on a writer too, where the other lines ask nothing."""
+    stored_readings()
+    cmd_conflicts()
+    cmd_guard(with_vectors=False)
+    cmd_config(claude_link=False)
+    cmd_hub()
+
+
+def stored_readings():
+    """Each folder this machine shares, from its record in the reading file: the
+    lines reprinted, each tagged one with the reading's caller and age (and
+    "before this boot" when it predates /proc/stat's btime), the fix lines
+    under them as they were; a folder with no record, a WARN. A paused folder
+    reads as the sync line reads it, from config.xml; a record for a folder no
+    longer configured is ignored."""
+    path = config_path()
+    if not path:
+        OUT.line("WARN", "no Syncthing configuration on this machine (config.xml not found)")
+        OUT.fix("SYNC_CHECK_CONFIG=<path> if it lives elsewhere")
+        return
+    inst = Instance(path)
+    # The daemon itself, one GET (about 0.5 ms): on a writer nothing else in
+    # this line reads it, and a stored reading says nothing of a daemon that
+    # has died since; the readings still print after the WARN.
+    st, me = inst.get("system/status")
+    if st is None:
+        OUT.line("WARN", "Syncthing is not answering at %s" % inst.base)
+        OUT.fix("systemctl --user status syncthing   # then read again")
+    elif st == 403:
+        OUT.line("WARN", "the API key in %s is refused" % inst.path)
+        OUT.fix("the daemon runs with another config: compare `syncthing --paths` with this file")
+    elif st != 200 or not isinstance(me, dict):
+        OUT.line("WARN", "Syncthing's system/status answered %s at %s" % (st, inst.base))
+        OUT.fix("systemctl --user status syncthing   # then read again")
+    mine = ((me.get("myID") or "") if st == 200 and isinstance(me, dict) else "")[:7]
+    if not mine:
+        OUT.det("this daemon's device id unread: the stored readings are not matched to it")
+    if not inst.folders:
+        OUT.ok("no Syncthing folders configured on this machine")
+        return
+    rd = Readings.from_env()
+    stored = rd.load() if rd else {}
+    now, boot = time.time(), boot_time()
+    for f in inst.folders:
+        if f["paused"]:
+            OUT.line("WAIT", "%s: paused on this machine" % f["label"])
+            OUT.fix(paused_fix(inst))
+            continue
+        rec = Readings.record(stored.get(f["id"]))
+        if rec is not None and mine and rec.get("device") != mine:
+            # another device's reading, the file carried here: never this one's
+            OUT.det("%s: the stored reading was taken by device %s, not this one (%s): not reprinted" % (
+                f["label"], rec.get("device") or "(none named)", mine))
+            rec = None
+        if rec is None:
+            OUT.line("WARN", "%s: no full reading on record" % f["label"])
+            OUT.fix("sync-check sync")
+            continue
+        ahead = rec["taken"] - now
+        if ahead > 60:
+            # as the snapshot refuses a record from the future: "0 s ago" here
+            # would claim a reading the clock cannot place
+            OUT.line("WARN", "%s: the newest full reading is dated %s ahead of this clock (by %s): the clock has moved since it was taken" % (
+                f["label"], age(ahead), rec["caller"]))
+            OUT.fix("sync-check sync")
+            continue
+        before_boot = ", before this boot" if boot is not None and rec["taken"] < boot else ""
+        if now - rec["taken"] > READING_MAX_AGE_DAYS * 86400:
+            # a week-old all clear is no reading (settled at the pause of 5c-b)
+            OUT.line("WARN", "%s: the newest full reading is %s old (by %s%s): too old to stand as a reading" % (
+                f["label"], age(now - rec["taken"]), rec["caller"], before_boot))
+            OUT.fix("sync-check sync")
+            OUT.det(*["%s: its stored verdict: [%s] %s" % (f["label"], " OK " if t == "OK" else t, m) for t, m, _ in rec["lines"]])
+            continue
+        # after the message, so an OK line still reads "<label>: up to date"
+        # first, the hook's count (^\[ OK \] [^:]+: up to date)
+        suffix = " (the newest full reading, by %s %s ago%s)" % (rec["caller"], age(max(0.0, now - rec["taken"])), before_boot)
+        for tag, msg, fix in rec["lines"]:
+            OUT.line(tag, msg + suffix)
+            if fix:
+                OUT.fix(fix)
+        OUT.det("%s: read %s by %s%s" % (f["label"], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rec["taken"])),
+                                        rec["caller"], "" if rec.get("settled") else ", the settle cut short"))
 
 
 # --- conflicts (ws-2) -------------------------------------------------------------------
@@ -1443,8 +1917,11 @@ def cmd_conflicts():
 
 
 # --- guard (fedxps-3) -----------------------------------------------------------------------
-def cmd_guard():
-    role = Role()
+def cmd_guard(with_vectors=True):
+    """with_vectors False (the session line) leaves the version vectors out:
+    1.9 s for 5,781 .git paths on fedxps at Desktop scale (refute-b.md B11),
+    read by `sync-check guard`, the bare run and the push line (settled 77)."""
+    role = this_role()
     host = role.host or "?"
     for w in role.warnings:
         OUT.line("WARN", w)
@@ -1535,7 +2012,10 @@ def cmd_guard():
         OUT.fix("curl -H 'X-API-Key: ...' '%sevents/disk?since=0&limit=5&timeout=0'" % inst.base)
     else:
         disk_events(role, inst, ev)
-    vectors(role, inst)
+    if with_vectors:
+        vectors(role, inst)
+    else:
+        OUT.det("the version vectors are read by `sync-check guard`, the bare run and the push line, not by the session line (settled 77)")
 
 
 def disk_events(role, inst, ev):
@@ -1642,7 +2122,10 @@ class Keepalive:
 def read_repos(role, inst):
     """The repositories this machine reads, as (path, folder or None): the
     readerRepo keys, and under role = reader every repository at the top of
-    ~/Desktop or of a folder, or one level below it."""
+    ~/Desktop or of a folder, or one level below it. A repository nested
+    deeper is outside the vector check, a named gap: fifteen lay in
+    ModalLogic/.lake on 2026-10-27, which fedxps runs no Lean to write, so only
+    a breach of the guard could (rules.md -> fedxps-3; settled 77)."""
     cands = list(role.reader_repos)
     if role.reader:
         for top in [DESKTOP] + [f["path"] for f in inst.folders]:
@@ -1745,6 +2228,46 @@ def counter_date(counter):
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(counter)) if 10 ** 9 < counter < 10 ** 10 else "not a time"
 
 
+def known_write(on, label, path, counter):
+    """The KNOWN_WRITES entry that carries this write, or None: the machine,
+    the folder's label and the counter, and the path where the entry names one
+    (settled 79)."""
+    for x in KNOWN_WRITES:
+        if x["on"] == on and x["label"] == label and x["counter"] == counter and x.get("path", path) == path:
+            return x
+    return None
+
+
+def known_named(known, where):
+    """The known writes a reading matched, each entry once: a path-keyed one
+    by its path, a counter-keyed one by its counter and how many paths carry
+    it. known is [(machine, label, path, entry)]; where(machine, label) words
+    the rest."""
+    order, paths = [], {}
+    for who, label, p, k in known:
+        if id(k) not in paths:
+            order.append((who, label, k))
+            paths[id(k)] = []
+        paths[id(k)].append(p)
+    out = []
+    for who, label, k in order:
+        if "path" in k:
+            out.append("%s %s (since %s: %s)" % (k["path"], where(who, label), k["since"], k["note"]))
+        else:
+            out.append("by counter %d %s on %s (since %s: %s)" % (k["counter"], where(who, label), plural(len(paths[id(k)]), "path"), k["since"], k["note"]))
+    return "the known %s %s" % ("write" if len(order) == 1 else "writes", ", ".join(out))
+
+
+def print_known_lines(writes):
+    """After a vector FAIL's paths: each entry that would carry the writes, one
+    per distinct machine, label and counter in counter order, as the Python
+    literal to paste into KNOWN_WRITES (json.dumps of the dict is one), since
+    today by the clock and KNOWN_WRITE_NOTE in place of the record (settled 79)."""
+    today = time.strftime("%Y-%m-%d")
+    for on, label, c in sorted(set(writes), key=lambda x: (x[2], x[0], x[1])):
+        print("       %s," % json.dumps({"on": on, "label": label, "counter": c, "since": today, "note": KNOWN_WRITE_NOTE}))
+
+
 def vectors(role, inst):
     """fedxps-3's durable form (rules.md, 2026-10-25; settled 41): every path
     under the .git of each repository this machine reads, by this machine's
@@ -1761,6 +2284,8 @@ def vectors(role, inst):
     mine = myid[:7]
     myname = inst.names.get(myid, short_hostname())
     repos = read_repos(role, inst)
+    if role.reader:
+        OUT.det("repositories nested deeper than one level below ~/Desktop or a folder's top are outside this check (rules.md -> fedxps-3, 2026-10-27)")
     skipped = [p for p, f in repos if f is None]
     records, unread = git_records(inst, [(p, f) for p, f in repos if f is not None])
     total, hits = len(records), []
@@ -1774,8 +2299,8 @@ def vectors(role, inst):
     by_short = {did[:7]: n for did, n in inst.names.items()}
     known, new = [], []
     for folder, p, counter, info in hits:
-        k = [x for x in KNOWN_WRITES if x["on"] == myname and x["label"] == folder["label"] and x["path"] == p and x["counter"] == counter]
-        (known if k else new).append((folder, p, counter, info, k[0] if k else None))
+        k = known_write(myname, folder["label"], p, counter)
+        (known if k else new).append((folder, p, counter, info, k))
     where = ", ".join(sorted(set(os.path.basename(p) for p, f in repos if f is not None)))
     skip_note = ("in no folder, skipped: %s" % ", ".join(tilde(p) for p in skipped)) if skipped else ""
     for u in unread[:1]:
@@ -1792,11 +2317,12 @@ def vectors(role, inst):
                 counter, counter_date(counter)))
         if len(new) > VECTOR_LIST_MAX:
             print("       ... and %d more" % (len(new) - VECTOR_LIST_MAX))
-        OUT.note("a counter stays in a path's vector for good: once the write's cause is found, carry each path with its counter in KNOWN_WRITES in bin/sync-check (configs), or the line fails on it forever")
+        OUT.note("a counter stays in a path's vector for good and returns on a path git writes again (cutover/rehearsal/refute-b.md -> A9), so the entry names the counter, not the path: once the write is explained, paste these lines into KNOWN_WRITES in bin/sync-check (configs), one per counter")
+        print_known_lines([(myname, folder["label"], counter) for folder, p, counter, info, _ in new])
         OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`); the pilot stops on a write with no known cause (pilot.md)")
     elif not unread:
-        extra = " beyond the known %s %s" % ("write" if len(known) == 1 else "writes", ", ".join("%s in %s (since %s: %s)" % (
-            p, folder["label"], k["since"], k["note"]) for folder, p, counter, info, k in known)) if known else ""
+        extra = (" beyond " + known_named([(myname, folder["label"], p, k) for folder, p, counter, info, k in known],
+                                          lambda who, label: "in %s" % label)) if known else ""
         if where:
             OUT.ok("no .git path of %d carries this machine's counter%s, in the version vectors (%s%s); a deletion under .git is seen in the disk events alone, since the daemon started" % (
                 total, extra, where, ("; " + skip_note) if skip_note else ""))
@@ -1804,14 +2330,26 @@ def vectors(role, inst):
             OUT.ok("version vectors: no repository this machine reads lies in a Syncthing folder (%s)" % skip_note)
         else:
             OUT.ok("version vectors: this machine reads no repository here")
-    # a known write that no longer shows, in a folder read whole: its line has outlived it
+    # a known write that no longer shows, in a folder read whole: its line has
+    # outlived it -- a path-keyed one at once, a counter-keyed one once no
+    # deleted record can still carry its counter (settled 79)
     if not unread:
+        now = time.time()
         for k in KNOWN_WRITES:
             if k["on"] != myname or not any(f is not None and f["label"] == k["label"] for _, f in repos):
                 continue
-            if not any(folder["label"] == k["label"] and p == k["path"] and counter == k["counter"] for folder, p, counter, info in hits):
-                OUT.line("DUE", "the known write %s in %s no longer shows in the version vectors" % (k["path"], k["label"]))
-                OUT.fix("delete its line from KNOWN_WRITES in bin/sync-check (configs): nothing carries it any more")
+            if "path" in k:
+                if not any(folder["label"] == k["label"] and p == k["path"] and counter == k["counter"] for folder, p, counter, info in hits):
+                    OUT.line("DUE", "the known write %s in %s no longer shows in the version vectors" % (k["path"], k["label"]))
+                    OUT.fix("delete its line from KNOWN_WRITES in bin/sync-check (configs): nothing carries it any more")
+            elif not any(folder["label"] == k["label"] and counter == k["counter"] for folder, p, counter, info in hits):
+                if now - k["counter"] > DB_DELETE_RETENTION_HOURS * 3600:
+                    OUT.line("DUE", "the known write by counter %d (%s) in %s shows on no path, and is older than the %d h a workstation keeps a deleted record, so no path git writes again can bring it back" % (
+                        k["counter"], counter_date(k["counter"]), k["label"], DB_DELETE_RETENTION_HOURS))
+                    OUT.fix("delete its line from KNOWN_WRITES in bin/sync-check (configs): nothing carries it any more")
+                else:
+                    OUT.det("the known write by counter %d in %s shows on no path; its line stays until %s, while a deleted record may still carry the counter (%d h)" % (
+                        k["counter"], k["label"], counter_date(k["counter"] + DB_DELETE_RETENTION_HOURS * 3600), DB_DELETE_RETENTION_HOURS))
 
 
 # git's options before its subcommand that take the next word as their value
@@ -1919,8 +2457,8 @@ def push_vectors(inst, cl, repo, folder, name):
                     others[s] = (c, fi)
         for s, (c, fi) in sorted(others.items()):
             who = names.get(s, s)
-            k = [x for x in KNOWN_WRITES if x["on"] == who and x["label"] == f["label"] and x["path"] == p and x["counter"] == c]
-            (known if k else hits).append((p, who, c, fi, k[0] if k else None))
+            k = known_write(who, f["label"], p, c)
+            (known if k else hits).append((p, who, c, fi, k))
     vok = True
     if unread:
         OUT.line("WARN", "%s: the version vectors under its .git cannot be read: %s%s" % (name, unread[0], (" (and %d more)" % (len(unread) - 1)) if len(unread) > 1 else ""))
@@ -1936,13 +2474,14 @@ def push_vectors(inst, cl, repo, folder, name):
                 str(fi.get("modified") or "?")[:19], tilde(os.path.join(folder["path"], p)), names.get(mb, mb), who, c, counter_date(c)))
         if len(hits) > VECTOR_LIST_MAX:
             print("       ... and %d more" % (len(hits) - VECTOR_LIST_MAX))
-        OUT.note("a reader's refused checkout or reset moves the index and the working tree before its hook refuses; read the status here before any commit, and once the write is explained carry each path with its counter in KNOWN_WRITES in bin/sync-check (configs)")
+        OUT.note("a reader's refused checkout or reset moves the index and the working tree before its hook refuses, so read the status here before any commit; once the write is explained, paste these lines into KNOWN_WRITES in bin/sync-check (configs), one per counter: a counter stays in a path's vector for good and returns on a path git writes again (cutover/rehearsal/refute-b.md -> A9), so the entry names the counter, not the path")
+        print_known_lines([(who, folder["label"], c) for p, who, c, fi, _ in hits])
         OUT.fix("git -C %s status" % shq(repo))
         vok = False
     note = ""
     if known:
-        note = "; the known %s %s" % ("write" if len(known) == 1 else "writes", ", ".join(
-            "%s from %s (since %s: %s)" % (p, who, k["since"], k["note"]) for p, who, c, fi, k in known))
+        note = "; " + known_named([(who, folder["label"], p, k) for p, who, c, fi, k in known],
+                                  lambda who, label: "from %s" % who)
     OUT.det("%s: %d paths under .git read, %s" % (name, len(records), "none carries another machine's counter" if not hits and not known else "%d carry another machine's counter" % (len(hits) + len(known))))
     return note, vok
 
@@ -1972,7 +2511,7 @@ def cmd_push(args):
     if not args:
         OUT.line("WARN", "push: name at least one repository")
         return
-    role = Role()
+    role = this_role()
     for w in role.warnings:
         OUT.line("WARN", w)
         OUT.fix("ln -sfn ../../Desktop/configs/git/hosts/%s.inc ~/.config/git/host.inc" % role.host)
@@ -2027,12 +2566,38 @@ def cmd_push(args):
                 needed += [(pname + " -> hub", n) for n in names]
             needed += [("hub -> " + pname, n) for n in (pe.get("need") or [])]
         under_git = [(d, n) for d, n in needed if n.startswith(gitprefix) or n == gitprefix.rstrip("/")]
+        # phantom refs and conflict copies under .git, read before the needs'
+        # fix, which opens by whether one is present; their FAIL prints below
+        refs = git(["-C", repo, "for-each-ref", "--format=%(refname)"])
+        phantoms = [x for x in (refs or "").split() if "sync-conflict" in x]
+        copies = find_lines([gitdir, "-name", "*.sync-conflict-*"]) or []
         if under_git:
             myname = cl.local["names"].get(cl.local["myID"], role.host)
-            OUT.line("FAIL", "%s: %s under its .git needed: %s" % (name, plural(len(under_git), "path"), "; ".join("%s %s" % x for x in under_git[:6])))
+            # every path, never cut: the fix touches exactly these, and a
+            # seventh was cut from the list on the rig (2026-10-27, step 5c-b)
+            OUT.line("FAIL", "%s: %s under its .git needed: %s" % (name, plural(len(under_git), "path"), "; ".join("%s %s" % x for x in under_git)))
             if any(d == myname + " -> hub" for d, _ in under_git):
+                touched = [n for d, n in under_git if d == myname + " -> hub"]
                 others = sorted(set(cl.peer_names.values()))
-                OUT.fix("a split with no phantom: on %s, touch exactly these paths under the repository's .git (those listed '%s -> hub') and nothing else; the phantom branch then appears here, rename it, commit the working tree, delete the inert copies (%s)" % (others[0] if len(others) == 1 else "the other workstation", myname, HIM2))
+                who = others[0] if len(others) == 1 else "the other workstation"
+                # a path absent here is a deletion the hub refused: its own
+                # fix, after the touch's for the paths still here (deleted_fix)
+                gone = [n for n in touched if not os.path.lexists(os.path.join(folder["path"], n))]
+                touched = [n for n in touched if n not in gone]
+                if touched and (phantoms or copies):
+                    # the race with the direct link up: the phantom on both, and
+                    # the hub keeping the loser of a .git path that only a touch
+                    # on the reader clears (settled 79; refute-b.md -> F1)
+                    OUT.fix("the hub holds the loser of these .git paths (a split with the direct link up): on %s, touch exactly these paths under the repository's .git (those listed '%s -> hub') and nothing else; then the phantom repair below (%s)%s" % (
+                        who, myname, HIM2, directory_clause(folder, touched, who)))
+                elif touched:
+                    # with the refs unread a phantom cannot be ruled out, so the
+                    # fix does not say there is none; the WARN below says why
+                    OUT.fix("%s: on %s, touch exactly these paths under the repository's .git (those listed '%s -> hub') and nothing else; the phantom branch then appears here, rename it, commit the working tree, delete the inert copies (%s)%s" % (
+                        "a split with no phantom" if refs is not None else "a split (whether a phantom ref is present could not be read, see below)", who, myname, HIM2,
+                        directory_clause(folder, touched, who)))
+                if gone:
+                    OUT.fix(deleted_fix(gone, who))
             if any(d != myname + " -> hub" for d, _ in under_git):
                 OUT.fix("those moving to or from another machine: read again once the folder settles; a path a reader sends was written under its .git, which `sync-check guard` there names (rules.md -> fedxps-3, fedxps-4)")
             ok = False
@@ -2054,15 +2619,11 @@ def cmd_push(args):
         known_note, vok = push_vectors(inst, cl, repo, folder, name)
         if not vok:
             ok = False
-        # phantom refs and conflict copies under .git
-        refs = git(["-C", repo, "for-each-ref", "--format=%(refname)"])
+        # phantom refs and conflict copies under .git (read above)
         if refs is None:
             OUT.line("WARN", "%s: git cannot list the repository's refs, so a phantom ref cannot be ruled out" % name)
             OUT.fix("GIT_OPTIONAL_LOCKS=0 git -C %s for-each-ref   # read what git says; a broken packed-refs is not a push" % tilde(repo))
             ok = False
-            refs = ""
-        phantoms = [x for x in refs.split() if "sync-conflict" in x]
-        copies = find_lines([gitdir, "-name", "*.sync-conflict-*"]) or []
         if phantoms or copies:
             OUT.line("FAIL", "%s: %s and %s under .git" % (name, plural(len(phantoms), "phantom ref"), plural(len(copies), "conflict copy").replace("copys", "copies")))
             for x in phantoms + copies:
@@ -2735,7 +3296,7 @@ def usage(code):
 
 
 def main(argv):
-    global VERBOSE, QUIET, WANT_HUB_INFO
+    global VERBOSE, QUIET, WANT_HUB_INFO, LINE, REMOTE
     args = []
     for a in argv:
         if a == "-v" or a == "--verbose":
@@ -2750,13 +3311,24 @@ def main(argv):
             args.append(a)
     cmd = args[0] if args else "all"
     rest = args[1:]
+    LINE = cmd
     if cmd == "--remote-views":
+        REMOTE = True
         cmd_remote_views(rest)
         return 0
     if cmd == "--remote-hub":
+        REMOTE = True
         cmd_remote_hub()
         return 0
-    if cmd == "sync":
+    # a line goes out as it is printed, so the lines before the session hook's
+    # cut reach it: timeout's SIGTERM loses whatever a block buffer still holds
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except (AttributeError, ValueError, OSError):
+        pass
+    if cmd == "session":
+        cmd_session()
+    elif cmd == "sync":
         cmd_sync()
     elif cmd == "conflicts":
         cmd_conflicts()

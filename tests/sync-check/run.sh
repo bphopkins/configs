@@ -247,10 +247,34 @@ for h in fedxps bigfed; do mkconfig "$SB/ssh/$h/home" || { echo "sync-check test
 export STUB_CL_LOG="$SB/claude-link.log"
 
 be() { printf '%s\n' "$1" > "$SB/host"; ME=$1; export HOME="$SB/ssh/$1/home" SYNC_CHECK_CONFIG="$SB/ssh/$1/config.xml"; }
-scenario() { python3 "$HERE/scenario.py" "$SB" "$ME" "$@"; : > "$SB/ssh.log"; : > "$SB/ssh.log.doors"; for h in fedxps bigfed nousowl; do : > "$SB/fx/$h/requests.log"; rm -f "$SB/ssh/$h"/down "$SB/ssh/$h"/down-lan "$SB/ssh/$h"/down-vpn "$SB/ssh/$h"/hang-lan "$SB/ssh/$h"/hang-cmd-lan "$SB/ssh/$h"/no-vpn; done; hubfx_reset; }
+# a scenario.py that fails leaves the previous case's fixtures in place, so it
+# is a failure of its own, never a silent stale case (2026-10-27)
+scenario() { python3 "$HERE/scenario.py" "$SB" "$ME" "$@" || { echo "FAIL - scenario.py could not write the fixtures for: $*"; ((fail+=1)); }; : > "$SB/ssh.log"; : > "$SB/ssh.log.doors"; for h in fedxps bigfed nousowl; do : > "$SB/fx/$h/requests.log"; rm -f "$SB/ssh/$h"/down "$SB/ssh/$h"/down-lan "$SB/ssh/$h"/down-vpn "$SB/ssh/$h"/hang-lan "$SB/ssh/$h"/hang-cmd-lan "$SB/ssh/$h"/no-vpn; done; hubfx_reset; }
 run() { "$GAUGE" "$@" 2>&1; }
 rc() { "$GAUGE" "$@" >/dev/null 2>&1; echo $?; }
 reqs() { cat "$SB/fx/$1/requests.log"; }
+# The KNOWN_WRITES entries a vector FAIL prints (settled 79), each parsed as the
+# Python literal it must be once pasted: "on label counter since" per line, or a
+# traceback (and so no match) when one does not parse or has other keys.
+literals() { python3 -I -c '
+import ast, sys
+for line in sys.stdin.read().splitlines():
+    if line.startswith("       {") and line.endswith("},"):
+        d = ast.literal_eval(line.strip()[:-1])
+        assert isinstance(d, dict) and list(d) == ["on", "label", "counter", "since", "note"], d
+        assert type(d["counter"]) is int and d["note"].startswith("<why: "), d
+        print("%s %s %d %s" % (d["on"], d["label"], d["counter"], d["since"]))
+' <<<"$1" 2>&1; }
+# a copy of the gauge with the entries a run printed pasted into KNOWN_WRITES as printed
+paste_known() { python3 -I - "$GAUGE" "$2" "$1" <<'PY'
+import sys
+src, dst, printed = sys.argv[1:4]
+t = open(src).read()
+lines = [l + "\n" for l in printed.splitlines() if l.startswith("       {") and l.endswith("},")]
+assert lines and t.count("\nKNOWN_WRITES = [\n") == 1
+open(dst, "w").write(t.replace("\nKNOWN_WRITES = [\n", "\nKNOWN_WRITES = [\n" + "".join(lines), 1))
+PY
+chmod +x "$2"; }
 
 # ==============================================================================
 echo "== sync: everything up to date, seen from fedxps =="
@@ -307,6 +331,15 @@ be fedxps; scenario 'fedxps.folders.f1.needTotalItems=2' 'fedxps.folders.f1.need
 out=$(run sync); r=$(rc sync)
 check "named"                                has "$out" '^\[FAIL\] alpha: needs 2 items that do not arrive: a.txt, b.txt'
 check "  exit 1"                             is "$r" 1
+check "  outside any .git: today's repair, the edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+# under a .git the write is the sanctioned touch, never an edit (settled 79;
+# the lead's follow-up, 2026-10-27)
+scenario 'fedxps.folders.f2.needTotalItems=2' 'fedxps.folders.f2.needNames=[".git/index",".git/refs/heads/main"]'
+out=$(run sync)
+check "a need under .git alone: the touch, never an edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: touch \.git/index, \.git/refs/heads/main on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "  no edit in it"                       lacks "$(grep -A1 'do not arrive' <<<"$out")" 'edit the file|edit \.git'
+scenario 'fedxps.folders.f2.needTotalItems=2' 'fedxps.folders.f2.needNames=["notes.txt",".git/index"]'
+check "a need mixed: each clause names its paths, the edit outside .git, the touch under it" has "$(run sync)" "conflict's loser: edit notes\.txt once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again; touch \.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
 
 echo "== sync: the known stuck item, named, reads OK; anything else fails =="
 # KNOWN is empty since its last item was repaired (2026-10-11), so these cases run on a copy of the
@@ -408,7 +441,13 @@ check "the hub still syncing: WAIT"          has "$(run sync)" '^\[WAIT\] nousow
 scenario 'nousowl.folders.f2.completion.FED.remoteState="unknown"' 'nousowl.connected.FED=false'
 check "the hub not seeing this machine: WARN" has "$(run sync)" '^\[WARN\] nousowl: nousowl does not see this machine connected'
 scenario 'nousowl.folders.f1.completion.BIG.needItems=1' 'bigfed.folders.f1.needTotalItems=1' 'bigfed.folders.f1.needNames=["late.md"]'
-check "the other workstation needing what does not arrive: FAIL, named" has "$(run sync)" '^\[FAIL\] alpha: bigfed needs 1 item that do not arrive: late.md'
+out=$(run sync)
+check "the other workstation needing what does not arrive: FAIL, named" has "$out" '^\[FAIL\] alpha: bigfed needs 1 item that do not arrive: late.md'
+check "  outside any .git: today's repair, the edit" has "$out" "fix: the hub may hold a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+scenario 'nousowl.folders.f1.completion.BIG.needItems=1' 'bigfed.folders.f1.needTotalItems=1' 'bigfed.folders.f1.needNames=["sub/.git/index"]'
+check "the other workstation needing a .git path: the touch, never an edit (settled 79)" has "$(run sync)" "fix: the hub may hold a conflict's loser: touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+scenario 'nousowl.folders.f1.completion.BIG.needItems=2' 'bigfed.folders.f1.needTotalItems=2' 'bigfed.folders.f1.needNames=["late.md","sub/.git/index"]'
+check "  mixed: each clause names its paths" has "$(run sync)" "fix: the hub may hold a conflict's loser: edit late\.md once more on the machine whose text is in the conflict copy; touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(org/machines/transport-2026-10/rules.md -> him-2\)$"
 scenario 'nousowl.folders.f1.state="error"' 'nousowl.folders.f1.error="folder marker missing"'
 out=$(run sync)
 check "a hub folder in the error state: FAIL with its text (review 3b-2)" has "$out" '^\[FAIL\] alpha: folder error on nousowl: folder marker missing'
@@ -755,6 +794,46 @@ check "  exit 1"                             is "$r" 1
 out=$(run push -q nousowl); r=$(rc push -q nousowl)
 check "-q never hides a FAIL: the .git line still printed (review 3b-2's survivor m14)" has "$out" '^\[FAIL\] nousowl: 1 path under its \.git needed'
 check "  exit 1 under -q"                    is "$r" 1
+# the refs unread beside needed .git paths: the fix cannot say "no phantom"
+# (the reviewer's finding, 2026-10-27); git's own refusal, a broken packed-refs
+printf 'garbage line\n' > "$HOME/Desktop/nousowl/.git/packed-refs"
+out=$(run push nousowl)
+check "needed .git paths with the refs unread: the fix does not say there is no phantom" has "$out" "fix: a split \(whether a phantom ref is present could not be read, see below\): on fedxps, touch exactly these paths under the repository's \.git \(those listed 'bigfed -> hub'\) and nothing else; the phantom branch then appears here"
+check "  never 'a split with no phantom'"     lacks "$out" 'a split with no phantom'
+check "  the WARN below says why"             has "$out" '^\[WARN\] nousowl: git cannot list the repository.s refs'
+rm "$HOME/Desktop/nousowl/.git/packed-refs"
+# a directory among the paths to touch: a touch does not move it for
+# Syncthing, so the fix adds the reader's permission change, set back (his
+# word at the pause of 5c-b, 2026-10-27); a file or an absent path, nothing
+DIRP="$HOME/Desktop/nousowl/.git/objects/ab"; made=0; [ -d "$DIRP" ] || { mkdir "$DIRP"; made=1; }
+DIRCL="; .git/objects/ab is a directory, which a touch does not move for Syncthing: on fedxps, change its permissions and set them back (chmod g+w ~/Desktop/nousowl/.git/objects/ab; chmod g-w ~/Desktop/nousowl/.git/objects/ab), the second sanctioned reader write (settled 79, 2026-10-27)"
+fixline() { grep -F -- "$2" <<<"$1" | head -1; }
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/objects/ab"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+out=$(run push nousowl)
+check "a needed .git directory: the push fix ends with the permission change, naming it" has "$(fixline "$out" 'fix: a split with no phantom')" "$(sed 's/[][\.*^$()+?{}|]/\\&/g' <<<"$DIRCL")\$"
+check "  the opening intact for R3's case"     has "$out" '^       fix: a split with no phantom: on fedxps, touch exactly these paths'
+cp "$HOME/Desktop/nousowl/.git/refs/heads/main" "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261009-162229-ABCDEFG"
+out=$(run push nousowl)
+check "  the other opening, a phantom present: the same clause" has "$(fixline "$out" 'fix: the hub holds the loser of these .git paths')" "$(sed 's/[][\.*^$()+?{}|]/\\&/g' <<<"$DIRCL")\$"
+rm "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261009-162229-ABCDEFG"
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+check "  a needed .git file: no clause"        lacks "$(run push nousowl)" 'is a directory'
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/objects/zz"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+check "  a needed .git path absent here: no clause" lacks "$(run push nousowl)" 'is a directory'
+[ "$made" = 1 ] && rmdir "$DIRP"
+# a needed .git path absent here: a deletion the hub refused, since it holds
+# fedxps's copy first (the lead's rig run, 2026-10-27): the touch on fedxps,
+# then the deletion here again, never "touch ... under the repository's .git"
+GONE=".git/refs/heads/x.sync-conflict-20261027-175618-ZHFPJUK"
+GONEFIX="$GONE deleted here but refused by the hub, which recorded fedxps's copy first (a concurrent modification beats a deletion): on fedxps, touch exactly these paths; they return here; then delete them here again (rules.md -> him-2)"
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=["'"$GONE"'"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+out=$(run push nousowl)
+check "a needed .git path absent here: the push fix is the deletion's" has "$out" "^       fix: $(sed 's/[][\.*^$()+?{}|]/\\&/g' <<<"$GONEFIX")\$"
+check "  not the touch of the paths under .git" lacks "$out" "touch exactly these paths under the repository's \.git"
+scenario 'bigfed.folders.f2.completion.HUB.needItems=2' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main","'"$GONE"'"]' 'nousowl.folders.f2.completion.BIG.needItems=2'
+out=$(run push nousowl)
+check "  beside a path that exists: today's fix for it, the deletion's for the other" has "$out" '^       fix: a split with no phantom: on fedxps, touch exactly these paths'
+check "  and the deletion's"                    has "$out" "^       fix: $(sed 's/[][\.*^$()+?{}|]/\\&/g' <<<"$GONEFIX")\$"
 scenario 'fedxps.folders.f2.completion.HUB.needItems=1' 'fedxps.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.FED.needItems=1'
 out=$(run push nousowl); r=$(rc push nousowl)
 check "a path under .git stranded on fedxps, named from fedxps's own view: FAIL" has "$out" '^\[FAIL\] nousowl: 1 path under its \.git needed: fedxps -> hub \.git/refs/heads/main'
@@ -829,6 +908,7 @@ scenario 'nousowl.extra_devices=[{"id":"PIXELXX-AAAAAAA-BBBBBBB-CCCCCCC-DDDDDDD-
 out=$(run push nousowl); r=$(rc push nousowl)
 check "devices the hub knows but that are on no folder are never ssh hosts (1/2)" lacks "$(cat "$SB/ssh.log")" '^pixel:'
 check "devices the hub knows but that are on no folder are never ssh hosts (2/2)" lacks "$(cat "$SB/ssh.log")" 'ProxyCommand'
+check "  against fresh fixtures: the hub's config.xml names both extra devices" is "$(grep -cE 'name="(pixel|-oProxyCommand=touch pwned)"' "$SB/ssh/nousowl/config.xml")" 2
 check "  the push still reads OK"            is "$r" 0
 
 echo "== push: from fedxps, which reads nousowl =="
@@ -934,6 +1014,18 @@ check "many paths: 20 listed, the rest counted" has "$out" '^       \.\.\. and 2
 check "  the count of all of them"           has "$out" '^\[FAIL\] 22 paths under a .git this machine reads carry this machine.s counter'
 check "  every path read, the new directory too" has "$out" '^       .*/\.git/objects/ab/obj1  '
 check "  nothing unreadable"                 lacks "$out" '^\[WARN\]'
+# (d) more than 20 paths with a counter that appears only past the 20th: the
+# literal lines carry every distinct counter all the same (the reviewer's
+# surviving mutant, 2026-10-27); the paths sort obj01..obj22 in the walk
+VC() { printf '{"version":["FEDXPSX:%s","BIGFEDX:1791668457"],"modifiedBy":"FEDXPSX"}' "$1"; }
+args=(); for i in $(seq -w 1 21); do args+=("file:fedxps:f2:.git/objects/ab/obj$i=$(VC 1792640450)"); done
+args+=("file:fedxps:f2:.git/objects/ab/obj22=$(VC 1792640470)")
+scenario "${args[@]}"
+out=$(run guard); today=$(date +%F)
+check "(d) 22 paths, the 22nd alone with its counter: the 20th listed" has "$out" 'objects/ab/obj20  '
+check "  the 22nd past the list"               lacks "$out" 'objects/ab/obj22  '
+check "  the literal lines carry both counters" is "$(literals "$out")" "fedxps nousowl 1792640450 $today
+fedxps nousowl 1792640470 $today"
 scenario 'fedxps.files.f2={}'
 out=$(run guard); r=$?
 check "the .git not in the folder's index: WARN, never OK" has "$out" "^\[WARN\] version vectors unread: ~/Desktop/nousowl: its .git is not in the folder.s index"
@@ -976,6 +1068,70 @@ scenario
 out=$("$WGAUGE" guard 2>&1); r=$?
 check "a known write no longer showing: DUE, delete its line" has "$out" '^\[DUE\] the known write .git/index in nousowl no longer shows'
 check "  exit 3"                             is "$r" 3
+scenario 'file:fedxps:f2:.git/HEAD={"version":["FEDXPSX:1792640450","BIGFEDX:1791668457"],"modifiedBy":"FEDXPSX"}'
+check "an entry naming a path narrows it: the same counter on another path FAILs" has "$("$WGAUGE" guard 2>&1)" '^\[FAIL\] 1 path under a .git this machine reads carries'
+# Step 5c-b (2026-10-27, settled 79): KNOWN_WRITES keyed by machine and counter on
+# any path. Two more copies, each a counter-keyed stand-in: one whose counter is an
+# hour old by the clock, so a deleted record may still carry it, and one older than
+# DB_DELETE_RETENTION_HOURS. Each case below was run against the gauge before the
+# change (SYNC_CHECK=<that copy>) and fails there.
+FRESH=$(( $(date +%s) - 3600 )); LATER=$(( FRESH + 7 ))
+WGAUGE2="$SB/sync-check-known-by-counter"; WGAUGE3="$SB/sync-check-known-by-old-counter"
+known_copy() { # $1 the copy, $2 its entry's counter, $3 its note, $4 its label (nousowl)
+  python3 -I - "$GAUGE" "$1" "$2" "$3" "${4:-nousowl}" <<'PY' || { echo "sync-check tests: no 'KNOWN_WRITES = [' line to insert the stand-in after -- not running" >&2; exit 2; }
+import sys
+src, dst, c, note, label = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], sys.argv[5]
+t = open(src).read()
+assert t.count("\nKNOWN_WRITES = [\n") == 1
+open(dst, "w").write(t.replace("\nKNOWN_WRITES = [\n", '\nKNOWN_WRITES = [\n    {"on": "fedxps", "label": "%s", "counter": %d, "since": "2026-10-27", "note": "%s"},\n' % (label, c, note), 1))
+PY
+  chmod +x "$1"; }
+known_copy "$WGAUGE2" "$FRESH" "a stand-in by counter"
+known_copy "$WGAUGE3" 1700000000 "an old stand-in"
+vf() { printf '{"version":["FEDXPSX:%s","BIGFEDX:1791668457"],"modifiedBy":"FEDXPSX","modified":"2026-10-27T10:00:00.5-07:00"}' "$1"; }
+be fedxps; export GIT_OPTIONAL_LOCKS=0; scenario "file:fedxps:f2:.git/refs/heads/main=$(vf $FRESH)"
+out=$("$WGAUGE2" guard 2>&1); r=$?
+check "a counter-keyed known write on a path it does not name: OK, named by its counter and note" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter beyond the known write by counter $FRESH in nousowl on 1 path \(since 2026-10-27: a stand-in by counter\), in the version vectors \(nousowl\); a deletion"
+check "  exit 0"                             is "$r" 0
+# (e) the same counter, the entry's label another folder's: no match (the
+# reviewer's surviving mutant ignored the label, 2026-10-27)
+WGAUGE4="$SB/sync-check-known-other-folder"; known_copy "$WGAUGE4" "$FRESH" "a stand-in in another folder" alpha
+check "(e) a counter-keyed entry whose label is another folder's: no match, FAIL" has "$("$WGAUGE4" guard 2>&1)" "^\[FAIL\] 1 path under a .git this machine reads carries this machine's counter"
+scenario "file:fedxps:f2:.git/refs/heads/main=$(vf $FRESH)" "file:fedxps:f2:.git/index=$(vf $FRESH)"
+out=$("$WGAUGE2" guard 2>&1); r=$?
+check "a second path with the same counter: OK, both counted" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter beyond the known write by counter $FRESH in nousowl on 2 paths"
+check "  exit 0"                             is "$r" 0
+scenario "file:fedxps:f2:.git/refs/heads/main=$(vf $FRESH)" "file:fedxps:f2:.git/index=$(vf $LATER)"
+out=$("$WGAUGE2" guard 2>&1); r=$?; today=$(date +%F)
+check "a different counter beside it: FAIL, that path alone" has "$out" "^\[FAIL\] 1 path under a .git this machine reads carries this machine's counter"
+check "  the path named with its counter"     has "$out" "~/Desktop/nousowl/.git/index  last modified by fedxps; this machine's counter $LATER"
+check "  the entry for the new counter printed, a Python literal with the five keys" is "$(literals "$out")" "fedxps nousowl $LATER $today"
+check "  exit 1"                             is "$r" 1
+out=$(run guard); today=$(date +%F)
+check "with KNOWN_WRITES empty: one line per counter, in counter order" is "$(literals "$out")" "fedxps nousowl $FRESH $today
+fedxps nousowl $LATER $today"
+check "  each indented as the gauge's lines are, ready to paste" has "$out" "^       \{\"on\": \"fedxps\", \"label\": \"nousowl\", \"counter\": $FRESH, \"since\": \"$today\", \"note\": \"<why: e.g. him-2's split repair, the sanctioned touch>\"\},$"
+check "  the note before them: paste, one per counter, the counter not the path" has "$out" "note: a counter stays in a path's vector for good and returns on a path git writes again \(cutover/rehearsal/refute-b.md -> A9\), so the entry names the counter, not the path: once the write is explained, paste these lines into KNOWN_WRITES in bin/sync-check \(configs\), one per counter$"
+check "  then the fix, fedxps-4's hunt"       is "$(grep -E '^       (note|fix):|^       \{' <<<"$out" | sed -E 's/^       (note|fix):.*/\1/; s/^       \{.*/literal/' | paste -sd' ')" "note literal literal fix"
+paste_known "$out" "$SB/sync-check-pasted"
+out=$("$SB/sync-check-pasted" guard 2>&1); r=$?
+check "the printed lines pasted as printed: the guard OK over both paths" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter beyond the known writes by counter"
+check "  each entry named (1/2)"              has "$out" "by counter $FRESH in nousowl on 1 path \(since $today: <why: e.g. him-2's split repair, the sanctioned touch>\)"
+check "  each entry named (2/2)"              has "$out" "by counter $LATER in nousowl on 1 path \(since $today: <why: "
+check "  exit 0"                             is "$r" 0
+scenario
+out=$("$WGAUGE2" guard -v 2>&1); r=$?
+check "a counter-keyed entry no path shows, its counter fresh: no DUE, since a deleted record may carry it" lacks "$out" '^\[DUE\]'
+check "  -v says why its line stays"         has "$out" "the known write by counter $FRESH in nousowl shows on no path; its line stays until 20[0-9-]+ [0-9:]+, while a deleted record may still carry the counter \(10920 h\)"
+check "  exit 0"                             is "$r" 0
+out=$("$WGAUGE3" guard 2>&1); r=$?
+check "one older than the 10920 h a deleted record is kept: DUE, which case it is said" has "$out" '^\[DUE\] the known write by counter 1700000000 \(2023-11-1[45] [0-9:]+\) in nousowl shows on no path, and is older than the 10920 h a workstation keeps a deleted record'
+check "  fix: delete its line"                has "$out" 'fix: delete its line from KNOWN_WRITES in bin/sync-check \(configs\): nothing carries it any more'
+check "  exit 3"                             is "$r" 3
+scenario "file:fedxps:f2:.git/index=$(vf 1700000000)"
+out=$("$WGAUGE3" guard 2>&1); r=$?
+check "  the old counter still on a path: OK, no DUE" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter beyond the known write by counter 1700000000 in nousowl on 1 path"
+check "  exit 0"                             is "$r" 0
 
 echo "== sync: him-2's fuller form, the losing machine named (D8) =="
 L=('fedxps.folders.f1.completion.HUB.needItems=1' 'fedxps.folders.f1.completion.HUB.names=["x.txt"]' 'bigfed.folders.f1.completion.HUB.needItems=1' 'bigfed.folders.f1.completion.HUB.names=["x.txt"]' 'nousowl.folders.f1.completion.BIG.needItems=1' 'nousowl.folders.f1.completion.FED.needItems=1')
@@ -995,6 +1151,99 @@ be fedxps; scenario "${L[@]}" 'file:fedxps:f1:x.txt={"version":["ZZZZZZZ:1792965
 out=$(run sync)
 check "a vector carrying a third device alone: today's wording" has "$out" 'edit the file once more on the machine whose text is in the conflict copy'
 check "  no machine named"                   lacks "$out" 'edit x.txt once more on'
+# under a repository's .git the losing machine's write is the sanctioned touch,
+# never an edit; outside .git the edit stays (settled 79, 2026-10-27)
+LG=('fedxps.folders.f2.completion.HUB.needItems=1' 'fedxps.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1' 'nousowl.folders.f2.completion.FED.needItems=1')
+be fedxps; scenario "${LG[@]}" 'file:fedxps:f2:.git/refs/heads/main={"version":["BIGFEDX:1792965826"],"modifiedBy":"BIGFEDX"}'
+out=$(run sync)
+check "a .git path whose loser the hub holds: touch it on fedxps, never edit it" has "$out" "fix: touch \.git/refs/heads/main on fedxps \(never edit a \.git path; the current version carries bigfed's counter alone\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "  no edit of it"                       lacks "$out" 'edit \.git/refs/heads/main'
+LM=('fedxps.folders.f1.completion.HUB.needItems=2' 'fedxps.folders.f1.completion.HUB.names=["x.txt","sub/.git/index"]' 'bigfed.folders.f1.completion.HUB.needItems=2' 'bigfed.folders.f1.completion.HUB.names=["x.txt","sub/.git/index"]' 'nousowl.folders.f1.completion.BIG.needItems=2' 'nousowl.folders.f1.completion.FED.needItems=2')
+scenario "${LM[@]}" 'file:fedxps:f1:x.txt={"version":["BIGFEDX:1792965826"]}' 'file:fedxps:f1:sub/.git/index={"version":["BIGFEDX:1792965826"]}'
+check "a plain path and a .git path in one folder: the edit for the one, the touch for the other" has "$(run sync)" "fix: edit x\.txt once more on fedxps \(the current version carries bigfed's counter alone\) and read again; touch sub/\.git/index on fedxps \(never edit a \.git path; the current version carries bigfed's counter alone\) and read again \("
+scenario "${LM[@]}" 'file:fedxps:f1:x.txt={"version":["BIGFEDX:1792965826"]}'
+out=$(run sync)
+check "a .git path whose vector is unread: the touch, on the machine whose counter it lacks" has "$out" "; for sub/\.git/index: touch each on the machine whose counter the current version lacks \(never edit a \.git path\) and read again"
+check "  the plain path keeps its edit"         has "$out" "fix: edit x\.txt once more on fedxps"
+
+echo "== sync: a path under a .git stranded, the split repair named (settled 80) =="
+# Step 5c-b (2026-10-27): the stranded fix under a repository's .git names him-2's
+# split repair or the guard by the machine it is stranded on, the writer read from
+# this machine's role (bigfed's host file: role = writer; fedxps's: readerRepo).
+G=('bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1')
+SPLIT="a split of main: on fedxps, touch exactly these paths under the repository's .git and nothing else (him-2's one sanctioned reader write; never edit them); the phantom branch then appears on bigfed: rename it before deleting any *sync-conflict* file under .git, commit the working tree, then delete the inert copies; sync-check push nousowl names each step (rules.md -> him-2)"
+GUARDPTR="a write under a .git on fedxps: run sync-check guard there, which names the write; no touch and no edit (rules.md -> fedxps-3, him-2)"
+fixof() { grep -A1 -F -- "$2" <<<"$1" | sed -n 's/^       fix: //p' | head -1; }
+before() { local a b; a=$(grep -n -F -- "$2" <<<"$1" | head -1 | cut -d: -f1); b=$(grep -n -F -- "$3" <<<"$1" | head -1 | cut -d: -f1)
+  [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] || { echo "     got:  '$2' at line ${a:-none}, '$3' at line ${b:-none}"; return 1; }; }
+be bigfed; unset GIT_OPTIONAL_LOCKS; scenario "${G[@]}"
+out=$(run sync); r=$?
+check "seen from bigfed, a .git path stranded on bigfed: FAIL, the path named" has "$out" '^\[FAIL\] nousowl: stranded on bigfed: \.git/refs/heads/main$'
+check "  the fix is the split repair: the touch on fedxps, the phantom on bigfed, the push line" is "$(fixof "$out" 'stranded on bigfed')" "$SPLIT"
+check "  never 'delete the copy'"            lacks "$out" 'merge it into the original and delete the copy'
+check "  exit 1"                             is "$r" 1
+check "  a file stranded: no directory clause" lacks "$out" 'is a directory'
+DIRP="$SB/ssh/bigfed/home/Desktop/nousowl/.git/objects/ab"; made=0; [ -d "$DIRP" ] || { mkdir "$DIRP"; made=1; }
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/objects/ab"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+check "a .git directory stranded on bigfed: the split line adds the permission change, naming it" is "$(fixof "$(run sync)" 'stranded on bigfed: .git/objects/ab')" "${SPLIT}${DIRCL}"
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/objects/zz"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+# a .git path absent here, stranded on bigfed: the deletion the hub refused,
+# its own line, never the split line's touch under .git (2026-10-27)
+scenario 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=["'"$GONE"'"]' 'nousowl.folders.f2.completion.BIG.needItems=1'
+out=$(run sync)
+check "  a .git path absent here: the deletion's text, its own line" is "$(fixof "$out" "stranded on bigfed: $GONE")" "$GONEFIX"
+check "  not the split line's touch under .git" lacks "$out" "touch exactly these paths under the repository's \.git and nothing else"
+scenario 'bigfed.folders.f2.completion.HUB.needItems=2' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main","'"$GONE"'"]' 'nousowl.folders.f2.completion.BIG.needItems=2'
+out=$(run sync)
+check "  beside a path that exists: today's split line for it" is "$(fixof "$out" 'stranded on bigfed: .git/refs/heads/main')" "$SPLIT"
+check "  and the deletion's line for the other" is "$(fixof "$out" "stranded on bigfed: $GONE")" "$GONEFIX"
+[ "$made" = 1 ] && rmdir "$DIRP"
+be fedxps; export GIT_OPTIONAL_LOCKS=0; scenario "${G[@]}"
+out=$(run sync)
+check "seen from fedxps, the same stranded on bigfed: the same line (the writer read from fedxps's readerRepo)" is "$(fixof "$out" 'stranded on bigfed')" "$SPLIT"
+printf '[gsync]\n\trole = reader\n' > "$HOSTS_FED/fedxps.inc"
+check "  and under role = reader"             is "$(fixof "$(run sync)" 'stranded on bigfed')" "$SPLIT"
+printf '%b' "$FEDINC" > "$HOSTS_FED/fedxps.inc"
+scenario 'fedxps.folders.f2.completion.HUB.needItems=1' 'fedxps.folders.f2.completion.HUB.names=[".git/index"]' 'nousowl.folders.f2.completion.FED.needItems=1'
+out=$(run sync); r=$?
+check "a .git path stranded on fedxps: FAIL"  has "$out" '^\[FAIL\] nousowl: stranded on fedxps: \.git/index$'
+check "  the fix sends to the guard there, no touch and no edit" is "$(fixof "$out" 'stranded on fedxps')" "$GUARDPTR"
+check "  exit 1"                             is "$r" 1
+be bigfed; unset GIT_OPTIONAL_LOCKS; scenario 'fedxps.folders.f2.completion.HUB.needItems=1' 'fedxps.folders.f2.completion.HUB.names=[".git/index"]' 'nousowl.folders.f2.completion.FED.needItems=1'
+check "  the same seen from bigfed"           is "$(fixof "$(run sync)" 'stranded on fedxps')" "$GUARDPTR"
+# the paths these cases list exist here, as a stranded path does on the writer
+# (one absent here is a deletion the hub refused, its own text: 2026-10-27);
+# the sandbox's configs is no repository, so its .git/index is made for them
+CFGGIT="$SB/ssh/bigfed/home/Desktop/configs/.git"; SUBGIT="$SB/ssh/bigfed/home/Desktop/alpha/sub"
+mkdir -p "$CFGGIT" "$SUBGIT/.git"; : > "$CFGGIT/index"; : > "$SUBGIT/.git/index"
+scenario 'bigfed.folders.f1.path="'"$SB/ssh/bigfed/home/Desktop"'"' 'bigfed.folders.f1.completion.HUB.needItems=3' 'bigfed.folders.f1.completion.HUB.names=["configs/.git/index","notes.txt","org/.git/refs/heads/main"]' 'nousowl.folders.f1.completion.BIG.needItems=3'
+out=$(run sync)
+check "a folder at ~/Desktop: a path outside .git keeps today's text" has "$out" '^\[FAIL\] alpha: stranded on bigfed: notes.txt$'
+check "  each repository its own line, named as push takes it (1/2)" is "$(fixof "$out" 'stranded on bigfed: configs/.git/index')" "${SPLIT/push nousowl/push configs}"
+check "  each repository its own line, named as push takes it (2/2)" is "$(fixof "$out" 'stranded on bigfed: org/.git/refs/heads/main')" "${SPLIT/push nousowl/push org}"
+scenario 'bigfed.folders.f1.completion.HUB.needItems=1' 'bigfed.folders.f1.completion.HUB.names=["sub/.git/index"]' 'nousowl.folders.f1.completion.BIG.needItems=1'
+check "a repository nested in a folder: named by its path" has "$(run sync)" 'sync-check push ~/Desktop/alpha/sub names each step'
+rm -rf "$CFGGIT" "$SUBGIT"
+# a third device the hub knows, on no folder (scenario.py's extra_devices,
+# which reach the hub's config.xml since its loop was mended, 2026-10-27)
+scenario "${G[@]}" 'nousowl.extra_devices=[{"id":"PIXELXX-AAAAAAA-BBBBBBB-CCCCCCC-DDDDDDD-EEEEEEE-FFFFFFF-GGGGGGG","name":"pixel"}]'
+# with no reading of the role, a .git path's fix names no machine and no delete
+# (settled 80 forbids "delete the copy" there; the reviewer's finding, 2026-10-27)
+NOROLE="under a repository's .git: never edit and never delete a copy there; sync-check push nousowl on the writer names the repair (rules.md -> him-2)"
+out=$(run sync)
+check "more than two workstations: a .git path's fix names no machine and no delete" is "$(fixof "$out" 'stranded on bigfed: .git/refs/heads/main')" "$NOROLE"
+check "  never 'delete the copy'"             lacks "$out" 'delete the copy'
+scenario 'bigfed.folders.f2.completion.HUB.needItems=2' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main","notes.txt"]' 'nousowl.folders.f2.completion.BIG.needItems=2' 'nousowl.extra_devices=[{"id":"PIXELXX-AAAAAAA-BBBBBBB-CCCCCCC-DDDDDDD-EEEEEEE-FFFFFFF-GGGGGGG","name":"pixel"}]'
+out=$(run sync)
+check "  beside a plain path, which keeps the generic text" has "$(fixof "$out" 'stranded on bigfed: notes.txt')" '^edit each listed path on the other workstation, never on bigfed'
+check "  and the .git path its own line"       is "$(fixof "$out" 'stranded on bigfed: .git/refs/heads/main')" "$NOROLE"
+ln -sfn ../../Desktop/configs/git/hosts/fedxps.inc "$SB/ssh/bigfed/home/.config/git/host.inc"; scenario "${G[@]}"
+out=$(run sync)
+check "a role read under a warning (host.inc naming another machine's file): the same, no machine, no delete" is "$(fixof "$out" 'stranded on bigfed: .git/refs/heads/main')" "$NOROLE"
+check "  never 'delete the copy'"             lacks "$out" 'delete the copy'
+ln -sfn ../../Desktop/configs/git/hosts/bigfed.inc "$SB/ssh/bigfed/home/.config/git/host.inc"
+be fedxps; export GIT_OPTIONAL_LOCKS=0; scenario 'fedxps.folders.f1.completion.HUB.needDeletes=1' 'fedxps.folders.f1.completion.HUB.names=["gone.txt"]'
+check "a path outside any .git: today's text, whole" is "$(fixof "$(run sync)" 'stranded on fedxps: gone.txt')" "edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (org/machines/transport-2026-10/rules.md -> him-2)"
 
 echo "== hub: free space, errors, index, the retention drop-in (hub-4, hub-1) =="
 be fedxps; scenario
@@ -1047,7 +1296,11 @@ check "another pull error: FAIL, no growth"  has "$out" '^\[FAIL\] hub nousowl: 
 check "  no growth command for it"           lacks "$out" 'lvextend'
 scenario; truncate -s 1100000000 "$SB/ssh/nousowl/index-v2/big"
 out=$(run hub); r=$?
-check "the index past 1 GB: DUE (attention, nothing broken)" has "$out" '^\[DUE\] hub nousowl: the index is 1.1 GB, past 1.0 GB'
+check "the index at 1.1 GB, under hub-4's 2 GB: OK (settled 83)" has "$out" '^\[ OK \] hub nousowl: the index is 1100.0 MB \('
+check "  exit 0"                             is "$r" 0
+scenario; truncate -s 2100000000 "$SB/ssh/nousowl/index-v2/big"
+out=$(run hub); r=$?
+check "the index past 2 GB: DUE (attention, nothing broken)" has "$out" '^\[DUE\] hub nousowl: the index is 2.1 GB, past 2.0 GB'
 check "  exit 3"                             is "$r" 3
 scenario; unit_props "$RET_PID" "/etc/systemd/system/syncthing@$ME_USER.service.d/override.conf" > "$HUBFX/unit-system"
 out=$(run hub); r=$?
@@ -1301,12 +1554,82 @@ scenario 'file:bigfed:f2:.git/HEAD={"local":{"version":["BIGFEDX:1791668457","FE
 check "the local version alone carrying it: FAIL" has "$(run push nousowl)" '^\[FAIL\] nousowl: 1 path under its .git carries'
 scenario 'file:bigfed:f2:README.md={"version":["BIGFEDX:1791668457","FEDXPSX:1793037470"]}'
 check "the reader's counter outside .git: the push OK" has "$(run push nousowl)" '^\[ OK \] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps;'
+# (d) from the writer's side: 22 paths, the 22nd alone with its counter
+VP() { printf '{"version":["BIGFEDX:1791668457","FEDXPSX:%s"],"modifiedBy":"FEDXPSX"}' "$1"; }
+args=(); for i in $(seq -w 1 21); do args+=("file:bigfed:f2:.git/objects/ab/obj$i=$(VP 1793037467)"); done
+args+=("file:bigfed:f2:.git/objects/ab/obj22=$(VP 1793037480)")
+scenario "${args[@]}"
+out=$(run push nousowl); today=$(date +%F)
+check "(d) the push line, 22 paths, the 22nd alone with its counter: the 20th listed" has "$out" 'objects/ab/obj20  '
+check "  the 22nd past the list"               lacks "$out" 'objects/ab/obj22  '
+check "  the literal lines carry both counters" is "$(literals "$out")" "fedxps nousowl 1793037467 $today
+fedxps nousowl 1793037480 $today"
 scenario 'file:bigfed:f2:.git/index={"version":["BIGFEDX:1791668457","FEDXPSX:1792640450"],"modifiedBy":"FEDXPSX"}'
 out=$("$WGAUGE" push nousowl 2>&1); r=$?
 check "the write carried in KNOWN_WRITES: the push OK, the known write named" has "$out" '^\[ OK \] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps; the known write .git/index from fedxps \(since 2026-10-20: a stand-in\);'
 check "  exit 0"                             is "$r" 0
 scenario 'file:bigfed:f2:.git/index={"version":["BIGFEDX:1791668457","FEDXPSX:1792640999"],"modifiedBy":"FEDXPSX"}'
 check "  a later write on the same path: FAIL" has "$("$WGAUGE" push nousowl 2>&1)" '^\[FAIL\] nousowl: 1 path under its .git carries'
+# Step 5c-b (settled 79): the same matching from the writer's side, by machine and counter
+vb() { printf '{"version":["BIGFEDX:1791668457","FEDXPSX:%s"],"modifiedBy":"FEDXPSX","modified":"2026-10-27T10:00:00.5-07:00"}' "$1"; }
+scenario "file:bigfed:f2:.git/refs/heads/main=$(vb $FRESH)"
+out=$("$WGAUGE2" push nousowl 2>&1); r=$?
+check "a counter-keyed known write: the push OK, the write named by its counter and note" has "$out" "^\[ OK \] nousowl: folder nousowl up to date, nothing under .git needed, no phantom ref; HEAD equal on fedxps; the known write by counter $FRESH from fedxps on 1 path \(since 2026-10-27: a stand-in by counter\);"
+check "  exit 0"                             is "$r" 0
+scenario "file:bigfed:f2:.git/refs/heads/main=$(vb $FRESH)" "file:bigfed:f2:.git/objects/pack=$(vb $FRESH)"
+check "  a second path with the same counter: OK" has "$("$WGAUGE2" push nousowl 2>&1)" "^\[ OK \] nousowl: .*the known write by counter $FRESH from fedxps on 2 paths"
+scenario "file:bigfed:f2:.git/refs/heads/main=$(vb $FRESH)" "file:bigfed:f2:.git/index=$(vb $LATER)"
+out=$("$WGAUGE2" push nousowl 2>&1); r=$?; today=$(date +%F)
+check "  a different counter: FAIL, that path alone" has "$out" "^\[FAIL\] nousowl: 1 path under its .git carries another machine's counter"
+check "  the entry printed with on: fedxps, a Python literal" is "$(literals "$out")" "fedxps nousowl $LATER $today"
+check "  exit 1"                             is "$r" 1
+scenario "file:bigfed:f2:.git/index=$VF"
+out=$(run push nousowl); today=$(date +%F)
+check "the push line's FAIL prints the entry for the reader's counter" is "$(literals "$out")" "fedxps nousowl 1793037467 $today"
+check "  the note: read the status first, then paste these lines, one per counter" has "$out" "note: a reader's refused checkout or reset moves the index and the working tree before its hook refuses, so read the status here before any commit; once the write is explained, paste these lines into KNOWN_WRITES in bin/sync-check \(configs\), one per counter: a counter stays in a path's vector for good and returns on a path git writes again \(cutover/rehearsal/refute-b.md -> A9\), so the entry names the counter, not the path$"
+check "  the note, the entry, then the fix, the command alone" is "$(grep -E '^       (note|fix):|^       \{' <<<"$out" | sed -E 's/^       (note|fix):.*/\1/; s/^       \{.*/literal/' | paste -sd' ')" "note literal fix"
+paste_known "$out" "$SB/sync-check-pasted-push"
+check "  pasted as printed: the push OK"       has "$("$SB/sync-check-pasted-push" push nousowl 2>&1)" "^\[ OK \] nousowl: .*the known write by counter 1793037467 from fedxps on 1 path \(since $today: <why: "
+# the push line's .git fix when a phantom is present too (settled 79; refute-b.md -> F1)
+G=('bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1')
+LOSER="the hub holds the loser of these .git paths (a split with the direct link up): on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; then the phantom repair below (org/machines/transport-2026-10/rules.md -> him-2)"
+scenario "${G[@]}"
+cp "$HOME/Desktop/nousowl/.git/refs/heads/main" "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261027-022459-FEDXPSX"
+out=$(run push nousowl); r=$?
+check "needed .git paths beside a phantom ref: the hub holds the loser, the touch on fedxps first" is "$(fixof "$out" 'under its .git needed')" "$LOSER"
+check "  never 'a split with no phantom'"      lacks "$out" 'a split with no phantom'
+check "  the phantom FAIL as it is"            has "$out" '^\[FAIL\] nousowl: 1 phantom ref and 1 conflict copy under .git$'
+check "  and its fix, rename first"            has "$out" 'fix: once the folder is quiet 15 s and `git fsck --connectivity-only` passes: rename the phantom to a name without sync-conflict'
+check "  the phantom repair printed below the touch" before "$out" 'the hub holds the loser' 'phantom ref and'
+check "  exit 1"                             is "$r" 1
+rm "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261027-022459-FEDXPSX"
+echo x > "$HOME/Desktop/nousowl/.git/index.sync-conflict-20261027-022459-FEDXPSX"
+check "a conflict copy under .git alone beside them: the same opening" is "$(fixof "$(run push nousowl)" 'under its .git needed')" "$LOSER"
+rm "$HOME/Desktop/nousowl/.git/index.sync-conflict-20261027-022459-FEDXPSX"
+out=$(run push nousowl)
+check "with no phantom: today's opening"      is "$(fixof "$out" 'under its .git needed')" "a split with no phantom: on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; the phantom branch then appears here, rename it, commit the working tree, delete the inert copies (org/machines/transport-2026-10/rules.md -> him-2)"
+check "  never the loser's"                    lacks "$out" 'the hub holds the loser'
+N7='[".git/COMMIT_EDITMSG",".git/index",".git/logs/HEAD",".git/logs/refs/heads/main",".git/objects/b6",".git/objects/pack/pack-1.pack",".git/refs/heads/main"]'
+# the seven exist here, as a split's do on the writer (a path absent here is a
+# refused deletion, its own line since 2026-10-27): those the sandbox clone
+# lacks are made for the case, and only they removed after it
+made7=()
+for p in .git/COMMIT_EDITMSG .git/logs/HEAD .git/logs/refs/heads/main .git/objects/pack/pack-1.pack; do
+  q="$HOME/Desktop/nousowl/$p"; [ -e "$q" ] || { : > "$q"; made7+=("$q"); }
+done
+q="$HOME/Desktop/nousowl/.git/objects/b6"; [ -e "$q" ] || { mkdir "$q"; made7+=("$q"); }
+scenario 'bigfed.folders.f2.completion.HUB.needItems=7' "bigfed.folders.f2.completion.HUB.names=$N7" 'nousowl.folders.f2.completion.BIG.needItems=7'
+out=$(run push nousowl)
+check "seven .git paths needed: the push line lists all seven, the touch being of exactly these" has "$out" '^\[FAIL\] nousowl: 7 paths under its \.git needed: bigfed -> hub \.git/COMMIT_EDITMSG; .*; bigfed -> hub \.git/refs/heads/main$'
+check "  and the sync line all seven"         has "$out" '^\[FAIL\] nousowl: stranded on bigfed: \.git/COMMIT_EDITMSG, .*, \.git/objects/pack/pack-1\.pack, \.git/refs/heads/main$'
+for q in "${made7[@]}"; do rm -rf -- "$q"; done
+scenario "file:bigfed:f2:.git/index={\"version\":[\"BIGFEDX:1791668457\",\"ZZZZZZZ:$FRESH\"],\"modifiedBy\":\"ZZZZZZZ\"}"
+out=$("$WGAUGE2" push nousowl 2>&1)
+check "the entry's counter written by another device: FAIL, the entry names its machine" has "$out" "^\\[FAIL\\] nousowl: 1 path under its .git carries another machine's counter"
+check "  the line printed for that device"    is "$(literals "$out")" "ZZZZZZZ nousowl $FRESH $(date +%F)"
+scenario "file:bigfed:f2:.git/index=$(vb $LATER)" "file:bigfed:f2:.git/config=$(vb $LATER)" "file:bigfed:f2:.git/HEAD=$(vb $LATER)"
+out=$(run push nousowl)
+check "three paths, one counter: three paths listed, one line to paste" is "$(grep -c "fedxps's counter $LATER" <<<"$out") $(literals "$out")" "3 fedxps nousowl $LATER $(date +%F)"
 scenario
 python3 - "$SB/fx/bigfed/responses.json" <<'PY'
 import json, sys
@@ -1383,15 +1706,233 @@ run push nousowl >/dev/null
 check "without the variable nothing is written: no snapshot beside it" bash -c "! ls '$SB'/.sync-check-snapshot.* >/dev/null 2>&1"
 
 # ==============================================================================
+echo "== session: the newest full reading with its age, the cheap lines live (settled 76, 77) =="
+# Step 5c-b (2026-10-27): the hook's line reprints each folder's newest full
+# reading from the reading file, which every live read of the sync line's
+# folders writes, and reads conflicts, guard without the version vectors,
+# config without claude-link and hub live; no scan, no --remote-views.
+be fedxps; export GIT_OPTIONAL_LOCKS=0; scenario; : > "$STUB_CL_LOG"
+rm -rf "$SB"/ssh/*/home/.local/state/sync-check
+RDIR="$SB/ssh/fedxps/home/.local/state/sync-check"; RF="$RDIR/readings.json"
+out=$(run session); r=$?
+check "no reading file: one WARN per folder, no full reading on record" is "$(grep -cE '^\[WARN\] (alpha|nousowl|gamma): no full reading on record$' <<<"$out")" 3
+check "  each with its fix, a full run"       is "$(grep -c '^       fix: sync-check sync$' <<<"$out")" 3
+check "  exit 2"                             is "$r" 2
+check "  no scan"                            lacks "$(reqs fedxps)" 'db/scan'
+check "  no db/browse or db/file: the guard's vectors left out" lacks "$(reqs fedxps)" 'db/(browse|file)'
+check "  no --remote-views over ssh"         lacks "$(cat "$SB/ssh.log")" 'remote-views'
+check "  conflicts read live"                has "$out" '^\[ OK \] under .git: no conflict copy'
+check "  guard read live, its disk events too" has "$out" '^\[ OK \] no write under a .git this machine reads, in 0 disk events'
+check "  config read live, without claude-link" has "$out" '^\[ OK \] stow: every top-level entry'
+check "  the claude-link stub never started" is "$(cat "$STUB_CL_LOG" 2>/dev/null)" ""
+check "  hub read live by its own ssh, last" has "$(grep '^\[' <<<"$out" | tail -1)" '^\[ OK \] hub nousowl: '
+check "  the hub asked by --remote-hub alone" has "$(cat "$SB/ssh.log")" '^nousowl: python3 -I - --remote-hub$'
+check "  nothing written by it"              bash -c "[ ! -e '$RDIR' ]"
+check "  -v says where the vectors are read (settled 77)" has "$(run session -v)" 'the version vectors are read by `sync-check guard`, the bare run and the push line'
+: > "$SB/fx/fedxps/requests.log"; run guard >/dev/null
+check "  while guard alone still reads them"  has "$(reqs fedxps)" '^GET /rest/db/browse\?folder=f2&prefix=\.git$'
+run sync >/dev/null
+check "a sync run writes the reading file"   bash -c "[ -f '$RF' ]"
+check "  mode 600"                           is "$(stat -c %a "$RF")" 600
+check "  in a directory of mode 700"         is "$(stat -c %a "$RDIR")" 700
+check "  nothing else beside it"             is "$(ls -A "$RDIR")" readings.json
+check "  JSON, one record per folder"        bash -c "python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert sorted(d[\"folders\"])==[\"f1\",\"f2\",\"f3\"], d' '$RF'"
+check "  it holds no key"                    lacks "$(cat "$RF")" "$KEY"
+: > "$SB/fx/fedxps/requests.log"; : > "$SB/ssh.log"
+out=$(run session); r=$?
+check "session: each folder OK by the stored reading, its caller and age" is "$(grep -cE '^\[ OK \] (alpha|nousowl|gamma): up to date \(the newest full reading, by sync-check sync [0-9]+ s ago\)$' <<<"$out")" 3
+check "  the hook's count regex matches each" is "$(grep -cE '^\[ OK \] [^:]+: up to date' <<<"$out")" 3
+check "  none before this boot"              lacks "$out" 'before this boot'
+check "  exit 0"                             is "$r" 0
+check "  still no scan, no db/browse, no --remote-views" bash -c "! grep -qE 'db/(scan|browse|file)' '$SB/fx/fedxps/requests.log' && ! grep -q remote-views '$SB/ssh.log'"
+check "  the daemon answering: no word of it" lacks "$out" 'not answering|system/status answered'
+# the daemon itself (the lead's follow-up, 2026-10-27): one GET of
+# system/status first, the only request beyond guard's own disk-event pair
+check "  of this machine's daemon: system/status, then guard's two reads, nothing else" is "$(reqs fedxps)" "GET /rest/system/status
+GET /rest/events/disk?since=0&limit=1000&timeout=0
+GET /rest/system/status"
+DEAD=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+sed "s#<address>127.0.0.1:$P_FED</address>#<address>127.0.0.1:$DEAD</address>#" "$SYNC_CHECK_CONFIG" > "$SB/dead-daemon.xml"
+out=$(SYNC_CHECK_CONFIG="$SB/dead-daemon.xml" run session); r=$?
+check "a daemon that does not answer: a WARN, the first line" is "$(grep '^\[' <<<"$out" | head -1)" "[WARN] Syncthing is not answering at http://127.0.0.1:$DEAD/rest/"
+check "  its fix as read_live prints it"       is "$(sed -n 2p <<<"$out")" "       fix: systemctl --user status syncthing   # then read again"
+check "  the stored readings still print after it" is "$(grep -cE '^\[ OK \] (alpha|nousowl|gamma): up to date \(the newest full reading' <<<"$out")" 3
+check "  exit 2"                              is "$r" 2
+# the hook's cut: the hub's command hangs, timeout ends the run at 4 s as the
+# hook does, and what printed before it must have reached the pipe
+touch "$SB/ssh/nousowl/hang-cmd-lan"
+out=$(timeout 4 "$GAUGE" session 2>&1); r=$?
+check "a session cut at 4 s by a hung hub: timeout's 124" is "$r" 124
+check "  the stored readings reached the pipe before the cut" is "$(grep -cE '^\[ OK \] (alpha|nousowl|gamma): up to date \(the newest full reading' <<<"$out")" 3
+check "  and the live lines before the hub's" has "$out" '^\[ OK \] bash -n: '
+check "  the hub's lines alone lost"          lacks "$out" 'hub nousowl'
+rm -f "$SB/ssh/nousowl/hang-cmd-lan"
+SYNC_CHECK_CALLER=byebye run sync >/dev/null
+check "a caller the shell names: by byebye"  has "$(run session)" '^\[ OK \] alpha: up to date \(the newest full reading, by byebye [0-9]+ s ago\)$'
+SYNC_CHECK_CALLER=$'by\nhand' run sync >/dev/null
+check "  a caller with a newline: one line"  has "$(run session)" '^\[ OK \] alpha: up to date \(the newest full reading, by by hand [0-9]+ s ago\)$'
+run >/dev/null
+check "the bare run's reading: by sync-check" has "$(run session)" '^\[ OK \] alpha: up to date \(the newest full reading, by sync-check [0-9]+ s ago\)$'
+scenario 'fedxps.folders.f1.completion.HUB.needDeletes=1' 'fedxps.folders.f1.completion.HUB.names=["gone.txt"]'
+run sync >/dev/null
+scenario
+out=$(run session); r=$?
+check "a stored FAIL, the fixture since cleared: reprinted with its age" has "$out" '^\[FAIL\] alpha: stranded on fedxps: gone.txt \(the newest full reading, by sync-check sync [0-9]+ s ago\)$'
+check "  its fix line under it, as the live run printed it" is "$(grep -A1 '^\[FAIL\] alpha: stranded' <<<"$out" | tail -1)" "       fix: edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (org/machines/transport-2026-10/rules.md -> him-2)"
+check "  the other folders still OK"         has "$out" '^\[ OK \] nousowl: up to date \(the newest full reading'
+check "  exit 1"                             is "$r" 1
+out=$(run sync); r=$?
+check "  while a live sync reads OK"         is "$r" 0
+check "  and the next session reads that"    has "$(run session)" '^\[ OK \] alpha: up to date \(the newest full reading'
+python3 - "$RF" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+bt = [int(l.split()[1]) for l in open("/proc/stat") if l.startswith("btime ")][0]
+d["folders"]["f1"]["taken"] = bt - 7200; json.dump(d, open(p, "w"))
+PY
+out=$(run session)
+# an uptime past a week makes that reading too old to reprint (READING_MAX_AGE_DAYS):
+# "before this boot" is then on the WARN it prints instead
+if [ $(( $(date +%s) - $(awk '/^btime /{print $2}' /proc/stat) + 7200 )) -le $(( 7 * 86400 )) ]; then
+  check "a reading taken before this boot says so" has "$out" '^\[ OK \] alpha: up to date \(the newest full reading, by sync-check sync [0-9]+ (h|d) ago, before this boot\)$'
+  check "  the hook's count regex still matches it" has "$out" '^\[ OK \] alpha: up to date'
+else
+  check "a reading taken before this boot says so (on the too-old WARN, this boot being over a week old)" has "$out" '^\[WARN\] alpha: the newest full reading is [0-9]+ d old \(by sync-check sync, before this boot\): too old to stand as a reading$'
+  check "  and reprints no OK for it"           lacks "$out" '^\[ OK \] alpha: '
+fi
+check "  the folders read since, not"         has "$out" '^\[ OK \] nousowl: up to date \(the newest full reading, by sync-check sync [0-9]+ s ago\)$'
+python3 - "$RF" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["folders"]["f2"]["taken"] = "yesterday"; json.dump(d, open(p, "w"))
+PY
+check "a record not whole: that folder has no reading on record" has "$(run session)" '^\[WARN\] nousowl: no full reading on record$'
+# round four (the reviewer's findings, 2026-10-27): a taken from the future, not
+# finite, far past; an empty lines list; another device's record; a scan WARN
+# kept; a folder paused since its reading
+setrec() { python3 - "$RF" "$1" "$2" <<'PY'
+import json, sys, time
+p, fid, expr = sys.argv[1:4]; d = json.load(open(p))
+exec(expr, {"rec": d["folders"][fid], "time": time}); json.dump(d, open(p, "w"))
+PY
+}
+run sync >/dev/null
+setrec f1 'rec["taken"] = time.time() + 86400'
+out=$(run session); r=$?
+check "a reading dated a day ahead of the clock: a WARN of its own" has "$out" '^\[WARN\] alpha: the newest full reading is dated (23|24) h ahead of this clock \(by sync-check sync\): the clock has moved since it was taken$'
+check "  its fix a full run"                  is "$(grep -A1 'ahead of this clock' <<<"$out" | tail -1)" "       fix: sync-check sync"
+check "  no '0 s ago' for it"                 lacks "$out" '^\[ OK \] alpha: '
+check "  exit 2"                              is "$r" 2
+setrec f1 'rec["taken"] = float("nan")'
+check "a taken of NaN: no reading on record"   has "$(run session)" '^\[WARN\] alpha: no full reading on record$'
+setrec f1 'rec["taken"] = 1e20'
+out=$(run session)
+check "  nor of 1e20, and no traceback"        has "$out" '^\[WARN\] alpha: no full reading on record$'
+check "  (no traceback)"                       lacks "$out" 'Traceback|could not finish'
+setrec f1 'rec["taken"] = 0'
+check "a far-past reading: too old, its age and before this boot on the WARN" has "$(run session)" '^\[WARN\] alpha: the newest full reading is [0-9]+ d old \(by sync-check sync, before this boot\): too old to stand as a reading$'
+# older than READING_MAX_AGE_DAYS, 7: a WARN of its own, the stored verdict
+# under -v alone (his word at the pause of 5c-b, 2026-10-27)
+setrec f1 'rec["taken"] = time.time() - 8 * 86400'
+out=$(run session -v); r=$(rc session)
+check "a reading 8 d old: too old to stand, a WARN" has "$out" '^\[WARN\] alpha: the newest full reading is 8 d old \(by sync-check sync(, before this boot)?\): too old to stand as a reading$'
+check "  its fix a full run"                   is "$(grep -A1 'too old to stand' <<<"$out" | tail -1)" "       fix: sync-check sync"
+check "  no OK reprinted for it"               lacks "$out" '^\[ OK \] alpha: '
+check "  -v shows the stored verdict"          has "$out" '^       alpha: its stored verdict: \[ OK \] alpha: up to date$'
+check "  exit 2"                               is "$r" 2
+setrec f1 'rec["taken"] = time.time() - 6 * 86400'
+check "a reading 6 d old: reprinted with its age, as before" has "$(run session)" '^\[ OK \] alpha: up to date \(the newest full reading, by sync-check sync 6 d ago(, before this boot)?\)$'
+setrec f1 'rec["lines"] = []'
+check "(g) a record with no lines: no reading on record" has "$(run session)" '^\[WARN\] alpha: no full reading on record$'
+run sync >/dev/null
+check "a record names the device that took it, this daemon's ID's first seven" is "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["folders"]["f1"]["device"])' "$RF")" FEDXPSX
+setrec f1 'rec["device"] = "BIGFEDX"'
+out=$(run session -v)
+check "another device's record (a file carried here): no reading on record" has "$out" '^\[WARN\] alpha: no full reading on record$'
+check "  -v says whose it was"                has "$out" 'alpha: the stored reading was taken by device BIGFEDX, not this one \(FEDXPSX\): not reprinted'
+check "  this device's records still reprinted" has "$out" '^\[ OK \] nousowl: up to date \(the newest full reading'
+python3 - "$SB/fx/fedxps/responses.json" <<'PY'
+import json, sys
+p = sys.argv[1]; t = json.load(open(p)); t["POST /rest/db/scan?folder=f1"] = {"status": 500, "body": "boom"}; json.dump(t, open(p, "w"))
+PY
+run sync >/dev/null
+check "(b) a folder's scan answering 500: session reprints its WARN" has "$(run session)" '^\[WARN\] alpha: scan answered 500: boom \(the newest full reading, by sync-check sync [0-9]+ s ago\)$'
+check "  and its record's ok is false"         is "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["folders"]["f1"]["ok"])' "$RF")" False
+scenario; run sync >/dev/null
+scenario 'fedxps.folders.f1.paused=true'
+out=$(run session)
+check "(c) a folder paused since its reading: WAIT, read from config.xml" has "$out" '^\[WAIT\] alpha: paused on this machine$'
+check "  not its stored OK"                    lacks "$out" '^\[ OK \] alpha: '
+scenario
+printf '{not json' > "$RF"
+out=$(run session); r=$?
+check "a corrupt reading file: one WARN per folder" is "$(grep -c 'no full reading on record$' <<<"$out")" 3
+check "  no traceback"                       lacks "$out" 'Traceback|could not finish'
+check "  exit 2"                             is "$r" 2
+ALT="$SB/alt/readings.json"; rm -rf "$SB/alt"
+SYNC_CHECK_READINGS="$ALT" run sync >/dev/null
+check "SYNC_CHECK_READINGS names the file: written there, 0600" is "$(stat -c %a "$ALT" 2>/dev/null)" 600
+check "  read from there"                    has "$(SYNC_CHECK_READINGS="$ALT" run session)" '^\[ OK \] alpha: up to date \(the newest full reading'
+check "  the default file left as it was"    is "$(cat "$RF")" '{not json'
+SYNC_CHECK_READINGS= run sync >/dev/null
+check "set empty: nothing written"           is "$(cat "$RF")" '{not json'
+check "  and none read"                      has "$(SYNC_CHECK_READINGS="" run session)" '^\[WARN\] alpha: no full reading on record$'
+XDG_STATE_HOME="$SB/xdg-state" run sync >/dev/null
+check "XDG_STATE_HOME: the file under it"    is "$(stat -c %a "$SB/xdg-state/sync-check/readings.json" 2>/dev/null)" 600
+rm -rf "$SB/xdg-state" "$SB/alt"
+# the other workstation read over ssh: its --remote-views writes no file there
+rm -rf "$SB"/ssh/*/home/.local/state/sync-check
+scenario 'nousowl.folders.f3.completion.BIG.needItems=1' 'bigfed.folders.f3.completion.HUB.needItems=1' 'bigfed.folders.f3.completion.HUB.names=["late.txt"]'
+run sync >/dev/null
+check "a sync that reads the hub and bigfed remotely: both asked" bash -c "grep -q '^bigfed: python3 -I - --remote-views' '$SB/ssh.log' && grep -q '^nousowl: python3 -I - --remote-views' '$SB/ssh.log'"
+check "  no reading file in bigfed's home or the hub's" bash -c "[ ! -e '$SB/ssh/bigfed/home/.local/state/sync-check' ] && [ ! -e '$SB/ssh/nousowl/home/.local/state/sync-check' ]"
+check "  this machine's written"             bash -c "[ -f '$RF' ]"
+scenario; touch "$SB/ssh/nousowl/down"; rm -f "$RF"
+run sync >/dev/null
+check "the hub unread (a WARN): the WARN is the reading kept" has "$(run session)" "^\[WARN\] alpha: nousowl's view unread: .*\(the newest full reading, by sync-check sync [0-9]+ s ago\)$"
+# push, from bigfed, the writer: its one folder; the snapshot's folders, nothing
+be bigfed; unset GIT_OPTIONAL_LOCKS; scenario
+RFB="$SB/ssh/bigfed/home/.local/state/sync-check/readings.json"; rm -f "$RFB"
+SYNC_CHECK_CALLER=gpush run push nousowl >/dev/null
+check "push stores its one folder"           bash -c "python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert list(d[\"folders\"])==[\"f2\"], d' '$RFB'"
+: > "$SB/fx/bigfed/requests.log"
+out=$(run session); r=$?
+check "  session from bigfed: that folder by gpush" has "$out" '^\[ OK \] nousowl: up to date \(the newest full reading, by gpush [0-9]+ s ago\)$'
+check "  of a writer's daemon it asks system/status, once, and nothing else" is "$(reqs bigfed)" "GET /rest/system/status"
+check "  the others: no full reading on record" is "$(grep -c 'no full reading on record$' <<<"$out")" 2
+check "  exit 2"                             is "$r" 2
+run push nousowl >/dev/null
+check "  without the variable: by sync-check push" has "$(run session)" '^\[ OK \] nousowl: up to date \(the newest full reading, by sync-check push [0-9]+ s ago\)$'
+taken() { python3 -c 'import json,sys; print(repr(json.load(open(sys.argv[1]))["folders"]["f2"]["taken"]))' "$RFB"; }
+SNAP2="$SB/snapshot2.json"; rm -f "$SNAP2"; (umask 077; : > "$SNAP2")
+SYNC_CHECK_SNAPSHOT="$SNAP2" SYNC_CHECK_CALLER=gpushall run push nousowl >/dev/null; t1=$(taken)
+out=$(SYNC_CHECK_SNAPSHOT="$SNAP2" SYNC_CHECK_CALLER=elsewhere run push nousowl); t2=$(taken)
+check "a folder read from the snapshot (said so)" has "$out" 'from the snapshot taken [0-9]+ s ago'
+check "  stores nothing new: the record's time unchanged" is "$t2" "$t1"
+check "  nor its caller"                     has "$(run session)" '^\[ OK \] nousowl: up to date \(the newest full reading, by gpushall [0-9]+ s ago\)$'
+SYNC_CHECK_SNAPSHOT="$SNAP2" SYNC_CHECK_CALLER=mixed run sync >/dev/null; t3=$(taken)
+check "a run reading two folders live and one from the snapshot: that one's record unchanged" is "$t3" "$t1"
+out=$(run session)
+check "  the live ones stored, by their caller" is "$(grep -cE '^\[ OK \] (alpha|gamma): up to date \(the newest full reading, by mixed [0-9]+ s ago\)$' <<<"$out")" 2
+rm -f "$SNAP2"
+
+# ==============================================================================
 echo "== all lines at once, and nothing written =="
 be fedxps; scenario; export GIT_OPTIONAL_LOCKS=0; : > "$STUB_CL_LOG"
-snap() { find "$SB/ssh" -path '*/requests.log' -prune -o -printf '%p %i %T@ %s\n' | sort | md5sum; }
-before=$(snap)
+# The reading file is the one designed write (settled 76, 2026-10-27): the
+# gauge's directory under ~/.local/state is left out of the comparison, and
+# ~/.local/state itself is compared by name alone, since its mtime moves when
+# the gauge's directory is made (the reviewer's patch, the same day); the new
+# entries are checked on their own -- the gauge's directory and the file, 0600
+mkdir -p "$SB"/ssh/{fedxps,bigfed,nousowl}/home/.local/state; rm -rf "$SB"/ssh/*/home/.local/state/sync-check
+snap() { find "$SB/ssh" -path '*/requests.log' -prune -o -path '*/home/.local/state/sync-check' -prune -o -path '*/home/.local/state' -printf '%p\n' -o -printf '%p %i %T@ %s\n' | sort | md5sum; }
+entries() { find "$SB/ssh" -path '*/requests.log' -prune -o -printf '%p\n' | sort; }
+before=$(snap); before_entries=$(entries)
 out=$(run -v); hub_ssh=$(grep -c '^nousowl' "$SB/ssh.log"); r=$(rc)
-after=$(snap)
+after=$(snap); new_entries=$(comm -13 <(printf '%s\n' "$before_entries") <(entries))
 check "the default runs sync (1/5)"          has "$out" 'alpha: up to date'
 check "the default runs conflicts (2/5)"     has "$out" 'under .git: no conflict copy'
 check "the default runs guard (3/5)"         has "$out" 'host.inc ->'
+check "  its guard with the version vectors (settled 77)" has "$out" "^\[ OK \] no \.git path of [0-9]+ carries this machine's counter"
 check "the default runs hub (4/5)"           has "$out" '^\[ OK \] hub nousowl: the index is'
 check "the default runs config (5/5)"        has "$out" '^\[ OK \] stow: every top-level entry'
 check "  but not claude-link's dry run (1.8 s, past the budget)" lacks "$out" 'claude-link:'
@@ -1399,7 +1940,10 @@ check "  the claude-link stub never started" is "$(cat "$STUB_CL_LOG" 2>/dev/nul
 check "  one ssh to the hub, the hub's readings riding on the sync line's" is "$hub_ssh" 1
 check "  that one asked for them"            has "$(cat "$SB/ssh.log")" '^nousowl: python3 -I - --remote-views --with-hub f1 f2 f3$'
 check "  exit 0"                             is "$r" 0
-check "every file in both homes byte-for-byte and inode-for-inode as before (.git included)" is "$before" "$after"
+check "every file in both homes byte-for-byte and inode-for-inode as before (.git included), the state directory aside" is "$before" "$after"
+check "the only new entries in any home: fedxps's reading file and its directory" is "$new_entries" "$SB/ssh/fedxps/home/.local/state/sync-check
+$SB/ssh/fedxps/home/.local/state/sync-check/readings.json"
+check "  the file 0600"                      is "$(stat -c %a "$SB/ssh/fedxps/home/.local/state/sync-check/readings.json")" 600
 check "unknown line: exit 2"                 is "$(rc nonsense)" 2
 head -c 300 "$SYNC_CHECK_CONFIG" > "$SB/trunc.xml"
 out=$(SYNC_CHECK_CONFIG="$SB/trunc.xml" run sync); r=$(SYNC_CHECK_CONFIG="$SB/trunc.xml" rc sync)
@@ -1407,6 +1951,7 @@ check "a config.xml the parser rejects: one WARN line, no traceback (review 3b-1
 check "  exit 2"                             is "$r" 2
 check "-h: exits 0 and names the four lines" bash -c "'$GAUGE' -h | grep -q 'sync-check push REPO'"
 check "-h names the hub and config lines"    bash -c "'$GAUGE' -h | grep -q 'sync-check hub' && '$GAUGE' -h | grep -q 'sync-check config'"
+check "-h names the session line"            bash -c "'$GAUGE' -h | grep -q '^  sync-check session '"
 check "-h gives the exit codes"              bash -c "'$GAUGE' -h | grep -q '^Exit: 0 all clear'"
 
 # ==============================================================================
