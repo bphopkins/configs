@@ -29,27 +29,24 @@
 	# A reader's gpull, gpush, gpullall and gpushall refuse before any git
 	# command runs in a repository, and gstatall -f fetches nothing.
 	#
-	# The pilot's key (pilot.md): nousowl is a Syncthing folder of its own
-	# since the seeding, 3c, whose step 1 armed the key below. The sync
-	# commands read this file at every run, but 10-env.sh's export reaches
-	# only the shells and sessions started after a change to it, so arming
-	# or disarming a key takes a logout and login here. fedxps's sync
-	# commands leave nousowl alone and still carry the other twelve by git.
-	# readerRepo repeats for more than one repository; its value is a name
-	# under ~/Desktop, and a value that names no directory is warned about
-	# and refuses nothing.
-	# At the cutover (5d; pilot.md -> The fold-in on cutover day, item 4)
-	# readerRepo leaves and fedxps reads every repository:
+	# The role is armed since the transport cutover of 2026-10-28 (5d;
+	# pilot.md -> The fold-in on cutover day, item 4), when the pilot's key
+	# readerRepo = nousowl (armed at the seeding, 3c, 2026-10-10) left and
+	# fedxps came to read every repository. The sync commands read this file
+	# at every run, but 10-env.sh's export reaches only the shells and
+	# sessions started after a change to it, so arming or disarming takes a
+	# logout and login here. readerRepo still refuses single repositories: it
+	# repeats, its value is a name under ~/Desktop, and a value that names no
+	# directory is warned about and refuses nothing.
 	role = reader
 
 # The refusing hook (fedxps-6; PLAN.md settled 17, built 2026-10-26). Every
 # ref update this machine makes runs hooks-reader/reference-transaction,
-# which refuses one in a repository the keys above say fedxps reads -- the
-# pilot's nousowl now, every repository under ~/Desktop once `role = reader`
-# is armed -- and passes every other: the twelve repositories fedxps still
-# writes by git until the cutover, and every clone outside the Desktop
-# (~/src/outage, him-5). Armed now, and inert wherever the role lets fedxps
-# write. bigfed.inc sets no hooksPath, so bigfed runs no hook of this kind.
+# which refuses one in a repository the keys above say fedxps reads -- every
+# repository under ~/Desktop since `role = reader` was armed at the transport
+# cutover of 2026-10-28 (the pilot's nousowl alone before it) -- and passes
+# every other: every clone outside the Desktop (~/src/outage, him-5).
+# bigfed.inc sets no hooksPath, so bigfed runs no hook of this kind.
 [core]
 	# Git expands the `~` of a pathname value. The directory is the git
 	# package's hooks-reader/, linked to ~/.config/git/hooks-reader by

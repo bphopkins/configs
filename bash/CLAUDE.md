@@ -4,14 +4,14 @@ Charter for the `bash` stow package: the modular shell configuration stowed to
 `~`. `.bashrc` sources every `~/.bashrc.d/*.sh` in numbered order — a
 Syncthing conflict copy of a module excepted (ws-4, 2026-10-26: it would
 define the loser's functions on top of the winner's) — and
-`~/.bashrc.d` is a whole-directory symlink into this package — so `gpullall` +
-`source ~/.bashrc` deploys edits on the other machine with no restow. A restow
+`~/.bashrc.d` is a whole-directory symlink into this package — so the folder's
+arrival plus `reload` deploys edits on the other machine with no restow. A restow
 (`stow -R bash`) is needed only when files are added or removed at the package
 top. Since 2026-10-26 `.bashrc` also records the inode and ctime of
 `~/.bashrc`, `~/.bash_profile` and every module it sourced, and a check
 appended to `PS0` prints one line before the next command runs when that set
 has changed — `bash modules changed since this shell loaded them: run reload`
-— then re-records, so an arrival (a pull today, Syncthing after the cutover)
+— then re-records, so an arrival (Syncthing's, since the transport cutover of 2026-10-28)
 is never inert in silence (ws-8; about 1.7 ms a prompt, one `stat`; bash 5.3's
 `${ ...; }` substitution, so nothing on an older bash). **Run
 `tests/bashrc/run.sh` after any edit to `.bashrc`**: caged, interactive shells
@@ -138,9 +138,8 @@ both terminal integrations. The cage the three share is `tests/cage.sh`
   target. When adding a stow package, update **both** arrays. Since
   2026-10-26 (ws-8) the three commands re-read the arrays from this file on
   disk in their own subshell before they act, so a package that arrived is
-  stowed without a re-source; `stow-all` runs no `git pull` any more (pull
-  first with `gpullall` until the cutover; Syncthing carries the checkout
-  after it), sweeps the dangling links a removed package left — every target
+  stowed without a re-source; `stow-all` runs no `git pull` any more (Syncthing
+  carries the checkout since the transport cutover of 2026-10-28), sweeps the dangling links a removed package left — every target
   walked three levels deep for links that dangle into a checkout directory
   that is gone, `~/Desktop` excluded, so no package name is needed — and
   refuses when the file on disk is missing or does not parse.
@@ -181,7 +180,7 @@ add one without reproducing the patterns.
 ## The re-source trap (hazard)
 
 A function here runs as it was when the shell sourced it: an edit that
-arrives — by a pull today, by Syncthing after the cutover — is inert in every
+arrives — by Syncthing, since the cutover of 2026-10-28 — is inert in every
 open shell until `reload`, which is why `claude-link` / `claude-prune` are
 scripts in `bin/`, not bash functions. Two things narrow the trap since
 2026-10-26 (ws-8): `stow-all`, `stow-all-dry` and `unstow-all` re-read the
@@ -232,8 +231,9 @@ Guardrails, shared by the single- and all-repo variants:
   and `gpush` refuse each named repository, and `gstatall -f` fetches
   nothing while plain `gstatall` still runs, every row marked `reader`.
   `gsync.readerRepo = <name>` (repeatable) refuses that repository alone
-  while the rest are still written — the pilot's `nousowl`, armed at the
-  seeding's step 1: `gpushall` and `gpullall` skip it with one
+  while the rest are still written — the pilot's `nousowl` from its seeding
+  on 2026-10-10 to the cutover of 2026-10-28, when `role = reader` replaced
+  the key: `gpushall` and `gpullall` skipped it with one
   `[SKIP] … refused` line naming what carries it and the hub-outage route
   (him-5). No host file, or no role: a writer, which is what anyone else
   using this repo gets; a host file git cannot parse or read, or a dangling
@@ -252,8 +252,9 @@ Guardrails, shared by the single- and all-repo variants:
   `git/hosts/fedxps.inc`), not here. Since 2026-10-26 `fedxps.inc` also arms
   `core.hooksPath`, the tracked `git/hooks-reader/` whose
   `reference-transaction` hook refuses a ref update in any repository under
-  `~/Desktop` that this machine reads by the same two keys — `nousowl` today,
-  every repository once `role = reader` is set at the cutover — so a `commit`,
+  `~/Desktop` that this machine reads by the same two keys — every repository
+  since `role = reader` was set at the cutover of 2026-10-28, `nousowl` alone
+  before — so a `commit`,
   `pull`, `merge`, `rebase`, `stash` push or `reset` typed there stops before
   a ref is locked (`rules.md` → fedxps-6; git's reflog moves, a `stash drop`
   with entries remaining among them, run outside any transaction and are

@@ -67,8 +67,9 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
   disk: it re-reads the package arrays from `60-stow.sh` itself, sweeps the
   dangling links a removed package left (every target walked three levels
   deep, `~/Desktop` excluded), and refuses if that file does not parse; no
-  `git pull` since 2026-10-26 (pull first with `gpullall` until the transport
-  cutover; `org/machines/transport-2026-10/rules.md` → ws-8).
+  `git pull` since 2026-10-26 (Syncthing carries the checkout since the
+  transport cutover of 2026-10-28; `org/machines/transport-2026-10/rules.md`
+  → ws-8).
   On a conflict (an untracked real file already sitting at a target) it
   **errors out** rather than resolving it — adopt or remove the file manually
   (README §8), then rerun.
@@ -84,8 +85,12 @@ patterns must stay (`bash/CLAUDE.md`).
 
 ## Daily Sync Workflow
 
-Start of session: `gpullall` → `source ~/.bashrc` (if bash files changed) →
-`stow-all` (if files added/deleted). End of session: `gpushall`. Since
+Since the transport cutover of 2026-10-28 Syncthing carries every
+repository between the machines, `.git` included: at the start of a session
+`sync-check sync` reads up to date, then `reload` if bash files changed and
+`stow-all` if files were added or removed; `gpushall` runs on bigfed alone
+(before the cutover a session began with `gpullall` and ended with
+`gpushall`). Since
 2026-10-10 the commands read this machine's role from
 `git/hosts/<hostname>.inc` and refuse what it reads, and the push commands
 ask the gauge `bin/sync-check` before staging a repository Syncthing
