@@ -3820,9 +3820,11 @@ times, and one Opus reviewer.
   repair meets a concurrent modification, which beats a deletion, and fedxps
   keeps the file, the phantom ref among them. him-2's first case from the
   other side closes it: touch the copy on fedxps, it returns to bigfed, delete
-  it on bigfed again (measured once: the race recurred in the whole rig's last
-  run of the day and the step cleared it; the gauge names a listed path absent
-  on bigfed with that write).
+  it on bigfed again (measured twice: the race recurred in the whole rig's last
+  run of the day and in a split run after it, and the step cleared it both
+  times; it struck R3's reverse case once on fedxps, which gained the same
+  step the same night; the gauge names a listed path absent on bigfed with
+  that write).
 - **The hub's index DUE sits at 2 GB** (83): the rehearsal measured 880 MB for
   the Desktop folder alone, 88 % of the 1 GB first built.
 - **R3's `case_split_reverse.py` applied by his hand** (81), the refuter's
@@ -3831,8 +3833,10 @@ times, and one Opus reviewer.
   bigfed's gc and next commit still read OK.
 - **Suites at the close**, run by the chat from the final tree: sync-check 741
   in 142 s, claude 403 in 38 s, leave 97, bashrc 53, gsync 447; the rig's
-  split 100 in 350 s, split-reverse 50, addfolder 159 in 500 s, the whole rig
-  379 in 1,188 s (its seven cases; 19:01–19:19). Mutants: 14 of the repairs' code, 19 of the session
+  split 100 in 350 s, split-reverse 52 in 144 s, addfolder 159 in 500 s, the
+  whole rig 379 in 1,188 s (its seven cases; 19:01–19:19, before the reverse
+  case's two added checks); on fedxps the same suites green the same evening,
+  the rig in two halves. Mutants: 14 of the repairs' code, 19 of the session
   line's, 45 of the reviewer's across the three builds, every survivor a case
   gap closed or an equivalent named (`cutover/builds.md` → Workers). The
   reviewer's two medium findings — a future-dated reading shown fresh, the

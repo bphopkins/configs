@@ -812,6 +812,15 @@ were corrected the same day. Due when either suite is next touched; the chat
 that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
 `nested-sway-harness-must-assert-its-socket`.
 
+- [ ] Added 2026-10-27 at step 5c-b: `tests/sync/run.sh`'s cage caps a run at
+  1,500 s (`CAGE_RUNTIME_MAX_SEC`), and the whole suite's seven cases took
+  1,188 s on bigfed; fedxps runs these suites 1.15 to 1.3 times slower
+  (`sync-check` 163 s there against 142 s), so a whole run on the laptop would
+  be stopped by its own cage near the end. The step ran it there in two halves
+  (`smoke guard maxconflicts split retention`, then `split-reverse addfolder`).
+  Raise the cap to 2400 and the charter's "1500 s"; a run of the whole on
+  fedxps then decides.
+
 - [ ] `tests/sway-split/run.sh` neither asserts `loaded_config_file_name`
   before its first command nor stops its nested sway by its scope — it ends
   with `swaymsg exit` (:37, :206). Its SWAYSOCK is absolute and exported on its

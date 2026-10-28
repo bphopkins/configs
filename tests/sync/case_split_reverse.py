@@ -33,7 +33,15 @@ clean on both, every view 100 with nothing needed, no conflict copy left, both
 commits' subjects reachable on both; then once more after a `git gc` on A,
 bigfed's routine maintenance. If a run strands instead, B touches exactly the
 .git paths listed towards the hub (him-2's one sanctioned reader write) and
-the phantom repair follows; the run records what happened.
+the phantom repair follows; the run records what happened. After the
+repair, step (d), as in case_split.py: a path A deleted in it that the hub
+refused, since it held B's concurrent modification of the path and a
+modification beats a deletion, is touched on B, comes back to A and is
+deleted there again, with its own `# ` line, and a check asserts nothing stays
+stranded under .git. Measured once in eight variant runs on 2026-10-27, the
+gc variant on fedxps: the renamed branch's ref and reflog, deleted by `git
+branch -D`, refused at the hub and kept by B. The race is a tie at the hub,
+so it is recorded when it recurs, never forced.
 
 Read beside it: bin/sync-check's push line (bigfed-2), run as A against the
 rig after the commits, after the repair and after the gc, with a stub ssh that
@@ -366,6 +374,68 @@ def run_once(k, variant, root, C):
         rig.git(A_dir, ["branch", "-D", rescue], W)
         say("deleted the branch %s" % rescue)
     settle(5)
+
+    # --- (d) a stranded deletion, after the repair (case_split.py's step (d), 2026-10-27) -------
+    # A deletion of the repair's on A -- the renamed branch's ref and reflog
+    # by `git branch -D`, an inert copy -- can meet at the hub a concurrent
+    # modification of the same path by B, which beats a deletion: the hub
+    # refuses it, A lists the path to the end and B keeps the file (the gc
+    # variant on fedxps, 2026-10-27). him-2's first case and the sanctioned
+    # touch: on B a touch, whose version descends from A's and returns to A;
+    # then on A the deletion again. The race is a tie at the hub and cannot be
+    # forced; the case records it when it recurs.
+    def git_listed():
+        return [p for p in r.remoteneed_names("A", fid, "H") if p.startswith(GIT + "/")]
+
+    def held(p):
+        """What A and B hold at p: absent, a file, or a directory of N entries."""
+        out = []
+        for n in ("A", "B"):
+            q = r.path(n, fid, p)
+            out.append("%s %s" % (n, ("a directory of %d entries" % len(os.listdir(q))) if os.path.isdir(q)
+                                  else "a file" if os.path.lexists(q) else "absent"))
+        return "%s (%s)" % (p, ", ".join(out))
+
+    def vectors(paths):
+        for p in paths:
+            say("  vector %s: A local %s global %s | B local %s global %s" % (
+                p, vector("A", p, "local"), vector("A", p), vector("B", p, "local"), vector("B", p)))
+
+    def refused_deletion(p):
+        return not os.path.lexists(r.path("A", fid, p)) and os.path.isfile(r.path("B", fid, p))
+    still = git_listed()
+    stranded = [p for p in still if refused_deletion(p)]
+    if stranded:
+        say("stranded copies after the repair, deleted on A and refused by the hub: %s" % "; ".join(held(p) for p in stranded))
+        vectors(stranded)
+        for p in stranded:
+            os.utime(r.path("B", fid, p))
+        t = settle(5)
+        back = [p for p in stranded if os.path.lexists(r.path("A", fid, p))]
+        say("touched on B, settled in %ss: back on A %s of %s; A lists under .git %s" % (
+            t, len(back), len(stranded), git_listed() or "nothing"))
+        vectors(stranded)
+        under_refs = [p for p in back if p.startswith(GIT + "/refs/")]
+        ph_before = phantoms("A") if under_refs else None
+        refs_before = rig.git(A_dir, ["for-each-ref", "--format=%(refname)", "refs/"], rd["A"]).stdout.split() if under_refs else None
+        for p in back:
+            os.remove(r.path("A", fid, p))
+        ph_after = phantoms("A") if under_refs else None
+        refs_after = rig.git(A_dir, ["for-each-ref", "--format=%(refname)", "refs/"], rd["A"]).stdout.split() if under_refs else None
+        t = settle(5)
+        still = git_listed()
+        say("deleted on A again, settled in %ss: A lists under .git %s%s" % (
+            t, still or "nothing",
+            ("; phantom refs on A before the deletion %s, after %s; refs gone %s" % (
+                ph_before, ph_after, sorted(set(refs_before) - set(refs_after)))) if under_refs else ""))
+        left_d = [p for p in still if p in stranded]
+        if not left_d:
+            say("stranded copies after the repair: %s, cleared by the touch on B and the deletion on A again" % ", ".join(stranded))
+        else:
+            say("stranded copies after the repair: %s, not cleared; still listed %s" % (", ".join(stranded), left_d))
+    else:
+        say("stranded copies after the repair: none")
+    C.check("%s: nothing stranded under .git after the repair steps" % tag, not still, still)
     final = record("after the repair")
 
     # --- the end state ---------------------------------------------------------------------------

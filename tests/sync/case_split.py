@@ -520,14 +520,17 @@ def run_once(k, root, C):
         vectors(stranded)
         under_refs = [p for p in back if p.startswith(GIT + "/refs/")]
         ph_before = phantoms("A") if under_refs else None
+        refs_before = rig.git(A_dir, ["for-each-ref", "--format=%(refname)", "refs/"], rd["A"]).stdout.split() if under_refs else None
         for p in back:
             os.remove(r.path("A", fid, p))
         ph_after = phantoms("A") if under_refs else None
+        refs_after = rig.git(A_dir, ["for-each-ref", "--format=%(refname)", "refs/"], rd["A"]).stdout.split() if under_refs else None
         t = settle(5)
         still = git_listed()
         say("deleted on A again, settled in %ss: A lists under .git %s%s" % (
             t, still or "nothing",
-            ("; phantom refs on A before the deletion %s, after %s" % (ph_before, ph_after)) if under_refs else ""))
+            ("; phantom refs on A before the deletion %s, after %s; refs gone %s" % (
+                ph_before, ph_after, sorted(set(refs_before) - set(refs_after)))) if under_refs else ""))
         left_d = [p for p in still if p in stranded]
         if not left_d:
             say("stranded copies after the repair: %s, cleared by the touch on B and the deletion on A again" % ", ".join(stranded))
