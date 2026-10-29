@@ -5,8 +5,9 @@ code in this repository.
 
 ## What This Repo Is
 
-A GNU Stow-based dotfiles repository for Fedora Linux, synced across multiple
-machines (fedxps, bigfed) via git. **This is a public GitHub repo**
+A GNU Stow-based dotfiles repository for Fedora Linux, on both machines
+(fedxps, bigfed) by the Desktop's Syncthing folder since 2026-10-28, and
+published from bigfed by git. **This is a public GitHub repo**
 (`github.com/bphopkins/configs`) — anything committed is published (see
 Pitfalls). Configs are stored here at `~/Desktop/configs` and symlinked to
 their live locations. The user is an academic working in logic/philosophy —
@@ -71,8 +72,9 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
   transport cutover of 2026-10-28; `org/machines/transport-2026-10/rules.md`
   → ws-8).
   On a conflict (an untracked real file already sitting at a target) it
-  **errors out** rather than resolving it — adopt or remove the file manually
-  (README §8), then rerun.
+  **errors out** rather than resolving it — move the file aside or remove it
+  (README §8; never `stow --adopt` on a machine in the Desktop folder,
+  `org/machines/transport-2026-10/rules.md` → ws-10), then rerun.
 - `stow-all-dry` — preview what stow-all would do (no changes)
 - `unstow-all` — remove all managed symlinks (`stow -D`)
 
@@ -95,11 +97,11 @@ repository between the machines, `.git` included: at the start of a session
 `git/hosts/<hostname>.inc` and refuse what it reads, and the push commands
 ask the gauge `bin/sync-check` before staging a repository Syncthing
 carries (`bash/CLAUDE.md` → Git sync); the transport campaign
-(`org/machines/transport-2026-10/PLAN.md`) is what changes the host files.
+(`org/machines/transport-2026-10/`, closed 2026-10-28) set the host files' roles.
 
 **The re-source trap is narrower since 2026-10-26** (`bash/CLAUDE.md` → "The
 re-source trap"): `stow-all` re-reads the package arrays from disk, so a
-pulled package is stowed from an old shell too; every other bash function
+package that arrived is stowed from an old shell too; every other bash function
 stays as it was until `reload`, and `.bashrc`'s arrival line says so before
 the next command whenever the loaded modules have changed on disk.
 
@@ -107,7 +109,9 @@ Sync commands (`bash/.bashrc.d/50-git-sync.sh`; the guardrails — vetting,
 in-progress guards, offline handling, hints — and their scope live in
 `bash/CLAUDE.md`):
 
-- `gpullall` — ff-only pull of every repo in `REPOS_DESKTOP` (which spans
+- `gpullall` — on bigfed alone, for a change that reached GitHub from
+  elsewhere (the hub-outage protocol; fedxps refuses it): ff-only pull of
+  every repo in `REPOS_DESKTOP` (which spans
   *all* the Desktop repos, not just this one), with follow-up hints when a
   `configs` pull needs a re-source, restow, or lockfile restore — the restow
   hint reads the package list from the repo's directories on disk, so a
@@ -115,8 +119,8 @@ in-progress guards, offline handling, hints — and their scope live in
 - `gpushall [-m MSG]` — stages everything (`git add -A`, vetting newly added
   paths), commits as `{hostname}: {YYYY-MM-DD HH:MM:SS}`, rebases, pushes
 - `gpull <name>...` / `gpush [-m MSG] <name>...` — the same for named repos
-- `gstatall [-f]` — read-only per-repo dashboard; the safe first move
-  whenever the machines may be out of step
+- `gstatall [-f]` — read-only per-repo dashboard against GitHub; whether
+  the two machines are in step is `sync-check sync`'s question
 
 **Run `tests/claude/run.sh` after any edit to `bin/claude-link` or to
 `org/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
@@ -261,8 +265,10 @@ languages — see `sway/CLAUDE.md` before changing it.
 ## Pitfalls
 
 - **`stow-all` does not auto-adopt.** It restows (`stow -R`); a pre-existing
-  untracked file at a target makes it error out, not overwrite. Resolve with
-  `stow --adopt` or by removing the file (README §8), then rerun.
+  untracked file at a target makes it error out, not overwrite. Resolve by
+  moving the file aside or removing it (README §8), then rerun; `stow --adopt`
+  only on a machine outside the Desktop folder, since on one inside it the
+  adopted file replaces the shared one on both machines (rules.md → ws-10).
 - **Never edit a stowed file in place *through the live path*.** `sed -i`,
   and any tool that saves by write-temp-then-rename, **replaces the symlink
   with a regular file** — silently un-stowing it, after which repo and live

@@ -198,7 +198,7 @@ out=$(run "$w" --apply)
 not_ "dangling memory-scope link swept"   '[ -L "$w/home/.claude/projects/-shared/memory" ]'
 yes_ "  transcript dir left in place"     '[ -d "$w/home/.claude/projects/-shared" ]'
 
-echo "== an empty memory scope is held open so it replicates =="
+echo "== an empty memory scope is held open so git keeps it =="
 w=$(mkworld)
 mkdir -p "$w/cfg/memory/-empty"
 run "$w" --auto >/dev/null 2>&1          # --auto prints nothing; it logs
@@ -606,8 +606,9 @@ run "$w" --apply >/dev/null
 yes_ "  which it does"                            '[ -f "$w/home/.claude/skills/synced/v/SKILL.md" ] && [ ! -e "$w/cfg/skills/synced" ]'
 
 echo "== before the cutover --auto links an arrived layer, and after it does not (R1 M2) =="
-# Until ~/Desktop is a Syncthing folder a new layer reaches this machine by a
-# git pull, whose hint runs --auto, and nothing else would link it; once a
+# With no Syncthing folder at ~/Desktop (as before 2026-10-28, or a rebuilt
+# machine before its join) a new layer reaches this machine by a git pull,
+# whose hint runs --auto, and nothing else would link it; once a
 # .stfolder marker sits at ~/Desktop or above it, the link arrives with the
 # folder. Removal stays --apply's in both states.
 layerworld() {  # a layer arrived but not linked here, and a link still waiting for its target
@@ -807,7 +808,7 @@ yes_ "reports the skip"                   '[[ "$out" == *"ghost"*"not on this ma
 not_ "does not error out"                 '[ "$rc" = 2 ]'
 
 echo "== orphan charters are reported, never moved =="
-# An orphan is a charter git ignores and does not track: nothing syncs it, and a
+# An orphan is a charter git ignores and does not track: git never carries it, and a
 # merge that brings its path replaces it in silence. The sandbox brings its own
 # exclude, so the result does not depend on this machine's git config.
 w=$(mkworld)
@@ -1021,8 +1022,9 @@ fi
 
 echo "== the live config holds no directory git cannot carry =="
 # The root cause of the plans breakage, asserted against the real tree: git
-# cannot carry an empty directory, so an empty one here means a link on the
-# other machine is about to dangle. Read-only.
+# cannot carry an empty directory, so an empty one here is missing from a
+# clone of org from GitHub (until 2026-10-28 it meant a link on the other
+# machine about to dangle). Read-only.
 if [ -d "$RCFG" ]; then
   empties=$(find "$RCFG" -path "$RCFG/.git" -prune -o -type d -empty -print 2>/dev/null)
   if [ -z "$empties" ]; then ok "no empty directories in the shared config"

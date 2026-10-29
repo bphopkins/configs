@@ -60,7 +60,7 @@
 
 # The incidental-write guard (fedxps-1). Plain `git status` and `git diff`
 # rewrite .git/index on a copy whose files carry new inodes, as Syncthing's
-# do, and that write races bigfed's own index through the hub.
+# do, and that write races bigfed's own index through the folder.
 [core]
 	# Compare an entry's size and whole-second mtime only, never the inode,
 	# uid, gid, sub-second times or ctime: Syncthing's copy keeps contents

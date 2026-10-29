@@ -17,8 +17,8 @@
 # Exit: 0 nothing to do · 1 changes pending or made · 2 conflicts / errors,
 #       or another run holds the lock
 #
-# This is a script, not a bash function, deliberately: a pull can never leave a
-# stale copy loaded in a running shell the way `60-stow.sh`'s arrays can.
+# This is a script, not a bash function, deliberately: an arrival can never
+# leave a stale copy loaded in a running shell the way a bash function's can.
 #
 # What it links (all derived from org/claude-config, nothing hardcoded):
 #   <cfg>/CLAUDE.md, settings.json, plans/, agents/, commands/,
@@ -130,11 +130,11 @@ fi
 # dangling link to remove (live-B section 2 saw that removal reach both
 # machines). The repos pass makes a missing link into ~/Desktop only while
 # ~/Desktop lies in no Syncthing folder -- no .stfolder marker at it or above
-# it, read as 50-git-sync.sh's push gauge reads one -- because until the
-# cutover a new layer reaches this machine by a git pull, whose hint runs
-# --auto, and nothing else would link it (R1's M2, 2026-10-26). Once the
-# Desktop is a folder the link arrives with it, and --auto names a missing
-# one and makes none. It still stands down while the shared tree's
+# it, read as 50-git-sync.sh's push gauge reads one -- because before the
+# cutover of 2026-10-28 a new layer reached this machine by a git pull, whose
+# hint ran --auto, and nothing else would link it (R1's M2, 2026-10-26). Since
+# the Desktop became a folder the link arrives with it, and --auto names a
+# missing one and makes none. It still stands down while the shared tree's
 # repository is mid-operation, since a rebase can take a link's target away
 # for a moment and the sweep of ~/.claude would then remove the link. It
 # makes no ~/CLAUDE.md, which lies outside ~/.claude (the host pass, below).
@@ -330,8 +330,8 @@ echo
 # replaces an identical copy and backs up a differing one, --unlink leaves a
 # real copy. --auto makes none and removes none: ~/CLAUDE.md lies outside
 # ~/.claude, where rules.md -> ws-13 confines it, so a missing link is named
-# in its log for claude-link --apply, as a Desktop link is once the Desktop
-# is a Syncthing folder, and the next deliberate run makes it. With no host
+# in its log for claude-link --apply, as a Desktop link is since the Desktop
+# became a Syncthing folder, and the next deliberate run makes it. With no host
 # file for this machine there is nothing to link; a link into hosts/ that
 # dangles is still named, since Claude Code skips one without a word
 # (r-claude-cases D2) and `sync-check config` reads this dry run, as the
@@ -617,8 +617,9 @@ if [ -d "$CFG/memory" ]; then
     # <scope> itself, so a transcript directory can never become a symlink into
     # the repo. Point it one level up and 7 checks in tests/claude/run.sh fail.
     [ $APPLY = 1 ] && mkdir -p "$CC/projects/$scope"
-    # An empty scope is a directory git cannot carry, so it never reaches the
-    # other machine and the scope list diverges. A keeper file holds it open.
+    # An empty scope is a directory git cannot carry, so a clone from GitHub
+    # lacks it and the scope list diverges there (the Desktop folder carries it
+    # between the machines since 2026-10-28). A keeper file holds it open.
     # Only a deliberate run creates one: --auto would otherwise farm a permanent
     # entry out of every directory a session was ever opened in, and an orphan
     # scope (its directory gone) is cleaned by rmdir'ing it here -- the sweep
@@ -629,7 +630,7 @@ if [ -d "$CFG/memory" ]; then
         n_skip=$((n_skip+1))
       elif [ $APPLY = 1 ]; then
         : > "$CFG/memory/$scope/.gitkeep" \
-          && { adp "$scope — empty, added .gitkeep so it replicates"; n_adopt=$((n_adopt+1)); }
+          && { adp "$scope — empty, added .gitkeep so git keeps it"; n_adopt=$((n_adopt+1)); }
       else
         adp "would add .gitkeep to empty scope $scope"; n_adopt=$((n_adopt+1))
       fi
@@ -670,7 +671,7 @@ echo
 # An orphan is a charter git ignores: a CLAUDE.md or CLAUDE.local.md sitting in
 # a work tree as a plain file that is ignored and untracked. The global exclude
 # that keeps agent context out of every repository hides one written straight
-# into a tree as well, so nothing syncs it (`git add -A` skips it), `git status`
+# into a tree as well, so git never carries it (`git add -A` skips it), `git status`
 # never lists it, and a merge or checkout that brings its path replaces it
 # without a word -- the state of the read-only clones' charters until
 # 2026-10-06. The cure is a choice per file, into repos/<path>/ as

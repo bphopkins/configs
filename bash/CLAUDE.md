@@ -74,7 +74,7 @@ both terminal integrations. The cage the three share is `tests/cage.sh`
   hostname short and lowercased, or the file `~/.config/git/host.inc` points
   at, which is what git reads — names this machine a reader (`gsync.role`
   anything but `writer`) or names a reader repository (`gsync.readerRepo`,
-  the pilot's `nousowl`), or exists but cannot be read or parsed, or the
+  the pilot's `nousowl` until 2026-10-28), or exists but cannot be read or parsed, or the
   link dangles: the environment half of fedxps's reader guard, which keeps
   `git status` from rewriting `.git/index` on a copy Syncthing delivered
   (`org/machines/transport-2026-10/rules.md` → fedxps-1; the config half is
@@ -213,12 +213,14 @@ apart:
   (`needs push` / `needs pull` / `DIVERGED` / `uncommitted` / an in-progress
   op), so dirty work is never elided by a sync verdict. Plain runs read the
   last fetch; `-f` fetches first while still pushing and pulling **nothing**.
-  The safe first move whenever the machines may be out of step
+  The safe first move whenever a repository and GitHub may be out of step;
+  whether the two machines are is `sync-check sync`'s question
 
 Guardrails, shared by the single- and all-repo variants:
 
-- **The machine's role (2026-10-10)**: Syncthing is to carry each repository,
-  `.git` included, between the machines, with bigfed alone committing and
+- **The machine's role (2026-10-10)**: Syncthing carries each repository,
+  `.git` included, between the machines since the cutover of 2026-10-28,
+  with bigfed alone committing and
   pushing (`org/machines/transport-2026-10/rules.md` → fedxps-2). The tracked
   host file `configs/git/hosts/<hostname>.inc` says which this machine is, read
   two ways and a reader if either says so: by hostname (short, lowercased),
@@ -343,7 +345,7 @@ Guardrails, shared by the single- and all-repo variants:
 - **Non-main branches are synced but flagged** with a warning.
 - **Unpushed work is surfaced**: after pulling, `gpullall`/`gpull` warn when
   a repo is still ahead of origin, so "up to date" can never be mistaken for
-  "in sync with the other machine".
+  "in sync with origin".
 - **A diverged repo names its remedy**: when a pull can't fast-forward over
   local unpushed commits, the output points at `gpush <name>` (which rebases)
   instead of dumping a raw git error.

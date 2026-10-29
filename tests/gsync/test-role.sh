@@ -299,7 +299,7 @@ be fedxps
 out="$(IFS=$'\n\t'; gpushall)"; rc=$?
 check "IFS without a space: still refused" contains "$out" "is a reader"
 out="$(gpullall)"
-check "gpullall's refusal names gpullall, not gpushall" contains "$out" "gpullall there"
+check "gpullall's refusal names gpullall, not gpushall" contains "$out" "gpullall runs on bigfed alone"
 # a typo in the role, or an empty role, fails on the safe side
 hostfile fedxps '[gsync]\n\trole = readr\n'
 out="$(gpushall)"; rc=$?

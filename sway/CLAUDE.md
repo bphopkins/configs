@@ -32,8 +32,9 @@ a nested sway with a virtual keyboard on 2026-10-03, memory
 
 ## Per-machine setup, once
 
-- `stow-all` after the pull that brings `hosts/` (2026-09-30); on the machine
-  that created it nothing prompts this, so run it in the same sitting.
+- `stow-all` on each machine once `hosts/` is there (2026-09-30); its arrival
+  by the Desktop folder fires no hint, and only `sync-check config`, which the
+  session hook runs, names a layer left unlinked, so run it by hand.
 - Default apps: `ln -s /usr/share/applications/gnome-mimeapps.list
   ~/.local/share/applications/sway-mimeapps.list`. GNOME's system list applies
   only where the desktop name says GNOME; without the link, under sway,

@@ -157,8 +157,10 @@ with a conflict.
   The bare run is `sync`, `conflicts`, `guard` with the version vectors,
   `hub` — the hub's readings riding on the sync line's ssh — and `config`
   without the claude-link dry run, which alone costs 1.8 s on bigfed; on
-  today's folders it took 1.6 to 1.9 s on bigfed at home and 1.3 s on
-  fedxps, and it is no longer the hook's. Exit 0 all clear, 1 something wrong or not
+  the nine folders before the cutover it took 1.6 to 1.9 s on bigfed at home
+  and 1.3 s on fedxps, on the Desktop folder 47 and 58 s on bigfed and 95 s on
+  fedxps, its first after a restart (`cutover/day.md`, 2026-10-28), and it is
+  no longer the hook's. Exit 0 all clear, 1 something wrong or not
   yet (FAIL, WAIT), 2 could not determine, 3 up to date with attention due:
   DUE lines and nothing worse, which `bye`, `byebye` and the push gauge pass
   (2026-10-14; `org/machines/transport-2026-10/PLAN.md` → settled 37). Every
@@ -377,11 +379,11 @@ The procedure, in order — each step earned its place:
 
 State, fingerprints, and ~130MB of build artifacts live in
 `~/.cache/tl-newyear` — machine-local, deliberately unsynced. Builds always
-go there via `-output-directory`, never in-place. `teach-logic/` tracks its
-build artifacts, so an in-place recompile dirties tracked PDFs; `opuscula/`
-carries its own as **Syncthing** content, so an in-place recompile there
-rewrites the artifacts of every document it builds, on three machines, and
-leaves a year of `.stversions` entries for them on nousowl.
+go there via `-output-directory`, never in-place. Every tree in `~/Desktop`
+is **Syncthing** content since 2026-10-28, so an in-place recompile anywhere
+there rewrites the artifacts of every document it builds, on three machines,
+and leaves a year of `.stversions` entries for them on nousowl; in
+`teach-logic/`, which tracks its build artifacts, it also dirties tracked PDFs.
 
 **Known casualty: the *forall x* textbook.** `tabu` v2.9 (unmaintained)
 patches `array.sty` internals, and TL2026's rewritten `array` breaks all
@@ -391,18 +393,17 @@ textbook pinned: `TEXLIVE_YEAR=2025 make` in any `forallx-yyc-build/`. A pin
 naming a release that isn't installed warns (interactive shells only) and is
 otherwise ignored — commands fall through to whichever release is active.
 
-**Rolling a release out to the second machine** (scripts travel in git; the
-~13GB tree does not):
+**Rolling a release out to the second machine** (the scripts travel in the
+Desktop folder; the ~13GB tree does not):
 
 ```bash
-gpushall                    # on the machine that already upgraded
-# on the other machine:
-gpullall
-source ~/.bashrc            # the pulled bash files; stow-all re-reads its own arrays since 2026-10-26
+# on the machine that upgraded first: nothing to send; the Desktop's Syncthing folder carries the scripts since 2026-10-28
+# on the other machine, once sync-check sync reads up to date:
+reload                      # the arrived bash files; stow-all re-reads its own arrays since 2026-10-26
 stow-all
 tl-newyear status && tl-newyear preflight
 tl-newyear install <year> && tl-newyear switch <year>
-source ~/.bashrc
+reload
 ```
 
 Re-verifying on the second machine is optional — TeX Live is deterministic
@@ -483,11 +484,11 @@ unlocked runs at once corrupted the shared tree in 13 of 30 trials (a nested
 empty real `memory/` with its link, repairs `~/.claude`'s own dangling links
 and keeps the orphan list, and makes a missing link into `~/Desktop` (a
 private layer or permission file that arrived by git) only while no
-`.stfolder` marker sits at `~/Desktop` or above it — once the Desktop is a
-Syncthing folder those links arrive inside it, and `--auto` makes none
-(reviewer 1's M2, the same day); harvesting a new scope or permission file
-and sweeping `~/Desktop` are `--apply`'s and `--adopt`'s, run by him on one
-machine.
+`.stfolder` marker sits at `~/Desktop` or above it — since the Desktop became
+a Syncthing folder on 2026-10-28 those links arrive inside it, and `--auto`
+makes none (reviewer 1's M2, the same day); harvesting a new scope or
+permission file and sweeping `~/Desktop` are `--apply`'s and `--adopt`'s, run
+by him on one machine.
 And `~/.claude/skills` is a real directory of one link per authored skill
 into `org/claude-config/skills/`, so Anthropic's skill sync writes its
 `synced/`, `.trash/` and `.staging/` on each machine alone (they were
@@ -513,8 +514,9 @@ health-checks the links and warns the *user*, not just the model — and since
 `MEMORY.md` does not index, every conflict copy in a scope, and a
 `~/CLAUDE.md` link that dangles or resolves to a conflict copy's name,
 `rules.md` → ws-15) plus
-`_gsync_pull_hints`, which runs `--auto` when a pull changes
-`claude-config/`. `claude-collect.sh` is the one-shot read-only inventory of
+`_gsync_pull_hints`, which runs `--auto` when a pull on bigfed changes
+`claude-config/` (what arrives by the Desktop folder fires no hint; SessionEnd's
+`--auto` links it). `claude-collect.sh` is the one-shot read-only inventory of
 what a machine holds that is *not* synced.
 
 Layout, deployment, curation history, and the conditional-rules syntax:
@@ -539,14 +541,16 @@ worth keeping in view here:
   that reason (the `~/Desktop` half under `--apply` and `--adopt` alone since
   2026-10-26). SessionStart counts dangling links into the config and says so in
   both channels; SessionEnd's `--auto` repairs them. An empty shared directory
-  is the cause, since git cannot carry one: `claude-link --apply` drops a
+  was the cause while git carried the tree, since git cannot carry one (the
+  Desktop folder does since 2026-10-28; a clone from GitHub still cannot):
+  `claude-link --apply` drops a
   `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so
   a directory visited once does not become a permanent entry. Fixed 2026-09-18.
 - **`claude-link` reports orphan charters, and SessionStart counts them.** An
   orphan is a `CLAUDE.md` or `CLAUDE.local.md` in a git work tree that git
   ignores and does not track. The global exclude that keeps agent context out
   of every repository hides any charter written straight into a tree, so
-  nothing syncs it, `git status` never lists it, and a merge or checkout that
+  git never carries it, `git status` never lists it, and a merge or checkout that
   brings its path replaces it without a word; `/init` writes one at a
   repository's root. Every run lists them under `== orphans ==` and moves none,
   since the cure is a choice per file: into `org/claude-config/repos/<path>/`

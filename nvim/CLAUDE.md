@@ -293,7 +293,8 @@ itself current: at LuaSnip load `snippets.lua` compares each file's
 (about 0.1 s), then `--coverage`; the write goes through the stow symlink into
 the repo, so the regenerated files are committed by the next `gpushall` –
 expected, and byte-identical on both machines, because `--sty` reads nothing
-but `.sty` files. `pkg/` regenerates only by hand, where the clone is, from the
+but `.sty` files. `pkg/` regenerates only by hand, on bigfed (the clone is on both
+machines since 2026-10-28 and is pulled there alone), from the
 repo root:
 
 ```bash
@@ -433,7 +434,8 @@ session's temporary directory, each with a WARN; only when all three fail is
 `lockfile` nil, with a WARN that the shared lock may be written this
 session, and nothing in `role.lua` or `lazy.lua` raises (lazy.nvim itself
 still needs `stdpath("state")` for its own state). An arrived lock changes nothing until
-`nvim --headless "+Lazy! restore" +qa` — the gsync hint prints exactly that;
+`nvim --headless "+Lazy! restore" +qa` — `sync-check config`'s fix line prints exactly
+that, and the gsync hint does after a pull on bigfed;
 after an arrival that adds a plugin the first restore can leave an advanced
 plugin at its old commit and a second converges (lazy's install pass rewrites
 its in-memory lock before restore reads it). On a lock conflict during

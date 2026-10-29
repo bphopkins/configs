@@ -36,7 +36,7 @@
 # that could write runs in a repository (the refusal reads the remote URL,
 # for its clone command), and gstatall -f fetches nothing; `gsync.readerRepo`
 # names single repositories to refuse while the rest are still written (the
-# pilot's nousowl). No host file, or no role: a writer; a host file git cannot
+# pilot's nousowl, until 2026-10-28). No host file, or no role: a writer; a host file git cannot
 # read, or a dangling host link: a reader. And a Syncthing conflict copy,
 # staged or tracked, refuses that repository's push outright, no prompt and
 # no override, with the staged copies and the files the vet would decline
@@ -303,15 +303,18 @@ _gsync_reads() { # _gsync_reads DIR: true when this machine must not write the .
 _gsync_refuse_repo() {
   local name="$1" repo="$2" url
   url="$(git -C "$repo" config --get remote.origin.url 2>/dev/null)"
-  _gsync_say SKIP "$name: refused — $(uname -n) reads this repository: Syncthing carries it and bigfed pulls, commits and pushes it (gpull/gpush $name there). Hub down? work in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/$name (org/machines/transport-2026-10/rules.md → him-5)"
+  _gsync_say SKIP "$name: refused — $(uname -n) reads this repository: Syncthing carries it and bigfed commits and pushes it (gpush $name there; gpull there only for a change that reached GitHub from elsewhere). Hub down? work in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/$name (org/machines/transport-2026-10/rules.md → him-5)"
 }
 
 # The whole-machine refusal for gpullall and gpushall on a reader: one line,
 # nothing touched. $1 = the verb for the message (pulled|pushed).
 _gsync_refuse_all() {
-  local verb="$1" cmd
-  [[ "$verb" == pulled ]] && cmd=gpullall || cmd=gpushall
-  _gsync_say SKIP "$(uname -n) is a reader — nothing $verb: Syncthing carries every repository and bigfed pulls and pushes ($cmd there, or from here: ssh -t bigfed 'bash -ic $cmd'). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+  local verb="$1"
+  if [[ "$verb" == pulled ]]; then
+    _gsync_say SKIP "$(uname -n) is a reader — nothing pulled: Syncthing carries every repository between the machines, and sync-check sync reads whether this one is up to date; gpullall runs on bigfed alone, for a change that reached GitHub from elsewhere. Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+  else
+    _gsync_say SKIP "$(uname -n) is a reader — nothing pushed: Syncthing carries every repository and bigfed commits and pushes (gpushall there, or from here: ssh -t bigfed 'bash -ic gpushall'). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+  fi
 }
 
 # Shared validation. Sets _GSYNC_BRANCH on success.

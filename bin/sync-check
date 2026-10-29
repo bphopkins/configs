@@ -30,7 +30,8 @@ fedxps-3, bigfed-1, bigfed-2, hub-1, hub-4; pilot/build-gauge.md), built
 2026-10-10 at the pilot's step 3b and given its hub, config and vector lines,
 the second door and the snapshot at step 5a (2026-10-26), in the shape of
 disk-check and context-check. Syncthing carries each repository, .git
-included, between bigfed and fedxps through nousowl's encrypted hub, and bigfed
+included, between bigfed and fedxps through nousowl's encrypted hub and the
+direct link, and bigfed
 alone commits and pushes; this is what says whether a machine may be left, a
 repository pushed, or a conflict copy is lying where it loads.
 
@@ -1398,7 +1399,7 @@ def verdict(cl, r, f, settled, ok_line=True):
 class Snapshot:
     """The cluster readings of each folder, kept in the file SYNC_CHECK_SNAPSHOT
     names for SYNC_CHECK_SNAPSHOT_TTL seconds, so that a gpushall reads the
-    cluster once: at the cutover every repository lies in one folder, and the
+    cluster once: since the cutover every repository lies in one folder, and the
     first repository's commit makes that folder busy for the next one's read.
     Without the variable nothing is read or written here."""
 
@@ -2048,7 +2049,7 @@ def disk_events(role, inst, ev):
         OUT.line("FAIL", "%s seen under a .git this machine reads (%s)" % (plural(len(writes), "write"), span))
         for t, p in writes[:20]:
             print("       %s  %s" % ((t or "?")[:19], tilde(p)))
-        OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`); the pilot stops on a write with no known cause (pilot.md)")
+        OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`)")
     else:
         OUT.ok("no write under a .git this machine reads, in %s (%s)" % (plural(len(ev), "disk event"), span))
 
@@ -2319,7 +2320,7 @@ def vectors(role, inst):
             print("       ... and %d more" % (len(new) - VECTOR_LIST_MAX))
         OUT.note("a counter stays in a path's vector for good and returns on a path git writes again (cutover/rehearsal/refute-b.md -> A9), so the entry names the counter, not the path: once the write is explained, paste these lines into KNOWN_WRITES in bin/sync-check (configs), one per counter")
         print_known_lines([(myname, folder["label"], counter) for folder, p, counter, info, _ in new])
-        OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`); the pilot stops on a write with no known cause (pilot.md)")
+        OUT.fix("find what wrote it (rules.md -> fedxps-4: meld's version view, TeXstudio's git dock, `describe --dirty`, `update-index`)")
     elif not unread:
         extra = (" beyond " + known_named([(myname, folder["label"], p, k) for folder, p, counter, info, k in known],
                                           lambda who, label: "in %s" % label)) if known else ""

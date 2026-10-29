@@ -31,15 +31,15 @@ If it has become a real file, move it back into `okular/` and restow.
 **Change preferences through the GUI, never by hand-editing the live file** —
 Okular rewrites `okularpartrc` on exit and would clobber a hand edit. (Note
 this is the *opposite* of the repo-wide `sed -i` pitfall: most tools break
-the symlink; KConfig is the exception that follows it.) Pulling a changed
-`okularpartrc` under a running Okular is safe — KConfig merges per-key — but
+the symlink; KConfig is the exception that follows it.) A changed
+`okularpartrc` arriving under a running Okular is safe — KConfig merges per-key — but
 the running process keeps its in-memory values until restarted.
 
 **Deliberately excluded, guarded by `.gitignore` (don't adopt either):**
 `okularrc` — window/session state plus a `[Recent Files]` list rewritten
 every session, which would churn a commit a day, collide on every rebase,
 and publish refereeing and teaching PDF names to a public remote — and
-`~/.local/share/okular/docdata/`, 1.5 MB in 365 files as of 2026-09-15, whose
+`~/.local/share/okular/docdata/`, 1.7 MB in 432 files on bigfed and 14 MB in 3,465 on fedxps as of 2026-10-28, whose
 names take the form `<size>.<document>.pdf.xml` and so publish those same
 names. One reason carries both exclusions, and it binds this repo alone.
 

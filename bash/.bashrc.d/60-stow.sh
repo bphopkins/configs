@@ -38,9 +38,9 @@ STOW_CFG_ROOT="$HOME/Desktop/configs"
 
 # The three commands below act on the checkout as it is on disk, and fetch
 # nothing (2026-10-26; org/machines/transport-2026-10/rules.md -> ws-8). The
-# pull stow-all used to start with is gone on both machines: after the
-# cutover configs arrives by Syncthing, and until then gpullall pulls it and
-# prints the restow hint. Each re-reads the two arrays above from this file
+# pull stow-all used to start with is gone on both machines: configs arrives
+# by Syncthing since the cutover of 2026-10-28 (before it gpullall pulled it
+# and printed the restow hint). Each re-reads the two arrays above from this file
 # on disk, in its own subshell, before it iterates, so a package an arrival
 # adds or removes is stowed or unlinked by a shell that loaded the old file:
 # the re-source this used to need is gone with it. A file that does not parse

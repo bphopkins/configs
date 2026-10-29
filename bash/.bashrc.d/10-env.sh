@@ -52,7 +52,7 @@ unset BASH_ENV
 # rules.md fedxps-1). Syncthing carries each repository's .git between the
 # machines and bigfed alone writes it; on fedxps a plain `git status` would
 # still rewrite .git/index on a copy Syncthing delivered, and that write races
-# bigfed's through the hub. GIT_OPTIONAL_LOCKS=0 stops it, and has no config
+# bigfed's through the folder. GIT_OPTIONAL_LOCKS=0 stops it, and has no config
 # form, so it rides here: this file reaches login shells, the GNOME session
 # and what it starts, interactive shells, and Claude Code's Bash tool. The
 # rest of the guard is git configuration, configs/git/hosts/fedxps.inc through
@@ -62,7 +62,7 @@ unset BASH_ENV
 # for this hostname (short, lowercased), and the one ~/.config/git/host.inc
 # points at, which is what git itself reads -- names this machine a reader
 # (`gsync.role` anything but `writer`) or names a reader repository
-# (`gsync.readerRepo`, the pilot's nousowl); and on a host file that exists
+# (`gsync.readerRepo`, the pilot's nousowl until 2026-10-28); and on a host file that exists
 # but cannot be read or parsed, or a dangling link: the safe side. bigfed,
 # the writer, never gets it: there it would make gpushall's `add -A` re-stamp
 # pack files after a stat-only arrival. Never unset here: a role change takes

@@ -7,19 +7,21 @@ I include specific instructions for my personal configuration files for ease in 
 
 ## (0) My Current Syncing Workflow
 
-As soon as I boot my computer -- whichever I'm on -- I run the following custom `bash` commands in order:
-```bash
-gpullall           # Pulls from all my everyday repositories  
-source ~/.bashrc   # Only if necessary (gpullall prints a hint when it is), but it's mostly harmless
-stow-all           # Only if files were added or deleted (gpullall hints about this too), but it's harmless
-```
-And when I finish for the day I run:
-```bash
-gpushall
-```
-I might as well have renamed my pull command `gmorning` and my push command `gnight`, but I don't only ever run them in the morning and night. The idea is just that, whenever I am done working on one machine, I give myself the option to start working on any other machine whenever I want to do more work.
+Since October 2026, [Syncthing](https://syncthing.net/) carries the whole of my `~/Desktop` between my two machines – every repository, `.git` included – by way of a small server of my own that stores it encrypted, and only my desktop ever commits or pushes. GitHub is the off-site copy, and everything below is how a fresh machine gets its configuration from it.
 
-And whenever I'm unsure where a machine stands — after time away, or when I suspect the machines are out of step — I first run:
+So when I sit down at a machine, I first check that it has caught up:
+```bash
+sync-check sync    # Is every Syncthing folder up to date here? It prints the fix when it isn't
+reload             # Only if bash files changed (.bashrc prints a line when they have)
+stow-all           # Only if files were added or deleted in a package, but it's harmless
+```
+And whenever I want a snapshot on GitHub, I run this on the desktop:
+```bash
+gpushall           # Commits and pushes every repository, after asking the Syncthing gauge
+```
+When I'm done on a machine I leave it with `byebye`, which powers off only once the gauge reads everything up to date. The idea is just that, whenever I am done working on one machine, I can start working on the other whenever I want to do more work.
+
+And whenever I'm unsure where a repository stands against GitHub, I run this on the desktop:
 ```bash
 gstatall -f   # Verdict per repo (needs push / needs pull / DIVERGED); fetches, but pushes and pulls nothing
 ```
@@ -287,7 +289,7 @@ But honestly, why not just reboot?
   stow -Rv  -t ~ bash
   ```
 
-- **If Stow reports a conflict** (e.g., a real file already exists), either back it up and remove it, or adopt it:
+- **If Stow reports a conflict** (e.g., a real file already exists), either back it up and remove it, or adopt it. On a machine that is in my Syncthing folder I never adopt: `--adopt` moves that machine's own file over the shared one, and Syncthing carries it to the other machine in seconds, so there I move the real file aside and restow instead. Adopting is for a machine still outside the folder:
   ```bash
   cd ~/Desktop/configs
   stow --adopt -vt ~ bash
@@ -338,7 +340,7 @@ But honestly, why not just reboot?
   custom annotation toolbar arrive with the repo — no re-configuring by hand. Inverse
   search does still need `nvr`: `pip install --user neovim-remote`. Only that one file
   is tracked: `~/.config/okularrc` (window state, Recent Files) and
-  `~/.local/share/okular/docdata/` (per-document annotations, ~13MB) are deliberately
+  `~/.local/share/okular/docdata/` (per-document annotations; 14 MB on fedxps, 1.7 MB on bigfed, read 2026-10-28) are deliberately
   excluded and `.gitignore`d — they churn every session and would both spam commits
   and leak document names into this public repo.
 
@@ -373,8 +375,8 @@ But honestly, why not just reboot?
 - **Adding a new stow package?** Update *both* the `STOW_TARGETS` map and the
   `STOW_ORDER` array in `bash/.bashrc.d/60-stow.sh`. Since 2026-10-26 `stow-all`
   re-reads the two arrays from that file on disk before it acts, so on the *other*
-  machine the arrived package is stowed from an old shell too; the `source ~/.bashrc`
-  is still due for every other function the pull changed, and the arrival line
+  machine the arrived package is stowed from an old shell too; a `reload` is
+  still due for every other function that changed, and the arrival line
   `.bashrc` prints before the next command says so.
 
 - **Rescue files:** `bash/.bashrc.min` and `bash/.bash_profile.min` are stowed to
@@ -388,7 +390,9 @@ But honestly, why not just reboot?
 
 It's really as simple as cloning the repo on your Desktop, clearing your dotfiles and emptying your configuration directories in `~/.config`, creating empty directories for your configurations to `stow` to, and creating the symlinks.
 
-One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. Clone `org` before the first commit; until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
+On my own machines a second machine gets its files differently: it joins my Syncthing folder onto an empty `~/Desktop`, and once everything has arrived I stow by hand – `stow --ignore='CLAUDE\.md' -t ~ bash` first, then the host link of §5, then `stow-all` – and run `claude-link --apply`. Cloning from GitHub is what I fall back on if the server is ever lost: `configs` and `org` first, the rest after, and Syncthing rejoined only once those clones are out of `~/Desktop`.
+
+One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. On the clone route, clone `org` before the first commit (on my own machines the folder brings it); until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
 
 It's also worth noting, that every time you update `.bashrc` or `.bash_profile`, you should run:
 ```bash

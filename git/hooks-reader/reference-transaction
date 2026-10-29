@@ -45,7 +45,7 @@
 #
 # Cost, measured on bigfed 2026-10-26 over 100 update-refs: a ref transaction
 # takes 1.8 ms with no hook, 10.5 ms with it in a repository outside the
-# Desktop, 15.5 ms in a Desktop repository fedxps still writes: three shell
+# Desktop, 15.5 ms in a Desktop repository fedxps then still wrote: three shell
 # starts a transaction, and in each of the two states that ask, one git call
 # outside the Desktop and two inside it.
 # Suite: configs/tests/git-hosts/run.sh.

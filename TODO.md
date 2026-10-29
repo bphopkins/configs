@@ -677,9 +677,9 @@ paragraph), `CLAUDE.md`, `bash/CLAUDE.md`, `environment.d/10-editor.conf`,
   that both monitors run without adaptive sync (his word restores it), the
   tray's order, and the session file's install. Done there over SSH on
   2026-09-30: the default-apps link, the GNOME chords, and rofi's install.
-  The pull adds the `rofi/` stow package, so `source ~/.bashrc` before
-  `stow-all`.
-- [ ] Added 2026-10-01, the split cue: after the pull, a reload
+  The `hosts/` layer and `rofi/` are stowed there (their links date from
+  2026-10-01 01:11, read 2026-10-28), so the `stow-all` above is done.
+- [ ] Added 2026-10-01, the split cue: with the config there, a reload
   (`$mod+Ctrl+c`), then `$mod+Shift+v` on a window beside another. The bar
   shows `↓ below` in the urgent fill, 20 px clear of the workspace buttons
   (as `resize` is when it shows alone), the window's bottom edge is the
@@ -768,11 +768,11 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
 
 ## 35. The transport campaign's configs work
 
-- [ ] Pointer, not a plan: the work this repo takes from
+- [ ] Pointer, not a plan: the work this repo took from
   `org/machines/transport-2026-10/` (Syncthing carries every repository's
-  `.git`; bigfed alone pushes) runs by that campaign's `PLAN.md`, each chat
-  launched from the kickoff line its step names, and the rules by its
-  `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same day):
+  `.git`; bigfed alone pushes) ran by that campaign's `PLAN.md`, each chat
+  launched from the kickoff line its step named, until the campaign closed
+  on 2026-10-28; the rules stay in its `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same day):
   the host files `git/hosts/`, the role and the conflict-copy refusal in
   `50-git-sync.sh`, the export in `10-env.sh`; at step 3b the same day
   (`pilot/build-gauge.md` there): the gauge `bin/sync-check` with its first
@@ -794,14 +794,24 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
   index DUE at 2 GB; the callers' names in `bye`, `byebye`, `gpush` and
   `gpushall`; R3's `case_split_reverse.py` applied by his hand and the
   refuter's readings folded into `case_split.py`, whose first run forces the
-  shared fan-out directory. Still this repo's, in the plan's order: the
-  cutover-day flip of `fedxps.inc` (`readerRepo` out, `role = reader` in,
-  committed on bigfed and pulled once with the hook bypassed:
-  `cutover/rehearsal/runbook-5d.md` B1) at 5d, and the charters' rewrite for
-  the whole Desktop (5b, 6a). Do none of it from here: the campaign chats
-  carry the evidence and the record. Open beside it, for a later chat: a rig
+  shared fan-out directory; at step 5d (2026-10-28, `cutover/day.md` B1):
+  the flip of `fedxps.inc` (`readerRepo` out, `role = reader` in), committed
+  on bigfed (`11c8dbf`) and pulled once on fedxps with the hook bypassed.
+  Done at 6a (2026-10-28, `close.md` there): the charters'
+  rewrite for the whole Desktop, and the README's §0, §2 and §8 in his voice,
+  ws-10's rule text's first home. What is left here is this repo's own, for
+  a configs chat; the campaign's files carry the evidence and the record.
+  Open beside it: a rig
   case for a split whose bigfed commit is already on GitHub (`rules.md` →
   him-2's last bullet, `refute-b.md` F5), before him-2 gets text for it.
+    - [ ] Two questions the close of 2026-10-28 raised, for a configs chat
+      (`org/machines/transport-2026-10/close/configs-and-sites.md` → CFG-46, CFG-53):
+      whether `context-check`'s check 9 should FAIL on a `repos/` entry whose
+      tree is absent, now that a tree absent here is absent on both machines
+      (its comment says so since that day); and whether `tests/claude/run.sh`'s
+      live empty-directory check stays, now that it guards a clone from GitHub
+      alone. Due when either file is next touched; the chat that takes it reads
+      the two findings first.
 
 ## 36. Two suite defects found by the 2026-10-12 restore-order run
 
@@ -843,19 +853,41 @@ that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
 
 Found 2026-10-25, when the day's maintenance refreshed the signatures on both
 machines and weighed a scan. `clam home` runs `clamscan -ri --detect-pua=yes
-"$HOME"` with no exclusions, and bigfed's `$HOME` now holds `~/Desktop/math`
+"$HOME"` with no exclusions, and since the cutover of 2026-10-28 both machines' `$HOME` hold `~/Desktop/math`
 (121,734 Lean files), `~/Desktop/ModalLogic/.lake` (128 thousand files of
-Mathlib sources and cache) and `~/.cache` (23 G of model weights and browser
-caches); `~/Desktop/CLAUDE.md` there keeps the two clones out of Desktop-wide
+Mathlib sources and cache), and bigfed's holds `~/.cache` (23 G of model weights and browser
+caches; fedxps's is 3.9 G, read 2026-10-28); `~/Desktop/CLAUDE.md`, one text on both machines, keeps the two clones out of Desktop-wide
 sweeps. A home scan would spend hours in them and report nothing that matters. No scan
 has yet been run on either machine; the signatures were current on both as of
-2026-10-25. Due before the first `clam home` on bigfed; one short sitting in
+2026-10-25. Due before the first `clam home` on either machine; one short sitting in
 `bash/.bashrc.d/80-clamav.sh`, with its line in `bash/CLAUDE.md`.
 
 - [ ] Give the wrapper `--exclude-dir` arguments for the two clones and
   `~/.cache`, or make the scan of `~/Desktop` minus the clones its own
   subcommand, with `~/.cache` scanned separately or not at all. Keep the log
   name contract (`~/clam-scan-home-<ts>.log`) unchanged.
+
+## 38. Okular's docdata figure differed between two charters — DONE 2026-10-28
+
+Found and closed at the transport campaign's close
+(`org/machines/transport-2026-10/close.md` → The wrap-up): `README.md` said
+about 13 MB and `okular/CLAUDE.md` 1.5 MB in 365 files as of 2026-09-15, and
+both were true of a different machine. Measured 2026-10-28: 14 MB in 3,465
+files on fedxps, 1.7 MB in 432 on bigfed. Both charters now give both figures,
+dated; the state is machine-bound and stays unsynced by design.
+
+## 39. Hostnames on the public pages, under the publishing rule's new clause
+
+The clause added to `rules/git-and-publishing.md` on 2026-10-28 (his note at
+the transport's close) keeps every particular of his system off a public page.
+This public repo already names the hub by its hostname in 33 tracked files and
+its two tailnet ssh aliases in five (`tests/sync-check/run.sh`,
+`tests/sync/case_*.py`, `DECISIONS.md`), and `README.md` names `bigfed` and
+`fedxps` in §2 and §5; all of it predates the clause. His call whether any of
+it goes, and how (a placeholder name in the tests, a generic name in the
+README); the chat that takes it reads the memory
+`public-pages-carry-no-security-details` and
+`org/machines/transport-2026-10/close/review.md` → Outside the brief. Undated.
 
 ## Closed
 

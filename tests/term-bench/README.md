@@ -103,8 +103,9 @@ the terminals will not find the compositor:
         DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; ...'
 
 Windows open on *that* machine's screen, so only do this when nobody is sitting
-at it. Stage the harnesses under `/tmp` rather than pulling the repo, so the far
-machine's tree stays clean and no sync is provoked. Check with `git status`
+at it. Stage the harnesses under `/tmp` rather than running them from the
+checkout, so their output lands outside the Desktop's Syncthing folder and
+nothing crosses to the other machine. Check with `git status`
 there before and after.
 
 To compare two machines rather than two terminals, hold everything else still:

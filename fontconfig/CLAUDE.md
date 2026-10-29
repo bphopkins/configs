@@ -99,7 +99,7 @@ afterwards changed nothing. The cache is about font *files* — so it matters
 when the pinned `<dir>` moves under `tl-newyear`, or when fonts are installed
 or removed, and not otherwise. What a rule edit does need is the applications
 restarted, since each reads fontconfig only at startup; a GUI still listing a
-family twice after a pull has simply not been reopened.
+family twice after a rule edit arrives has simply not been reopened.
 
 The one case where `fc-cache -f` *is* the remedy is the 2026-09-23 incident
 under block three: a cache rewritten by another program's fontconfig. Its

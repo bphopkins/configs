@@ -100,8 +100,9 @@ if [ ${#dang[@]} -eq 0 ]; then ok "links into the config: all resolve"
 else fail "links into the config: ${#dang[@]} dangling"; det "${dang[@]}"; fix "claude-link --apply"; fi
 
 # 2 ── directories git cannot carry ----------------------------------------
-# An empty directory never reaches the other machine, so its link dangles there
-# even though everything looks right here. This is what broke plans/. One that
+# An empty directory never reaches a clone from GitHub, so its link would dangle
+# on a machine rebuilt from one (until 2026-10-28 git carried the tree between
+# the machines, and that is what broke plans/). One that
 # git ignores was never meant to reach it, so it is not counted: Claude Code's
 # skill sync leaves an empty .staging inside the ignored skills/synced/ (seen
 # 2026-10-18). Outside a git work tree nothing is ignored, and all are counted.
@@ -115,7 +116,7 @@ if [ ${#empt[@]} -gt 0 ] && git -C "$CFG" rev-parse --is-inside-work-tree >/dev/
   empt=("${kept[@]}")
 fi
 if [ ${#empt[@]} -eq 0 ]; then ok "no empty directories in the config"
-else fail "${#empt[@]} empty directory(ies) — git cannot carry them to the other machine"
+else fail "${#empt[@]} empty directory(ies) — git cannot carry them to GitHub"
      det "${empt[@]}"
      note "claude-link --apply holds an empty memory scope open; give any other a .gitkeep, or rmdir it if its directory is gone"
      fix "claude-link --apply"; fi
@@ -234,7 +235,9 @@ else fail "${#dead8[@]} permission entry(ies) name a path that no longer exists"
      det "${dead8[@]}"; fix "drop the entries, or correct the paths, in the named files"; fi
 
 # 9 ── repos/ entries for a tree absent here ------------------------------
-# Informational: a repo cloned on only one machine is normal and by decision.
+# Informational: since 2026-10-28 one folder carries the Desktop, so a tree
+# absent here is absent on both machines -- an entry for a tree retired or not
+# yet made.
 miss=(); while IFS= read -r -d '' f; do
   rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel")
   [ "$repo" = "_desktop-root" ] && t="$DESK" || t="$DESK/$repo"
