@@ -40,7 +40,7 @@ case "${1:-}" in
     [[ -f "$DISS/dissertation.tex" ]] && files+=("$DISS/dissertation.tex")
     ;;
   -a)
-    # Every package used anywhere under ~/Desktop, but WITHOUT opening every
+    # Every package used anywhere under the synced roots, but WITHOUT opening every
     # document: Neovim startup (~1.5 s) dominates the per-package cost, so
     # opening all ~300 roots would take minutes to buy ~15 s of resolution.
     # Instead pick a small covering set -- greedily, the document adding the
@@ -50,8 +50,11 @@ import glob, os, re
 roots = {}
 for base in ("dissertation", "dissertation-template", "opuscula", "n-cube",
              "teaching", "teach-logic", "bphopkins.net"):
-    d = os.path.expanduser(f"~/Desktop/{base}")
-    if not os.path.isdir(d):
+    # A base lives under ~/Desktop, or under ~/Documents since 2026-11-02
+    # (opuscula; org/machines/home-layout-2026-10/).
+    d = next((p for p in (os.path.expanduser(f"~/{root}/{base}")
+                          for root in ("Desktop", "Documents")) if os.path.isdir(p)), None)
+    if d is None:
         continue
     for f in glob.glob(d + "/**/*.tex", recursive=True):
         if "/.git/" in f or "/.old/" in f:
