@@ -46,7 +46,8 @@ with a conflict.
   completed 2026-10-26 at step 5a, record `cutover/tools.md`; the rules it
   reads are that directory's `rules.md` → ws-1, ws-2, ws-8, fedxps-3,
   bigfed-1, bigfed-2, hub-1, hub-4, him-2). Seven lines: `sync` (every folder
-  this machine shares is up to date — a blocking scan, then the local status,
+  this machine shares is up to date, about 45 s in all on bigfed (2026-10-31) —
+  a blocking scan, then the local status,
   this machine's view of the hub, and over batch-mode ssh the hub's view of
   both workstations and, when the hub shows the other workstation owing or
   needing something, that workstation's own view, since the hub holds
@@ -78,7 +79,10 @@ with a conflict.
   host link, every key of the host file resolving through it, the refusing
   hook present and executable where the host file names a `core.hooksPath`
   (the restow is its fix),
-  `GIT_OPTIONAL_LOCKS` as the role requires, no write seen under a `.git`
+  `GIT_OPTIONAL_LOCKS` as the role requires, read from the gauge's own
+  environment, so over a non-interactive ssh it reports that shell, which
+  lacks the variable (run it there under `bash -lc`; 2026-10-31), no write
+  seen under a `.git`
   this machine reads in Syncthing's disk events — kept from the daemon's
   start, the last 1,000 — and, since 2026-10-26, every file and directory
   under each such `.git` read from the database with its version vector,

@@ -2,7 +2,9 @@
 # Regression suite for bash/.bashrc itself: the module loop that never sources a
 # Syncthing conflict copy (org/machines/transport-2026-10/rules.md -> ws-4) and
 # the arrival line that PS0 prints once when a loaded file changes under an open
-# shell (ws-8). Written 2026-10-26 at the campaign's step 5a, on the battery's
+# shell (ws-8), and since 2026-10-31 the private modules .bashrc sources after the
+# package's, org/claude-config/shell/*.sh, under the same guard and check.
+# Written 2026-10-26 at the campaign's step 5a, on the battery's
 # seeds scratch-2026-10-09/refute-config/stow/t.sh (S4) and sig/t2.py there.
 #
 # Hermetic in the way tests/shell-opts/run.sh is: every shell runs under
@@ -49,6 +51,12 @@ mkfix() {
   ln -s ../cfg/bash/.bashrc "$H/.bashrc"
   ln -s ../cfg/bash/.bash_profile "$H/.bash_profile"
   ln -s ../cfg/bash/.bashrc.d "$H/.bashrc.d"
+  # The private module directory .bashrc sources after the package's modules
+  # (2026-10-31), under the fixture HOME: one module, and a conflict copy of it
+  # that must never run.
+  mkdir -p "$H/Desktop/org/claude-config/shell"
+  printf '%s\n' 'private_module_fn() { echo "the private module"; }' 'PRIVATE_MODULE_SOURCED=yes' >"$H/Desktop/org/claude-config/shell/zz-private.sh"
+  printf '%s\n' 'private_module_fn() { echo "the conflict copy"; }' 'PRIVATE_CONFLICT_SOURCED=yes' >"$H/Desktop/org/claude-config/shell/zz-private.sync-conflict-20261031-120000-ABCDEFG.sh"
   : >"$SB/hist"
 }
 
@@ -146,6 +154,33 @@ for sh in WEZ GHO; do
   check "$sh: reload keeps one check in PS0"                [ "$(field PS0N "$r")" = 1 ]
   check "$sh: reload loaded the new module"                 [ "$(field NEW "$r")" = 1 ]
 done
+
+# --- 2b. the private modules, org/claude-config/shell/*.sh (2026-10-31): sourced
+# after the package's, conflict copy excepted, and in the arrival check ---------
+echo "== the private modules =="
+mkfix
+cat >"$SB/s2b" <<'S'
+{ printf 'SOURCED=%s\n' "${PRIVATE_MODULE_SOURCED-no}"
+  printf 'FN=%s\n' "$(private_module_fn 2>/dev/null)"
+  printf 'CONFLICT=%s\n' "${PRIVATE_CONFLICT_SOURCED-no}"; } >&3
+exit
+S
+shell WEZ "$SB/s2b" "$SB/o2b" "$SB/r2b"
+r="$(<"$SB/r2b")"
+check "the private module is sourced"                      [ "$(field SOURCED "$r")" = yes ]
+check "its function is the module's, not the conflict copy's" [ "$(field FN "$r")" = "the private module" ]
+check "the conflict copy's own lines never ran"            [ "$(field CONFLICT "$r")" = no ]
+cat >"$SB/s2c" <<'S'
+echo "MARK-$((1))"
+touch -d '2001-01-01 00:00' ~/Desktop/org/claude-config/shell/zz-private.sh
+echo "MARK-$((2))"
+echo "MARK-$((3))"
+exit
+S
+mkfix
+shell WEZ "$SB/s2c" "$SB/o2c" "$SB/r2c"
+seq="$(tokens "$SB/o2c")"
+check "a change to the private module fires the arrival line, once" [ "$seq" = "MARK-1 ARR MARK-2 MARK-3 " ]
 
 # --- 3. on a terminal: the order on screen, and the hooks still firing ---------
 # The driver types a line, waits for its DONE marker, waits for the prompt to

@@ -219,7 +219,8 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 ## Bash Configuration
 
 Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order,
-conflict copies excepted — `00`
+conflict copies excepted, then the private modules in
+`~/Desktop/org/claude-config/shell/` (2026-10-31; `bash/CLAUDE.md`) — `00`
 shell-opts (the history contract — 20,000 dated entries, written after every
 command — and four shopts, since 2026-09-23), `10` env, `20` path
 (TeX-Live-first ordering, auto-detected year), `30` prompt (one colour per

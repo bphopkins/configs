@@ -85,8 +85,12 @@ inherit true from the defaults template, and at the rehearsal of 2026-10-26
 the index cut the hub's receipt from 81 to 10-12 files a second as the folder
 grew (80-94 flat without it) and fedxps's pull from 40 to 17 (61-74 flat
 without); upstream calls it never useful for an encrypted folder. Without it
-a workstation fetches again from its peers what is moved, renamed or copied
-inside the folder, rather than assembling it from blocks it holds.
+a workstation fetches again from its peers what is copied inside the folder,
+rather than assembling it from blocks it holds (upstream's description, not
+measured here); a rename it still carries as a rename, every file renamed in
+place and nothing fetched, while the hub receives the renamed tree in full
+again and keeps the old names as versions (measured 2026-11-02 on a 168 MB
+tree; org/machines/home-layout-2026-10/log.md, sitting 1).
 
 PREFLIGHT, before any write, on all three machines: Syncthing answers; global
 announce, relays, NAT and crash reporting off; autoAcceptFolders false on every

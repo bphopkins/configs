@@ -7,7 +7,10 @@ define the loser's functions on top of the winner's) — and
 `~/.bashrc.d` is a whole-directory symlink into this package — so the folder's
 arrival plus `reload` deploys edits on the other machine with no restow. A restow
 (`stow -R bash`) is needed only when files are added or removed at the package
-top. Since 2026-10-26 `.bashrc` also records the inode and ctime of
+top. Since 2026-10-31 `.bashrc` also sources
+`~/Desktop/org/claude-config/shell/*.sh` after the package's modules: private
+modules outside this public repo, under the same conflict-copy guard and the
+arrival check below. Since 2026-10-26 `.bashrc` also records the inode and ctime of
 `~/.bashrc`, `~/.bash_profile` and every module it sourced, and a check
 appended to `PS0` prints one line before the next command runs when that set
 has changed — `bash modules changed since this shell loaded them: run reload`
@@ -15,8 +18,8 @@ has changed — `bash modules changed since this shell loaded them: run reload`
 is never inert in silence (ws-8; about 1.7 ms a prompt, one `stat`; bash 5.3's
 `${ ...; }` substitution, so nothing on an older bash). **Run
 `tests/bashrc/run.sh` after any edit to `.bashrc`**: caged, interactive shells
-under both terminal integrations against a fixture HOME, the skip and the
-arrival line.
+under both terminal integrations against a fixture HOME, the skip, the
+arrival line, and the private modules (2026-10-31).
 
 `.bash_profile` sources the two environment modules, `10-env.sh` and
 `20-path.sh`, before `.bashrc` (2026-09-23). A login shell reads it, and the one

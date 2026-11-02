@@ -19,6 +19,14 @@ if [ -d ~/.bashrc.d ]; then
   unset rc
 fi
 
+# Private modules, outside this public repo: org/claude-config/shell/*.sh, in
+# the Desktop's Syncthing folder, absent on a machine without it (2026-10-31).
+for rc in ~/Desktop/org/claude-config/shell/*.sh; do
+  [[ $rc == *.sync-conflict-* ]] && continue
+  [ -f "$rc" ] && . "$rc"
+done
+unset rc
+
 # Arrivals (rules.md -> ws-8): a module changed under an open shell -- by
 # Syncthing, a pull, an edit -- stays unloaded in it until `reload`. The inode
 # and ctime of these files are recorded now, and before each command PS0
@@ -28,9 +36,9 @@ fi
 # runs in this shell, so the new record persists; one stat a command, about
 # 1.5 ms. Suite: tests/bashrc/run.sh.
 if ((BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] >= 503)); then
-  _bashrc_stamp() { # into _BASHRC_NOW: ~/.bashrc, ~/.bash_profile, each module the loop sources
+  _bashrc_stamp() { # into _BASHRC_NOW: ~/.bashrc, ~/.bash_profile, each module the loops source
     local f files=(~/.bashrc ~/.bash_profile)
-    for f in ~/.bashrc.d/*.sh; do
+    for f in ~/.bashrc.d/*.sh ~/Desktop/org/claude-config/shell/*.sh; do
       [[ $f != *.sync-conflict-* && -f $f ]] && files+=("$f")
     done
     _BASHRC_NOW="$(stat -L -c '%i %.9Z' -- "${files[@]}" 2>/dev/null)"
