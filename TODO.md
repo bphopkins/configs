@@ -231,7 +231,7 @@ change, and after each TeX Live release. Cross-listed in
 Two items the reorganisation campaign (item 13, closed 2026-09-08) declared
 out of its scope, and one fine-tune from its confirmation pass. None is broken;
 handle each when a document asks for it, through the two nets (`tests/french-logic/run.sh` and the private harness in
-`infra/claude-config/repos/configs/french-logic-harness/`).
+`infra/claude-config/home/Desktop/configs/french-logic-harness/`).
 
 - [ ] Derive `dissertation-template/philogic.sty` from the units instead of
   maintaining it apart. It is the template's one deliberate bundled `.sty`; a
@@ -848,6 +848,14 @@ that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
   one fails nothing but the line's own exit status in silence. Found
   2026-10-26 by the transport campaign's step 5a (`infra/machines/transport-2026-10/cutover/tools.md`).
   Split each into one `check` per condition, as the README says.
+- [ ] Added 2026-11-02 at the `org` → `infra` rename (sitting 3 of
+  `infra/machines/home-layout-2026-10/runbook.md`, its `log.md` → Step 2):
+  `tests/gsync/run-all.sh` stops at its first suite's setup when git has no
+  identity — between the rename's code edits and the rename itself the include
+  named a path not yet there — and then aborts on an unbound variable (`SETUP`,
+  line 16) instead of reporting the failed setup as a failure. Make the runner
+  report a setup failure as one, and say in its header that the git-sync suites
+  take the identity from the machine's own configuration.
 
 ## 37. `clam home` sweeps the Lean trees and the cache on bigfed
 
@@ -888,6 +896,22 @@ it goes, and how (a placeholder name in the tests, a generic name in the
 README); the chat that takes it reads the memory
 `public-pages-carry-no-security-details` and
 `infra/machines/transport-2026-10/close/review.md` → Outside the brief. Undated.
+
+## 40. `claude-link` cannot repair a link aimed at a previous config root
+
+Found 2026-11-02 when `~/Desktop/org` became `~/Desktop/infra` (sitting 3 of
+`infra/machines/home-layout-2026-10/runbook.md`): `link_one()` leaves a link
+that resolves elsewhere alone, `[WARN] symlink points elsewhere`, on `--apply`
+and `--adopt` alike, so every link into the old root — 78 on bigfed, 40
+machine-local on fedxps — was rewritten in place by a pass of its own
+(`ln -sfnT`), after which the tool read them as its own. The hazard had been on
+`infra/claude-config/TODO.md` since 2026-09-18 (its stale-link item, annotated
+that day with the pass). Candidate: a `--from OLD` that rewrites, under
+`--apply`, every link whose target lies under OLD to the same path under the
+present root, listed first in the dry run; `tests/claude/run.sh` gets its case.
+Due before the next move of the config root; not urgent.
+
+- [ ] Build `--from OLD`, with its dry-run listing and suite case.
 
 ## Closed
 

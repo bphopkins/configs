@@ -38,7 +38,12 @@ PATH="${PATH:-/usr/bin:/bin}:/usr/bin:/bin"
 
 CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"
 CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
-DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
+# The roots the store knows: each home/<X>/ in it names ~/<X>, as claude-link
+# reads them (the store mirrors the home, 2026-11-03).
+ROOTS=()
+if [ -d "$CFG/home" ]; then
+  for d in "$CFG"/home/*/; do [ -d "$d" ] || continue; d=${d%/}; ROOTS+=("${d##*/}"); done
+fi
 
 # The harness's own numbers. Its consolidation prompt asks for "one line under ~150
 # characters" and treats ~200 as where "an index line is over ~200 chars, it's
@@ -92,10 +97,12 @@ while IFS= read -r -d '' f; do
   [ -e "$f" ] && continue
   case "$(readlink "$f" 2>/dev/null)" in "$CFG"/*) dang+=("$f") ;; esac
 done < <( { find "$CC" -maxdepth 3 -type l -print0 2>/dev/null
-            find "$DESK" -maxdepth 7 \
-              \( -name .git -o -name node_modules -o -name archive -o -name readings \
-                 -o -name lecture-recordings \) -prune -o \
-              \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null ; } )
+            for x in "${ROOTS[@]}"; do
+              [ -d "$HOME/$x" ] || continue
+              find "$HOME/$x" -maxdepth 7 \
+                \( -path "$CFG" -o -name .git -o -name node_modules -o -name readings \) -prune -o \
+                \( -name settings.local.json -o -name CLAUDE.local.md -o -name CLAUDE.md \) -type l -print0 2>/dev/null
+            done ; } )
 if [ ${#dang[@]} -eq 0 ]; then ok "links into the config: all resolve"
 else fail "links into the config: ${#dang[@]} dangling"; det "${dang[@]}"; fix "claude-link --apply"; fi
 
@@ -227,26 +234,50 @@ dead8=()
 while IFS= read -r -d '' f; do
   while IFS= read -r p; do
     b=$p; while case "$b" in *'*'*) true ;; *) false ;; esac; do b=$(dirname "$b"); done
-    [ -n "$b" ] && [ "$b" != "/" ] && [ ! -e "$b" ] && dead8+=("${f#"$CFG"/repos/} -> $p")
+    [ -n "$b" ] && [ "$b" != "/" ] && [ ! -e "$b" ] && dead8+=("${f#"$CFG"/home/} -> $p")
   done < <(grep -oE '/(home|tmp)/[^"[:space:]:)*]*' "$f" 2>/dev/null | sort -u)
-done < <(find "$CFG/repos" -name settings.local.json -print0 2>/dev/null)
+done < <(find "$CFG/home" -path '*/.claude/settings.local.json' -print0 2>/dev/null)
 if [ ${#dead8[@]} -eq 0 ]; then ok "permission entries: every path named resolves"
 else fail "${#dead8[@]} permission entry(ies) name a path that no longer exists"
      det "${dead8[@]}"; fix "drop the entries, or correct the paths, in the named files"; fi
 
-# 9 ── repos/ entries for a tree absent here ------------------------------
+# 9 ── home/ entries for a tree absent here -------------------------------
 # Informational: since 2026-10-28 one folder carries the Desktop, so a tree
 # absent here is absent on both machines -- an entry for a tree retired or not
-# yet made.
+# yet made. The store mirrors the home (2026-11-03): home/<rel> loads at
+# ~/<rel>, a permission list inside its tree's .claude/.
 miss=(); while IFS= read -r -d '' f; do
-  rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel")
-  [ "$repo" = "_desktop-root" ] && t="$DESK" || t="$DESK/$repo"
-  [ -d "$t" ] || miss+=("$repo")
-done < <(find "$CFG/repos" -type f \( -name settings.local.json -o -name CLAUDE.local.md \) -print0 2>/dev/null)
+  rel=${f#"$CFG"/home/}; t=$(dirname "$rel"); [ "$(basename "$t")" = .claude ] && t=$(dirname "$t")
+  [ -d "$HOME/$t" ] || miss+=("$t")
+done < <(find "$CFG/home" -type f \( -name CLAUDE.md -o -name CLAUDE.local.md -o -path '*/.claude/settings.local.json' \) -print0 2>/dev/null)
 uniq_miss=$(printf '%s\n' "${miss[@]:-}" | grep -v '^$' | sort -u)
 nm=$(printf '%s' "$uniq_miss" | grep -c . || true)
-if [ "$nm" -eq 0 ]; then ok "repos/: every entry's tree is present on this machine"
-else ok "repos/: $nm entry(ies) for a tree not on this machine (normal if by decision)"; det $uniq_miss; fi
+if [ "$nm" -eq 0 ]; then ok "home/: every entry's tree is present on this machine"
+else ok "home/: $nm entry(ies) for a tree not on this machine (normal if by decision)"; det $uniq_miss; fi
+
+# 9b ── layer files under home/ that git ignores -------------------------
+# The global exclude hides the three names from every repository and
+# infra/.gitignore re-includes them; a file the negations do not reach is
+# never committed and never reaches GitHub, in silence, since `gpushall`'s
+# `git add -A` skips it (sitting A of the private-layer runbook, 2026-11-03).
+# A file merely untracked -- a charter just moved in, a list just harvested --
+# is counted, not failed: the next `gpushall` adds it. Read inside a work tree
+# alone; a config tree in none prints nothing.
+if [ -d "$CFG/home" ] && git -C "$CFG" rev-parse --show-toplevel >/dev/null 2>&1; then
+  declare -A tracked9=()
+  while IFS= read -r -d '' t; do tracked9[$t]=1; done < <(git -C "$CFG" ls-files -z -- home 2>/dev/null)
+  ignored9=() n_untracked9=0
+  while IFS= read -r -d '' f; do
+    [ -n "${tracked9[${f#"$CFG"/}]:-}" ] && continue
+    if git -C "$CFG" check-ignore -q -- "$f" 2>/dev/null; then ignored9+=("${f#"$CFG"/}")
+    else n_untracked9=$((n_untracked9+1)); fi
+  done < <(find "$CFG/home" -type f \( -name CLAUDE.md -o -name CLAUDE.local.md -o -path '*/.claude/settings.local.json' \) -print0 2>/dev/null)
+  if [ ${#ignored9[@]} -gt 0 ]; then
+    fail "home/: ${#ignored9[@]} layer file(s) git ignores, which gpushall would never commit"; det "${ignored9[@]}"
+    fix "git -C $CFG add -f ${ignored9[*]}  (and check the negations in infra/.gitignore)"
+  elif [ "$n_untracked9" -gt 0 ]; then ok "home/: every layer file reaches infra ($n_untracked9 untracked, none ignored: the next gpushall adds them)"
+  else ok "home/: every layer file is tracked by infra"; fi
+fi
 
 fi   # checks 1 to 9
 

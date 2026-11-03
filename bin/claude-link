@@ -7,12 +7,14 @@
 #   claude-link --apply      create the symlinks
 #   claude-link --adopt      absorb this machine's existing files into
 #                            infra/claude-config first (needed the first time on
-#                            a machine that already has memory/permissions)
+#                            a machine that already has memory/permissions), and
+#                            adopt an orphan charter into the store, linked back
 #   claude-link --unlink     reverse it: replace every symlink with a real copy
 #   claude-link --auto       silent, safe subset; run from the SessionEnd hook.
-#                            It writes under ~/.claude, harvests nothing, and
-#                            in ~/Desktop only makes a missing link, and only
-#                            while ~/Desktop lies in no Syncthing folder
+#                            It writes under ~/.claude, harvests nothing, adopts
+#                            nothing, and under a root (~/Desktop, ~/Documents)
+#                            only makes a missing link, and only while that root
+#                            lies in no Syncthing folder
 #
 # Exit: 0 nothing to do · 1 changes pending or made · 2 conflicts / errors,
 #       or another run holds the lock
@@ -25,25 +27,42 @@
 #   hooks/, output-styles/, rules/, workflows/  ->  ~/.claude/<same>
 #   <cfg>/skills/<name>/, each authored skill   ->  ~/.claude/skills/<name>
 #   <cfg>/memory/<scope>/                       ->  ~/.claude/projects/<scope>/memory
-#   <cfg>/repos/<path>/settings.local.json      ->  ~/Desktop/<path>/.claude/
-#   <cfg>/repos/<path>/CLAUDE.local.md          ->  ~/Desktop/<path>/
+#   <cfg>/home/<rel>                            ->  ~/<rel>, for the three names a
+#     session loads: CLAUDE.md, CLAUDE.local.md and .claude/settings.local.json.
+#     The store mirrors the home, and each home/<X>/ in it names a root, ~/<X>
+#     (2026-11-03; infra/machines/home-layout-2026-10/decisions.md -> 40, 46-48)
 #   <cfg>/hosts/<host>.md, <host> = hostname -s ->  ~/CLAUDE.md, never by --auto
 #
 # It never deletes unique data. Adoption moves a file into infra/claude-config or
 # backs it up; anything ambiguous is reported and skipped.
 #
-# It also reports orphan charters (the pass of that name, below), and keeps the
-# list in ~/.claude/claude-link-orphans for the SessionStart hook to count.
+# It also reports orphan charters (the pass of that name, below), which --adopt
+# moves into the store and links back, and keeps the list in
+# ~/.claude/claude-link-orphans for the SessionStart hook to count.
 
 set -uo pipefail
 
 CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"
 CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
-DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
-# Every walk of ~/Desktop prunes the same names, at any depth: git's own
-# directories, and the large trees this script has no business in.
-DESK_PRUNE=( \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic'
-                -o -name lecture-recordings -o -name readings \) -prune -o )
+# The roots -- ~/Desktop, ~/Documents, any other -- are read from the store:
+# each home/<X>/ in it names the root ~/<X>, so the walks below are driven by
+# what the store holds and no root is hardcoded. A root not on this machine
+# is skipped and said.
+ROOTS=()
+if [ -d "$CFG/home" ]; then
+  for d in "$CFG"/home/*/; do
+    [ -d "$d" ] || continue
+    d=${d%/}; ROOTS+=("${d##*/}")
+  done
+fi
+# Every walk of a root prunes the same names, at any depth: git's own
+# directories, and the large trees this script has no business in -- and the
+# store itself, which lies under a root (~/Desktop/infra/claude-config) and
+# holds, at the same .claude/ paths, the very lists the harvest looks for: on
+# 2026-11-03 the first dry run after the store's move offered to harvest 11 of
+# the store's own lists into the store (sitting A of the private-layer runbook).
+CFG_P=$(cd "$CFG" 2>/dev/null && pwd -P) || CFG_P=$CFG
+ROOT_PRUNE=( \( -path "$CFG" -o -path "$CFG_P" -o -name .git -o -name node_modules -o -name readings \) -prune -o )
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$CC/link-backups/$STAMP"
 
@@ -126,11 +145,11 @@ fi
 # --auto is for the SessionEnd hook: it must be silent, must only do what
 # cannot possibly need a decision, and writes nothing into the shared tree
 # (rules.md -> ws-13; PLAN.md -> settled 15). It harvests nothing, and sweeps
-# nothing in ~/Desktop: a link Syncthing delivers before its target is no
+# nothing under a root: a link Syncthing delivers before its target is no
 # dangling link to remove (live-B section 2 saw that removal reach both
-# machines). The repos pass makes a missing link into ~/Desktop only while
-# ~/Desktop lies in no Syncthing folder -- no .stfolder marker at it or above
-# it, read as 50-git-sync.sh's push gauge reads one -- because before the
+# machines). The home pass makes a missing link under a root only while that
+# root lies in no Syncthing folder -- no .stfolder marker at it or above it,
+# read as 50-git-sync.sh's push gauge reads one -- because before the
 # cutover of 2026-10-28 a new layer reached this machine by a git pull, whose
 # hint ran --auto, and nothing else would link it (R1's M2, 2026-10-26). Since
 # the Desktop became a folder the link arrives with it, and --auto names a
@@ -152,15 +171,18 @@ if [ $AUTO = 1 ]; then
   R= G= Y= B= D= Z=
   echo "--- $(date '+%Y-%m-%d %H:%M:%S') $(hostname -s) auto ---"
 fi
-# The Syncthing folder ~/Desktop lies in, if any: the first directory, from
-# ~/Desktop up to /, that holds a .stfolder marker.
-desk_folder=""
-d=$(cd "$DESK" 2>/dev/null && pwd -P) || d="$DESK"
-while :; do
-  if [ -d "$d/.stfolder" ]; then desk_folder=${d:-/}; break; fi
-  [ -z "$d" ] && break
-  d=${d%/*}
-done
+# The Syncthing folder a root lies in, if any: the first directory, from the
+# root up to /, that holds a .stfolder marker. Read once per root.
+folder_of() {  # folder_of <dir>  -- prints the folder's path, or nothing
+  local d; d=$(cd "$1" 2>/dev/null && pwd -P) || d=$1
+  while :; do
+    if [ -d "$d/.stfolder" ]; then printf '%s\n' "${d:-/}"; return 0; fi
+    [ -z "$d" ] && return 0
+    d=${d%/*}
+  done
+}
+declare -A ROOT_FOLDER=()
+for x in "${ROOTS[@]}"; do ROOT_FOLDER[$x]=$(folder_of "$HOME/$x"); done
 echo "claude-link — $(hostname -s) — $([ $AUTO = 1 ] && echo AUTO || { [ $APPLY = 1 ] && echo APPLY || echo 'dry run'; })"
 echo "  config : $CFG"
 echo "  target : $CC"
@@ -216,9 +238,9 @@ PY
 # where plain `ln -s` would put the link inside it, which is how the self-links
 # of link/e2.sh were made.
 #
-# link_one <src> <dst> <mode> [desk]   mode: file | dir | memdir | perms
-# "desk" marks a link inside ~/Desktop, which --auto makes only while
-# ~/Desktop lies in no Syncthing folder, and otherwise names.
+# link_one <src> <dst> <mode> [root]   mode: file | dir | memdir | perms
+# A root (Desktop, Documents, ...) marks a link inside ~/<root>, which --auto
+# makes only while that root lies in no Syncthing folder, and otherwise names.
 link_one() {
   local src=$1 dst=$2 mode=$3 where=${4:-} rel; rel=${dst/#$HOME/\~}
 
@@ -235,14 +257,23 @@ link_one() {
     if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
       n_ok=$((n_ok+1)); return
     fi
+    # A link under a root that dangles into the store is the sweep's: --apply
+    # has removed it before this pass runs, so the dry run says what --apply
+    # would then make, instead of a warning --apply would not give (the store's
+    # move of 2026-11-03, where every layer link dangled at once).
+    if [ ! -e "$dst" ] && [ $APPLY = 0 ] && [ -n "$where" ]; then
+      case "$(readlink "$dst")" in "$CFG"/*)
+        lnk "would link $rel  (its dangling link into the store swept first)"; n_link=$((n_link+1)); return ;;
+      esac
+    fi
     wrn "symlink points elsewhere, leaving alone: $rel -> $(readlink "$dst")"
     n_warn=$((n_warn+1)); return
   fi
 
   # nothing there: plain link
   if [ ! -e "$dst" ]; then
-    if [ $AUTO = 1 ] && [ "$where" = desk ] && [ -n "$desk_folder" ]; then
-      skp "not linked: $rel  (~/Desktop lies in the Syncthing folder at $desk_folder, so the link arrives with it; --auto makes none there, claude-link --apply does)"
+    if [ $AUTO = 1 ] && [ -n "$where" ] && [ -n "${ROOT_FOLDER[$where]:-}" ]; then
+      skp "not linked: $rel  (~/$where lies in the Syncthing folder at ${ROOT_FOLDER[$where]}, so the link arrives with it; --auto makes none there, claude-link --apply does)"
       n_skip=$((n_skip+1))
     elif [ $APPLY = 1 ]; then
       mkdir -p "$(dirname "$dst")" 2>/dev/null
@@ -500,7 +531,7 @@ echo
 # Only ever removes links that point INTO the shared config: foreign symlinks are
 # left alone.
 #
-# It sweeps ~/.claude as well as ~/Desktop, and that half is not redundant: the
+# It sweeps ~/.claude as well as the roots, and that half is not redundant: the
 # user-level pass above is driven by `[ -e "$CFG/$e" ] || continue`, so a
 # directory that disappears from the shared tree is skipped in silence and its
 # link left dangling. That is not hypothetical -- `plans/` emptied out on
@@ -509,8 +540,8 @@ echo
 # with nothing to notice. A keeper file now holds each such directory open; this
 # sweep is the backstop for the next one.
 #
-# --auto sweeps the ~/.claude half alone (rules.md -> ws-13). A link in
-# ~/Desktop is part of the synced tree, and Syncthing delivers a symlink before
+# --auto sweeps the ~/.claude half alone (rules.md -> ws-13). A link under a
+# root is part of a synced folder, and Syncthing delivers a symlink before
 # its target's blocks -- 18 to 70 ms on the real pair, the whole stall during a
 # seeding -- so a dangling one there may be on its way rather than gone. An
 # --auto sweep deleted a synced link on bigfed on 2026-10-01, and in live-B
@@ -529,8 +560,11 @@ while IFS= read -r -d '' f; do
   else
     adp "would remove dangling link: $rel"; swept=$((swept+1))
   fi
-done < <( { [ $AUTO = 1 ] || find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
-             \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null
+done < <( { [ $AUTO = 1 ] || for x in "${ROOTS[@]}"; do
+              [ -d "$HOME/$x" ] || continue
+              find "$HOME/$x" -maxdepth 7 "${ROOT_PRUNE[@]}" \
+                \( -name settings.local.json -o -name CLAUDE.local.md -o -name CLAUDE.md \) -type l -print0 2>/dev/null
+            done
             # depth 3 reaches ~/.claude/<entry>, ~/.claude/skills/<name> and
             # ~/.claude/projects/<scope>/memory, which is every link this script
             # creates there. find does not descend through a symlink without -L,
@@ -597,11 +631,13 @@ for md in "$CC"/projects/*/memory; do
   harvest_one "$md" "$CFG/memory/$scope" "memory scope $scope"
 done
 while IFS= read -r -d '' f; do
-  d=$(dirname "$f"); repo_dir=$(dirname "$d")
-  rel=${repo_dir#"$DESK"/}; [ "$rel" = "$repo_dir" ] && rel=_desktop-root
-  harvest_one "$f" "$CFG/repos/$rel/settings.local.json" "permissions for $rel"
-done < <([ $AUTO = 1 ] || find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
-           -type f -path '*/.claude/settings.local.json' -print0 2>/dev/null)
+  rel=${f#"$HOME"/}                                  # <root>/<tree>/.claude/settings.local.json
+  harvest_one "$f" "$CFG/home/$rel" "permissions for ${rel%/.claude/settings.local.json}"
+done < <([ $AUTO = 1 ] || for x in "${ROOTS[@]}"; do
+           [ -d "$HOME/$x" ] || continue
+           find "$HOME/$x" -maxdepth 7 "${ROOT_PRUNE[@]}" \
+             -type f -path '*/.claude/settings.local.json' -print0 2>/dev/null
+         done)
 echo
 
 echo "== memory =="
@@ -640,31 +676,47 @@ if [ -d "$CFG/memory" ]; then
 fi
 echo
 
-# -------------------------------------------------------- 3. repo-level ----
-# Every link this pass makes sits inside ~/Desktop, so under --auto it makes
-# them only while ~/Desktop lies in no Syncthing folder, and never removes one
-# (rules.md -> ws-13; the --auto note above).
-echo "== repos =="
-if [ $AUTO = 1 ]; then
-  if [ -n "$desk_folder" ]; then
-    echo "  ~/Desktop lies in the Syncthing folder at $desk_folder: --auto makes no link here; each arrives with the folder"
-  else
-    echo "  ~/Desktop lies in no Syncthing folder (no .stfolder at it or above it): --auto makes a missing link here and removes none"
+# ------------------------------------------------------------ 3. home ------
+# The store mirrors the home: home/<rel> is linked at ~/<rel> for the three
+# names a session loads -- a charter, CLAUDE.md or CLAUDE.local.md, and a
+# tree's permission list, .claude/settings.local.json -- so a stored file
+# keeps the name and the path it has in its tree (decisions 46-48 of
+# infra/machines/home-layout-2026-10, 2026-11-03). Every link this pass makes
+# sits inside a root, so under --auto it makes them only while that root lies
+# in no Syncthing folder, and never removes one (rules.md -> ws-13; the --auto
+# note above). A tree the store knows that is not on this machine is skipped
+# and said.
+echo "== home =="
+for x in "${ROOTS[@]}"; do
+  root="$HOME/$x"
+  if [ ! -d "$root" ]; then skp "~/$x — not on this machine"; n_skip=$((n_skip+1)); continue; fi
+  if [ $AUTO = 1 ]; then
+    if [ -n "${ROOT_FOLDER[$x]:-}" ]; then
+      echo "  ~/$x lies in the Syncthing folder at ${ROOT_FOLDER[$x]}: --auto makes no link here; each arrives with the folder"
+    else
+      echo "  ~/$x lies in no Syncthing folder (no .stfolder at it or above it): --auto makes a missing link here and removes none"
+    fi
   fi
-fi
-if [ -d "$CFG/repos" ]; then
   while IFS= read -r -d '' f; do
-    rel=${f#"$CFG"/repos/}; repo=$(dirname "$rel"); base=$(basename "$rel")
-    [ "$repo" = "_desktop-root" ] && target_dir="$DESK" || target_dir="$DESK/$repo"
-    if [ ! -d "$target_dir" ]; then
-      skp "$repo — not on this machine"; n_skip=$((n_skip+1)); continue
+    rel=${f#"$CFG"/home/}; base=$(basename "$f")
+    case "$base" in
+      settings.local.json)
+        if [ "$(basename "$(dirname "$f")")" != .claude ]; then
+          wrn "a permission list outside .claude/, not linked: ${f/#$HOME/\~}  (a tree's list is stored at <tree>/.claude/settings.local.json)"
+          n_warn=$((n_warn+1)); continue
+        fi
+        tree=$(dirname "$(dirname "$rel")") ;;
+      *) tree=$(dirname "$rel") ;;
+    esac
+    if [ ! -d "$HOME/$tree" ]; then
+      skp "~/$tree — not on this machine"; n_skip=$((n_skip+1)); continue
     fi
     case "$base" in
-      settings.local.json) link_one "$f" "$target_dir/.claude/$base" perms desk ;;
-      CLAUDE.local.md)     link_one "$f" "$target_dir/$base" file desk ;;
+      settings.local.json) link_one "$f" "$HOME/$rel" perms "$x" ;;
+      *)                   link_one "$f" "$HOME/$rel" file  "$x" ;;
     esac
-  done < <(find "$CFG/repos" -type f \( -name settings.local.json -o -name CLAUDE.local.md \) -print0 | sort -z)
-fi
+  done < <(find "$CFG/home/$x" -type f \( -name CLAUDE.md -o -name CLAUDE.local.md -o -name settings.local.json \) -print0 2>/dev/null | sort -z)
+done
 echo
 
 # ---------------------------------------------------------------- orphans --
@@ -674,21 +726,42 @@ echo
 # into a tree as well, so git never carries it (`git add -A` skips it), `git status`
 # never lists it, and a merge or checkout that brings its path replaces it
 # without a word -- the state of the read-only clones' charters until
-# 2026-10-06. The cure is a choice per file, into repos/<path>/ as
-# CLAUDE.local.md or tracked with `git add -f`, so this pass only reports.
-# One git call per plain charter: `check-ignore` exits 0 only for a path that is
-# ignored and untracked, and 128 outside any work tree, where Syncthing carries
-# the charter. Every run that may write keeps the list in $CC/claude-link-orphans
-# for the SessionStart hook; the dry run writes nothing.
+# 2026-10-06. A charter written into a tree is private until he says otherwise,
+# per repository, so --adopt moves an orphan into the store at home/<rel> and
+# links it back, keeping its name; a charter meant to be public is tracked
+# with `git add -f` instead, by hand (decisions 36 and 41 of
+# infra/machines/home-layout-2026-10, 2026-11-02). The dry run, --apply and
+# --auto only report, --auto because two machines' session ends would both
+# move a file the folder carries to both. One git call per plain charter:
+# `check-ignore` exits 0 only for a path that is ignored and untracked, and
+# 128 outside any work tree, where Syncthing carries the charter. Every run
+# that may write keeps the list in $CC/claude-link-orphans for the
+# SessionStart hook; the dry run writes nothing.
 echo "== orphans =="
 orphans=()
 while IFS= read -r -d '' f; do
   git -C "$(dirname "$f")" check-ignore -q -- "$(basename "$f")" 2>/dev/null || continue
   rel=${f/#$HOME/\~}
-  wrn "orphan charter, ignored and untracked: $rel"
+  if [ $ADOPT = 1 ]; then
+    there="$CFG/home/${f#"$HOME"/}"
+    if [ -e "$there" ] || [ -L "$there" ]; then
+      wrn "orphan charter, ignored and untracked: $rel  (the store already holds ${there/#$HOME/\~}; left for the home pass)"
+      orphans+=("$rel"); continue
+    fi
+    if mkdir -p "$(dirname "$there")" && mv -T "$f" "$there" && ln -sT "$there" "$f"; then
+      adp "adopted orphan charter into the store and linked it back: $rel"; n_adopt=$((n_adopt+1))
+    else
+      err "could not adopt orphan charter: $rel"; n_fail=$((n_fail+1)); orphans+=("$rel")
+    fi
+    continue
+  fi
+  wrn "orphan charter, ignored and untracked: $rel  (claude-link --adopt moves it into the store and links it back; a charter meant to be public: git add -f)"
   orphans+=("$rel")
-done < <(find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
-           -type f \( -name CLAUDE.md -o -name CLAUDE.local.md \) -print0 2>/dev/null | sort -z)
+done < <(for x in "${ROOTS[@]}"; do
+           [ -d "$HOME/$x" ] || continue
+           find "$HOME/$x" -maxdepth 7 "${ROOT_PRUNE[@]}" \
+             -type f \( -name CLAUDE.md -o -name CLAUDE.local.md \) -print0 2>/dev/null
+         done | sort -z)
 n_orphan=${#orphans[@]}
 if [ $APPLY = 1 ]; then
   if [ "$n_orphan" -gt 0 ]; then
@@ -708,7 +781,7 @@ printf "  already correct : %d\n" "$n_ok"
 [ $n_skip  -gt 0 ] && printf "  skipped         : %d\n" "$n_skip"
 [ $n_warn  -gt 0 ] && printf "  %swarnings        : %d%s\n" "$Y" "$n_warn" "$Z"
 [ $n_fail  -gt 0 ] && printf "  %sfailures        : %d%s\n" "$R" "$n_fail" "$Z"
-[ $n_orphan -gt 0 ] && printf "  %sorphans         : %d%s  (each into repos/<path>/ as CLAUDE.local.md, or git add -f)\n" "$Y" "$n_orphan" "$Z"
+[ $n_orphan -gt 0 ] && printf "  %sorphans         : %d%s  (claude-link --adopt moves each into the store and links it back; a charter meant to be public: git add -f)\n" "$Y" "$n_orphan" "$Z"
 [ -d "$BACKUP" ] && echo "  backups         : $BACKUP"
 if [ $APPLY = 0 ] && [ $AUTO = 0 ] && [ $n_link -gt 0 -o $n_warn -gt 0 ]; then
   echo; echo "  Nothing was changed. Re-run with --apply (or --adopt if this machine"

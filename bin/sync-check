@@ -189,6 +189,7 @@ KNOWN_WRITE_NOTE = "<why: e.g. him-2's split repair, the sanctioned touch>"
 LOADED_DIRS = [
     "infra/claude-config/rules", "infra/claude-config/agents", "infra/claude-config/commands",
     "infra/claude-config/workflows", "infra/claude-config/memory",
+    "infra/claude-config/home", "infra/claude-config/hosts",   # the store's layers and charters, each loading through its link (2026-11-03)
     "configs/bash/.bashrc.d", "configs/nvim/lua/plugins", "configs/fontconfig/conf.d",
 ]
 LOADED_COMPONENTS = ["environment.d"]

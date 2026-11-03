@@ -483,16 +483,27 @@ reason, exit 2 by hand or one log line under `--auto` — because two
 unlocked runs at once corrupted the shared tree in 13 of 30 trials (a nested
 `memory/memory`, a self-link). `--auto` runs alone: beside `--apply`,
 `--adopt` or `--unlink` it is refused with exit 2.
-`--auto` writes nothing into the shared tree and removes nothing in
-`~/Desktop`: it links a memory scope or a skill that has arrived, replaces an
-empty real `memory/` with its link, repairs `~/.claude`'s own dangling links
-and keeps the orphan list, and makes a missing link into `~/Desktop` (a
-private layer or permission file that arrived by git) only while no
-`.stfolder` marker sits at `~/Desktop` or above it — since the Desktop became
-a Syncthing folder on 2026-10-28 those links arrive inside it, and `--auto`
-makes none (reviewer 1's M2, the same day); harvesting a new scope or
-permission file and sweeping `~/Desktop` are `--apply`'s and `--adopt`'s, run
-by him on one machine.
+`--auto` writes nothing into the shared tree and removes nothing under a
+root (`~/Desktop`, `~/Documents`): it links a memory scope or a skill that
+has arrived, replaces an empty real `memory/` with its link, repairs
+`~/.claude`'s own dangling links and keeps the orphan list, and makes a
+missing link under a root (a private layer or permission file that arrived
+by git) only while no `.stfolder` marker sits at that root or above it —
+since the Desktop became a Syncthing folder on 2026-10-28 those links arrive
+inside it, and `--auto` makes none (reviewer 1's M2, the same day);
+harvesting a new scope or permission file, sweeping the roots and adopting
+an orphan are `--apply`'s and `--adopt`'s, run by him on one machine.
+And since 2026-11-03 the store mirrors the home (home-layout verdicts 40 and
+46–48; sitting A of `infra/machines/home-layout-2026-10/runbook-private-layer.md`):
+`infra/claude-config/home/<rel>` is linked at `~/<rel>` for the three names a
+session loads — `CLAUDE.md`, `CLAUDE.local.md` and
+`.claude/settings.local.json` — and each `home/<X>/` there names a root,
+`~/<X>`, so the roots and the links are read from the store and nothing is
+hardcoded; every walk of a root prunes the store itself, which lies under
+`~/Desktop` and holds the very lists the harvest looks for; a stored file
+keeps the name and the path it has in its tree; and `--adopt` moves an
+orphan charter into the store at its own path and links it back (the orphan
+bullet below).
 And `~/.claude/skills` is a real directory of one link per authored skill
 into `infra/claude-config/skills/`, so Anthropic's skill sync writes its
 `synced/`, `.trash/` and `.staging/` on each machine alone (they were
@@ -541,8 +552,8 @@ worth keeping in view here:
 - **Both halves of the health check reach inside `~/.claude`.** The user-level
   link pass skips a shared directory that has disappeared —
   `[ -e "$CFG/$e" ] || continue` — so only the sweep sees the dangling link left
-  behind, and the sweep walks `~/.claude` as well as `~/Desktop` for exactly
-  that reason (the `~/Desktop` half under `--apply` and `--adopt` alone since
+  behind, and the sweep walks `~/.claude` as well as the roots for exactly
+  that reason (the roots' half under `--apply` and `--adopt` alone since
   2026-10-26). SessionStart counts dangling links into the config and says so in
   both channels; SessionEnd's `--auto` repairs them. An empty shared directory
   was the cause while git carried the tree, since git cannot carry one (the
@@ -550,18 +561,22 @@ worth keeping in view here:
   `claude-link --apply` drops a
   `.gitkeep` into an empty memory scope, and `--auto` deliberately does not, so
   a directory visited once does not become a permanent entry. Fixed 2026-09-18.
-- **`claude-link` reports orphan charters, and SessionStart counts them.** An
-  orphan is a `CLAUDE.md` or `CLAUDE.local.md` in a git work tree that git
-  ignores and does not track. The global exclude that keeps agent context out
-  of every repository hides any charter written straight into a tree, so
-  git never carries it, `git status` never lists it, and a merge or checkout that
-  brings its path replaces it without a word; `/init` writes one at a
-  repository's root. Every run lists them under `== orphans ==` and moves none,
-  since the cure is a choice per file: into `infra/claude-config/repos/<path>/`
-  as `CLAUDE.local.md`, or tracked with `git add -f`. Every run that may write
-  keeps the list in `~/.claude/claude-link-orphans`, which SessionStart counts
-  into both channels. Added 2026-10-06; suite `tests/claude/run.sh`, caged
-  since the same day.
+- **`claude-link` reports orphan charters, `--adopt` adopts them, and
+  SessionStart counts them.** An orphan is a `CLAUDE.md` or `CLAUDE.local.md`
+  in a git work tree that git ignores and does not track. The global exclude
+  that keeps agent context out of every repository hides any charter written
+  straight into a tree, so git never carries it, `git status` never lists it,
+  and a merge or checkout that brings its path replaces it without a word;
+  `/init` writes one at a repository's root. Every run lists them under
+  `== orphans ==`; `--adopt` moves each into the store at
+  `infra/claude-config/home/<rel>`, keeping its name, and links it back — a
+  charter written into a tree is private until he says otherwise, per
+  repository, and one meant to be public is tracked with `git add -f` by hand
+  instead (home-layout verdicts 36 and 41, 2026-11-02); the dry run, `--apply`
+  and `--auto` move none. Every run that may write keeps the list in
+  `~/.claude/claude-link-orphans`, which SessionStart counts into both
+  channels. Added 2026-10-06, the adopt step 2026-11-03; suite
+  `tests/claude/run.sh`, caged since the first day.
 - `settings.json` denies `git commit` / `git push` as a hard block, not a
   prompt; matching is prefix-based, so `git -C <path> commit` slips the
   matcher — the global `CLAUDE.md` remains the backstop for intent.

@@ -78,6 +78,7 @@ echo
 # Also skipped on purpose: .credentials.json (a live OAuth token; there is
 # already a copy of it at the flash root, and a second one helps nobody).
 CC="$HOME/.claude"
+CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"   # the store, pruned from the walks of ~/Desktop below
 echo "== user config (~/.claude) =="
 for f in CLAUDE.md CLAUDE.local.md settings.json settings.local.json \
          keybindings.json statusline.sh .last-update-result.json; do
@@ -112,38 +113,33 @@ fi
 [ "$mem_scopes" = 0 ] && echo "  (none)"
 echo
 
-# ------------------------------------------------------- 3. repo-level ----
-# Per-repo .claude/ directories and CLAUDE.local.md files. These are the ones
-# that never reach git: **/.claude/settings.local.json is in the global
-# gitignore, and CLAUDE.local.md is local by convention.
-echo "== repo-level =="
+# ------------------------------------------------------- 3. tree-level ----
+# Per-tree .claude/ directories and CLAUDE.local.md files under ~/Desktop,
+# the ones that never reach git: **/.claude/settings.local.json is in the
+# global gitignore, and CLAUDE.local.md is hidden by it too. The payload
+# mirrors the home as the store does since 2026-11-03: home/<rel> for ~/<rel>.
+echo "== tree-level =="
 repo_hits=0
 if [ -d "$HOME/Desktop" ]; then
   while IFS= read -r -d '' d; do
-    parent=$(dirname "$d"); pname=${parent#"$HOME"/Desktop/}
-    [ "$pname" = "$parent" ] && pname="_desktop-root"
+    parent=$(dirname "$d"); pname=${parent#"$HOME"/}
     n=$(find "$d" -type f 2>/dev/null | wc -l)
     [ "$n" -gt 0 ] || continue
-    record_tree "$d" "repos/$pname/.claude"
+    record_tree "$d" "home/$pname/.claude"
     repo_hits=$((repo_hits+1))
     printf '  + %-40s .claude/  %2d files: %s\n' "$pname" "$n" \
       "$(ls -A "$d" | tr '\n' ' ')"
   done < <(find "$HOME/Desktop" -maxdepth 7 \
-             \( -name .git -o -name node_modules -o -name archive \
-                -o -name 'Deontic Logic' -o -name lecture-recordings \
-                -o -name readings \) -prune -o \
+             \( -path "$CFG" -o -name .git -o -name node_modules -o -name readings \) -prune -o \
              -type d -name '.claude' -print0 2>/dev/null)
 
   while IFS= read -r -d '' f; do
-    parent=$(dirname "$f"); pname=${parent#"$HOME"/Desktop/}
-    [ "$pname" = "$parent" ] && pname="_desktop-root"
-    record "$f" "repos/$pname/CLAUDE.local.md"
+    parent=$(dirname "$f"); pname=${parent#"$HOME"/}
+    record "$f" "home/$pname/CLAUDE.local.md"
     repo_hits=$((repo_hits+1))
     printf '  + %-40s CLAUDE.local.md\n' "$pname"
   done < <(find "$HOME/Desktop" -maxdepth 7 \
-             \( -name .git -o -name node_modules -o -name archive \
-                -o -name 'Deontic Logic' -o -name lecture-recordings \
-                -o -name readings \) -prune -o \
+             \( -path "$CFG" -o -name .git -o -name node_modules -o -name readings \) -prune -o \
              -type f -name 'CLAUDE.local.md' -print0 2>/dev/null)
 fi
 [ "$repo_hits" = 0 ] && echo "  (none)"
@@ -153,8 +149,8 @@ echo
 # One text on both machines since 2026-10-26, synced by the Desktop folder since
 # the transport cutover of 2026-10-28; collected for comparison only.
 echo "== home-level (reference) =="
-record "$HOME/Desktop/CLAUDE.md" "home/Desktop-CLAUDE.md"       && echo "  + ~/Desktop/CLAUDE.md"
-record "$HOME/.config/git/ignore" "home/git-ignore"             && echo "  + ~/.config/git/ignore"
+record "$HOME/Desktop/CLAUDE.md" "home/Desktop/CLAUDE.md"       && echo "  + ~/Desktop/CLAUDE.md"
+record "$HOME/.config/git/ignore" "home/.config/git/ignore"     && echo "  + ~/.config/git/ignore"
 
 # ~/.claude.json, filtered: the per-project settings are worth merging, the
 # identity/telemetry is not. Drops oauthAccount, userID, machineID, every
@@ -220,14 +216,13 @@ echo
     printf '%-56s %2d files\n' "$rel" "$(find "$pm" -type f | wc -l)"
     found_pm=1
   done < <(find "$HOME/Desktop" -maxdepth 7 \
-             \( -name .git -o -name archive -o -name 'Deontic Logic' \
-                -o -name lecture-recordings -o -name readings \) -prune -o \
+             \( -path "$CFG" -o -name .git -o -name readings \) -prune -o \
              -type d -path '*/.claude/projects/*/memory' -print0 2>/dev/null)
   [ "$found_pm" = 0 ] && echo "(none)"
   echo
-  echo "-- repo-level .claude ----------------------------------------------"
-  if [ -d "$PAY/repos" ]; then
-    find "$PAY/repos" -type f 2>/dev/null | sed "s|$PAY/repos/|  |" | sort
+  echo "-- tree-level, the home mirrored -----------------------------------"
+  if [ -d "$PAY/home" ]; then
+    find "$PAY/home" -type f 2>/dev/null | sed "s|$PAY/home/|  |" | sort
   else
     echo "(none)"
   fi
@@ -257,7 +252,7 @@ NOTE
 echo "== done =="
 echo "  copied   : $copied files"
 echo "  memory   : $mem_files files across $mem_scopes scopes"
-echo "  repos    : $repo_hits repo-level items"
+echo "  trees    : $repo_hits tree-level items"
 [ "$skipped" -gt 0 ] && echo "  FAILURES : $skipped (see INVENTORY.txt)"
 echo
 echo "  payload   $PAY"

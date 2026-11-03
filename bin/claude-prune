@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""claude-prune — drop dead weight from the shared per-repo permission lists.
+"""claude-prune — drop dead weight from the shared per-tree permission lists.
 
     claude-prune             dry run: report what would go, change nothing
     claude-prune --apply     write the pruned lists, appending to PRUNED.txt
@@ -64,12 +64,15 @@ def wildcard_prefixes(entries):
         elif arg.endswith(":*"): out.append((tool, arg[:-2]))
     return out
 
-repos = sorted((CFG/"repos").rglob("settings.local.json")) if (CFG/"repos").is_dir() else []
-if not repos: sys.exit(f"claude-prune: no permission lists under {CFG/'repos'}")
+# The store mirrors the home (2026-11-03): a tree's list sits at
+# home/<tree>/.claude/settings.local.json, and is named here by its tree.
+repos = sorted((CFG/"home").rglob("settings.local.json")) if (CFG/"home").is_dir() else []
+if not repos: sys.exit(f"claude-prune: no permission lists under {CFG/'home'}")
 
 log, kept_tot, drop_tot = [], 0, 0
 for f in repos:
-    rel = f.relative_to(CFG/"repos").parent.as_posix()
+    rel = f.relative_to(CFG/"home").parent
+    rel = (rel.parent if rel.name == ".claude" else rel).as_posix()
     try: doc = json.loads(f.read_text())
     except Exception as exc:
         print(f"  {rel}: unreadable ({exc}) — skipped"); continue
@@ -99,7 +102,7 @@ for f in repos:
         f.write_text(json.dumps(doc, indent=2) + "\n")
 
 print(f"\n  {'pruned' if APPLY else 'would prune'}: {drop_tot} of {kept_tot+drop_tot}"
-      f"  ({kept_tot} kept across {len(repos)} repos)")
+      f"  ({kept_tot} kept across {len(repos)} lists)")
 if APPLY and log:
     p = CFG/"PRUNED.txt"
     head = "" if p.exists() else "Permission entries removed by claude-prune.\n\n"

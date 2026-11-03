@@ -52,14 +52,14 @@ stubbin() {
   chmod +x "$1"
 }
 
-# the transcripts of one session launched in desk/rep, whose sub/ carries a
+# the transcripts of one session launched in home/Desktop/rep, whose sub/ carries a
 # charter, and of one general-purpose worker of it; the scope has a memory index
 transcripts() {
-  local w=$1 L="$1/desk/rep" S P sid=$SID
+  local w=$1 L="$1/home/Desktop/rep" S P sid=$SID
   S=$(san "$L"); P="$w/home/.claude/projects/$S"
   mkdir -p "$P/memory" "$P/$sid/subagents"
   printf -- '- [x](x.md) — h\n' > "$P/memory/MEMORY.md"
-  BUNDLE='{"type":"attachment","attachment":{"type":"instructions","files":[{"path":"'"$w"'/home/.claude/CLAUDE.md","type":"User"},{"path":"'"$w"'/desk/CLAUDE.md","type":"Project"},{"path":"'"$P"'/memory/MEMORY.md","type":"AutoMem"}]},"cwd":"'"$L"'"}'
+  BUNDLE='{"type":"attachment","attachment":{"type":"instructions","files":[{"path":"'"$w"'/home/.claude/CLAUDE.md","type":"User"},{"path":"'"$w"'/home/Desktop/CLAUDE.md","type":"Project"},{"path":"'"$P"'/memory/MEMORY.md","type":"AutoMem"}]},"cwd":"'"$L"'"}'
   {
     printf '{"type":"user","cwd":"%s","timestamp":"2026-10-12T00:00:00.000Z","version":"9.9.9","message":{"role":"user","content":"hi"}}\n' "$L"
     printf '%s\n' "$BUNDLE"
@@ -72,23 +72,23 @@ transcripts() {
 
 SID=aaaaaaaa-0000-0000-0000-000000000001
 vars() { # the transcript paths of a world, for the tests that mutate them
-  LAUNCH="$1/desk/rep"; PROJ="$1/home/.claude/projects/$(san "$LAUNCH")"
+  LAUNCH="$1/home/Desktop/rep"; PROJ="$1/home/.claude/projects/$(san "$LAUNCH")"
   MAIN="$PROJ/$SID.jsonl"; WORKER="$PROJ/$SID/subagents/agent-1"
 }
 
 # a healthy sandbox; echoes its root
 mkworld() {
   local w; w=$(mktemp -d "$WORK/w.XXXXXX")
-  mkdir -p "$w"/{cfg/rules,cfg/memory/-scope,cfg/repos/rep,cfg/plans,cfg/agents,home/.claude/projects/-scope,home/.local/bin,home/.local/share/claude/versions,desk/rep/.claude,desk/rep/sub}
+  mkdir -p "$w"/{cfg/rules,cfg/memory/-scope,cfg/home/Desktop/rep/.claude,cfg/plans,cfg/agents,home/.claude/projects/-scope,home/.local/bin,home/.local/share/claude/versions,home/Desktop/rep/.claude,home/Desktop/rep/sub}
   printf 'global\n'                                   > "$w/cfg/CLAUDE.md"
   printf -- '---\ndescription: d\n---\n\nalways on\n'  > "$w/cfg/rules/always.md"
   printf -- '---\ndescription: d\npaths:\n  - "**/*.tex"\n---\n\nconditional\n' > "$w/cfg/rules/cond.md"
   : > "$w/cfg/plans/.gitkeep"
   printf -- '---\nname: m\ndescription: d\nmetadata:\n  type: feedback\n---\n\nbody\n' > "$w/cfg/memory/-scope/m.md"
   printf -- '- [M](m.md) — hook\n'                    > "$w/cfg/memory/-scope/MEMORY.md"
-  printf '{"permissions":{"allow":["Bash(ls)"]}}\n'   > "$w/cfg/repos/rep/settings.local.json"
+  printf '{"permissions":{"allow":["Bash(ls)"]}}\n'   > "$w/cfg/home/Desktop/rep/.claude/settings.local.json"
   ln -s "$w/cfg/memory/-scope" "$w/home/.claude/projects/-scope/memory"
-  ln -s "$w/cfg/repos/rep/settings.local.json" "$w/desk/rep/.claude/settings.local.json"
+  ln -s "$w/cfg/home/Desktop/rep/.claude/settings.local.json" "$w/home/Desktop/rep/.claude/settings.local.json"
   # the ground the routines stand on: a stub install, its flag cache, the version
   # on record, the retention setting, an agent that omits the charters, and the
   # transcripts of one session and one worker
@@ -98,12 +98,12 @@ mkworld() {
   printf '9.9.9 2026-10-12 test\n'                    > "$w/cfg/claude-version-checked"
   printf '{"cleanupPeriodDays": 365}\n'               > "$w/cfg/settings.json"
   printf -- '---\nname: Explore\nomitClaudeMd: true\n---\n' > "$w/cfg/agents/Explore.md"
-  printf 'charter\n' > "$w/desk/rep/sub/CLAUDE.md"; printf 'x\n' > "$w/desk/rep/sub/a.txt"
+  printf 'charter\n' > "$w/home/Desktop/rep/sub/CLAUDE.md"; printf 'x\n' > "$w/home/Desktop/rep/sub/a.txt"
   transcripts "$w"
   echo "$w"
 }
 run() { local w=$1; shift
-  HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" CLAUDE_LINK_DESK="$w/desk" \
+  HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" CLAUDE_LINK_HOME="$w/home/.claude" \
     "$GAUGE" "$@" 2>&1; }
 rc()  { local w=$1; shift; run "$w" "$@" >/dev/null; echo $?; }
 # the transcript stubs: one record appended to a transcript
@@ -201,17 +201,37 @@ yes_ "an index entry with no file fails"     '[[ "$(run "$w")" == *"1 disagreeme
 
 echo "== permission entries naming a path that is gone =="
 w=$(mkworld)
-printf '{"permissions":{"allow":["Read(/home/definitely/not/here/**)"]}}\n' > "$w/cfg/repos/rep/settings.local.json"
+printf '{"permissions":{"allow":["Read(/home/definitely/not/here/**)"]}}\n' > "$w/cfg/home/Desktop/rep/.claude/settings.local.json"
 yes_ "a dead path fails"               '[[ "$(run "$w")" == *"name a path that no longer exists"* ]]'
 w=$(mkworld)
-printf '{"permissions":{"allow":["Read('"$w"'/desk/**)"]}}\n' > "$w/cfg/repos/rep/settings.local.json"
+printf '{"permissions":{"allow":["Read('"$w"'/home/Desktop/**)"]}}\n' > "$w/cfg/home/Desktop/rep/.claude/settings.local.json"
 not_ "a live path does not"             '[[ "$(run "$w")" == *"name a path that no longer exists"* ]]'
 
 echo "== a repo absent on this machine is reported, not failed =="
-w=$(mkworld); rm -rf "$w/desk/rep"
+w=$(mkworld); rm -rf "$w/home/Desktop/rep"
 out=$(run "$w")
-yes_ "reported as OK"                   '[[ "$out" == *"[ OK ] repos/: 1 entry"* ]]'
-not_ "  and does not fail the run"      '[[ "$out" == *"[FAIL] repos/"* ]]'
+yes_ "reported as OK"                   '[[ "$out" == *"[ OK ] home/: 1 entry"* ]]'
+not_ "  and does not fail the run"      '[[ "$out" == *"[FAIL] home/"* ]]'
+
+echo "== a layer file under home/ that git ignores (check 9b, 2026-11-03) =="
+w=$(mkworld); out=$(run "$w")
+not_ "outside a work tree the check prints nothing" '[[ "$out" == *"layer file"* ]]'
+g() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$w/cfg" "$@"; }
+g init -q && printf '**/CLAUDE.md\n**/CLAUDE.local.md\n**/.claude/settings.local.json\n' > "$w/cfg/.git/info/exclude"   # the global exclude's three, no negation yet
+g add -f -A && g -c user.name=t -c user.email=t@t commit -qm init
+out=$(run "$w")
+yes_ "every layer file tracked: OK"       '[[ "$out" == *"[ OK ] home/: every layer file is tracked by infra"* ]]'
+mkdir -p "$w/cfg/home/Desktop/new/.claude" "$w/home/Desktop/new"; printf '{"permissions":{"allow":[]}}\n' > "$w/cfg/home/Desktop/new/.claude/settings.local.json"
+out=$(run "$w" -v)
+yes_ "a list the exclude hides fails, naming it" '[[ "$out" == *"[FAIL] home/: 1 layer file(s) git ignores, which gpushall would never commit"* && "$out" == *"       home/Desktop/new/.claude/settings.local.json"* ]]'
+yes_ "  with the add command as the fix"   '[[ "$out" == *"fix: git -C $w/cfg add -f home/Desktop/new/.claude/settings.local.json  (and check the negations in infra/.gitignore)"* ]]'
+check "  exits 1" "$(rc "$w")" "1"
+printf '!CLAUDE.md\n!CLAUDE.local.md\n!**/.claude/settings.local.json\n' > "$w/cfg/.gitignore"   # infra's negations
+out=$(run "$w")
+yes_ "the negation in place: untracked but not ignored, counted as OK" '[[ "$out" == *"[ OK ] home/: every layer file reaches infra (1 untracked, none ignored: the next gpushall adds them)"* ]]'
+not_ "  and no FAIL"                       '[[ "$out" == *"[FAIL] home/"* ]]'
+g add -A
+yes_ "  once added, tracked"               '[[ "$(run "$w")" == *"[ OK ] home/: every layer file is tracked by infra"* ]]'
 
 echo "== the version on record (check 10, 2026-10-12) =="
 w=$(mkworld); out=$(run "$w"); nl=$'\n'
@@ -325,13 +345,13 @@ out=$(run "$w" -v)
 yes_ "a session with no start bundle is not judged" '[[ "$out" == *"0 recalls in 3 transcripts; the memory index in 1 of 1 start bundles"* && "$out" == *"no start bundle, not judged: "*"/bbbbbbbb-0000-0000-0000-000000000002.jsonl"* ]]'
 w=$(mkworld); vars "$w"; printf '{"type":"attachment","cwd":"%s","attachment":{"type":"nested_memory","path":"%s/cfg/rules/cond.md","content":{"type":"User"}}}\n' "$LAUNCH" "$w" >> "$MAIN"
 yes_ "a path-scoped rule loads by the same attachment, outside any launch folder, and is counted apart" '[[ "$(run "$w")" == *"[ OK ] charter loading (row 1), 14 days: 1 charter loads, all under the launch folder, 1 rule loads; 1 of 1"* ]]'
-w=$(mkworld); vars "$w"; rec_load "$w/desk/elsewhere/CLAUDE.md" >> "$MAIN"; out=$(run "$w")
+w=$(mkworld); vars "$w"; rec_load "$w/home/Desktop/elsewhere/CLAUDE.md" >> "$MAIN"; out=$(run "$w")
 yes_ "a load outside the launch folder fails"      '[[ "$out" == *"[FAIL] charter loading (row 1), 14 days: 1 of 2 charter loads outside the launch folder"* ]]'
-yes_ "  -v names it"                               '[[ "$(run "$w" -v)" == *"outside the launch folder: "*"/desk/elsewhere/CLAUDE.md"* ]]'
+yes_ "  -v names it"                               '[[ "$(run "$w" -v)" == *"outside the launch folder: "*"/home/Desktop/elsewhere/CLAUDE.md"* ]]'
 yes_ "  rests on the loading texts"                '[[ "$out" == *"rests on: context-policy.md (loading); skills/restore-order/SKILL.md and tools/census.py"* ]]'
 w=$(mkworld); vars "$w"; sed -i '/nested_memory/d' "$MAIN"; out=$(run "$w")
 yes_ "a session that read under a charter's folder and never received it fails" '[[ "$out" == *"[FAIL] charter loading (row 1), 14 days: 1 of 1 sessions that read under a charter'"'"'s folder never received it"* ]]'
-yes_ "  -v names the session and the folder"       '[[ "$(run "$w" -v)" == *"/aaaaaaaa-0000-0000-0000-000000000001.jsonl: read under "*"/desk/rep/sub, never received its charter"* ]]'
+yes_ "  -v names the session and the folder"       '[[ "$(run "$w" -v)" == *"/aaaaaaaa-0000-0000-0000-000000000001.jsonl: read under "*"/home/Desktop/rep/sub, never received its charter"* ]]'
 rec_read "$LAUNCH/sub/CLAUDE.md" >> "$MAIN"
 yes_ "  unless the model read the charter itself"  '[[ "$(run "$w")" == *"0 of 0 sessions that read under a charter'"'"'s folder received it"* ]]'
 w=$(mkworld); vars "$w"; sed -i '/nested_memory/d' "$MAIN"; rec_bash "cat $LAUNCH/sub/CLAUDE.md" >> "$MAIN"
