@@ -19,9 +19,10 @@ if [ -d ~/.bashrc.d ]; then
   unset rc
 fi
 
-# Private modules, outside this public repo: infra/claude-config/shell/*.sh, in
-# the Desktop's Syncthing folder, absent on a machine without it (2026-10-31).
-for rc in ~/Desktop/infra/claude-config/shell/*.sh; do
+# Private modules, outside this public repo: infra/configs/shell/*.sh, in the
+# Desktop's Syncthing folder, absent on a machine without it (2026-10-31; the
+# path since 2026-11-03).
+for rc in ~/Desktop/infra/configs/shell/*.sh; do
   [[ $rc == *.sync-conflict-* ]] && continue
   [ -f "$rc" ] && . "$rc"
 done
@@ -38,7 +39,7 @@ unset rc
 if ((BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] >= 503)); then
   _bashrc_stamp() { # into _BASHRC_NOW: ~/.bashrc, ~/.bash_profile, each module the loops source
     local f files=(~/.bashrc ~/.bash_profile)
-    for f in ~/.bashrc.d/*.sh ~/Desktop/infra/claude-config/shell/*.sh; do
+    for f in ~/.bashrc.d/*.sh ~/Desktop/infra/configs/shell/*.sh; do
       [[ $f != *.sync-conflict-* && -f $f ]] && files+=("$f")
     done
     _BASHRC_NOW="$(stat -L -c '%i %.9Z' -- "${files[@]}" 2>/dev/null)"

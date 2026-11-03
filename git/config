@@ -36,9 +36,13 @@
 	defaultRefFormat = files
 
 [include]
-	# Private and synced: [user] name and email. Git ignores a missing include
-	# silently; useConfigOnly above turns that silence into a refusal.
-	path = ~/Desktop/infra/claude-config/git/identity
+	# Private and synced: [user] name and email, in infra/configs/git/identity,
+	# reached through the link ~/.config/git/identity, made by hand once per
+	# machine like host.inc below (README section 5; 2026-11-03). Git ignores a
+	# missing include silently; useConfigOnly above turns that silence into a
+	# refusal, so a machine without the link refuses every commit ("no email
+	# was given") instead of guessing an address.
+	path = ~/.config/git/identity
 
 [include]
 	# Machine-local: this machine's half of the configuration, one of

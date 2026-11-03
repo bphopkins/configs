@@ -8,7 +8,7 @@ define the loser's functions on top of the winner's) — and
 arrival plus `reload` deploys edits on the other machine with no restow. A restow
 (`stow -R bash`) is needed only when files are added or removed at the package
 top. Since 2026-10-31 `.bashrc` also sources
-`~/Desktop/infra/claude-config/shell/*.sh` after the package's modules: private
+`~/Desktop/infra/configs/shell/*.sh` (there since 2026-11-03) after the package's modules: private
 modules outside this public repo, under the same conflict-copy guard and the
 arrival check below. Since 2026-10-26 `.bashrc` also records the inode and ctime of
 `~/.bashrc`, `~/.bash_profile` and every module it sourced, and a check

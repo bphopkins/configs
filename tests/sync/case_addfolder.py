@@ -378,7 +378,7 @@ def case_refusals(B):
     write(bare, "[user]\n\tname = Rig\n\temail = rig@example.invalid\n[gsync]\n\trole = writer\n")
     rc, out, _ = B.tool(B.args(fid, "rootrepo", P, "--yes"), env_extra={"GIT_CONFIG_GLOBAL": bare})
     C.check("a repository at the root without .stfolder/ ignored: exit 1, the exclude named",
-            rc == 1 and "does not ignore .stfolder/" in out and "infra/claude-config/git/ignore" in out, rc)
+            rc == 1 and "does not ignore .stfolder/" in out and "infra/configs/git/ignore" in out, rc)
     B.untouched("repository at the root", fid, P)
 
 

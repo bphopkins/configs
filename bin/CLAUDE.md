@@ -584,7 +584,7 @@ worth keeping in view here:
   place — and the built-in read-only command list, documented once — is
   `infra/claude-config/permission-measurement.md`.
 - The rules that keep agent context out of every repository live in the
-  private global exclude, `infra/claude-config/git/ignore`, which the identity
+  private global exclude, `infra/configs/git/ignore`, which the identity
   include sets as `core.excludesFile` (2026-10-04): both charter names,
   `**/.claude/settings.local.json` (the linked permission cache must never be
   committed to the repo it sits in) and `**/.claude/projects/` (a superseded

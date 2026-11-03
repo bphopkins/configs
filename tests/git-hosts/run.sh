@@ -9,10 +9,11 @@
 # Hermetic: HOME is a sandbox in the shape stow leaves the real one --
 # ~/.config/git/config a link to this checkout's git/config, hooks-reader a
 # link to this checkout's directory, host.inc a link to the host file under
-# test -- with a fixture identity where git/config's private include looks for
-# it. GIT_CONFIG_GLOBAL names that config and the system file is off, so
-# nothing of this machine's own git configuration is read; a `uname` stub
-# names the machine fedxps for the hook's message. Every repository is made
+# test -- with a fixture identity behind the link ~/.config/git/identity, where
+# git/config's private include looks for it (the link hand-made on a real
+# machine, 2026-11-03). GIT_CONFIG_GLOBAL names that config and the system file
+# is off, so nothing of this machine's own git configuration is read; a `uname`
+# stub names the machine fedxps for the hook's message. Every repository is made
 # here, and a reader's copy is a `cp -a` copy (new inodes, the same contents
 # and mtimes), the shape Syncthing delivers. No network, no privileges.
 #
@@ -46,8 +47,9 @@ trap cleanup EXIT
 
 while read -r v; do unset "$v"; done < <(compgen -e | grep '^GIT_')
 unset XDG_CONFIG_HOME
-mkdir -p "$H/.config/git" "$D/infra/claude-config/git" "$H/src" "$SB/bin" "$SB/hosts"
-printf '[user]\n\tname = Rig\n\temail = rig@example.invalid\n' > "$D/infra/claude-config/git/identity"
+mkdir -p "$H/.config/git" "$D/infra/configs/git" "$H/src" "$SB/bin" "$SB/hosts"
+printf '[user]\n\tname = Rig\n\temail = rig@example.invalid\n' > "$D/infra/configs/git/identity"
+ln -s "$D/infra/configs/git/identity" "$H/.config/git/identity"
 ln -s "$CFG_ROOT/git/config" "$H/.config/git/config"
 ln -s "$CFG_ROOT/git/hooks-reader" "$H/.config/git/hooks-reader"
 printf '#!/bin/sh\necho fedxps\n' > "$SB/bin/uname"

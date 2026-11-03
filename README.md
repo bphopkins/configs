@@ -220,12 +220,16 @@ stow -vt ~/.config okular
 The `git` package has a machine-local half (2026-10-10): `git/hosts/<hostname>.inc`
 holds what differs between the machines — fedxps's reader guard, bigfed's writer
 settings — and git reads it through a link that stow does not make. Make it by
-hand, once per machine:
+hand, once per machine, and beside it the identity link (2026-11-03), through
+which `git/config`'s first include reads `[user] name` and `email` from a file
+outside this public repo:
 
 ```bash
 ln -s ../../Desktop/configs/git/hosts/"$(uname -n)".inc ~/.config/git/host.inc
+ln -sT ~/Desktop/infra/configs/git/identity ~/.config/git/identity   # the identity, private
 git config --show-origin core.checkStat   # fedxps: names host.inc; bigfed: prints nothing
 git config --show-origin core.hooksPath   # fedxps: names host.inc; bigfed: prints nothing (2026-10-26)
+git config --show-origin user.email       # names ~/.config/git/identity on both
 sync-check guard                          # the same, plus the environment half, once bin is stowed
 ```
 
@@ -392,7 +396,7 @@ It's really as simple as cloning the repo on your Desktop, clearing your dotfile
 
 On my own machines a second machine gets its files differently: it joins my Syncthing folder onto an empty `~/Desktop`, and once everything has arrived I stow by hand – `stow --ignore='CLAUDE\.md' -t ~ bash` first, then the host link of §5, then `stow-all` – and run `claude-link --apply`. Cloning from GitHub is what I fall back on if the server is ever lost: `configs` and `org` first, the rest after, and Syncthing rejoined only once those clones are out of `~/Desktop`.
 
-One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/infra/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. On the clone route, clone `org` before the first commit (on my own machines the folder brings it); until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
+One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/.config/git/identity`, a link made by hand once per machine (§5, beside the host link) to the private file where `[user] name` and `email` live, `infra/configs/git/identity` since 2026-11-03 — this public repo carries only the include line, which names nothing outside `~/.config`. On the clone route, clone `infra` before the first commit (on my own machines the folder brings it); until the link and the file behind it exist, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
 
 It's also worth noting, that every time you update `.bashrc` or `.bash_profile`, you should run:
 ```bash

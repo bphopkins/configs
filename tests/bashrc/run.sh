@@ -3,7 +3,7 @@
 # Syncthing conflict copy (infra/machines/transport-2026-10/rules.md -> ws-4) and
 # the arrival line that PS0 prints once when a loaded file changes under an open
 # shell (ws-8), and since 2026-10-31 the private modules .bashrc sources after the
-# package's, infra/claude-config/shell/*.sh, under the same guard and check.
+# package's, infra/configs/shell/*.sh, under the same guard and check.
 # Written 2026-10-26 at the campaign's step 5a, on the battery's
 # seeds scratch-2026-10-09/refute-config/stow/t.sh (S4) and sig/t2.py there.
 #
@@ -54,9 +54,9 @@ mkfix() {
   # The private module directory .bashrc sources after the package's modules
   # (2026-10-31), under the fixture HOME: one module, and a conflict copy of it
   # that must never run.
-  mkdir -p "$H/Desktop/infra/claude-config/shell"
-  printf '%s\n' 'private_module_fn() { echo "the private module"; }' 'PRIVATE_MODULE_SOURCED=yes' >"$H/Desktop/infra/claude-config/shell/zz-private.sh"
-  printf '%s\n' 'private_module_fn() { echo "the conflict copy"; }' 'PRIVATE_CONFLICT_SOURCED=yes' >"$H/Desktop/infra/claude-config/shell/zz-private.sync-conflict-20261031-120000-ABCDEFG.sh"
+  mkdir -p "$H/Desktop/infra/configs/shell"
+  printf '%s\n' 'private_module_fn() { echo "the private module"; }' 'PRIVATE_MODULE_SOURCED=yes' >"$H/Desktop/infra/configs/shell/zz-private.sh"
+  printf '%s\n' 'private_module_fn() { echo "the conflict copy"; }' 'PRIVATE_CONFLICT_SOURCED=yes' >"$H/Desktop/infra/configs/shell/zz-private.sync-conflict-20261031-120000-ABCDEFG.sh"
   : >"$SB/hist"
 }
 
@@ -155,7 +155,7 @@ for sh in WEZ GHO; do
   check "$sh: reload loaded the new module"                 [ "$(field NEW "$r")" = 1 ]
 done
 
-# --- 2b. the private modules, infra/claude-config/shell/*.sh (2026-10-31): sourced
+# --- 2b. the private modules, infra/configs/shell/*.sh (2026-10-31): sourced
 # after the package's, conflict copy excepted, and in the arrival check ---------
 echo "== the private modules =="
 mkfix
@@ -172,7 +172,7 @@ check "its function is the module's, not the conflict copy's" [ "$(field FN "$r"
 check "the conflict copy's own lines never ran"            [ "$(field CONFLICT "$r")" = no ]
 cat >"$SB/s2c" <<'S'
 echo "MARK-$((1))"
-touch -d '2001-01-01 00:00' ~/Desktop/infra/claude-config/shell/zz-private.sh
+touch -d '2001-01-01 00:00' ~/Desktop/infra/configs/shell/zz-private.sh
 echo "MARK-$((2))"
 echo "MARK-$((3))"
 exit

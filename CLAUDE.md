@@ -220,7 +220,7 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 
 Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order,
 conflict copies excepted, then the private modules in
-`~/Desktop/infra/claude-config/shell/` (2026-10-31; `bash/CLAUDE.md`) — `00`
+`~/Desktop/infra/configs/shell/` (2026-10-31, there since 2026-11-03; `bash/CLAUDE.md`) — `00`
 shell-opts (the history contract — 20,000 dated entries, written after every
 command — and four shopts, since 2026-09-23), `10` env, `20` path
 (TeX-Live-first ordering, auto-detected year), `30` prompt (one colour per
@@ -281,7 +281,8 @@ languages — see `sway/CLAUDE.md` before changing it.
   it resolves the `git` package's symlink and edits the repo copy, so a
   setting made that way is published by the next `gpushall`. Edit `git/config`
   here instead, and never set `user.*` at all — identity lives in the private
-  include `infra/claude-config/git/identity`, and `useConfigOnly` makes its
+  include, `infra/configs/git/identity` behind the hand-made link
+  `~/.config/git/identity` (2026-11-03), and `useConfigOnly` makes its
   absence a refusal to commit rather than a guessed address.
 - **Public repo + `gpushall` runs `git add -A`.** Anything no ignore rule
   refuses is committed and pushed to a public remote. `.gitignore` carries

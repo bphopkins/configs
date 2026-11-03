@@ -1256,7 +1256,7 @@ class Run:
                 self.check(g["marker_ignore_rc"] == 0, "%s: the repository at %s ignores .stfolder/" % (m.name, path),
                            "%s: the repository at %s does not ignore .stfolder/ (check-ignore exit %s), so `git add -A` would commit the marker"
                            % (m.name, path, g["marker_ignore_rc"]),
-                           fix="add the line .stfolder/ to the global exclude, infra/claude-config/git/ignore (rules.md -> mig-4, 2026-10-10)")
+                           fix="add the line .stfolder/ to the global exclude, infra/configs/git/ignore (rules.md -> mig-4, 2026-10-10)")
         if self.fails:
             raise Stop("the preflight refused (%d)" % self.fails)
         if self.unknowns:
