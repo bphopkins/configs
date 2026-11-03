@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression suite for the git host files (org/machines/transport-2026-10,
+# Regression suite for the git host files (infra/machines/transport-2026-10,
 # rules.md ws-6, fedxps-1, fedxps-6, bigfed-1; written 2026-10-26 at step 5a):
 # git/config's [init], the reader's refusing hook
 # git/hooks-reader/reference-transaction that git/hosts/fedxps.inc arms, the
@@ -46,8 +46,8 @@ trap cleanup EXIT
 
 while read -r v; do unset "$v"; done < <(compgen -e | grep '^GIT_')
 unset XDG_CONFIG_HOME
-mkdir -p "$H/.config/git" "$D/org/claude-config/git" "$H/src" "$SB/bin" "$SB/hosts"
-printf '[user]\n\tname = Rig\n\temail = rig@example.invalid\n' > "$D/org/claude-config/git/identity"
+mkdir -p "$H/.config/git" "$D/infra/claude-config/git" "$H/src" "$SB/bin" "$SB/hosts"
+printf '[user]\n\tname = Rig\n\temail = rig@example.invalid\n' > "$D/infra/claude-config/git/identity"
 ln -s "$CFG_ROOT/git/config" "$H/.config/git/config"
 ln -s "$CFG_ROOT/git/hooks-reader" "$H/.config/git/hooks-reader"
 printf '#!/bin/sh\necho fedxps\n' > "$SB/bin/uname"

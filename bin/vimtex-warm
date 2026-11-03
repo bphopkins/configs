@@ -51,7 +51,7 @@ roots = {}
 for base in ("dissertation", "dissertation-template", "opuscula", "n-cube",
              "teaching", "teach-logic", "bphopkins.net"):
     # A base lives under ~/Desktop, or under ~/Documents since 2026-11-02
-    # (opuscula; org/machines/home-layout-2026-10/).
+    # (opuscula; infra/machines/home-layout-2026-10/).
     d = next((p for p in (os.path.expanduser(f"~/{root}/{base}")
                           for root in ("Desktop", "Documents")) if os.path.isdir(p)), None)
     if d is None:

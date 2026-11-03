@@ -9,7 +9,7 @@ declare -gA STOW_TARGETS=(
   [alacritty]="$HOME/.config/alacritty"
   [bash]="$HOME"
   # systemd's user-session drop-ins; the generator reads only this directory
-  # (org/machines/environment.md, section 5), and the symlinks stow makes.
+  # (infra/machines/environment.md, section 5), and the symlinks stow makes.
   [environment.d]="$HOME/.config/environment.d"
   [fontconfig]="$HOME/.config/fontconfig"
   [git]="$HOME/.config/git"
@@ -37,7 +37,7 @@ STOW_ORDER=(bash git wezterm ghostty alacritty tmux nvim sway swaylock waybar ma
 STOW_CFG_ROOT="$HOME/Desktop/configs"
 
 # The three commands below act on the checkout as it is on disk, and fetch
-# nothing (2026-10-26; org/machines/transport-2026-10/rules.md -> ws-8). The
+# nothing (2026-10-26; infra/machines/transport-2026-10/rules.md -> ws-8). The
 # pull stow-all used to start with is gone on both machines: configs arrives
 # by Syncthing since the cutover of 2026-10-28 (before it gpullall pulled it
 # and printed the restow hint). Each re-reads the two arrays above from this file

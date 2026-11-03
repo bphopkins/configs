@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
 # claude-link — point this machine's Claude Code configuration at the shared,
-# private copy in org/claude-config, so both machines run the same ecosystem.
+# private copy in infra/claude-config, so both machines run the same ecosystem.
 #
 #   claude-link              dry run: say what would change, change nothing
 #   claude-link --apply      create the symlinks
 #   claude-link --adopt      absorb this machine's existing files into
-#                            org/claude-config first (needed the first time on
+#                            infra/claude-config first (needed the first time on
 #                            a machine that already has memory/permissions)
 #   claude-link --unlink     reverse it: replace every symlink with a real copy
 #   claude-link --auto       silent, safe subset; run from the SessionEnd hook.
@@ -20,7 +20,7 @@
 # This is a script, not a bash function, deliberately: an arrival can never
 # leave a stale copy loaded in a running shell the way a bash function's can.
 #
-# What it links (all derived from org/claude-config, nothing hardcoded):
+# What it links (all derived from infra/claude-config, nothing hardcoded):
 #   <cfg>/CLAUDE.md, settings.json, plans/, agents/, commands/,
 #   hooks/, output-styles/, rules/, workflows/  ->  ~/.claude/<same>
 #   <cfg>/skills/<name>/, each authored skill   ->  ~/.claude/skills/<name>
@@ -29,7 +29,7 @@
 #   <cfg>/repos/<path>/CLAUDE.local.md          ->  ~/Desktop/<path>/
 #   <cfg>/hosts/<host>.md, <host> = hostname -s ->  ~/CLAUDE.md, never by --auto
 #
-# It never deletes unique data. Adoption moves a file into org/claude-config or
+# It never deletes unique data. Adoption moves a file into infra/claude-config or
 # backs it up; anything ambiguous is reported and skipped.
 #
 # It also reports orphan charters (the pass of that name, below), and keeps the
@@ -37,13 +37,13 @@
 
 set -uo pipefail
 
-CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
+CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"
 CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
 DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
 # Every walk of ~/Desktop prunes the same names, at any depth: git's own
 # directories, and the large trees this script has no business in.
 DESK_PRUNE=( \( -name .git -o -name node_modules -o -name archive -o -name 'Deontic Logic'
-                -o -name lecture-recordings -o -name readings -o -name finances \) -prune -o )
+                -o -name lecture-recordings -o -name readings \) -prune -o )
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$CC/link-backups/$STAMP"
 
@@ -80,13 +80,13 @@ n_ok=0 n_link=0 n_adopt=0 n_skip=0 n_warn=0 n_fail=0
 
 # --------------------------------------------------------------- preflight --
 [ -d "$CFG" ] || { echo "claude-link: $CFG not found." >&2
-  echo "  Clone the org repo first, or set CLAUDE_LINK_CFG." >&2; exit 2; }
+  echo "  Clone the infra repo first, or set CLAUDE_LINK_CFG." >&2; exit 2; }
 [ -d "$CC" ]  || { echo "claude-link: $CC not found." >&2
   echo "  Run 'claude' once so it creates the directory, then re-run." >&2; exit 2; }
 
 case "$CFG" in "$CC"/*) echo "claude-link: refusing — config dir is inside $CC" >&2; exit 2 ;; esac
 
-# One run at a time (org/machines/transport-2026-10/rules.md -> ws-12). Two
+# One run at a time (infra/machines/transport-2026-10/rules.md -> ws-12). Two
 # sessions ending together start two --auto runs, and both pass every "is it
 # there yet" test before either writes: the second `cp -a` lands inside the
 # first one's copy and the second `ln -s` inside its target, which left a
@@ -324,7 +324,7 @@ echo
 # ------------------------------------------------------------------- host --
 # ~/CLAUDE.md is this machine's own charter: a link to hosts/<host>.md in the
 # shared tree, one file per machine, so it loads in every session under ~
-# here and on no other machine (org/machines/transport-2026-10/decisions.md
+# here and on no other machine (infra/machines/transport-2026-10/decisions.md
 # -> 12; PLAN.md -> settled 24 and 59). The deliberate runs treat it as any
 # linked file: the dry run names it missing, --apply links it, --adopt
 # replaces an identical copy and backs up a differing one, --unlink leaves a
@@ -492,7 +492,7 @@ echo
 # ------------------------------------------------------------- 2. memory ----
 # ------------------------------------------------------------------ sweep --
 # Links whose target was deleted in the shared tree. The passes below iterate
-# org/claude-config, so a link pointing at something that no longer exists there
+# infra/claude-config, so a link pointing at something that no longer exists there
 # is never visited by them -- it just sits broken. That happens whenever a
 # permission file is deliberately removed on one machine: the other machine keeps
 # a dangling link, which also defeats the point of the removal, since a dangling
@@ -540,7 +540,7 @@ done < <( { [ $AUTO = 1 ] || find "$DESK" -maxdepth 7 "${DESK_PRUNE[@]}" \
 echo
 
 # ---------------------------------------------------------------- harvest --
-# The link passes below are driven by what org/claude-config already contains,
+# The link passes below are driven by what infra/claude-config already contains,
 # so a scope this machine invented today would never be considered. Harvest
 # runs the other way: anything real here with NO counterpart in the shared copy
 # is moved in and linked back. Anything that DOES have a counterpart is left

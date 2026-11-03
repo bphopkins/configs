@@ -81,7 +81,7 @@ __pycache__/
 *.pyc
 
 # tests/french-logic builds under ~/.cache/configs-tests/french-logic/ since
-# 2026-10-26 (org/machines/transport-2026-10, rules.md ws-9), so nothing of
+# 2026-10-26 (infra/machines/transport-2026-10, rules.md ws-9), so nothing of
 # it should appear here any more; the line stays as a guard, since a stale
 # in-tree build from before that day would otherwise ride a `git add -A`
 # into this public repository (fedxps held one, 5.2 MB, when the line was

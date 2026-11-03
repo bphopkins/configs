@@ -17,7 +17,7 @@ rule that caught it, and re-approving one in a session simply adds it back.
 import json, math, os, pathlib, re, sys
 
 CFG = pathlib.Path(os.environ.get("CLAUDE_LINK_CFG",
-                                  pathlib.Path.home()/"Desktop/org/claude-config"))
+                                  pathlib.Path.home()/"Desktop/infra/claude-config"))
 APPLY = "--apply" in sys.argv[1:]
 for a in sys.argv[1:]:
     if a not in ("--apply",):

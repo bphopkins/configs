@@ -48,7 +48,7 @@ export NPM_CONFIG_PREFIX="$HOME/.local/npm-global"
 # reboots. fedxps does not linger, and has no Lmod.
 unset BASH_ENV
 
-# The reader guard's environment half (2026-10-10; org/machines/transport-2026-10,
+# The reader guard's environment half (2026-10-10; infra/machines/transport-2026-10,
 # rules.md fedxps-1). Syncthing carries each repository's .git between the
 # machines and bigfed alone writes it; on fedxps a plain `git status` would
 # still rewrite .git/index on a copy Syncthing delivered, and that write races

@@ -23,7 +23,7 @@
 
 [init]
 	# The files ref backend for every repository made here, by `init` and by
-	# `clone` alike (org/machines/transport-2026-10, rules.md ws-6). Syncthing
+	# `clone` alike (infra/machines/transport-2026-10, rules.md ws-6). Syncthing
 	# carries each repository's .git whole between the machines, and what it
 	# can deliver half-arrived was measured for the files backend alone;
 	# reftable rewrites and deletes its table files at every write, a churn
@@ -38,7 +38,7 @@
 [include]
 	# Private and synced: [user] name and email. Git ignores a missing include
 	# silently; useConfigOnly above turns that silence into a refusal.
-	path = ~/Desktop/org/claude-config/git/identity
+	path = ~/Desktop/infra/claude-config/git/identity
 
 [include]
 	# Machine-local: this machine's half of the configuration, one of
@@ -47,5 +47,5 @@
 	# bigfed's writer settings. Git ignores a missing include silently, so a
 	# forgotten link leaves fedxps unguarded; the check is
 	# `git config --show-origin core.checkStat`, which names host.inc there
-	# and nothing on bigfed (2026-10-10, org/machines/transport-2026-10).
+	# and nothing on bigfed (2026-10-10, infra/machines/transport-2026-10).
 	path = ~/.config/git/host.inc

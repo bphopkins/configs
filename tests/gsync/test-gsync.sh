@@ -22,7 +22,7 @@ printf '#!/bin/sh\nexit 0\n' > "$SANDBOX/stub/sync-check"
 chmod +x "$SANDBOX/stub/sync-check"
 PATH="$SANDBOX/stub:$PATH"
 # The gauge's log and the run's snapshot file (2026-10-26) stay in the sandbox:
-# a push writes the one into ~/Desktop/org/machines/<host>/ and the other into
+# a push writes the one into ~/Desktop/infra/machines/<host>/ and the other into
 # the runtime directory, which are this machine's.
 export GAUGE_LOG_ROOT="$SANDBOX/machines" XDG_RUNTIME_DIR="$SANDBOX/run"
 mkdir -p -m 700 "$SANDBOX/run"

@@ -3,7 +3,7 @@
 # and the shell options an interactive shell ends up with, on top of the system
 # layer (/etc/bashrc, /etc/profile.d) the module runs after. Written 2026-09-23
 # when the module took that content (configs/DECISIONS.md, the entry of that
-# date; the map of the interactive half is org/machines/environment.md).
+# date; the map of the interactive half is infra/machines/environment.md).
 #
 # Hermetic: every shell runs under `env -i` with HOME pointed at a fixture that
 # links to this checkout's bash files the way stow does, and HISTFILE pointed

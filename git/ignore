@@ -1,7 +1,7 @@
-# Claude Code, machine-local. See ~/Desktop/org/claude-config/README.md.
+# Claude Code, machine-local. See ~/Desktop/infra/claude-config/README.md.
 #
 # settings.local.json is a per-repo permission cache. It is symlinked into
-# org/claude-config by `claude-link`, so it must never be committed to the repo
+# infra/claude-config by `claude-link`, so it must never be committed to the repo
 # it sits in -- several of which are public.
 **/.claude/settings.local.json
 

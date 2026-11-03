@@ -90,7 +90,7 @@ at 63x52 against WezTerm at 100x40:
 At 1200x700 on a 1920x1080 scale-1 display both land on 100x40 here. The rules
 are live-only and vanish on the next `swaymsg reload`; they match nothing
 afterwards, so no reload is required. Do **not** reach for a nested compositor
-to get a controlled surface — `org/machines/` records one taking the session
+to get a controlled surface — `infra/machines/` records one taking the session
 down through a Waybar it spawned.
 
 ## Running against the other machine

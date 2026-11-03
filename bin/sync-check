@@ -25,7 +25,7 @@
 Exit: 0 all clear . 1 something is wrong, or not yet true . 2 could not determine
       . 3 up to date with attention due: DUE lines and nothing worse
 
-The gauge of org/machines/transport-2026-10 (rules.md: ws-1, ws-2, ws-8,
+The gauge of infra/machines/transport-2026-10 (rules.md: ws-1, ws-2, ws-8,
 fedxps-3, bigfed-1, bigfed-2, hub-1, hub-4; pilot/build-gauge.md), built
 2026-10-10 at the pilot's step 3b and given its hub, config and vector lines,
 the second door and the snapshot at step 5a (2026-10-26), in the shape of
@@ -92,7 +92,7 @@ line, a .git path stranded on the writer and absent there, a deletion the hub
 refused, gets the reader's touch and the deletion again). A DUE prints only for a
 folder otherwise up to date, so a run whose only flags are DUE lines exits 3,
 which `bye`, `byebye` and the push gauge in `gpush` pass, the DUE shown
-(2026-10-14; org/machines/transport-2026-10/PLAN.md -> settled 37).
+(2026-10-14; infra/machines/transport-2026-10/PLAN.md -> settled 37).
 
 Known stuck items are carried by name until repaired, each a FAIL otherwise:
 see KNOWN below. SYNC_CHECK_SETTLE (seconds, default 15) is how long a need
@@ -108,7 +108,7 @@ the folder busy, while each repository's own checks still run live; the file
 holds statuses, completions, device names and need lists, never a key, and is
 written 0600. Suite: tests/sync-check/run.sh.
 
-The reading file (org/machines/transport-2026-10/PLAN.md -> settled 76,
+The reading file (infra/machines/transport-2026-10/PLAN.md -> settled 76,
 2026-10-27): every live read of the sync line's folders -- the bare run, sync,
 push -- keeps each folder's verdict there, its lines' tags, messages and fix
 texts with the time it was taken, the caller (SYNC_CHECK_CALLER, which bye,
@@ -187,8 +187,8 @@ KNOWN_WRITE_NOTE = "<why: e.g. him-2's split repair, the sanctioned touch>"
 # the next start, relative to ~/Desktop (ws-2); a conflict copy there is a FAIL,
 # since the copy may hold the newer text and nothing merges it on its own.
 LOADED_DIRS = [
-    "org/claude-config/rules", "org/claude-config/agents", "org/claude-config/commands",
-    "org/claude-config/workflows", "org/claude-config/memory",
+    "infra/claude-config/rules", "infra/claude-config/agents", "infra/claude-config/commands",
+    "infra/claude-config/workflows", "infra/claude-config/memory",
     "configs/bash/.bashrc.d", "configs/nvim/lua/plugins", "configs/fontconfig/conf.d",
 ]
 LOADED_COMPONENTS = ["environment.d"]
@@ -239,7 +239,7 @@ RETENTION_DROPIN = "30-delete-retention.conf"
 RETENTION_VAR = "STDBDELETERETENTIONINTERVAL=0"
 CLAUDE_LINK_TIMEOUT = 20
 GUARD_KEYS = ["core.checkstat", "core.trustctime", "diff.autorefreshindex", "gc.auto", "maintenance.auto"]
-HIM2 = "org/machines/transport-2026-10/rules.md -> him-2"
+HIM2 = "infra/machines/transport-2026-10/rules.md -> him-2"
 # The oldest stored reading the session line reprints (settled at the pause of
 # 5c-b, 2026-10-27): on fedxps after the cutover the readings come from byebye,
 # bye and hand runs alone, since it leaves by the lid, so one can be weeks old,
@@ -960,7 +960,7 @@ def folder_reading(cl, f):
             myname, hname, rs, c.get("needItems"), c.get("needDeletes"), c.get("completion") or 0))
         if rs == "unknown":
             r["warn"].append(("%s is not connected to this machine's Syncthing" % hname,
-                              "check Proton VPN's kill switch first (org/machines/syncthing.md), then the hub: ssh nousowl systemctl status syncthing@bph"))
+                              "check Proton VPN's kill switch first (infra/machines/syncthing.md), then the hub: ssh nousowl systemctl status syncthing@bph"))
         elif rs == "paused":
             r["fail"].append(("%s is paused on this machine" % hname, "resume the device in the Syncthing GUI"))
         elif rs == "notSharing":
@@ -3201,7 +3201,7 @@ def check_claude_link(root):
         OUT.line("WARN", "claude-link: its dry run exits 0 but warns: %s" % plural(len(flagged), "line"))
         for l in shown:
             print("       %s" % l)
-        OUT.note("each [WARN] line names its own step; most read `re-run with --adopt`, which absorbs the copy into org/claude-config")
+        OUT.note("each [WARN] line names its own step; most read `re-run with --adopt`, which absorbs the copy into infra/claude-config")
         OUT.fix("claude-link")
         return
     if p.returncode == 1:

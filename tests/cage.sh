@@ -3,7 +3,7 @@
 # A suite that sources this and calls `cage <name> "$@"` re-executes itself
 # inside a systemd user scope with a memory ceiling, swap off, a task cap and
 # a time cap, and stops that scope on the way out
-# (org/claude-config/rules/system-and-server-work.md). "In a cage" is read
+# (infra/claude-config/rules/system-and-server-work.md). "In a cage" is read
 # from the cgroup's own memory.max, never from a variable. No user manager, no
 # run. Extracted 2026-09-23 from tests/env/run.sh and tests/shell-opts/run.sh
 # when tests/prompt/run.sh became the third suite to want it.

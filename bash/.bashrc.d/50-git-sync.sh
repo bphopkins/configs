@@ -28,7 +28,7 @@
 # on ordinary edits. .gitignore is the standing second layer; a content scan of
 # the staged diff is the real remedy, deferred as TODO.md item 7.
 #
-# The machine's role (2026-10-10; org/machines/transport-2026-10, rules.md
+# The machine's role (2026-10-10; infra/machines/transport-2026-10, rules.md
 # fedxps-2 and ws-5): Syncthing carries each repository, .git included,
 # between the machines, and bigfed alone commits and pushes. The tracked host
 # file configs/git/hosts/$(uname -n).inc says which this machine is. On a
@@ -65,7 +65,7 @@
 # The gauge's log (2026-10-26; rules.md bigfed-2, the pilot verdict's D3, and
 # mig-1's home for the leaving log): for every repository the push gauge
 # judged -- one in no folder passes in silence and is not logged -- one line
-# goes into this machine's own file, ~/Desktop/org/machines/<hostname>/
+# goes into this machine's own file, ~/Desktop/infra/machines/<hostname>/
 # gauge-log.md, beside bye's and byebye's (_gauge_log below): the gauge's first
 # tagged line, and the command, the repository and the outcome. One file per
 # machine, one writer each, so the file never conflicts; a machine without its
@@ -76,7 +76,7 @@
 
 # --- Configure your repos here (must already be cloned) ---
 REPOS_DESKTOP=(
-  "$HOME/Desktop/org"
+  "$HOME/Desktop/infra"
   "$HOME/Desktop/dissertation"
   "$HOME/Desktop/n-cube"
   "$HOME/Desktop/bphopkins.net"
@@ -303,7 +303,7 @@ _gsync_reads() { # _gsync_reads DIR: true when this machine must not write the .
 _gsync_refuse_repo() {
   local name="$1" repo="$2" url
   url="$(git -C "$repo" config --get remote.origin.url 2>/dev/null)"
-  _gsync_say SKIP "$name: refused — $(uname -n) reads this repository: Syncthing carries it and bigfed commits and pushes it (gpush $name there; gpull there only for a change that reached GitHub from elsewhere). Hub down? work in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/$name (org/machines/transport-2026-10/rules.md → him-5)"
+  _gsync_say SKIP "$name: refused — $(uname -n) reads this repository: Syncthing carries it and bigfed commits and pushes it (gpush $name there; gpull there only for a change that reached GitHub from elsewhere). Hub down? work in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/$name (infra/machines/transport-2026-10/rules.md → him-5)"
 }
 
 # The whole-machine refusal for gpullall and gpushall on a reader: one line,
@@ -311,9 +311,9 @@ _gsync_refuse_repo() {
 _gsync_refuse_all() {
   local verb="$1"
   if [[ "$verb" == pulled ]]; then
-    _gsync_say SKIP "$(uname -n) is a reader — nothing pulled: Syncthing carries every repository between the machines, and sync-check sync reads whether this one is up to date; gpullall runs on bigfed alone, for a change that reached GitHub from elsewhere. Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+    _gsync_say SKIP "$(uname -n) is a reader — nothing pulled: Syncthing carries every repository between the machines, and sync-check sync reads whether this one is up to date; gpullall runs on bigfed alone, for a change that reached GitHub from elsewhere. Hub down? work in a clone outside the Desktop (infra/machines/transport-2026-10/rules.md → him-5)"
   else
-    _gsync_say SKIP "$(uname -n) is a reader — nothing pushed: Syncthing carries every repository and bigfed commits and pushes (gpushall there, or from here: ssh -t bigfed 'bash -ic gpushall'). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+    _gsync_say SKIP "$(uname -n) is a reader — nothing pushed: Syncthing carries every repository and bigfed commits and pushes (gpushall there, or from here: ssh -t bigfed 'bash -ic gpushall'). Hub down? work in a clone outside the Desktop (infra/machines/transport-2026-10/rules.md → him-5)"
   fi
 }
 
@@ -489,7 +489,7 @@ _gsync_vet_new_files() {
     drop+=("$f")
   done
   if ((refusing)); then
-    _gsync_say FAIL "$name: Syncthing conflict copy — refusing to commit this repository until it is resolved: keep the right text in the original, then delete the copy; a committed one: git rm it, then push (org/machines/transport-2026-10/rules.md → ws-5, him-2):"
+    _gsync_say FAIL "$name: Syncthing conflict copy — refusing to commit this repository until it is resolved: keep the right text in the original, then delete the copy; a committed one: git rm it, then push (infra/machines/transport-2026-10/rules.md → ws-5, him-2):"
     _gsync_detail "$(printf '%s\n' "${copies[@]}")"
     unstage=("${staged_copies[@]}" "${drop[@]}")
     if ((${#unstage[@]})); then
@@ -513,7 +513,7 @@ _gsync_vet_new_files() {
 # in plain output, which would defeat the path matching below.
 _gsync_pull_hints() {
   local name="$1" repo="$2" old="$3" st p q i bash_hit=0 claude_hit=0 lock_hit=0
-  [[ "$name" == configs || "$name" == org ]] || return 0
+  [[ "$name" == configs || "$name" == infra ]] || return 0
   local toks=()
   while IFS= read -r -d '' p; do toks+=("$p"); done \
     < <(git -C "$repo" diff --name-status -z "$old" HEAD 2>/dev/null)
@@ -565,7 +565,7 @@ _gsync_pull_hints() {
       # A pulled-in memory scope or repo permission file has nothing linking it
       # to ~/.claude yet. Structural changes only: an edited memory file needs
       # no relink, a new scope does.
-      [[ "$name" == org && "$p" == claude-config/* ]] && claude_hit=1
+      [[ "$name" == infra && "$p" == claude-config/* ]] && claude_hit=1
       [[ "$p" == */* ]] || continue
       [[ -n "${is_pkg[${p%%/*}]:-}" ]] && pkg_hit[${p%%/*}]=1
     done
@@ -585,9 +585,9 @@ _gsync_pull_hints() {
   if ((claude_hit)); then
     if command -v claude-link >/dev/null 2>&1; then
       claude-link --auto >/dev/null 2>&1 || true
-      _gsync_hint "org: claude-config changed — ran claude-link --auto (log: ~/.claude/claude-link-auto.log)"
+      _gsync_hint "infra: claude-config changed — ran claude-link --auto (log: ~/.claude/claude-link-auto.log)"
     else
-      _gsync_hint "org: claude-config changed — run: claude-link"
+      _gsync_hint "infra: claude-config changed — run: claude-link"
     fi
   fi
 }
@@ -640,8 +640,8 @@ _gsync_pull_repo() {
 }
 
 # The gauge's log, one line: `| <YYYY-MM-DD HH:MM> | <reading> | <note> |`
-# appended to ~/Desktop/org/machines/<hostname>/gauge-log.md (GAUGE_LOG_ROOT
-# replaces ~/Desktop/org/machines, for the suites), the file created with its
+# appended to ~/Desktop/infra/machines/<hostname>/gauge-log.md (GAUGE_LOG_ROOT
+# replaces ~/Desktop/infra/machines, for the suites), the file created with its
 # header when absent. The writers are bye and byebye (_leave, 40-aliases.sh,
 # which calls this when it is defined) and the push gauge below. The hostname
 # is uname's, short and lowercased, as the host files' names are. A machine
@@ -652,7 +652,7 @@ _gauge_log() { # _gauge_log READING NOTE
   local reading="$1" note="$2" host dir log when
   host="$(uname -n 2>/dev/null)"; host="${host%%.*}"; host="${host,,}"
   [[ -n "$host" ]] || return 0
-  dir="${GAUGE_LOG_ROOT:-$HOME/Desktop/org/machines}/$host"
+  dir="${GAUGE_LOG_ROOT:-$HOME/Desktop/infra/machines}/$host"
   [[ -d "$dir" ]] || return 0
   log="$dir/gauge-log.md"
   # noclobber: two writers starting the file at once cannot both write a header
@@ -712,7 +712,7 @@ _gsync_push_one() {
   if command -v sync-check >/dev/null 2>&1; then
     # The command's name rides along: the gauge keeps the folder's reading in
     # its reading file under it, which the session hook reports as "by gpush
-    # 2 h ago" (org/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
+    # 2 h ago" (infra/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
     out="$(SYNC_CHECK_CALLER="${_GSYNC_CMD:-gpush}" sync-check push -q -- "$repo" 2>&1)"
     _GSYNC_GAUGE_RC=$?
     # The reading for the log: the gauge's first tagged line; a gauge that
@@ -745,11 +745,11 @@ _gsync_push_one() {
         # 34): push this machine's own state and say so, since nothing from
         # the other workstation can arrive meanwhile and it writes no .git,
         # while a skip would leave GitHub's copy ageing for the outage.
-        _gsync_say WARN "$name: the push gauge could not read the cluster — pushing this machine's own state (org/machines/transport-2026-10/rules.md → bigfed-2):"
+        _gsync_say WARN "$name: the push gauge could not read the cluster — pushing this machine's own state (infra/machines/transport-2026-10/rules.md → bigfed-2):"
         [[ -n "$out" ]] && _gsync_detail "$out"
         ;;
       *)
-        _gsync_say SKIP "$name: not pushed — the push gauge refused (org/machines/transport-2026-10/rules.md → bigfed-2):"
+        _gsync_say SKIP "$name: not pushed — the push gauge refused (infra/machines/transport-2026-10/rules.md → bigfed-2):"
         [[ -n "$out" ]] && _gsync_detail "$out"
         return 2
         ;;
@@ -764,10 +764,10 @@ _gsync_push_one() {
       d="${d%/*}"
     done
     if [[ -n "$marked" ]]; then
-      _gsync_say SKIP "$name: not pushed — sync-check is not on PATH and this repository lies in the Syncthing folder at $marked; stow-all installs bin/sync-check (org/machines/transport-2026-10/rules.md → bigfed-2)"
+      _gsync_say SKIP "$name: not pushed — sync-check is not on PATH and this repository lies in the Syncthing folder at $marked; stow-all installs bin/sync-check (infra/machines/transport-2026-10/rules.md → bigfed-2)"
       return 2
     fi
-    _gsync_hint "sync-check is not on PATH — pushed without the push gauge; stow-all installs bin/sync-check (org/machines/transport-2026-10/rules.md → bigfed-2)"
+    _gsync_hint "sync-check is not on PATH — pushed without the push gauge; stow-all installs bin/sync-check (infra/machines/transport-2026-10/rules.md → bigfed-2)"
   fi
 
   if ! git -C "$repo" add -A; then
@@ -1048,7 +1048,7 @@ gstatall() { # read-only dashboard; -f/--fetch refreshes BEHIND/AHEAD from origi
   if [[ "${1:-}" == "-f" || "${1:-}" == "--fetch" ]]; then
     fetch=1
     if [[ "$_GSYNC_ROLE" == reader ]]; then
-      _gsync_say SKIP "$(uname -n) is a reader — nothing fetched, the local view follows: Syncthing carries every repository and bigfed fetches (gstatall -f there). Hub down? work in a clone outside the Desktop (org/machines/transport-2026-10/rules.md → him-5)"
+      _gsync_say SKIP "$(uname -n) is a reader — nothing fetched, the local view follows: Syncthing carries every repository and bigfed fetches (gstatall -f there). Hub down? work in a clone outside the Desktop (infra/machines/transport-2026-10/rules.md → him-5)"
       fetch=0
     elif ! _gsync_online; then
       _gsync_say WARN "offline — showing counts vs the last fetch instead"

@@ -31,8 +31,8 @@ Exit: 0 done (a dry run: nothing refused) . 1 stopped: a refusal, a gate that
       determine: a machine that did not answer, a reading that failed, bad
       arguments
 
-The successor of org/machines/syncthing-2026-09/bin/syncthing-addfolder (bash,
-2026-09-15), rewritten for the transport campaign (org/machines/transport-2026-10,
+The successor of infra/machines/syncthing-2026-09/bin/syncthing-addfolder (bash,
+2026-09-15), rewritten for the transport campaign (infra/machines/transport-2026-10,
 rules.md -> mig-4, mig-3, hub-3, ws-7, ws-16; pilot.md -> "Seeding the pilot
 folder", whose hand-run sequence of 2026-10-10 this follows: pilot/seeding.md).
 It runs on the writer, bigfed, and reaches the hub and the reader as the gauge
@@ -79,7 +79,7 @@ sequence equal to the device's own.
 
 NO BLOCK INDEX. All three bodies carry blockIndexing false, and a machine
 holding the folder with the index on, or without the key, holds it
-differently (2026-10-27; org/machines/transport-2026-10/PLAN.md -> settled
+differently (2026-10-27; infra/machines/transport-2026-10/PLAN.md -> settled
 67, 69, the stakes in cutover/rehearsal/decisions.md there). The POST would
 inherit true from the defaults template, and at the rehearsal of 2026-10-26
 the index cut the hub's receipt from 81 to 10-12 files a second as the folder
@@ -90,7 +90,7 @@ rather than assembling it from blocks it holds (upstream's description, not
 measured here); a rename it still carries as a rename, every file renamed in
 place and nothing fetched, while the hub receives the renamed tree in full
 again and keeps the old names as versions (measured 2026-11-02 on a 168 MB
-tree; org/machines/home-layout-2026-10/log.md, sitting 1).
+tree; infra/machines/home-layout-2026-10/log.md, sitting 1).
 
 PREFLIGHT, before any write, on all three machines: Syncthing answers; global
 announce, relays, NAT and crash reporting off; autoAcceptFolders false on every
@@ -1076,7 +1076,7 @@ class Run:
         self.check(not any(opts.get(k) for k in PHONE_HOME),
                    "%s: global announce, relays, NAT and crash reporting off" % m.name,
                    "%s: phone-home open: %s" % (m.name, ", ".join(k for k in PHONE_HOME if opts.get(k))),
-                   fix="org/machines/syncthing.md -> \"Settings that must stay off\"")
+                   fix="infra/machines/syncthing.md -> \"Settings that must stay off\"")
         auto = [d.get("name") or d["deviceID"][:7] for d in p["devices"] if d.get("autoAcceptFolders")]
         self.check(not auto, "%s: autoAcceptFolders off for every device" % m.name,
                    "%s: autoAcceptFolders on for %s -- a folder could be accepted from its defaults, unversioned"
@@ -1094,7 +1094,7 @@ class Run:
                        fix="resume it in %s's GUI (Remote Devices -> %s -> Resume)" % (m.name, n))
             self.check(p["connected"].get(did), "%s: connected to %s" % (m.name, n),
                        "%s: not connected to %s" % (m.name, n),
-                       fix="check Proton VPN's kill switch and the tailnet first (org/machines/syncthing.md)")
+                       fix="check Proton VPN's kill switch and the tailnet first (infra/machines/syncthing.md)")
 
     def check_neighbours(self, m, p, path):
         """No other folder there with this label, or a path that contains or
@@ -1256,7 +1256,7 @@ class Run:
                 self.check(g["marker_ignore_rc"] == 0, "%s: the repository at %s ignores .stfolder/" % (m.name, path),
                            "%s: the repository at %s does not ignore .stfolder/ (check-ignore exit %s), so `git add -A` would commit the marker"
                            % (m.name, path, g["marker_ignore_rc"]),
-                           fix="add the line .stfolder/ to the global exclude, org/claude-config/git/ignore (rules.md -> mig-4, 2026-10-10)")
+                           fix="add the line .stfolder/ to the global exclude, infra/claude-config/git/ignore (rules.md -> mig-4, 2026-10-10)")
         if self.fails:
             raise Stop("the preflight refused (%d)" % self.fails)
         if self.unknowns:
@@ -1313,7 +1313,7 @@ class Run:
                    "%s: %s lies inside the folder at %s" % (m.name, f["path"], f.get("marker_above")))
         if f.get("marker_here") and self.held[m.role] is None:
             self.fail("%s: %s holds a .stfolder marker, but no folder here claims it" % (m.name, f["path"]),
-                      fix="never make a marker by hand (org/machines/syncthing.md); find the folder it belonged to")
+                      fix="never make a marker by hand (infra/machines/syncthing.md); find the folder it belonged to")
 
     def decide_shape(self):
         o, R = self.o, self.R
@@ -1377,7 +1377,7 @@ class Run:
         nw, nr = self.wprobe["passwords"], self.rprobe["passwords"]
         if nw > 1:
             self.fail("%s holds %d different cluster passwords; the contract says one" % (W.name, nw),
-                      fix="org/machines/syncthing.md -> \"The password\"")
+                      fix="infra/machines/syncthing.md -> \"The password\"")
         elif nw == 1:
             self.ok("%s: the cluster password is read from its configuration, never printed" % W.name)
         else:
@@ -1388,12 +1388,12 @@ class Run:
                               fix="run it yourself, without --yes")
         if nr > 1:
             self.fail("%s holds %d different cluster passwords; the contract says one" % (R.name, nr),
-                      fix="org/machines/syncthing.md -> \"The password\"")
+                      fix="infra/machines/syncthing.md -> \"The password\"")
         elif nr == 1 and nw == 1:
             self.check(hmac.compare_digest(self.wprobe.get("pw_digest") or "", self.rprobe.get("pw_digest") or "x"),
                        "%s: holds the same cluster password (compared under a nonce, never printed)" % R.name,
                        "%s: its cluster password differs from %s's; a mismatch drops the whole device connection" % (R.name, W.name),
-                       fix="org/machines/syncthing.md -> \"The password\"")
+                       fix="infra/machines/syncthing.md -> \"The password\"")
         elif nr == 0 and self.held["reader"] is None:
             self.say("NOTE", "%s holds no encrypted folder: %s's password reaches it inside the program text over ssh"
                      % (R.name, W.name))
@@ -1831,7 +1831,7 @@ class Run:
         self.say("NOTE", "== the three ==")
         self.wait_final()
         self.ok("done: %s %r on %s, %s and %s" % (o["id"], o["label"], W.name, H.name, R.name))
-        self.say("NOTE", "add its row to org/machines/syncthing.md today: a folder's id is half its key")
+        self.say("NOTE", "add its row to infra/machines/syncthing.md today: a folder's id is half its key")
         if self.shape == "join":
             self.say("NOTE", "the trashcan %s on %s stays until he has looked through it" % (self.trash, R.name))
 

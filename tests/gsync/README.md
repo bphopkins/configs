@@ -27,11 +27,11 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   `needs push`, `DIVERGED` and composed `uncommitted; …` verdicts and the pull's
   still-ahead warning—carried over on 2026-10-26 from `test-two-machine.sh`,
   retired that day with the model it tested, both machines pushing and pulling
-  (`org/machines/transport-2026-10/rules.md` → mig-1).
+  (`infra/machines/transport-2026-10/rules.md` → mig-1).
 - `test-tty-vet.sh` — the interactive y/N vet prompt under a real pseudo-terminal
   (python3 `pty`), including mixed answers and tty colorization.
 - `test-role.sh` — the machine's role and the conflict-copy refusal
-  (2026-10-10; `org/machines/transport-2026-10`, rules fedxps-2 and ws-5): a
+  (2026-10-10; `infra/machines/transport-2026-10`, rules fedxps-2 and ws-5): a
   fake `HOME` with fixture host files under `Desktop/configs/git/hosts/` and a
   `uname` stub naming the machine the suite pretends to be — the pilot's
   `readerRepo`, the cutover's `role = reader`, the writer, a stranger with no
@@ -58,7 +58,7 @@ own location (`CFG_ROOT`), so it exercises the checkout it lives in.
   gone when the run ends, and none for `gpush` of one name or a reader's
   refusal; and, read-only, the checkout's own host files and include in
   `git/config`. Its two reviews of 2026-10-10 are in
-  `org/machines/transport-2026-10/pilot/build-git.md`.
+  `infra/machines/transport-2026-10/pilot/build-git.md`.
 - `test-audit.sh` — regressions for the 2026-07-26 audit findings: revert guard,
   unborn-branch skip, `:(literal)` unstaging, rename/typechange vetting, embedded
   repos, secret directory components, `GSYNC_MAX_MB` validation, `gpushall` parser,
@@ -83,7 +83,7 @@ Harness conventions — keep these when adding tests:
   `test-role.sh`'s answers per repository from `STUB_GAUGE_<name>`.
 - Every suite points `GAUGE_LOG_ROOT` and `XDG_RUNTIME_DIR` into its sandbox
   (2026-10-26): a push appends the gauge's reading to
-  `~/Desktop/org/machines/<host>/gauge-log.md`, and `gpushall` makes its
+  `~/Desktop/infra/machines/<host>/gauge-log.md`, and `gpushall` makes its
   snapshot file in the runtime directory, both this machine's own.
 - ⚠ One command per `check`: in `check "d" A && B` the `&&` binds outside
   `check`, so B is never checked and a false B only fails the line's exit

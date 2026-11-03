@@ -8,7 +8,7 @@ define the loser's functions on top of the winner's) — and
 arrival plus `reload` deploys edits on the other machine with no restow. A restow
 (`stow -R bash`) is needed only when files are added or removed at the package
 top. Since 2026-10-31 `.bashrc` also sources
-`~/Desktop/org/claude-config/shell/*.sh` after the package's modules: private
+`~/Desktop/infra/claude-config/shell/*.sh` after the package's modules: private
 modules outside this public repo, under the same conflict-copy guard and the
 arrival check below. Since 2026-10-26 `.bashrc` also records the inode and ctime of
 `~/.bashrc`, `~/.bash_profile` and every module it sourced, and a check
@@ -80,7 +80,7 @@ both terminal integrations. The cage the three share is `tests/cage.sh`
   the pilot's `nousowl` until 2026-10-28), or exists but cannot be read or parsed, or the
   link dangles: the environment half of fedxps's reader guard, which keeps
   `git status` from rewriting `.git/index` on a copy Syncthing delivered
-  (`org/machines/transport-2026-10/rules.md` → fedxps-1; the config half is
+  (`infra/machines/transport-2026-10/rules.md` → fedxps-1; the config half is
   the link, see "Git sync"). Never on bigfed, where it would make
   `gpushall`'s `add -A` re-stamp pack files. Never unset here: a role change
   takes a new login, and reaches only shells and sessions started after it.
@@ -224,7 +224,7 @@ Guardrails, shared by the single- and all-repo variants:
 - **The machine's role (2026-10-10)**: Syncthing carries each repository,
   `.git` included, between the machines since the cutover of 2026-10-28,
   with bigfed alone committing and
-  pushing (`org/machines/transport-2026-10/rules.md` → fedxps-2). The tracked
+  pushing (`infra/machines/transport-2026-10/rules.md` → fedxps-2). The tracked
   host file `configs/git/hosts/<hostname>.inc` says which this machine is, read
   two ways and a reader if either says so: by hostname (short, lowercased),
   not through the link `~/.config/git/host.inc` that git itself reads, so a
@@ -306,7 +306,7 @@ Guardrails, shared by the single- and all-repo variants:
   one line — the gauge's first tagged line, the verb and the outcome
   (`pushed`, `refused`, `failed`, `pending`, `pushed under WARN`, `pushed
   under DUE`) — goes through `_gauge_log` into this machine's gauge log,
-  `org/machines/<hostname>/gauge-log.md`, the file `bye` and `byebye` write
+  `infra/machines/<hostname>/gauge-log.md`, the file `bye` and `byebye` write
   too ("Leaving a machine" below); a repository in no folder, which passes in
   silence, logs nothing. And `gpushall`, or `gpush` with more than one name,
   exports `SYNC_CHECK_SNAPSHOT`, a 0600 temporary file under
@@ -370,7 +370,7 @@ Guardrails, shared by the single- and all-repo variants:
   before the final status expression so exit codes are unaffected, and only
   the *message* defers — `claude-link --auto` still runs where it arises.
   Known cost: a Ctrl-C mid-run loses the queued hints for good. A pull that
-  changes `org/claude-config/` also triggers `claude-link --auto` (`|| true`
+  changes `infra/claude-config/` also triggers `claude-link --auto` (`|| true`
   is load-bearing — the linker exits 1 when it makes changes, which `set -e`
   would otherwise abort the pull on).
 
@@ -399,11 +399,11 @@ does).
 reads every folder this machine shares up to date. `byebye` is his usual
 leaving of either machine and is one function on both; `bye` is for the
 laptop when he suspends it by command rather than closing the lid, which he
-rarely does (`org/machines/transport-2026-10/rules.md` → bigfed-3, him-3;
+rarely does (`infra/machines/transport-2026-10/rules.md` → bigfed-3, him-3;
 built at the pilot's seeding, `pilot/seeding.md` there, kept on his word).
 Both run `sync-check sync`, show its lines, and write one line — the reading
 and the verb — into this machine's gauge log,
-`org/machines/<hostname>/gauge-log.md` since 2026-10-26 (his choice at step
+`infra/machines/<hostname>/gauge-log.md` since 2026-10-26 (his choice at step
 5a; until then the pilot's `transport-2026-10/pilot/log-<hostname>.md`),
 through `_gauge_log` in `50-git-sync.sh`, the helper the push hook shares
 (one file per machine, one writer each: two machines appending to one synced
@@ -432,7 +432,7 @@ as the plain commands did, with one hint. A reading of WARN (exit 2, the
 cluster unreadable) refuses like a FAIL: away from the hub, `bye -f` is the
 honest form. A reading of DUE alone (exit 3: every folder up to date, with
 attention due) leaves, the DUE line logged as the reading, his word of
-2026-10-14 (`org/machines/transport-2026-10/PLAN.md` → settled 37); a refusal
+2026-10-14 (`infra/machines/transport-2026-10/PLAN.md` → settled 37); a refusal
 logs the FAIL, WAIT or WARN that decided it, even below a DUE printed first.
 The old `byebye` alias was `systemctl poweroff` alone, and an
 `unalias byebye` line stands before the definitions, as for `sysupgrade`: a

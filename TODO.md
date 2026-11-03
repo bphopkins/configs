@@ -36,11 +36,11 @@ session, the way Fedora's own skeleton `.bashrc` would have. A
 `~/.config/environment.d` PATH drop-in stays **declined** — PATH keeps one
 author, `20-path.sh`; `environment.d` (its own package since the same day) holds
 constants only. Suite: `tests/env/run.sh`. Record: `DECISIONS.md`, 2026-09-23;
-map: `org/machines/environment.md`.
+map: `infra/machines/environment.md`.
 
 *Session two, 2026-09-23.* The picture of the interactive half was drawn and
 measured (the brief for session three carries it; its durable home is proposed
-as a section of `org/machines/environment.md`), and the shell-options half was
+as a section of `infra/machines/environment.md`), and the shell-options half was
 **decided, and built by session three the same day** (postscript below). `00-shell-opts.sh` owns
 the history contract: 20,000 entries in memory and file (+9 ms a window open,
 measured; +53 ms at 100,000, and the file's size drives the cost more than the
@@ -224,14 +224,14 @@ Three ways out, not decided:
 
 The measurement is one loop; rerun it on both machines before and after any
 change, and after each TeX Live release. Cross-listed in
-`org/machines/machines.md` under the Latin Modern item.
+`infra/machines/machines.md` under the Latin Modern item.
 
 ## 14. french-logic: deferred, for when the dissertation needs them
 
 Two items the reorganisation campaign (item 13, closed 2026-09-08) declared
 out of its scope, and one fine-tune from its confirmation pass. None is broken;
 handle each when a document asks for it, through the two nets (`tests/french-logic/run.sh` and the private harness in
-`org/claude-config/repos/configs/french-logic-harness/`).
+`infra/claude-config/repos/configs/french-logic-harness/`).
 
 - [ ] Derive `dissertation-template/philogic.sty` from the units instead of
   maintaining it apart. It is the template's one deliberate bundled `.sty`; a
@@ -515,8 +515,8 @@ falling silent.
 
 Why the farm matters at all: it is what makes TeX Live reachable *outside* an
 interactive shell, since `20-path.sh` never runs there.
-`org/machines/environment.md` §3 has the mechanism;
-`org/machines/machines.md` `## Closed` has the fedxps closure.
+`infra/machines/environment.md` §3 has the mechanism;
+`infra/machines/machines.md` `## Closed` has the fedxps closure.
 
 ---
 
@@ -559,7 +559,7 @@ assembled and overwritten at every shell start; only a slot ahead of
 ## 26. Nine of the twenty-one suites run without a cage
 
 - [ ] Give every suite under `tests/` its own systemd scope, as
-  `org/claude-config/rules/system-and-server-work.md` requires ("with no scope
+  `infra/claude-config/rules/system-and-server-work.md` requires ("with no scope
   it does not run"), each with a budget measured for it.
 
 Found 2026-09-25. Three suites are caged, all through `tests/cage.sh` and all
@@ -633,7 +633,7 @@ reaches fedxps as well.
 fedxps measured 2026-09-29, logged into sway through GDM: the same chain
 (`gdm-wayland-session --handle-registration sway`), Waybar and the user manager
 on the system-default PATH, `EDITOR` present only because `environment.d` sets
-it. One fix, both machines. Record: `org/machines/environment.md` §6.
+it. One fix, both machines. Record: `infra/machines/environment.md` §6.
 
 **2026-09-30: the fix is drafted.** `sway/wayland-session.desktop`, tracked and
 installed by hand as `/usr/local/share/wayland-sessions/sway.desktop`, re-execs
@@ -648,7 +648,7 @@ identical to the tracked one, `~/bin` on the user manager's `PATH`; bigfed's is
 in item 30. Closure list, the sites that state the gap: `sway/CLAUDE.md` (setup
 and PATH bullets), `bin/CLAUDE.md` (the header and the okular-inverse
 paragraph), `CLAUDE.md`, `bash/CLAUDE.md`, `environment.d/10-editor.conf`,
-`org/machines/environment.md` §6, this item.
+`infra/machines/environment.md` §6, this item.
 
 ---
 
@@ -769,7 +769,7 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
 ## 35. The transport campaign's configs work
 
 - [ ] Pointer, not a plan: the work this repo took from
-  `org/machines/transport-2026-10/` (Syncthing carries every repository's
+  `infra/machines/transport-2026-10/` (Syncthing carries every repository's
   `.git`; bigfed alone pushes) ran by that campaign's `PLAN.md`, each chat
   launched from the kickoff line its step named, until the campaign closed
   on 2026-10-28; the rules stay in its `rules.md`. Done here at step 3a (2026-10-10, `DECISIONS.md` the same day):
@@ -805,7 +805,7 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
   case for a split whose bigfed commit is already on GitHub (`rules.md` →
   him-2's last bullet, `refute-b.md` F5), before him-2 gets text for it.
     - [ ] Two questions the close of 2026-10-28 raised, for a configs chat
-      (`org/machines/transport-2026-10/close/configs-and-sites.md` → CFG-46, CFG-53):
+      (`infra/machines/transport-2026-10/close/configs-and-sites.md` → CFG-46, CFG-53):
       whether `context-check`'s check 9 should FAIL on a `repos/` entry whose
       tree is absent, now that a tree absent here is absent on both machines
       (its comment says so since that day); and whether `tests/claude/run.sh`'s
@@ -816,7 +816,7 @@ was done just before, then even the workspace out with `$mod+Ctrl+e`
 ## 36. Two suite defects found by the 2026-10-12 restore-order run
 
 Found in passing by the documentation audit of 2026-10-12 (its record:
-`org/claude-config/skills/restore-order/runs/2026-10-12-1822-fedxps-configs.md`,
+`infra/claude-config/skills/restore-order/runs/2026-10-12-1822-fedxps-configs.md`,
 rows CFG-96 and CFG-97); the charters that named the first suite as the pattern
 were corrected the same day. Due when either suite is next touched; the chat
 that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
@@ -846,7 +846,7 @@ that takes it needs `sway/CLAUDE.md` → "Verifying a change" and the memory
   `check … && […]`, the hazard `tests/gsync/README.md` names: the `&&` binds
   outside `check`, so only the first condition is checked and a false second
   one fails nothing but the line's own exit status in silence. Found
-  2026-10-26 by the transport campaign's step 5a (`org/machines/transport-2026-10/cutover/tools.md`).
+  2026-10-26 by the transport campaign's step 5a (`infra/machines/transport-2026-10/cutover/tools.md`).
   Split each into one `check` per condition, as the README says.
 
 ## 37. `clam home` sweeps the Lean trees and the cache on bigfed
@@ -870,7 +870,7 @@ has yet been run on either machine; the signatures were current on both as of
 ## 38. Okular's docdata figure differed between two charters — DONE 2026-10-28
 
 Found and closed at the transport campaign's close
-(`org/machines/transport-2026-10/close.md` → The wrap-up): `README.md` said
+(`infra/machines/transport-2026-10/close.md` → The wrap-up): `README.md` said
 about 13 MB and `okular/CLAUDE.md` 1.5 MB in 365 files as of 2026-09-15, and
 both were true of a different machine. Measured 2026-10-28: 14 MB in 3,465
 files on fedxps, 1.7 MB in 432 on bigfed. Both charters now give both figures,
@@ -887,7 +887,7 @@ its two tailnet ssh aliases in five (`tests/sync-check/run.sh`,
 it goes, and how (a placeholder name in the tests, a generic name in the
 README); the chat that takes it reads the memory
 `public-pages-carry-no-security-details` and
-`org/machines/transport-2026-10/close/review.md` → Outside the brief. Undated.
+`infra/machines/transport-2026-10/close/review.md` → Outside the brief. Undated.
 
 ## Closed
 

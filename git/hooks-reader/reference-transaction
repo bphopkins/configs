@@ -1,6 +1,6 @@
 #!/bin/sh
 # reference-transaction -- the reader's refusing hook (2026-10-26;
-# org/machines/transport-2026-10: rules.md fedxps-6, PLAN.md settled 17).
+# infra/machines/transport-2026-10: rules.md fedxps-6, PLAN.md settled 17).
 #
 # Syncthing carries each repository under ~/Desktop, .git included, between
 # the machines, and bigfed alone commits and pushes. A ref moved on the reader
@@ -111,7 +111,7 @@ host=${host%%.*}
 name=${common%/.git}
 name=${name#"$desk"/}
 url=$(git config --get remote.origin.url 2>/dev/null)
-echo "refused: ${host:-this machine} reads ~/Desktop/$name -- Syncthing carries its .git and bigfed alone moves its refs (org/machines/transport-2026-10/rules.md -> fedxps-6)" >&2
+echo "refused: ${host:-this machine} reads ~/Desktop/$name -- Syncthing carries its .git and bigfed alone moves its refs (infra/machines/transport-2026-10/rules.md -> fedxps-6)" >&2
 echo "  the index and the working tree may already have moved: checkout, switch, reset, rebase, cherry-pick and stash pop change them before any ref, and Syncthing carries that to bigfed" >&2
 echo "  read it with: GIT_OPTIONAL_LOCKS=0 git status --porcelain -- and on either machine run no command that discards (rules.md -> agents-1)" >&2
 echo "  work on bigfed; or, with the hub down, in a clone outside the Desktop: git clone ${url:-<origin>} ~/src/outage/${name%%/*} (rules.md -> him-5)" >&2

@@ -8,7 +8,7 @@ else: **pip/npm-installed console scripts stay in `~/.local/bin`** — their
 package managers rewrite them on upgrade — and launchers for locally installed
 tools (Isabelle, the provers) are symlinks in `~/.local/bin` as well, pointing
 into `~/opt/<Tool>` or `~/src/<tool>` (the tool-homes convention; inventory in
-`org/machines/bigfed/provers-2026-06/`). Never point `isabelle install` at
+`infra/machines/bigfed/provers-2026-06/`). Never point `isabelle install` at
 `~/bin`: it does `rm -f` on its targets, so a same-named *tracked* file would
 have its stow symlink silently replaced, and the next `stow -R bin` would fail
 with a conflict.
@@ -28,9 +28,9 @@ with a conflict.
   the server switches cached in `~/.claude.json`, and from the last 14 days of
   transcripts (`CONTEXT_CHECK_DAYS`). A FAIL there has no command: it names
   the texts that rest on the premise and its row in the inventory,
-  `org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md`,
+  `infra/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md`,
   and `/restore-order` files it as `moved-premise`. The version the gauge last
-  ran against is his to record in `org/claude-config/claude-version-checked`;
+  ran against is his to record in `infra/claude-config/claude-version-checked`;
   the gauge prints the line, and offers none where the record is newer than
   the install, since that machine catches up at its next update. When the
   installed version differs from the record, the SessionStart hook runs
@@ -42,7 +42,7 @@ with a conflict.
   transcripts, each premise mutated).
 - `sync-check` — read-only gauge for the Syncthing cluster and the git roles,
   in the `disk-check` shape (2026-10-10, step 3b of
-  `org/machines/transport-2026-10/PLAN.md`, record `pilot/build-gauge.md`;
+  `infra/machines/transport-2026-10/PLAN.md`, record `pilot/build-gauge.md`;
   completed 2026-10-26 at step 5a, record `cutover/tools.md`; the rules it
   reads are that directory's `rules.md` → ws-1, ws-2, ws-8, fedxps-3,
   bigfed-1, bigfed-2, hub-1, hub-4, him-2). Seven lines: `sync` (every folder
@@ -132,7 +132,7 @@ with a conflict.
   code review's H1); the `claude-link` dry run exiting 0 with no `[WARN]` or `[FAIL]` line,
   since it exits 0 over unlinked configuration too; `bash -n` on every
   module), and `session` (the session hook's since 2026-10-27, settled 76
-  and 77: `org/claude-config/hooks/session-start.sh` runs it under `timeout
+  and 77: `infra/claude-config/hooks/session-start.sh` runs it under `timeout
   4`, all clear to the model alone as `2 folders up to date by the newest
   full reading, byebye 9 h ago`, anything else to both channels, a cut
   naming the lines printed before it; each folder's newest full reading
@@ -167,7 +167,7 @@ with a conflict.
   no longer the hook's. Exit 0 all clear, 1 something wrong or not
   yet (FAIL, WAIT), 2 could not determine, 3 up to date with attention due:
   DUE lines and nothing worse, which `bye`, `byebye` and the push gauge pass
-  (2026-10-14; `org/machines/transport-2026-10/PLAN.md` → settled 37). Every
+  (2026-10-14; `infra/machines/transport-2026-10/PLAN.md` → settled 37). Every
   ssh tries `<host>` with a 2 s connect timeout and then `<host>-vpn`, his
   ssh configuration's tailnet alias for every machine, so the gauge reads
   the hub away from home where it was blind through the pilot (settled 39);
@@ -210,9 +210,9 @@ with a conflict.
   each by its case).
 - `syncthing-addfolder` — creates one encrypted Syncthing folder across the
   cluster, run on bigfed alone (2026-10-26, step 5a of
-  `org/machines/transport-2026-10/PLAN.md`, `rules.md` → mig-4 there, record
+  `infra/machines/transport-2026-10/PLAN.md`, `rules.md` → mig-4 there, record
   `cutover/tools.md`; the successor of the 2026-09 bash script in
-  `org/machines/syncthing-2026-09/bin/`, every lesson of which it keeps). It
+  `infra/machines/syncthing-2026-09/bin/`, every lesson of which it keeps). It
   reaches the hub and fedxps as `sync-check` does — its own source over
   `ssh -o BatchMode=yes` in a `--remote` mode, the `<host>-vpn` door for reads
   and never for a write — and composes each machine's folder entry on that
@@ -246,7 +246,7 @@ with a conflict.
   eight minutes, the race guards and the gates' failing directions driven
   through the case's own ssh stub; twenty mutants caught after the
   reviews). Run live at the cutover rehearsal of 2026-10-26
-  (`org/machines/transport-2026-10/cutover/rehearsal/REPORT.md`): the fresh
+  (`infra/machines/transport-2026-10/cutover/rehearsal/REPORT.md`): the fresh
   shape on seven stand-in folders, the join end to end on a 336-thousand-file
   scratch Desktop. Since 2026-10-27 (step 5c-b; `PLAN.md` there
   → settled 67, 69) all three bodies carry `blockIndexing` false, which the
@@ -451,7 +451,7 @@ Standing verdicts (2026-07/08; the full investigation is
   2026-09-21), which is the concrete failure the old decline was waiting for.
   A `~/.config/environment.d` PATH drop-in stays **declined**: PATH keeps one
   author, `20-path.sh` (`DECISIONS.md`, 2026-09-23; the chain:
-  `org/machines/environment.md`). `tests/env/run.sh` pins the login shell's
+  `infra/machines/environment.md`). `tests/env/run.sh` pins the login shell's
   output; the live proof is an inverse search from an Okular opened in Files.
   A sway session misses all of this until `sway/wayland-session.desktop` is
   installed: there the desktop-launched case fails as before (measured
@@ -460,7 +460,7 @@ Standing verdicts (2026-07/08; the full investigation is
 ## Claude Code configuration linkage
 
 **The configuration is not in this repo — only the mechanism is.** It lives
-in `~/Desktop/org/claude-config/` (private); this repo carries the linker,
+in `~/Desktop/infra/claude-config/` (private); this repo carries the linker,
 the same split as `tl-newyear` and its 13GB TeX tree. Publicity is a
 property of location: this repo is public, and putting the whole
 configuration somewhere private removes the per-fact judgment that would
@@ -475,7 +475,7 @@ claude-link --auto       # SessionEnd's: silent, confined (below)
 claude-prune [--apply]   # drop mechanically dead permission entries
 ```
 
-Since 2026-10-26 (`org/machines/transport-2026-10/rules.md` → ws-12 to
+Since 2026-10-26 (`infra/machines/transport-2026-10/rules.md` → ws-12 to
 ws-14, his settled 15): every run that may write holds
 `~/.claude/.claude-link.lock` — a second run exits 2 with one line, or 0 in
 silence under `--auto`, and a lock that cannot be taken is said with its
@@ -494,7 +494,7 @@ makes none (reviewer 1's M2, the same day); harvesting a new scope or
 permission file and sweeping `~/Desktop` are `--apply`'s and `--adopt`'s, run
 by him on one machine.
 And `~/.claude/skills` is a real directory of one link per authored skill
-into `org/claude-config/skills/`, so Anthropic's skill sync writes its
+into `infra/claude-config/skills/`, so Anthropic's skill sync writes its
 `synced/`, `.trash/` and `.staging/` on each machine alone (they were
 landing in the shared tree through the old directory link); `--apply` makes
 the migration once per machine and moves the vendor's state out of the
@@ -502,7 +502,7 @@ shared tree in the same run, a new authored skill is linked by the next
 `--apply` or `--auto`, and a skill written straight into `~/.claude/skills`
 is reported as on this machine alone.
 And since the same day the deliberate runs link `~/CLAUDE.md`, the
-machine's own charter, to `org/claude-config/hosts/$(hostname -s).md` when
+machine's own charter, to `infra/claude-config/hosts/$(hostname -s).md` when
 that file exists, treating it as any linked file (the dry run names it
 missing, `--adopt` backs up a differing copy, `--unlink` leaves a real one),
 while `--auto` never makes it, since it lies outside `~/.claude`, and a
@@ -524,7 +524,7 @@ health-checks the links and warns the *user*, not just the model — and since
 what a machine holds that is *not* synced.
 
 Layout, deployment, curation history, and the conditional-rules syntax:
-`org/claude-config/README.md`. Verified behaviors and their experiments
+`infra/claude-config/README.md`. Verified behaviors and their experiments
 (frozen linked lists, the deny block's reach, hook verification, the
 ephemeral-scope exclusion): `docs/claude-config-behaviors-2026-08.md`. Facts
 worth keeping in view here:
@@ -536,7 +536,7 @@ worth keeping in view here:
   grant holds for the session and nothing on screen says it did not persist.
   Tested on 2.1.238 (2026-08-20) and 2.1.269 (2026-09-11); accepted as designed,
   not worked around (`docs/claude-config-behaviors-2026-08.md`). Add entries in
-  `org/claude-config`, or put global ones in `settings.json`, which the same
+  `infra/claude-config`, or put global ones in `settings.json`, which the same
   writer does follow through its link.
 - **Both halves of the health check reach inside `~/.claude`.** The user-level
   link pass skips a shared directory that has disappeared —
@@ -557,7 +557,7 @@ worth keeping in view here:
   git never carries it, `git status` never lists it, and a merge or checkout that
   brings its path replaces it without a word; `/init` writes one at a
   repository's root. Every run lists them under `== orphans ==` and moves none,
-  since the cure is a choice per file: into `org/claude-config/repos/<path>/`
+  since the cure is a choice per file: into `infra/claude-config/repos/<path>/`
   as `CLAUDE.local.md`, or tracked with `git add -f`. Every run that may write
   keeps the list in `~/.claude/claude-link-orphans`, which SessionStart counts
   into both channels. Added 2026-10-06; suite `tests/claude/run.sh`, caged
@@ -567,9 +567,9 @@ worth keeping in view here:
   matcher — the global `CLAUDE.md` remains the backstop for intent.
 - The transcript-based measurement of which permission entries earn their
   place — and the built-in read-only command list, documented once — is
-  `org/claude-config/permission-measurement.md`.
+  `infra/claude-config/permission-measurement.md`.
 - The rules that keep agent context out of every repository live in the
-  private global exclude, `org/claude-config/git/ignore`, which the identity
+  private global exclude, `infra/claude-config/git/ignore`, which the identity
   include sets as `core.excludesFile` (2026-10-04): both charter names,
   `**/.claude/settings.local.json` (the linked permission cache must never be
   committed to the repo it sits in) and `**/.claude/projects/` (a superseded

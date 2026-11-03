@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """tests/sync/rig.py -- real Syncthing instances on loopback, for tests/sync.
 
-The transport campaign's rules (org/machines/transport-2026-10/rules.md, "How
+The transport campaign's rules (infra/machines/transport-2026-10/rules.md, "How
 to read it" -> Tests) name one durable suite for every case that needs
 Syncthing itself: three instances on loopback -- A plays bigfed, the writer;
 B plays fedxps, the reader; H plays nousowl, the receive-encrypted hub -- with

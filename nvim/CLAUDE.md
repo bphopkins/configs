@@ -421,7 +421,7 @@ side). Run it after editing the wrapper or after any live-server.nvim update.
 `lazy-lock.json` is tracked **on purpose**: it is the rollback record
 (`git log nvim/lazy-lock.json` + `:Lazy restore` is the one-move return to
 last-known-good) and the only convergence target. Since 2026-10-26 the lock
-has one writer, bigfed (`org/machines/transport-2026-10/rules.md` →
+has one writer, bigfed (`infra/machines/transport-2026-10/rules.md` →
 fedxps-5): plugins are added, updated and removed there, and on a reader —
 fedxps, by `git/hosts/fedxps.inc`'s role or reader-repository key, read by
 `lua/config/role.lua` the way `10-env.sh` reads it — `lazy.lua` copies the

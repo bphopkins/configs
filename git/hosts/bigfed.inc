@@ -5,7 +5,7 @@
 # None of fedxps.inc's reader settings belong here: core.checkStat=minimal
 # would hide an edit arriving in the same second at the same size, and
 # GIT_OPTIONAL_LOCKS=0 makes gpushall's `add -A` re-stamp pack files after a
-# stat-only arrival (org/machines/transport-2026-10/design-revisions.md, C).
+# stat-only arrival (infra/machines/transport-2026-10/design-revisions.md, C).
 # Built 2026-10-10, pilot step 3a; the link on bigfed is made by hand there.
 
 [gsync]

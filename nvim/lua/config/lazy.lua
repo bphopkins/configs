@@ -18,7 +18,7 @@ vim.opt.rtp:prepend(lazypath)
 -- On a reader (config/role.lua: fedxps, by its host file) lazy keeps a lock of
 -- its own under stdpath("state"), refreshed from the shared lazy-lock.json at
 -- every start, so its installs, restores and cleans never write the lock
--- Syncthing carries to bigfed (org/machines/transport-2026-10, rules.md
+-- Syncthing carries to bigfed (infra/machines/transport-2026-10, rules.md
 -- fedxps-5). nil on a writer: lazy's default, the tracked lock. A fault in
 -- role.lua costs the lock's separation for the session, said in a WARN, and
 -- never lazy's setup.

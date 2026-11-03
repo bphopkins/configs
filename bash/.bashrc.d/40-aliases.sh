@@ -310,7 +310,7 @@ reboot-check() {
 # failed there (7 of 128 boots on bigfed since May, 12 GB of staged rpms never
 # cleaned; on fedxps the armed update once ran on its own, 60 packages on
 # 2026-08-01). If that warning line ever appears again, the setting is back on.
-# Record: org/machines/machines.md, the offline-updates item of 2026-09-23.
+# Record: infra/machines/machines.md, the offline-updates item of 2026-09-23.
 #
 # The unalias is load-bearing, not defensive tidiness. `sysupgrade` was an alias
 # until 2026-08-08, and aliases expand at PARSE time: in a shell that still has
@@ -344,13 +344,13 @@ alias tl-upgrade='sudo "$(command -v tlmgr)" update --self --all'
 # nonzero; any real error prints above it.
 alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 
-# Leaving a machine (org/machines/transport-2026-10/rules.md: him-3 for the
+# Leaving a machine (infra/machines/transport-2026-10/rules.md: him-3 for the
 # laptop, bigfed-3 for the desktop; built 2026-10-10 at the pilot's seeding,
 # pilot/seeding.md there). `bye` suspends and `byebye` powers off, each only
 # once the Syncthing gauge reads every folder this machine shares up to date
 # -- the laptop before its lid closes, bigfed before it goes dark -- and each
 # writes the reading as one line into this machine's own gauge log,
-# ~/Desktop/org/machines/<hostname>/gauge-log.md, through _gauge_log in
+# ~/Desktop/infra/machines/<hostname>/gauge-log.md, through _gauge_log in
 # 50-git-sync.sh, the push hook's writer too (one file per machine: two
 # machines appending to one synced file would conflict; the pilot's log under
 # transport-2026-10/pilot/ until 2026-10-26). A DUE alone -- the
@@ -363,7 +363,7 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # Flags: -f leaves whatever the gauge says, logged as forced; -i is systemctl's
 # --ignore-inhibitors. Without the gauge on PATH (a machine not yet stowed)
 # they act as the plain commands did, with one hint. GAUGE_LOG_ROOT replaces
-# ~/Desktop/org/machines (the suite); a machine without its directory, or a
+# ~/Desktop/infra/machines (the suite); a machine without its directory, or a
 # shell without _gauge_log, logs nothing and acts.
 #
 # `shutdown` on its own looks broken but isn't: it's a symlink to systemctl,
@@ -388,7 +388,7 @@ _leave() {
   if command -v sync-check >/dev/null 2>&1; then
     # The gauge keeps this reading in its reading file under the command's
     # name, and the session hook reports it at the next start as "by byebye
-    # 9 h ago" (org/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
+    # 9 h ago" (infra/machines/transport-2026-10/PLAN.md -> settled 76, 2026-10-27)
     out="$(SYNC_CHECK_CALLER="$cmd" sync-check sync 2>&1)"; rc=$?
     printf '%s\n' "$out"
     if ((rc == 0)); then
@@ -407,7 +407,7 @@ _leave() {
     # nothing, so bye skips this. REPOS_DESKTOP comes from 50-git-sync.sh,
     # loaded after this file and present by the time anyone types byebye.
     # Never pgrep -f: the pattern would match this shell's own command line
-    # (org/claude-config/rules/system-and-server-work.md).
+    # (infra/claude-config/rules/system-and-server-work.md).
     if [[ "$verb" == poweroff ]]; then
       lock=""
       if declare -p REPOS_DESKTOP >/dev/null 2>&1; then
@@ -460,7 +460,7 @@ _leave() {
     args=("$verb"); [[ -n "$ignore" ]] && args+=("$ignore")
     systemctl "${args[@]}"
   else
-    echo "[SKIP] not leaving: the gauge did not read all clear ($cmd -f leaves regardless; org/machines/transport-2026-10/rules.md -> him-3)"
+    echo "[SKIP] not leaving: the gauge did not read all clear ($cmd -f leaves regardless; infra/machines/transport-2026-10/rules.md -> him-3)"
     return 1
   fi
 }

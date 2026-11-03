@@ -1,5 +1,5 @@
 -- This machine's git role, and the lazy.nvim lockfile that follows from it
--- (2026-10-26; org/machines/transport-2026-10, rules.md fedxps-5).
+-- (2026-10-26; infra/machines/transport-2026-10, rules.md fedxps-5).
 --
 -- ~/Desktop/configs travels between the machines, by git until the cutover and
 -- by Syncthing after it, lazy-lock.json with it, and bigfed alone adds, updates

@@ -237,7 +237,7 @@ instead and do not depend on the link. The reader's refusing hook
 until then the path names nothing and git runs no hook, without a word.
 
 Claude Code's per-machine charter, `~/CLAUDE.md`, needs no hand-made link:
-`claude-link --apply` makes it, to `org/claude-config/hosts/<hostname>.md`
+`claude-link --apply` makes it, to `infra/claude-config/hosts/<hostname>.md`
 (2026-10-26), and its dry run names a missing one.
 
 
@@ -392,7 +392,7 @@ It's really as simple as cloning the repo on your Desktop, clearing your dotfile
 
 On my own machines a second machine gets its files differently: it joins my Syncthing folder onto an empty `~/Desktop`, and once everything has arrived I stow by hand – `stow --ignore='CLAUDE\.md' -t ~ bash` first, then the host link of §5, then `stow-all` – and run `claude-link --apply`. Cloning from GitHub is what I fall back on if the server is ever lost: `configs` and `org` first, the rest after, and Syncthing rejoined only once those clones are out of `~/Desktop`.
 
-One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/org/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. On the clone route, clone `org` before the first commit (on my own machines the folder brings it); until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
+One prerequisite the `git` package adds: commits need the identity include. The stowed `~/.config/git/config` includes `~/Desktop/infra/claude-config/git/identity`, which is where `[user] name` and `email` live — this public repo carries only the include line. On the clone route, clone `org` before the first commit (on my own machines the folder brings it); until that file exists, `user.useConfigOnly` makes git refuse with "no email was given" rather than guess an address. And there must be no `~/.gitconfig`: git reads both files and the legacy one wins on conflicts. The package's other hand-made piece is the host link of §5, `~/.config/git/host.inc`; without it the machine runs on git's defaults, which on fedxps means unguarded.
 
 It's also worth noting, that every time you update `.bashrc` or `.bash_profile`, you should run:
 ```bash

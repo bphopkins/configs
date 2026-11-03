@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The machine's role and the conflict-copy refusal in 50-git-sync.sh
-# (org/machines/transport-2026-10: rules.md fedxps-2 and ws-5; written
+# (infra/machines/transport-2026-10: rules.md fedxps-2 and ws-5; written
 # 2026-10-10 at the pilot's step 3a, for its preconditions P2 and P5).
 #
 # Sandboxed: a fake HOME whose Desktop holds clones of local bare origins and
@@ -85,9 +85,9 @@ peer_commit() { # peer_commit NAME -> origin-NAME gains one commit from the sibl
   must git -C "$SB/peer-$1" push -q
 }
 mkpair nousowl
-mkpair org
-REPOS_DESKTOP=("$HOME/Desktop/org" "$HOME/Desktop/nousowl")
-N="$HOME/Desktop/nousowl" O="$HOME/Desktop/org"
+mkpair infra
+REPOS_DESKTOP=("$HOME/Desktop/infra" "$HOME/Desktop/nousowl")
+N="$HOME/Desktop/nousowl" O="$HOME/Desktop/infra"
 
 # --- 1. the pilot: fedxps writes every repository but nousowl ---------------
 echo "== fedxps, readerRepo = nousowl =="
@@ -117,20 +117,20 @@ check "gpushall: rc=0 (a skip is benign)"              [ "$rc" -eq 0 ]
 check "gpushall: counters"                             contains "$out" "ok: 1  skipped: 1  failed: 0  pending: 0"
 check "gpushall: nousowl skipped with one line"        [ "$(count "$out" 'nousowl: refused')" -eq 1 ]
 check "gpushall: nousowl in the skipped list"          contains "$out" "skipped: nousowl"
-check "gpushall: org carried"                          contains "$out" "org: committed 1 path(s); pushed"
+check "gpushall: infra carried"                          contains "$out" "infra: committed 1 path(s); pushed"
 check "gpushall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
-peer_commit org
+peer_commit infra
 out="$(gpullall)"; rc=$?
 check "gpullall: rc=0"                                 [ "$rc" -eq 0 ]
 check "gpullall: counters"                             contains "$out" "ok: 1  skipped: 1  failed: 0"
 check "gpullall: nousowl skipped with one line"        [ "$(count "$out" 'nousowl: refused')" -eq 1 ]
-check "gpullall: org updated"                          contains "$out" "org: updated"
+check "gpullall: infra updated"                          contains "$out" "infra: updated"
 check "gpullall: nousowl HEAD unchanged"               [ "$(head_of "$N")" = "$headN" ]
 check "gpullall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
-peer_commit org                # both origins ahead again
+peer_commit infra                # both origins ahead again
 out="$(gstatall -f)"; rc=$?
 check "gstatall -f: rc=0"                              [ "$rc" -eq 0 ]
-check "gstatall -f: org fetched, needs pull"           contains "$(row "$out" org)" "needs pull"
+check "gstatall -f: infra fetched, needs pull"           contains "$(row "$out" infra)" "needs pull"
 check "gstatall -f: nousowl marked reader"             contains "$(row "$out" nousowl)" "reader"
 check "gstatall -f: nousowl not fetched (BEHIND still 0)" contains "$(row "$out" nousowl)" "      0      0  reader"
 check "gstatall -f: nousowl's whole .git untouched (no fetch, no index write)" [ "$(gitsnap "$N")" = "$snapN" ]
@@ -138,9 +138,9 @@ check "gstatall -f: footer says fetched, reader rows excepted (1/2)" contains "$
 check "gstatall -f: footer says fetched, reader rows excepted (2/2)" contains "$out" "except rows marked reader"
 out="$(gstatall)"; rc=$?
 check "gstatall: plain run rc=0"                       [ "$rc" -eq 0 ]
-check "gstatall: both rows present (1/2)" [ -n "$(row "$out" org)" ]
+check "gstatall: both rows present (1/2)" [ -n "$(row "$out" infra)" ]
 check "gstatall: both rows present (2/2)" [ -n "$(row "$out" nousowl)" ]
-check "gstatall: org row not marked reader"            lacks "$(row "$out" org)" "reader"
+check "gstatall: infra row not marked reader"            lacks "$(row "$out" infra)" "reader"
 check "gstatall: nousowl's whole .git untouched by the plain run" [ "$(gitsnap "$N")" = "$snapN" ]
 # every spelling of the name reaches the same .git, so every spelling is refused
 for spelling in nousowl/ ./nousowl ../Desktop/nousowl; do
@@ -180,44 +180,44 @@ for bad in Nousowl nousowl/.git . ; do
 done
 hostfile fedxps '[gsync]\n\treaderRepo = nousowl\n'
 # a second readerRepo line is honoured too
-hostfile fedxps '[gsync]\n\treaderRepo = nousowl\n\treaderRepo = org\n'
+hostfile fedxps '[gsync]\n\treaderRepo = nousowl\n\treaderRepo = infra\n'
 out="$(gpushall)"; rc=$?
 check "two readerRepo keys: both refused"              contains "$out" "ok: 0  skipped: 2"
-must git -C "$O" pull -q --rebase                      # catch org up for the sections below
+must git -C "$O" pull -q --rebase                      # catch infra up for the sections below
 rm -f "$N/local.txt"
 
 # --- 2. the cutover: fedxps reads every repository ---------------------------
 echo "== fedxps, role = reader (no link exists anywhere in this sandbox) =="
 be fedxps
 hostfile fedxps '[gsync]\n\trole = reader\n'
-peer_commit nousowl; peer_commit org
+peer_commit nousowl; peer_commit infra
 echo local > "$O/local2.txt"
 snapN="$(gitsnap "$N")"; snapO="$(gitsnap "$O")"
 out="$(gpushall)"; rc=$?
 check "gpushall: rc=1"                                 [ "$rc" -eq 1 ]
 check "gpushall: one line, naming the reader"          contains "$out" "fedxps is a reader — nothing pushed"
 check "gpushall: names the route from here"            contains "$out" "ssh -t bigfed 'bash -ic gpushall'"
-check "gpushall: no per-repo lines"                    lacks "$out" "org:"
+check "gpushall: no per-repo lines"                    lacks "$out" "infra:"
 check "gpushall: no summary line"                      lacks "$out" "Push complete"
 check "gpushall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
-check "gpushall: org's .git untouched"                 [ "$(gitsnap "$O")" = "$snapO" ]
+check "gpushall: infra's .git untouched"                 [ "$(gitsnap "$O")" = "$snapO" ]
 out="$(gpullall)"; rc=$?
 check "gpullall: rc=1"                                 [ "$rc" -eq 1 ]
 check "gpullall: one line, naming the reader"          contains "$out" "fedxps is a reader — nothing pulled"
 check "gpullall: nothing under either .git changed (1/2)" [ "$(gitsnap "$N")" = "$snapN" ]
 check "gpullall: nothing under either .git changed (2/2)" [ "$(gitsnap "$O")" = "$snapO" ]
-out="$(gpush org)"; rc=$?
-check "gpush org: rc=1, refused (1/2)" [ "$rc" -eq 1 ]
-check "gpush org: rc=1, refused (2/2)" contains "$out" "org: refused"
+out="$(gpush infra)"; rc=$?
+check "gpush infra: rc=1, refused (1/2)" [ "$rc" -eq 1 ]
+check "gpush infra: rc=1, refused (2/2)" contains "$out" "infra: refused"
 out="$(gpull nousowl)"; rc=$?
 check "gpull nousowl: rc=1, refused (1/2)" [ "$rc" -eq 1 ]
 check "gpull nousowl: rc=1, refused (2/2)" contains "$out" "nousowl: refused"
 out="$(gstatall -f)"; rc=$?
 check "gstatall -f: rc=0, warns, fetches nothing (1/2)" [ "$rc" -eq 0 ]
 check "gstatall -f: rc=0, warns, fetches nothing (2/2)" contains "$out" "fedxps is a reader — nothing fetched"
-check "gstatall -f: rows still shown (1/2)" [ -n "$(row "$out" org)" ]
+check "gstatall -f: rows still shown (1/2)" [ -n "$(row "$out" infra)" ]
 check "gstatall -f: rows still shown (2/2)" [ -n "$(row "$out" nousowl)" ]
-check "gstatall -f: every row marked reader (1/2)" contains "$(row "$out" org)" "reader"
+check "gstatall -f: every row marked reader (1/2)" contains "$(row "$out" infra)" "reader"
 check "gstatall -f: every row marked reader (2/2)" contains "$(row "$out" nousowl)" "reader"
 check "gstatall -f: both .git untouched, index included (1/2)" [ "$(gitsnap "$N")" = "$snapN" ]
 check "gstatall -f: both .git untouched, index included (2/2)" [ "$(gitsnap "$O")" = "$snapO" ]
@@ -225,12 +225,12 @@ check "gstatall -f: the refusal names him-5"           contains "$out" "him-5"
 check "gstatall -f: footer names the reader"           contains "$out" "a reader fetches nothing"
 out="$(gstatall)"; rc=$?
 check "gstatall: plain run rc=0 with rows (1/2)" [ "$rc" -eq 0 ]
-check "gstatall: plain run rc=0 with rows (2/2)" [ -n "$(row "$out" org)" ]
-check "gstatall: dirty work still shown"               contains "$(row "$out" org)" "uncommitted"
+check "gstatall: plain run rc=0 with rows (2/2)" [ -n "$(row "$out" infra)" ]
+check "gstatall: dirty work still shown"               contains "$(row "$out" infra)" "uncommitted"
 # every entry point reads the role afresh: a stale value in the shell from an
 # earlier run (here: planted) must not survive into the next command
 refusal() { [[ "$1" == *"refused"* || "$1" == *"is a reader"* ]]; }
-for cmd in gpushall gpullall "gpush org" "gpull nousowl" "gstatall -f"; do
+for cmd in gpushall gpullall "gpush infra" "gpull nousowl" "gstatall -f"; do
   _GSYNC_ROLE=writer
   out="$($cmd)"; rc=$?
   check "stale _GSYNC_ROLE=writer in the shell: $cmd still refuses" refusal "$out"
@@ -322,7 +322,7 @@ check "bigfed gpullall: nousowl updated"               contains "$out" "nousowl:
 echo w > "$O/w.txt"
 out="$(gpushall)"; rc=$?
 check "bigfed gpushall: rc=0"                          [ "$rc" -eq 0 ]
-check "bigfed gpushall: org pushed"                    contains "$out" "org: committed 1 path(s); pushed"
+check "bigfed gpushall: infra pushed"                    contains "$out" "infra: committed 1 path(s); pushed"
 check "bigfed gpushall: no refusal (1/2)" lacks "$out" "refused"
 check "bigfed gpushall: no refusal (2/2)" lacks "$out" "reader"
 peer_commit nousowl
@@ -334,7 +334,7 @@ be stranger
 echo s > "$O/s.txt"
 out="$(gpushall)"; rc=$?
 check "stranger (no host file): a writer (1/2)" [ "$rc" -eq 0 ]
-check "stranger (no host file): a writer (2/2)" contains "$out" "org: committed 1 path(s); pushed"
+check "stranger (no host file): a writer (2/2)" contains "$out" "infra: committed 1 path(s); pushed"
 peer_commit nousowl
 out="$(gpull nousowl)"; rc=$?
 check "stranger: gpull works (1/2)" [ "$rc" -eq 0 ]
@@ -345,7 +345,7 @@ be bigfed
 echo b > "$O/b.txt"
 out="$(gpushall)"; rc=$?
 check "fedxps's reader file leaves bigfed a writer (1/2)" [ "$rc" -eq 0 ]
-check "fedxps's reader file leaves bigfed a writer (2/2)" contains "$out" "org: committed 1 path(s); pushed"
+check "fedxps's reader file leaves bigfed a writer (2/2)" contains "$out" "infra: committed 1 path(s); pushed"
 
 # --- 4. ws-5: a conflict copy refuses the repository's push -----------------
 echo "== a Syncthing conflict copy among the new paths =="
@@ -355,8 +355,8 @@ echo theirs > "$O/notes.sync-conflict-20261009-160110-GE3DRZ3.txt"
 echo theirs > "$O/sub/x.sync-conflict-20261009-160110-GE3DRZ3.md"
 echo mine >> "$O/base.txt"                       # an innocent edit beside them
 echo plain > "$O/conflict-notes.txt"             # the word alone is not the pattern
-headO="$(head_of "$O")"; before="$(git -C "$SB/origin-org.git" rev-parse main)"
-out="$(gpush org)"; rc=$?
+headO="$(head_of "$O")"; before="$(git -C "$SB/origin-infra.git" rev-parse main)"
+out="$(gpush infra)"; rc=$?
 check "conflict copy: rc=1"                            [ "$rc" -eq 1 ]
 check "conflict copy: FAIL names the rule and the remedy (1/2)" contains "$out" "Syncthing conflict copy"
 check "conflict copy: FAIL names the rule and the remedy (2/2)" contains "$out" "ws-5, him-2"
@@ -364,7 +364,7 @@ check "conflict copy: both copies listed (1/2)" contains "$out" "notes.sync-conf
 check "conflict copy: both copies listed (2/2)" contains "$out" "sub/x.sync-conflict-20261009-160110-GE3DRZ3.md"
 check "conflict copy: no prompt offered"               lacks "$out" "commit it?"
 check "conflict copy: nothing committed"               [ "$(head_of "$O")" = "$headO" ]
-check "conflict copy: origin unchanged"                [ "$(git -C "$SB/origin-org.git" rev-parse main)" = "$before" ]
+check "conflict copy: origin unchanged"                [ "$(git -C "$SB/origin-infra.git" rev-parse main)" = "$before" ]
 check "conflict copy: copies still on disk (1/2)" [ -f "$O/notes.sync-conflict-20261009-160110-GE3DRZ3.txt" ]
 check "conflict copy: copies still on disk (2/2)" [ -f "$O/sub/x.sync-conflict-20261009-160110-GE3DRZ3.md" ]
 check "conflict copy: copies unstaged after the refusal" [ -z "$(git -C "$O" diff --cached --name-only | grep sync-conflict)" ]
@@ -372,20 +372,20 @@ check "conflict copy: the innocent edit stays staged"  bash -c "git -C '$O' diff
 git -C "$O" commit -qm "a commit by another route" 2>/dev/null
 check "conflict copy: a hand commit after the refusal carries no copy" [ -z "$(git -C "$O" show --name-only --format= HEAD | grep sync-conflict)" ]
 out="$(gpushall)"; rc=$?
-check "conflict copy: gpushall refuses org too (1/2)" [ "$rc" -eq 1 ]
-check "conflict copy: gpushall refuses org too (2/2)" contains "$out" "needs attention: org"
+check "conflict copy: gpushall refuses infra too (1/2)" [ "$rc" -eq 1 ]
+check "conflict copy: gpushall refuses infra too (2/2)" contains "$out" "needs attention: infra"
 check "conflict copy: gpushall still carries nousowl"  contains "$out" "nousowl: up to date"
 rm "$O/notes.sync-conflict-20261009-160110-GE3DRZ3.txt" "$O/sub/x.sync-conflict-20261009-160110-GE3DRZ3.md"
 # an extensionless copy, as Syncthing names a file with no extension
 echo theirs > "$O/Makefile.sync-conflict-20261009-160110-GE3DRZ3"
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "extensionless copy: refused (1/2)" [ "$rc" -eq 1 ]
 check "extensionless copy: refused (2/2)" contains "$out" "Makefile.sync-conflict-20261009-160110-GE3DRZ3"
 rm "$O/Makefile.sync-conflict-20261009-160110-GE3DRZ3"
 # a tracked file renamed into a copy's name (a 100% rename, which rename detection would hide)
 headO="$(head_of "$O")"
 must git -C "$O" mv conflict-notes.txt conflict-notes.sync-conflict-20261009-160110-GE3DRZ3.txt
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "a rename into a copy's name: refused (1/2)" [ "$rc" -eq 1 ]
 check "a rename into a copy's name: refused (2/2)" contains "$out" "conflict-notes.sync-conflict-20261009-160110-GE3DRZ3.txt"
 check "a rename into a copy's name: nothing committed" [ "$(head_of "$O")" = "$headO" ]
@@ -399,7 +399,7 @@ echo theirs > "$O/notes.sync-conflict-20261009-160110-GE3DRZ3.txt"
 echo key > "$O/id_rsa"
 truncate -s 30M "$O/data.bin"
 echo mine2 >> "$O/base.txt"
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "copy beside a secret: refused" [ "$rc" -eq 1 ]
 check "copy beside a secret: the secret named as left unstaged" contains "$out" "also left unstaged, unvetted:"
 check "copy beside a secret: id_rsa in that line" bash -c "grep -F 'also left unstaged' <<<\"\$1\" | grep -q id_rsa" _ "$out"
@@ -413,28 +413,28 @@ rm "$O/notes.sync-conflict-20261009-160110-GE3DRZ3.txt" "$O/id_rsa" "$O/data.bin
 echo theirs > "$O/old.sync-conflict-20261009-160110-GE3DRZ3.txt"
 must git -C "$O" add old.sync-conflict-20261009-160110-GE3DRZ3.txt
 must git -C "$O" commit -qm "committed by hand"
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "a tracked, unchanged copy: refused (1/2)" [ "$rc" -eq 1 ]
 check "a tracked, unchanged copy: refused (2/2)" contains "$out" "old.sync-conflict-20261009-160110-GE3DRZ3.txt"
 check "a tracked copy: the remedy names git rm" contains "$out" "git rm it"
-check "a tracked copy: not pushed" [ "$(git -C "$SB/origin-org.git" rev-list --count main)" -lt "$(git -C "$O" rev-list --count HEAD)" ]
+check "a tracked copy: not pushed" [ "$(git -C "$SB/origin-infra.git" rev-list --count main)" -lt "$(git -C "$O" rev-list --count HEAD)" ]
 echo edited >> "$O/old.sync-conflict-20261009-160110-GE3DRZ3.txt"
 out="$(gpushall)"; rc=$?
-check "a tracked, modified copy: gpushall refuses org (1/2)" [ "$rc" -eq 1 ]
-check "a tracked, modified copy: gpushall refuses org (2/2)" contains "$out" "needs attention: org"
+check "a tracked, modified copy: gpushall refuses infra (1/2)" [ "$rc" -eq 1 ]
+check "a tracked, modified copy: gpushall refuses infra (2/2)" contains "$out" "needs attention: infra"
 check "a tracked, modified copy: the edit unstaged" [ -z "$(git -C "$O" diff --cached --name-only)" ]
 check "a tracked, modified copy: gpushall still carries nousowl" contains "$out" "nousowl: up to date"
 must git -C "$O" rm -qf old.sync-conflict-20261009-160110-GE3DRZ3.txt
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "the tracked copy removed: push goes through (1/2)" [ "$rc" -eq 0 ]
 check "the tracked copy removed: push goes through (2/2)" contains "$out" "pushed"
 echo final > "$O/final.txt"
-out="$(gpush org)"; rc=$?
+out="$(gpush infra)"; rc=$?
 check "copies removed: push goes through (1/2)" [ "$rc" -eq 0 ]
 check "copies removed: push goes through (2/2)" contains "$out" "pushed"
 check "copies removed: no copy left anywhere in the tree" [ -z "$(find "$O" -name '*.sync-conflict-*')" ]
-check "copies removed: the innocent edit went"         bash -c "git -C '$SB/origin-org.git' show main:base.txt | grep -q mine"
-check "copies removed: conflict-notes.txt went"        bash -c "git -C '$SB/origin-org.git' ls-tree --name-only main | grep -qx conflict-notes.txt"
+check "copies removed: the innocent edit went"         bash -c "git -C '$SB/origin-infra.git' show main:base.txt | grep -q mine"
+check "copies removed: conflict-notes.txt went"        bash -c "git -C '$SB/origin-infra.git' ls-tree --name-only main | grep -qx conflict-notes.txt"
 
 # --- 5. the push gauge: a refusal skips the repository, the rest still pushes ---
 echo "== bigfed, the push gauge refusing nousowl =="
@@ -461,9 +461,9 @@ out="$(gpushall)"; rc=$?
 check "gpushall: rc=0 (a refusal is a skip, not a failure)" [ "$rc" -eq 0 ]
 check "gpushall: counters"                             contains "$out" "ok: 1  skipped: 1  failed: 0  pending: 0"
 check "gpushall: nousowl in the skipped list"          contains "$out" "skipped: nousowl"
-check "gpushall: org carried"                          contains "$out" "org: committed 1 path(s); pushed"
+check "gpushall: infra carried"                          contains "$out" "infra: committed 1 path(s); pushed"
 check "gpushall: nousowl's .git untouched"             [ "$(gitsnap "$N")" = "$snapN" ]
-check "gpushall: the gauge ran for org too, before its add -A" contains "$(cat "$STUB_GAUGE_LOG")" "org clean push -q -- $O"
+check "gpushall: the gauge ran for infra too, before its add -A" contains "$(cat "$STUB_GAUGE_LOG")" "infra clean push -q -- $O"
 check "gpushall: the gauge is told the reading is gpushall's, for each repository" [ "$(grep -c ' caller=gpushall$' "$STUB_GAUGE_LOG")" -eq 2 -a "$(grep -vc ' caller=gpushall$' "$STUB_GAUGE_LOG")" -eq 0 ]
 export STUB_GAUGE_nousowl='2:[WARN] alpha: nousowl did not answer over ssh'
 out="$(gpush nousowl)"; rc=$?
@@ -499,7 +499,7 @@ out="$(PATH="$SB/stub-nogauge:/usr/bin:/bin" gpushall)"; rc=$?
 check "no gauge on PATH: rc=0, pushed"                 [ "$rc" -eq 0 ]
 check "no gauge on PATH: one hint, naming stow-all"     [ "$(count "$out" 'sync-check is not on PATH')" -eq 1 ]
 check "no gauge on PATH: the hint names bin/sync-check" contains "$out" "stow-all installs bin/sync-check"
-check "no gauge on PATH: org pushed"                    contains "$out" "org: committed 1 path(s); pushed"
+check "no gauge on PATH: infra pushed"                    contains "$out" "infra: committed 1 path(s); pushed"
 # ... except a repository with a Syncthing marker at its root or above it
 mkdir -p "$N/.stfolder"; echo x > "$N/nogauge.txt"
 out="$(PATH="$SB/stub-nogauge:/usr/bin:/bin" gpush nousowl)"; rc=$?
@@ -545,10 +545,10 @@ check "  a | in the gauge's line does not break the row" [ "$(lastlog | tr -cd '
 check "  exactly one line written"                      [ "$(lines)" -eq 7 ]
 n0="$(lines)"
 out="$(gpushall)"; rc=$?
-check "gpushall: nousowl refused, org passed in silence" contains "$out" "ok: 1  skipped: 1"
+check "gpushall: nousowl refused, infra passed in silence" contains "$out" "ok: 1  skipped: 1"
 check "gpushall: one line, nousowl's"                   [ "$(lines)" -eq $((n0 + 1)) ]
 check "gpushall: the note names gpushall"               bash -c '[[ "$1" == *"| [FAIL] nousowl: stranded on fedxps: a.md / b.md | gpushall nousowl, refused |" ]]' _ "$(lastlog)"
-check "gpushall: org, judged by no folder, is not logged" bash -c '! grep -q " org," "$1"' _ "$GL"
+check "gpushall: infra, judged by no folder, is not logged" bash -c '! grep -q " infra," "$1"' _ "$GL"
 export STUB_GAUGE_nousowl='2:[WARN] alpha: nousowl did not answer over ssh'
 out="$(gpush nousowl)"; rc=$?
 check "exit 2: pushed under WARN, logged so (1/2)"      [ "$rc" -eq 0 ]
@@ -617,7 +617,7 @@ check "gpushall: the variable does not outlive the run" [ -z "${SYNC_CHECK_SNAPS
 out="$(gpush nousowl)"
 check "gpush with one name: no snapshot"                [ "$(cat "$STUB_GAUGE_SNAPLOG")" = "nousowl unset none" ]
 : > "$STUB_GAUGE_SNAPLOG"
-out="$(gpush org nousowl)"
+out="$(gpush infra nousowl)"
 snaps="$(awk '{print $2}' "$STUB_GAUGE_SNAPLOG" | sort -u)"
 check "gpush with two names: one snapshot for both (1/2)" [ "$(wc -l < "$STUB_GAUGE_SNAPLOG")" -eq 2 ]
 check "gpush with two names: one snapshot for both (2/2)" bash -c '[[ "$1" == "$2"/sync-check-snapshot.* ]]' _ "$snaps" "$SB/run"

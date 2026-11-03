@@ -14,7 +14,7 @@ their live locations. The user is an academic working in logic/philosophy —
 the LaTeX and Neovim configs are heavily tailored to dissertation writing.
 
 Documentation follows the five-kinds doctrine
-(`org/claude-config/rules/where-things-go.md`); decomposed 2026-08-26:
+(`infra/claude-config/rules/where-things-go.md`); decomposed 2026-08-26:
 
 - **Per-package `CLAUDE.md`s** are the charters — operative detail lives with
   its package and loads lazily when the directory is touched. The package
@@ -54,7 +54,7 @@ a package without a charter keeps its detail in its config's own comments
 | wofi | `~/.config/wofi` | the second launcher since 2026-09-30, same GTK3 dialect |
 | rofi | `~/.config/rofi` | the app menu since 2026-09-30: a whole theme sheet, a silent parser and the two checks that cover it |
 | latex | `~/texmf/tex/latex` | french-logic coupling, mod-cv shadow |
-| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check, syncthing-addfolder (the Claude configuration itself lives in `org/claude-config/`, private — this repo carries only the mechanism) |
+| bin | `~/bin` | tool inventory, tl-newyear, the Okular bridge, claude-link, context-check, sync-check, syncthing-addfolder (the Claude configuration itself lives in `infra/claude-config/`, private — this repo carries only the mechanism) |
 | okular | `~/.config` | the one app-rewritten stowed file, exclusions |
 | fontconfig | `~/.config/fontconfig` | TeX Live's fonts exposed to GUI apps; the pinned year, the three rejectfont blocks |
 | git | `~/.config/git` | *(no charter — the config file carries its own; `hosts/<machine>.inc` holds what differs by machine, reached through the hand-made link `~/.config/git/host.inc`, 2026-10-10; `hooks-reader/` is the reader's refusing `reference-transaction` hook, linked to `~/.config/git/hooks-reader`, which `fedxps.inc` names as `core.hooksPath`, 2026-10-26)* |
@@ -69,12 +69,12 @@ Key commands (defined in `bash/.bashrc.d/60-stow.sh`):
   dangling links a removed package left (every target walked three levels
   deep, `~/Desktop` excluded), and refuses if that file does not parse; no
   `git pull` since 2026-10-26 (Syncthing carries the checkout since the
-  transport cutover of 2026-10-28; `org/machines/transport-2026-10/rules.md`
+  transport cutover of 2026-10-28; `infra/machines/transport-2026-10/rules.md`
   → ws-8).
   On a conflict (an untracked real file already sitting at a target) it
   **errors out** rather than resolving it — move the file aside or remove it
   (README §8; never `stow --adopt` on a machine in the Desktop folder,
-  `org/machines/transport-2026-10/rules.md` → ws-10), then rerun.
+  `infra/machines/transport-2026-10/rules.md` → ws-10), then rerun.
 - `stow-all-dry` — preview what stow-all would do (no changes)
 - `unstow-all` — remove all managed symlinks (`stow -D`)
 
@@ -97,7 +97,7 @@ repository between the machines, `.git` included: at the start of a session
 `git/hosts/<hostname>.inc` and refuse what it reads, and the push commands
 ask the gauge `bin/sync-check` before staging a repository Syncthing
 carries (`bash/CLAUDE.md` → Git sync); the transport campaign
-(`org/machines/transport-2026-10/`, closed 2026-10-28) set the host files' roles.
+(`infra/machines/transport-2026-10/`, closed 2026-10-28) set the host files' roles.
 
 **The re-source trap is narrower since 2026-10-26** (`bash/CLAUDE.md` → "The
 re-source trap"): `stow-all` re-reads the package arrays from disk, so a
@@ -123,7 +123,7 @@ in-progress guards, offline handling, hints — and their scope live in
   the two machines are in step is `sync-check sync`'s question
 
 **Run `tests/claude/run.sh` after any edit to `bin/claude-link` or to
-`org/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
+`infra/claude-config/hooks/`, and `tests/context-check/run.sh` after any edit to
 `bin/context-check`.** Both are caged (`tests/cage.sh`) and sandboxed under
 `$TMPDIR`, and touch nothing real.
 
@@ -220,7 +220,7 @@ Larger grids and more cores widen it, so bigfed favours Ghostty more, not less.
 
 Modular: `.bashrc` sources all `~/.bashrc.d/*.sh` in numbered order,
 conflict copies excepted, then the private modules in
-`~/Desktop/org/claude-config/shell/` (2026-10-31; `bash/CLAUDE.md`) — `00`
+`~/Desktop/infra/claude-config/shell/` (2026-10-31; `bash/CLAUDE.md`) — `00`
 shell-opts (the history contract — 20,000 dated entries, written after every
 command — and four shopts, since 2026-09-23), `10` env, `20` path
 (TeX-Live-first ordering, auto-detected year), `30` prompt (one colour per
@@ -281,7 +281,7 @@ languages — see `sway/CLAUDE.md` before changing it.
   it resolves the `git` package's symlink and edits the repo copy, so a
   setting made that way is published by the next `gpushall`. Edit `git/config`
   here instead, and never set `user.*` at all — identity lives in the private
-  include `org/claude-config/git/identity`, and `useConfigOnly` makes its
+  include `infra/claude-config/git/identity`, and `useConfigOnly` makes its
   absence a refusal to commit rather than a guessed address.
 - **Public repo + `gpushall` runs `git add -A`.** Anything no ignore rule
   refuses is committed and pushed to a public remote. `.gitignore` carries

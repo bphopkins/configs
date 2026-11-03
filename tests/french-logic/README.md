@@ -54,7 +54,7 @@ regression.
   update in git shows exactly which members changed.
 - The build directory is `~/.cache/configs-tests/french-logic/` (`units/`
   beneath it for `units.sh`) since 2026-10-26, outside the synced tree
-  (`org/machines/transport-2026-10/rules.md` → ws-9): regenerable output in
+  (`infra/machines/transport-2026-10/rules.md` → ws-9): regenerable output in
   the tree would cost the hub its bytes for a year at every run. The old
   in-tree `build/` stays in `.gitignore` as a guard against a stale one.
 

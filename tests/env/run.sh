@@ -2,7 +2,7 @@
 # Regression suite for the session environment: what a login shell hands the
 # graphical session, and what the environment.d package hands the user manager.
 # Written 2026-09-23 with the login-shell route in bash/.bash_profile and the
-# environment.d package. The chain it pins is org/machines/environment.md.
+# environment.d package. The chain it pins is infra/machines/environment.md.
 #
 # Hermetic: every shell runs under `env -i` with HOME pointed at a fixture that
 # links to this checkout's bash files the way stow does, so the real ~ is never
@@ -117,7 +117,7 @@ check "every drop-in line is a comment, blank, or NAME=value" [ -z "$(grep -hvE 
 # --- 5. the reader guard's environment half (10-env.sh, 2026-10-10) ---------
 # GIT_OPTIONAL_LOCKS=0 is exported only on a machine whose host file,
 # configs/git/hosts/<hostname>.inc, names it a reader or names a reader
-# repository (org/machines/transport-2026-10, rules.md fedxps-1). The fixture
+# repository (infra/machines/transport-2026-10, rules.md fedxps-1). The fixture
 # gets a host file under this machine's real hostname, since the login shell
 # reads it by `uname -n`.
 echo "== GIT_OPTIONAL_LOCKS from the host file =="

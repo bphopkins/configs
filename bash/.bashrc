@@ -10,7 +10,7 @@ fi
 
 # Load modular configuration. A Syncthing conflict copy of a module keeps its
 # .sh and sorts after the original in every locale, so it would win; it is
-# never sourced (org/machines/transport-2026-10/rules.md -> ws-4).
+# never sourced (infra/machines/transport-2026-10/rules.md -> ws-4).
 if [ -d ~/.bashrc.d ]; then
   for rc in ~/.bashrc.d/*.sh; do
     [[ $rc == *.sync-conflict-* ]] && continue
@@ -19,9 +19,9 @@ if [ -d ~/.bashrc.d ]; then
   unset rc
 fi
 
-# Private modules, outside this public repo: org/claude-config/shell/*.sh, in
+# Private modules, outside this public repo: infra/claude-config/shell/*.sh, in
 # the Desktop's Syncthing folder, absent on a machine without it (2026-10-31).
-for rc in ~/Desktop/org/claude-config/shell/*.sh; do
+for rc in ~/Desktop/infra/claude-config/shell/*.sh; do
   [[ $rc == *.sync-conflict-* ]] && continue
   [ -f "$rc" ] && . "$rc"
 done
@@ -38,7 +38,7 @@ unset rc
 if ((BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] >= 503)); then
   _bashrc_stamp() { # into _BASHRC_NOW: ~/.bashrc, ~/.bash_profile, each module the loops source
     local f files=(~/.bashrc ~/.bash_profile)
-    for f in ~/.bashrc.d/*.sh ~/Desktop/org/claude-config/shell/*.sh; do
+    for f in ~/.bashrc.d/*.sh ~/Desktop/infra/claude-config/shell/*.sh; do
       [[ $f != *.sync-conflict-* && -f $f ]] && files+=("$f")
     done
     _BASHRC_NOW="$(stat -L -c '%i %.9Z' -- "${files[@]}" 2>/dev/null)"

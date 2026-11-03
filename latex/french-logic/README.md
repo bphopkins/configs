@@ -283,7 +283,7 @@ value is a deferred fine-tune (item 14).*
   braces. `tests/french-logic/inventory.py` regenerates `AUDIT.md` from the
   unit files (its group headings are the units' own: a `%%%` line, or the
   first line of a run of `%` lines); `tests/french-logic/units.sh` is the standalone-load test.
-- **Consumer harness.** `org/claude-config/repos/configs/french-logic-harness/`
+- **Consumer harness.** `infra/claude-config/repos/configs/french-logic-harness/`
   (private): `sync.sh` copies the dissertation, its wrappers, the decks, and
   the teaching and opuscula documents into a scratch tree, `run-suite.sh`
   builds them against a candidate package, `compare.py` diffs page by page.

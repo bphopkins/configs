@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression suite for bin/sync-check, the transport campaign's gauge
-# (org/machines/transport-2026-10/rules.md: ws-1, ws-2, fedxps-3, bigfed-2;
+# (infra/machines/transport-2026-10/rules.md: ws-1, ws-2, fedxps-3, bigfed-2;
 # built 2026-10-10 at the pilot's step 3b, pilot/build-gauge.md there).
 #
 # Nothing real is reached: three fixture Syncthing instances -- fedxps, bigfed
@@ -174,8 +174,8 @@ hubfx_reset
 
 # repositories: a bare origin, a clone in each workstation's home at the same HEAD
 mkrepos() {
-  rm -rf "$SB/origin-nousowl.git" "$SB/origin-org.git"
-  for r in nousowl org; do
+  rm -rf "$SB/origin-nousowl.git" "$SB/origin-infra.git"
+  for r in nousowl infra; do
     git init -q --bare -b main "$SB/origin-$r.git"
     for h in fedxps bigfed; do rm -rf "$SB/ssh/$h/home/Desktop/$r"; done
     git clone -q "$SB/origin-$r.git" "$SB/ssh/bigfed/home/Desktop/$r"
@@ -331,15 +331,15 @@ be fedxps; scenario 'fedxps.folders.f1.needTotalItems=2' 'fedxps.folders.f1.need
 out=$(run sync); r=$(rc sync)
 check "named"                                has "$out" '^\[FAIL\] alpha: needs 2 items that do not arrive: a.txt, b.txt'
 check "  exit 1"                             is "$r" 1
-check "  outside any .git: today's repair, the edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "  outside any .git: today's repair, the edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 # under a .git the write is the sanctioned touch, never an edit (settled 79;
 # the lead's follow-up, 2026-10-27)
 scenario 'fedxps.folders.f2.needTotalItems=2' 'fedxps.folders.f2.needNames=[".git/index",".git/refs/heads/main"]'
 out=$(run sync)
-check "a need under .git alone: the touch, never an edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: touch \.git/index, \.git/refs/heads/main on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "a need under .git alone: the touch, never an edit" has "$out" "fix: both workstations listing the same path towards the hub means the hub holds a conflict's loser: touch \.git/index, \.git/refs/heads/main on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 check "  no edit in it"                       lacks "$(grep -A1 'do not arrive' <<<"$out")" 'edit the file|edit \.git'
 scenario 'fedxps.folders.f2.needTotalItems=2' 'fedxps.folders.f2.needNames=["notes.txt",".git/index"]'
-check "a need mixed: each clause names its paths, the edit outside .git, the touch under it" has "$(run sync)" "conflict's loser: edit notes\.txt once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again; touch \.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "a need mixed: each clause names its paths, the edit outside .git, the touch under it" has "$(run sync)" "conflict's loser: edit notes\.txt once more on the machine whose text is in the conflict copy \(the one whose counter the current version lacks\) and read again; touch \.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) and read again \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 
 echo "== sync: the known stuck item, named, reads OK; anything else fails =="
 # KNOWN is empty since its last item was repaired (2026-10-11), so these cases run on a copy of the
@@ -443,11 +443,11 @@ check "the hub not seeing this machine: WARN" has "$(run sync)" '^\[WARN\] nouso
 scenario 'nousowl.folders.f1.completion.BIG.needItems=1' 'bigfed.folders.f1.needTotalItems=1' 'bigfed.folders.f1.needNames=["late.md"]'
 out=$(run sync)
 check "the other workstation needing what does not arrive: FAIL, named" has "$out" '^\[FAIL\] alpha: bigfed needs 1 item that do not arrive: late.md'
-check "  outside any .git: today's repair, the edit" has "$out" "fix: the hub may hold a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "  outside any .git: today's repair, the edit" has "$out" "fix: the hub may hold a conflict's loser: edit the file once more on the machine whose text is in the conflict copy \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 scenario 'nousowl.folders.f1.completion.BIG.needItems=1' 'bigfed.folders.f1.needTotalItems=1' 'bigfed.folders.f1.needNames=["sub/.git/index"]'
-check "the other workstation needing a .git path: the touch, never an edit (settled 79)" has "$(run sync)" "fix: the hub may hold a conflict's loser: touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "the other workstation needing a .git path: the touch, never an edit (settled 79)" has "$(run sync)" "fix: the hub may hold a conflict's loser: touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 scenario 'nousowl.folders.f1.completion.BIG.needItems=2' 'bigfed.folders.f1.needTotalItems=2' 'bigfed.folders.f1.needNames=["late.md","sub/.git/index"]'
-check "  mixed: each clause names its paths" has "$(run sync)" "fix: the hub may hold a conflict's loser: edit late\.md once more on the machine whose text is in the conflict copy; touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "  mixed: each clause names its paths" has "$(run sync)" "fix: the hub may hold a conflict's loser: edit late\.md once more on the machine whose text is in the conflict copy; touch sub/\.git/index on the machine whose counter the current version lacks \(never edit a \.git path\) \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 scenario 'nousowl.folders.f1.state="error"' 'nousowl.folders.f1.error="folder marker missing"'
 out=$(run sync)
 check "a hub folder in the error state: FAIL with its text (review 3b-2)" has "$out" '^\[FAIL\] alpha: folder error on nousowl: folder marker missing'
@@ -578,8 +578,8 @@ mkdir -p "$N/.git/refs/heads"
 echo x > "$N/.git/refs/heads/main.sync-conflict-20261009-162229-ABCDEFG"
 touch -d '20 minutes ago' "$N/.git/index.lock"
 touch "$N/.git/fresh.lock"
-mkdir -p "$HOME/Desktop/org/claude-config/rules" "$HOME/Desktop/configs/environment.d" "$HOME/Desktop/other/rules"
-echo r > "$HOME/Desktop/org/claude-config/rules/house.sync-conflict-20261009-195347-HIJKLMN.md"
+mkdir -p "$HOME/Desktop/infra/claude-config/rules" "$HOME/Desktop/configs/environment.d" "$HOME/Desktop/other/rules"
+echo r > "$HOME/Desktop/infra/claude-config/rules/house.sync-conflict-20261009-195347-HIJKLMN.md"
 echo e > "$HOME/Desktop/configs/environment.d/10-x.sync-conflict-20261009-195347-HIJKLMN.conf"
 echo o > "$HOME/Desktop/other/rules/notes.sync-conflict-20261009-195347-HIJKLMN.md"
 echo d > "$HOME/.local/share/adelotype/log/fedxps.sync-conflict-20261009-195347-HIJKLMN.jsonl"
@@ -598,7 +598,7 @@ check "  a rules/ directory outside claude-config is elsewhere" has "$out" 'othe
 check "  the copy in the folder outside ~/Desktop is found" has "$out" 'adelotype/log/fedxps.sync-conflict'
 check "  exit 1"                             is "$r" 1
 rm -f "$N/.git/refs/heads/main.sync-conflict-20261009-162229-ABCDEFG" "$N/.git/index.lock" "$N/.git/fresh.lock"
-rm -rf "$HOME/Desktop/org/claude-config" "$HOME/Desktop/configs/environment.d" "$HOME/Desktop/other" "$HOME/.local/share/adelotype/log/fedxps.sync-conflict-20261009-195347-HIJKLMN.jsonl"
+rm -rf "$HOME/Desktop/infra/claude-config" "$HOME/Desktop/configs/environment.d" "$HOME/Desktop/other" "$HOME/.local/share/adelotype/log/fedxps.sync-conflict-20261009-195347-HIJKLMN.jsonl"
 echo o > "$HOME/Desktop/alpha/notes.sync-conflict-20261009-195347-HIJKLMN.md"
 out=$(run conflicts); r=$(rc conflicts)
 check "one copy elsewhere alone: DUE and exit 3" is "$r" 3
@@ -718,11 +718,11 @@ ln -s ../../Desktop/configs/git/hosts/bigfed.inc "$HOME/.config/git/host.inc"
 # ==============================================================================
 echo "== push: from bigfed, the writer =="
 be bigfed; scenario; unset GIT_OPTIONAL_LOCKS
-out=$(run push org); r=$(rc push org)
-check "a repository in no folder: nothing to check, the age line" has "$out" '^\[ OK \] org: in no Syncthing folder, nothing to check; origin/main last moved [0-9]+ s ago; nothing unpushed'
+out=$(run push infra); r=$(rc push infra)
+check "a repository in no folder: nothing to check, the age line" has "$out" '^\[ OK \] infra: in no Syncthing folder, nothing to check; origin/main last moved [0-9]+ s ago; nothing unpushed'
 check "  exit 0"                             is "$r" 0
 check "  the daemon was not read for it"     lacks "$(reqs bigfed)" 'db/'
-out=$(run push -q org); r=$(rc push -q org)
+out=$(run push -q infra); r=$(rc push -q infra)
 check "-q: silent for it"                    is "$out" ""
 check "  exit 0"                             is "$r" 0
 out=$(run push nousowl); r=$(rc push nousowl)
@@ -881,14 +881,14 @@ out=$(run push); r=$(rc push)
 check "no name: WARN, exit 2"                is "$r" 2
 echo "== push: a repository under a marker no configuration names; the search order (review 3b-2) =="
 be bigfed; scenario
-mkdir -p "$HOME/Desktop/org/.stfolder"
-out=$(SYNC_CHECK_CONFIG="$SB/nowhere.xml" run push -q org); r=$(SYNC_CHECK_CONFIG="$SB/nowhere.xml" rc push -q org)
-check "no config.xml, a marker at the repository: WARN, never a silent pass" has "$out" '^\[WARN\] org: Syncthing carries it \(the folder marker at ~/Desktop/org\), but no config.xml was found'
+mkdir -p "$HOME/Desktop/infra/.stfolder"
+out=$(SYNC_CHECK_CONFIG="$SB/nowhere.xml" run push -q infra); r=$(SYNC_CHECK_CONFIG="$SB/nowhere.xml" rc push -q infra)
+check "no config.xml, a marker at the repository: WARN, never a silent pass" has "$out" '^\[WARN\] infra: Syncthing carries it \(the folder marker at ~/Desktop/infra\), but no config.xml was found'
 check "  exit 2"                             is "$r" 2
-out=$(run push -q org); r=$(rc push -q org)
+out=$(run push -q infra); r=$(rc push -q infra)
 check "a marker the configuration does not name: WARN" has "$out" 'names no folder there'
 check "  exit 2"                             is "$r" 2
-rmdir "$HOME/Desktop/org/.stfolder"
+rmdir "$HOME/Desktop/infra/.stfolder"
 mkdir -p "$HOME/.config/syncthing" "$HOME/.local/state/syncthing"
 cp "$SYNC_CHECK_CONFIG" "$HOME/.config/syncthing/config.xml"
 python3 - "$SYNC_CHECK_CONFIG" "$HOME/.local/state/syncthing/config.xml" <<'PY'
@@ -918,12 +918,12 @@ check "refused: fedxps reads it"             has "$out" '^\[FAIL\] nousowl: fedx
 check "  fix: push from bigfed, with the remote form" has "$out" "fix: push from bigfed: gpush nousowl there, or from here: ssh -t bigfed 'bash -ic \"gpush nousowl\"'"
 check "  exit 1"                             is "$r" 1
 check "  nothing read from the daemon for it" lacks "$(reqs fedxps)" 'db/'
-out=$(run push org); r=$(rc push org)
-check "org is still fedxps's to push today: OK" has "$out" '^\[ OK \] org: in no Syncthing folder'
+out=$(run push infra); r=$(rc push infra)
+check "infra is still fedxps's to push today: OK" has "$out" '^\[ OK \] infra: in no Syncthing folder'
 check "  exit 0"                             is "$r" 0
 printf '[gsync]\n\trole = reader\n' > "$HOSTS_FED/fedxps.inc"
-out=$(run push org); r=$(rc push org)
-check "under role = reader every repository is refused, in a folder or not" has "$out" '^\[FAIL\] org: fedxps reads this repository and does not push it'
+out=$(run push infra); r=$(rc push infra)
+check "under role = reader every repository is refused, in a folder or not" has "$out" '^\[FAIL\] infra: fedxps reads this repository and does not push it'
 check "  exit 1"                             is "$r" 1
 chmod 000 "$HOSTS_FED/fedxps.inc"
 check "a host file that cannot be read: a reader, warned" has "$(run guard)" '^\[WARN\] host file .*fedxps\.inc exists but cannot be read: a reader until it is fixed'
@@ -1043,7 +1043,7 @@ check "  exit 2"                             is "$r" 2
 printf '[gsync]\n\trole = reader\n' > "$HOSTS_FED/fedxps.inc"
 scenario
 out=$(run guard)
-check "under role = reader: every repository, the one in no folder skipped and named" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter, in the version vectors \(nousowl; in no folder, skipped: ~/Desktop/org\)"
+check "under role = reader: every repository, the one in no folder skipped and named" has "$out" "^\[ OK \] no .git path of 12 carries this machine's counter, in the version vectors \(nousowl; in no folder, skipped: ~/Desktop/infra\)"
 printf '%b' "$FEDINC" > "$HOSTS_FED/fedxps.inc"
 be bigfed; unset GIT_OPTIONAL_LOCKS; scenario 'file:bigfed:f2:.git/index={"version":["BIGFEDX:1792640450"]}'
 run guard >/dev/null
@@ -1137,7 +1137,7 @@ echo "== sync: him-2's fuller form, the losing machine named (D8) =="
 L=('fedxps.folders.f1.completion.HUB.needItems=1' 'fedxps.folders.f1.completion.HUB.names=["x.txt"]' 'bigfed.folders.f1.completion.HUB.needItems=1' 'bigfed.folders.f1.completion.HUB.names=["x.txt"]' 'nousowl.folders.f1.completion.BIG.needItems=1' 'nousowl.folders.f1.completion.FED.needItems=1')
 be fedxps; scenario "${L[@]}" 'file:fedxps:f1:x.txt={"version":["BIGFEDX:1792965826"],"modifiedBy":"BIGFEDX"}'
 out=$(run sync)
-check "the vector carries bigfed alone: edit on fedxps, said so" has "$out" "fix: edit x.txt once more on fedxps \(the current version carries bigfed's counter alone\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)"
+check "the vector carries bigfed alone: edit on fedxps, said so" has "$out" "fix: edit x.txt once more on fedxps \(the current version carries bigfed's counter alone\) and read again \(infra/machines/transport-2026-10/rules.md -> him-2\)"
 check "  the vector read from this machine's db/file" has "$(reqs fedxps)" '^GET /rest/db/file\?folder=f1&file=x\.txt$'
 be bigfed; scenario "${L[@]}" 'file:bigfed:f1:x.txt={"version":["FEDXPSX:1792965950"],"modifiedBy":"FEDXPSX"}'
 check "read from bigfed, the vector carrying fedxps alone: edit on bigfed" has "$(run sync)" "edit x.txt once more on bigfed \(the current version carries fedxps's counter alone\)"
@@ -1156,7 +1156,7 @@ check "  no machine named"                   lacks "$out" 'edit x.txt once more 
 LG=('fedxps.folders.f2.completion.HUB.needItems=1' 'fedxps.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1' 'nousowl.folders.f2.completion.FED.needItems=1')
 be fedxps; scenario "${LG[@]}" 'file:fedxps:f2:.git/refs/heads/main={"version":["BIGFEDX:1792965826"],"modifiedBy":"BIGFEDX"}'
 out=$(run sync)
-check "a .git path whose loser the hub holds: touch it on fedxps, never edit it" has "$out" "fix: touch \.git/refs/heads/main on fedxps \(never edit a \.git path; the current version carries bigfed's counter alone\) and read again \(org/machines/transport-2026-10/rules.md -> him-2\)$"
+check "a .git path whose loser the hub holds: touch it on fedxps, never edit it" has "$out" "fix: touch \.git/refs/heads/main on fedxps \(never edit a \.git path; the current version carries bigfed's counter alone\) and read again \(infra/machines/transport-2026-10/rules.md -> him-2\)$"
 check "  no edit of it"                       lacks "$out" 'edit \.git/refs/heads/main'
 LM=('fedxps.folders.f1.completion.HUB.needItems=2' 'fedxps.folders.f1.completion.HUB.names=["x.txt","sub/.git/index"]' 'bigfed.folders.f1.completion.HUB.needItems=2' 'bigfed.folders.f1.completion.HUB.names=["x.txt","sub/.git/index"]' 'nousowl.folders.f1.completion.BIG.needItems=2' 'nousowl.folders.f1.completion.FED.needItems=2')
 scenario "${LM[@]}" 'file:fedxps:f1:x.txt={"version":["BIGFEDX:1792965826"]}' 'file:fedxps:f1:sub/.git/index={"version":["BIGFEDX:1792965826"]}'
@@ -1216,11 +1216,11 @@ check "  the same seen from bigfed"           is "$(fixof "$(run sync)" 'strande
 # the sandbox's configs is no repository, so its .git/index is made for them
 CFGGIT="$SB/ssh/bigfed/home/Desktop/configs/.git"; SUBGIT="$SB/ssh/bigfed/home/Desktop/alpha/sub"
 mkdir -p "$CFGGIT" "$SUBGIT/.git"; : > "$CFGGIT/index"; : > "$SUBGIT/.git/index"
-scenario 'bigfed.folders.f1.path="'"$SB/ssh/bigfed/home/Desktop"'"' 'bigfed.folders.f1.completion.HUB.needItems=3' 'bigfed.folders.f1.completion.HUB.names=["configs/.git/index","notes.txt","org/.git/refs/heads/main"]' 'nousowl.folders.f1.completion.BIG.needItems=3'
+scenario 'bigfed.folders.f1.path="'"$SB/ssh/bigfed/home/Desktop"'"' 'bigfed.folders.f1.completion.HUB.needItems=3' 'bigfed.folders.f1.completion.HUB.names=["configs/.git/index","notes.txt","infra/.git/refs/heads/main"]' 'nousowl.folders.f1.completion.BIG.needItems=3'
 out=$(run sync)
 check "a folder at ~/Desktop: a path outside .git keeps today's text" has "$out" '^\[FAIL\] alpha: stranded on bigfed: notes.txt$'
 check "  each repository its own line, named as push takes it (1/2)" is "$(fixof "$out" 'stranded on bigfed: configs/.git/index')" "${SPLIT/push nousowl/push configs}"
-check "  each repository its own line, named as push takes it (2/2)" is "$(fixof "$out" 'stranded on bigfed: org/.git/refs/heads/main')" "${SPLIT/push nousowl/push org}"
+check "  each repository its own line, named as push takes it (2/2)" is "$(fixof "$out" 'stranded on bigfed: infra/.git/refs/heads/main')" "${SPLIT/push nousowl/push infra}"
 scenario 'bigfed.folders.f1.completion.HUB.needItems=1' 'bigfed.folders.f1.completion.HUB.names=["sub/.git/index"]' 'nousowl.folders.f1.completion.BIG.needItems=1'
 check "a repository nested in a folder: named by its path" has "$(run sync)" 'sync-check push ~/Desktop/alpha/sub names each step'
 rm -rf "$CFGGIT" "$SUBGIT"
@@ -1243,7 +1243,7 @@ check "a role read under a warning (host.inc naming another machine's file): the
 check "  never 'delete the copy'"             lacks "$out" 'delete the copy'
 ln -sfn ../../Desktop/configs/git/hosts/bigfed.inc "$SB/ssh/bigfed/home/.config/git/host.inc"
 be fedxps; export GIT_OPTIONAL_LOCKS=0; scenario 'fedxps.folders.f1.completion.HUB.needDeletes=1' 'fedxps.folders.f1.completion.HUB.names=["gone.txt"]'
-check "a path outside any .git: today's text, whole" is "$(fixof "$(run sync)" 'stranded on fedxps: gone.txt')" "edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (org/machines/transport-2026-10/rules.md -> him-2)"
+check "a path outside any .git: today's text, whole" is "$(fixof "$(run sync)" 'stranded on fedxps: gone.txt')" "edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (infra/machines/transport-2026-10/rules.md -> him-2)"
 
 echo "== hub: free space, errors, index, the retention drop-in (hub-4, hub-1) =="
 be fedxps; scenario
@@ -1592,7 +1592,7 @@ paste_known "$out" "$SB/sync-check-pasted-push"
 check "  pasted as printed: the push OK"       has "$("$SB/sync-check-pasted-push" push nousowl 2>&1)" "^\[ OK \] nousowl: .*the known write by counter 1793037467 from fedxps on 1 path \(since $today: <why: "
 # the push line's .git fix when a phantom is present too (settled 79; refute-b.md -> F1)
 G=('bigfed.folders.f2.completion.HUB.needItems=1' 'bigfed.folders.f2.completion.HUB.names=[".git/refs/heads/main"]' 'nousowl.folders.f2.completion.BIG.needItems=1')
-LOSER="the hub holds the loser of these .git paths (a split with the direct link up): on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; then the phantom repair below (org/machines/transport-2026-10/rules.md -> him-2)"
+LOSER="the hub holds the loser of these .git paths (a split with the direct link up): on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; then the phantom repair below (infra/machines/transport-2026-10/rules.md -> him-2)"
 scenario "${G[@]}"
 cp "$HOME/Desktop/nousowl/.git/refs/heads/main" "$HOME/Desktop/nousowl/.git/refs/heads/main.sync-conflict-20261027-022459-FEDXPSX"
 out=$(run push nousowl); r=$?
@@ -1607,7 +1607,7 @@ echo x > "$HOME/Desktop/nousowl/.git/index.sync-conflict-20261027-022459-FEDXPSX
 check "a conflict copy under .git alone beside them: the same opening" is "$(fixof "$(run push nousowl)" 'under its .git needed')" "$LOSER"
 rm "$HOME/Desktop/nousowl/.git/index.sync-conflict-20261027-022459-FEDXPSX"
 out=$(run push nousowl)
-check "with no phantom: today's opening"      is "$(fixof "$out" 'under its .git needed')" "a split with no phantom: on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; the phantom branch then appears here, rename it, commit the working tree, delete the inert copies (org/machines/transport-2026-10/rules.md -> him-2)"
+check "with no phantom: today's opening"      is "$(fixof "$out" 'under its .git needed')" "a split with no phantom: on fedxps, touch exactly these paths under the repository's .git (those listed 'bigfed -> hub') and nothing else; the phantom branch then appears here, rename it, commit the working tree, delete the inert copies (infra/machines/transport-2026-10/rules.md -> him-2)"
 check "  never the loser's"                    lacks "$out" 'the hub holds the loser'
 N7='[".git/COMMIT_EDITMSG",".git/index",".git/logs/HEAD",".git/logs/refs/heads/main",".git/objects/b6",".git/objects/pack/pack-1.pack",".git/refs/heads/main"]'
 # the seven exist here, as a split's do on the writer (a path absent here is a
@@ -1778,7 +1778,7 @@ run sync >/dev/null
 scenario
 out=$(run session); r=$?
 check "a stored FAIL, the fixture since cleared: reprinted with its age" has "$out" '^\[FAIL\] alpha: stranded on fedxps: gone.txt \(the newest full reading, by sync-check sync [0-9]+ s ago\)$'
-check "  its fix line under it, as the live run printed it" is "$(grep -A1 '^\[FAIL\] alpha: stranded' <<<"$out" | tail -1)" "       fix: edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (org/machines/transport-2026-10/rules.md -> him-2)"
+check "  its fix line under it, as the live run printed it" is "$(grep -A1 '^\[FAIL\] alpha: stranded' <<<"$out" | tail -1)" "       fix: edit each listed path on bigfed, never on fedxps (a re-save that only moves its time should do the same, untested); the stranded text then arrives on both as a conflict copy: merge it into the original and delete the copy (infra/machines/transport-2026-10/rules.md -> him-2)"
 check "  the other folders still OK"         has "$out" '^\[ OK \] nousowl: up to date \(the newest full reading'
 check "  exit 1"                             is "$r" 1
 out=$(run sync); r=$?

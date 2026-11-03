@@ -255,7 +255,7 @@ yes_ "skill gate OK"                               '[[ "$out" == *"[ OK ] skill 
 sed -i 's/Roe=25000/Roe=50000/' "$B"; out=$(run "$w")
 yes_ "a moved cap fails, both readings shown"      '[[ "$out" == *"[FAIL] memory numbers (rows 4, 11): the binary reads 200/50000/200/4096/61440 where 200/25000/200/4096/61440 is on record"* ]]'
 yes_ "  names the texts that rest on it"           '[[ "$out" == *"rests on: this gauge (check 3 and its note); context-policy.md"* ]]'
-yes_ "  and the fix: re-measure, the inventory row, the ledger class" '[[ "$out" == *"fix: re-measure on Claude Code 9.9.9, then correct the texts above (org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md, rows 4, 11); /restore-order files it as moved-premise"* ]]'
+yes_ "  and the fix: re-measure, the inventory row, the ledger class" '[[ "$out" == *"fix: re-measure on Claude Code 9.9.9, then correct the texts above (infra/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md, rows 4, 11); /restore-order files it as moved-premise"* ]]'
 check "  exits 1" "$(rc "$w")" "1"
 sed -i 's/MAX_SESSION_BYTES:61440/MAX_SESSION_BYTES:4096/' "$w/home/.local/share/claude/versions/9.9.9"
 yes_ "a moved session cap fails too"               '[[ "$(run "$w")" == *"reads 200/50000/200/4096/4096 where"* ]]'

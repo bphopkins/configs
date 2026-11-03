@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression suite for stow-all, stow-all-dry and unstow-all in
-# bash/.bashrc.d/60-stow.sh (org/machines/transport-2026-10/rules.md -> ws-8;
+# bash/.bashrc.d/60-stow.sh (infra/machines/transport-2026-10/rules.md -> ws-8;
 # written 2026-10-26 at the campaign's step 5a, on the battery's stow arrivals,
 # scratch-2026-10-09/refute-config/stow/t.sh and t2.sh there, S1 and S5).
 #

@@ -131,7 +131,7 @@ if [ -d "$HOME/Desktop" ]; then
   done < <(find "$HOME/Desktop" -maxdepth 7 \
              \( -name .git -o -name node_modules -o -name archive \
                 -o -name 'Deontic Logic' -o -name lecture-recordings \
-                -o -name readings -o -name finances \) -prune -o \
+                -o -name readings \) -prune -o \
              -type d -name '.claude' -print0 2>/dev/null)
 
   while IFS= read -r -d '' f; do
@@ -143,7 +143,7 @@ if [ -d "$HOME/Desktop" ]; then
   done < <(find "$HOME/Desktop" -maxdepth 7 \
              \( -name .git -o -name node_modules -o -name archive \
                 -o -name 'Deontic Logic' -o -name lecture-recordings \
-                -o -name readings -o -name finances \) -prune -o \
+                -o -name readings \) -prune -o \
              -type f -name 'CLAUDE.local.md' -print0 2>/dev/null)
 fi
 [ "$repo_hits" = 0 ] && echo "  (none)"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression suite for `bye` and `byebye` in bash/.bashrc.d/40-aliases.sh
-# (org/machines/transport-2026-10/rules.md: him-3, bigfed-3, bigfed-1; built
+# (infra/machines/transport-2026-10/rules.md: him-3, bigfed-3, bigfed-1; built
 # 2026-10-10 at the pilot's seeding, pilot/seeding.md there).
 #
 # Sandboxed and caged (tests/cage.sh): a fake HOME with the two host files and

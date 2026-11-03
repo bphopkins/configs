@@ -22,7 +22,7 @@
 # Takes effect at the next login -- except that the upload sets and never
 # removes, so on a lingering manager (bigfed) a variable it already holds
 # needs `systemctl --user unset-environment NAME` once. The chain:
-# org/machines/environment.md. Suite: tests/env/run.sh.
+# infra/machines/environment.md. Suite: tests/env/run.sh.
 for rc in ~/.bashrc.d/10-env.sh ~/.bashrc.d/20-path.sh; do
   [ -f "$rc" ] && . "$rc"
 done

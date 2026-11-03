@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression suite for lazy.nvim's lock on the reader (org/machines/
+# Regression suite for lazy.nvim's lock on the reader (infra/machines/
 # transport-2026-10, rules.md fedxps-5; written 2026-10-26 at step 5a, from the
 # battery's lazytest/t.sh and refute-config's lazy/t3.sh case t5).
 #

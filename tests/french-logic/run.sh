@@ -12,7 +12,7 @@
 # images in the build's diff/), 2 when the fixture itself failed to compile.
 #
 # The build goes to ${XDG_CACHE_HOME:-~/.cache}/configs-tests/french-logic/,
-# outside the tree (2026-10-26; org/machines/transport-2026-10, rules.md ws-9):
+# outside the tree (2026-10-26; infra/machines/transport-2026-10, rules.md ws-9):
 # Syncthing carries ~/Desktop whole and reads no .gitignore, so a build in here
 # would cross to the other machine and the hub at every run. Python writes no
 # bytecode beside its scripts here. Only golden/ and modes.tsv are written in

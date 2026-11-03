@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The tests/sync suite: the transport campaign's cases that need Syncthing
-# itself (org/machines/transport-2026-10/rules.md, "How to read it" -> Tests;
+# itself (infra/machines/transport-2026-10/rules.md, "How to read it" -> Tests;
 # built 2026-10-26 at step 5a, seeded from the battery's rigs in
 # scratch-2026-10-09/). Three real Syncthing instances on loopback per case
 # (rig.py): A plays bigfed, the writer; B plays fedxps, the reader; H plays

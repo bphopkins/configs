@@ -3,11 +3,11 @@
 #
 #   bash tests/claude/run.sh
 #
-# Fully sandboxed under $TMPDIR: a fake HOME, a fake org/claude-config, a fake
+# Fully sandboxed under $TMPDIR: a fake HOME, a fake infra/claude-config, a fake
 # ~/Desktop, and git with no global or system config. Needs no network. Runs
 # caged (tests/cage.sh). Resolves claude-link relative to its own location, so
 # it tests the checkout it lives in, or $CLAUDE_SUITE_LINK when a mutation run
-# points it at another copy; the hooks live in org/claude-config and are read
+# points it at another copy; the hooks live in infra/claude-config and are read
 # from there, or from $CLAUDE_SUITE_HOOKS likewise. Writes nothing real --
 # three late sections read the live config tree, and only read it.
 #
@@ -20,8 +20,8 @@ REPO=$(cd "$HERE/../.." && pwd)
 source "$REPO/tests/cage.sh"
 cage claude "$@"
 LINK="${CLAUDE_SUITE_LINK:-$REPO/bin/claude-link}"                     # claude-link under test
-HOOKS="${CLAUDE_SUITE_HOOKS:-$HOME/Desktop/org/claude-config/hooks}"  # hook scripts under test
-RCFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"           # the live tree, read only
+HOOKS="${CLAUDE_SUITE_HOOKS:-$HOME/Desktop/infra/claude-config/hooks}"  # hook scripts under test
+RCFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"           # the live tree, read only
 pass=0; fail=0
 ok()   { pass=$((pass+1)); printf '  \033[32mok\033[0m   %s\n' "$1"; }
 no()   { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
@@ -572,7 +572,7 @@ check "a second --apply has nothing to do"        "$rc" "0"
 check "  and says nothing about skills"           "$(printf '%s\n' "$out" | sed -n '/== skills ==/,/^$/p' | grep -c '\[')" "0"
 if [ -x "$HOOKS/session-start.sh" ]; then
   j=$(HOME="$w/home" CLAUDE_LINK_CFG="$w/cfg" bash "$HOOKS/session-start.sh")
-  not_ "the hook's sentinels still pass"          '[[ "$j" == *"not linked into org/claude-config"* ]]'
+  not_ "the hook's sentinels still pass"          '[[ "$j" == *"not linked into infra/claude-config"* ]]'
   not_ "  no link counted as dangling"            '[[ "$j" == *"no longer exists"* ]]'
   check "  and the user is not interrupted"       "$(sysm "$j")" ""
 fi
@@ -1061,13 +1061,13 @@ if [ -f "$GS" ]; then
   git -C "$r" add -A; git -C "$r" commit -qm two
   # hints are queued now; the flush is what prints them (same subshell, so the
   # queue survives between the two calls).
-  out=$(PATH=/nonexistent:/usr/bin:/bin _gsync_pull_hints org "$r" "$old" 2>&1; _gsync_flush_hints 2>&1)
+  out=$(PATH=/nonexistent:/usr/bin:/bin _gsync_pull_hints infra "$r" "$old" 2>&1; _gsync_flush_hints 2>&1)
   yes_ "new scope fires the hint"         '[[ "$out" == *"claude-config changed"* ]]'
   out=$(_gsync_pull_hints configs "$r" "$old" 2>&1; _gsync_flush_hints 2>&1)
   not_ "does not fire for other repos"    '[[ "$out" == *"claude-config changed"* ]]'
   printf 'a2\n' > "$r/claude-config/memory/-x/a.md"
   git -C "$r" add -A; git -C "$r" commit -qm three; mid=$(git -C "$r" rev-parse HEAD~1)
-  out=$(_gsync_pull_hints org "$r" "$mid" 2>&1; _gsync_flush_hints 2>&1)
+  out=$(_gsync_pull_hints infra "$r" "$mid" 2>&1; _gsync_flush_hints 2>&1)
   not_ "a mere edit does not fire it"     '[[ "$out" == *"claude-config changed"* ]]'
   yes_ "the || true guard is present"     'grep -q "claude-link --auto >/dev/null 2>&1 || true" "$GS"'
 else

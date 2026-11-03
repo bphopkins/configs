@@ -12,7 +12,7 @@
 #
 # Exit: 0 all clear · 1 something is actually wrong · 2 could not determine
 #
-# The half of org/claude-config's integrity that a script can decide. Its
+# The half of infra/claude-config's integrity that a script can decide. Its
 # counterpart is `/restore-order`, which judges prose with agents; this decides
 # what a grep can, so an agent is never spent on it. Built 2026-09-18 from the
 # nine defects of that day's audit that needed no judgment at all — among them a
@@ -36,7 +36,7 @@
 set -uo pipefail
 PATH="${PATH:-/usr/bin:/bin}:/usr/bin:/bin"
 
-CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/org/claude-config}"
+CFG="${CLAUDE_LINK_CFG:-$HOME/Desktop/infra/claude-config}"
 CC="${CLAUDE_LINK_HOME:-$HOME/.claude}"
 DESK="${CLAUDE_LINK_DESK:-$HOME/Desktop}"
 
@@ -94,7 +94,7 @@ while IFS= read -r -d '' f; do
 done < <( { find "$CC" -maxdepth 3 -type l -print0 2>/dev/null
             find "$DESK" -maxdepth 7 \
               \( -name .git -o -name node_modules -o -name archive -o -name readings \
-                 -o -name finances -o -name personal -o -name lecture-recordings \) -prune -o \
+                 -o -name lecture-recordings \) -prune -o \
               \( -name settings.local.json -o -name 'CLAUDE.local.md' \) -type l -print0 2>/dev/null ; } )
 if [ ${#dang[@]} -eq 0 ]; then ok "links into the config: all resolve"
 else fail "links into the config: ${#dang[@]} dangling"; det "${dang[@]}"; fix "claude-link --apply"; fi
@@ -263,7 +263,7 @@ fi   # checks 1 to 9
 # `/restore-order` files it as a `moved-premise` finding. An anchor that is not
 # found reads WARN, never OK. The anchors are the vendor's own strings, shipped
 # in a public binary; nothing of the configuration is in them.
-INV="org/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md"
+INV="infra/claude-config/context-order-2026-10/battery/dev-4-rented-ground.md"
 premise() { # a premise that moved (fail) or could not be read (warn): what rests on it, then the fix
   local rows=$1 rests=$2 how=$3 rw=row
   if [ "$rows" = cfg ]; then fix "$rests"; return; fi

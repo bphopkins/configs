@@ -10,11 +10,11 @@
 #
 # Override the workspace with TL_WORKSPACE; override the repo list with
 # TL_REPOS (space-separated, relative to the workspace, or to ~/Documents
-# for the trees that moved there on 2026-11-02: org/machines/home-layout-2026-10/).
+# for the trees that moved there on 2026-11-02: infra/machines/home-layout-2026-10/).
 set -uo pipefail
 
 ROOT="${TL_WORKSPACE:-$HOME/Desktop}"
-REPOS="${TL_REPOS:-dissertation dissertation-template teach-logic teaching academic opuscula household n-cube org}"
+REPOS="${TL_REPOS:-dissertation dissertation-template teach-logic teaching academic opuscula household n-cube infra}"
 OUT="${1:?usage: tl-roots.sh <outfile>}"
 
 mkdir -p "$(dirname "$OUT")"
