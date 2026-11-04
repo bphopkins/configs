@@ -10,7 +10,7 @@
    a 3px accent border and no rounding, as wofi/style.css has them. Syntax
    and widget names: man 5 rofi-theme. Check a change with
    `rofi -config rofi/config.rasi -dump-theme` (no display needed), which
-   tests/desktop/run.sh runs after edits. */
+   infra/configs/tests/desktop/run.sh runs after edits. */
 
 * {
     bg:      #000000;

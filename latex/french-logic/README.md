@@ -46,7 +46,7 @@ Settled 2026-09-07, in Brandon's words where quoted.
    by default, so one `\usepackage` still replaces a hundred-line preamble.
    Options omit it, and the document-structure units, for host classes that
    own those things themselves (beamer, conference classes).
-6. **Nothing changes output unnoticed.** Two nets. `tests/french-logic`
+6. **Nothing changes output unnoticed.** Two nets. `infra/configs/tests/french-logic`
    renders every member on its own page and hashes it against a golden. A
    consumer harness (private; see *Tooling*) rebuilds the dissertation, its
    article wrappers, the decks, and the teaching and opuscula documents against
@@ -165,7 +165,7 @@ value is a deferred fine-tune (item 14).*
   and replaces the verb's *s* (`\cnecsolo`, `\cobsolo`); the metalanguage
   connectives are named by their symbols, so `solo` appends (`\mltosolo`).
   Whether one command could serve both, spacing itself by context, is a
-  tracker item (`configs/TODO.md`, item 14), not a drift.
+  tracker item (`infra/configs/TODO.md`, item 14), not a drift.
 - **The grammar of the names — settled 2026-09-08: strict, substituted, no
   aliases.** A name is the letters as printed, CamelCase, digits spelled out. Kind is carried by case and one suffix: an initial capital for a schema
   or a system (`\CMr`, `\K`), with `ax` added only where the same letters also
@@ -283,7 +283,7 @@ value is a deferred fine-tune (item 14).*
   braces. `tests/french-logic/inventory.py` regenerates `AUDIT.md` from the
   unit files (its group headings are the units' own: a `%%%` line, or the
   first line of a run of `%` lines); `tests/french-logic/units.sh` is the standalone-load test.
-- **Consumer harness.** `infra/claude-config/home/Desktop/configs/french-logic-harness/`
+- **Consumer harness.** `infra/configs/tests/french-logic/harness/`
   (private): `sync.sh` copies the dissertation, its wrappers, the decks, and
   the teaching and opuscula documents into a scratch tree, `run-suite.sh`
   builds them against a candidate package, `compare.py` diffs page by page.
@@ -322,7 +322,7 @@ live site.
 
 Defects are numbered D, form drift F. Every item below is closed; each is one
 line here and stands in full, as it read when it moved on 2026-09-08, in
-`configs/DECISIONS.md`, item 13.
+`infra/configs/DECISIONS.md`, item 13.
 
 - **D1** orphan `\makeatother` and the comment that blamed `\ExplSyntaxOn` —
   fixed 2026-09-07.
@@ -371,8 +371,8 @@ directory; `slim` stays, part of the option design and proved by the suite;
 `dissertation-template/philogic.sty`, which could one day be derived from the
 units, is out of the campaign's scope and on the tracker (item 14). Nothing is
 open but the decorations' kern fine-tune (item 14). The campaign concluded 2026-09-08; its three briefs are the dated
-record in `configs/docs/french-logic-campaign-2026-09/`, and its post-mortem
-is `configs/DECISIONS.md`, item 13.
+record in `infra/configs/docs/french-logic-campaign-2026-09/`, and its post-mortem
+is `infra/configs/DECISIONS.md`, item 13.
 
 ## History
 
@@ -392,13 +392,13 @@ third chat, on bigfed, verified the second's work, landed the core ordering
 pass, the microtype fix (D16), the dates rule and the dissertation charter's
 package section, recounted the duplicates and the consumers, and then, on
 his "let us proceed", landed the ordering passes for the thirteen other units
-and moved the closed ledger to `configs/DECISIONS.md`. The fourth chat, on
+and moved the closed ledger to `infra/configs/DECISIONS.md`. The fourth chat, on
 bigfed later that day, verified the third's work, put the last three forms on
 the board (the converse *c*, the T on SDL, the kern under W against P), took
 the rest in one batched ask, landed four forms and recorded four policies,
 wrote the `solo` rule down in Brandon's words, released v1.0, and closed the
 campaign; the three briefs moved together to
-`configs/docs/french-logic-campaign-2026-09/`. That evening's confirmation
+`infra/configs/docs/french-logic-campaign-2026-09/`. That evening's confirmation
 pass, every choice re-photographed from v1.0 on the type board, returned three
 notes: `\emptytruthset` reversed to the open dot; the decorations' lost tuck
 restored (K3) and the SDL names tucked (Bk on both), the sixth sitting; the

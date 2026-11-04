@@ -132,7 +132,7 @@ _gsync_detail() { # indent captured git output under its status line
 #
 # Array idioms here are `set -u`-safe deliberately: bash 5.3 errors on
 # ${#arr[@]} for an unset array but expands "${arr[@]}" to nothing, so the
-# emptiness test is the loop itself. tests/claude/run.sh sources this file
+# emptiness test is the loop itself. infra/configs/tests/claude/run.sh sources this file
 # under `set -u`.
 _gsync_hint() { # queue a follow-up (deduped; first-seen order kept)
   local h

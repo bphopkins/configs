@@ -32,7 +32,7 @@
 	# and the machines upgrade on different days, so the backend is named
 	# here, once for both. A move to reftable is one decision, taken by
 	# changing this line.
-	# Test: tests/git-hosts/run.sh.
+	# Test: infra/configs/tests/git-hosts/run.sh.
 	defaultRefFormat = files
 
 [include]

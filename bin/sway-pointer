@@ -43,7 +43,7 @@
 # device to enabled.
 #
 # Reads sway's device list and its input events, both documented IPC
-# (sway-ipc(7): GET_INPUTS, the input event). Suite: tests/sway-pointer/run.sh.
+# (sway-ipc(7): GET_INPUTS, the input event). Suite: infra/configs/tests/sway-pointer/run.sh.
 #
 # pipefail: a device list that cannot be read fails `state`, so toggle sends
 # nothing and the watcher exits 1, which Waybar logs and restarts.

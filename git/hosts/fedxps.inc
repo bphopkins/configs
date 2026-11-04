@@ -21,7 +21,7 @@
 # the hook it names refuses a ref update there (fedxps-6). The battery of
 # 2026-10-09 measured the guard on a 46-operation matrix and on a real Claude
 # session; its reports are under infra/machines/transport-2026-10/. Suite:
-# configs/tests/git-hosts/run.sh, which reads this file as it stands.
+# infra/configs/tests/git-hosts/run.sh, which reads this file as it stands.
 
 [gsync]
 	# The role the sync commands read. Absent, this machine is a writer; any

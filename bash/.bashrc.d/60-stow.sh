@@ -44,7 +44,7 @@ STOW_CFG_ROOT="$HOME/Desktop/configs"
 # on disk, in its own subshell, before it iterates, so a package an arrival
 # adds or removes is stowed or unlinked by a shell that loaded the old file:
 # the re-source this used to need is gone with it. A file that does not parse
-# stows nothing. Suite: tests/stow/run.sh.
+# stows nothing. Suite: infra/configs/tests/stow/run.sh.
 _stow_reread() { # in the caller's subshell: the arrays from 60-stow.sh on disk
   local f="$STOW_CFG_ROOT/bash/.bashrc.d/60-stow.sh"
   if [[ ! -r "$f" ]] || ! bash -n "$f" 2>/dev/null; then

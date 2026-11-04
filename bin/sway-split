@@ -28,7 +28,7 @@
 # The toggle wakes the watcher with a sway tick event rather than a signal, so
 # nothing outside the running sway is touched. Title changes are filtered out
 # of the event stream: they are frequent and cannot change the state.
-# Suite: tests/sway-split/run.sh.
+# Suite: infra/configs/tests/sway-split/run.sh.
 #
 # pipefail: a tree that cannot be read fails `state`, so the watcher exits 1,
 # which Waybar logs and clears, rather than 0, which it would pass over in

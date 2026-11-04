@@ -8,7 +8,7 @@
    command-line options in kebab case, then a theme statement. The look lives
    in theme.rasi, loaded whole in place of rofi's built-in theme. Check a
    change with `rofi -config rofi/config.rasi -dump-config` (no display
-   needed), which tests/desktop/run.sh runs after edits.
+   needed), which infra/configs/tests/desktop/run.sh runs after edits.
 
    Deliberately plain, as wofi was: a list you scroll and type into. drun
    only (the .desktop entries, the set GNOME's app grid shows); no icons; no

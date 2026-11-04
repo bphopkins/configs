@@ -651,7 +651,7 @@ if [ -d "$CFG/memory" ]; then
     # it changes no test outcome. What actually prevents the stow-style folding
     # hazard is structural: the link target is always <scope>/memory, never
     # <scope> itself, so a transcript directory can never become a symlink into
-    # the repo. Point it one level up and 7 checks in tests/claude/run.sh fail.
+    # the repo. Point it one level up and 7 checks in infra/configs/tests/claude/run.sh fail.
     [ $APPLY = 1 ] && mkdir -p "$CC/projects/$scope"
     # An empty scope is a directory git cannot carry, so a clone from GitHub
     # lacks it and the scope list diverges there (the Desktop folder carries it

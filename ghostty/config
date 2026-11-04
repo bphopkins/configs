@@ -45,8 +45,8 @@
 # text" was a cold-cache artefact. The cause is structural and not
 # configurable — Ghostty's 8-byte packed cell against WezTerm's per-cell
 # inline attributes — so larger grids and more cores widen the gap rather
-# than closing it. Full chain: docs/ghostty-vs-wezterm-2026-09-03.md, three
-# addenda; instruments in tests/term-bench/.
+# than closing it. Full chain: infra/configs/docs/ghostty-vs-wezterm-2026-09-03.md, three
+# addenda; instruments in infra/configs/tests/term-bench/.
 #
 # What WezTerm still wins: copy mode (ctrl+shift+x, structurally absent here),
 # QuickSelect, CharSelect, Lua config with event hooks, and chrome that is
@@ -279,7 +279,7 @@ theme = tokyonight-night-bph
 # real entry on the far host with infocmp and tic; `ssh-env` is the fallback
 # to `xterm-256color` where that fails, so the pair has WezTerm's behaviour as
 # its floor rather than as its answer. Measurement and reasoning:
-# configs/docs/ghostty-vs-wezterm-2026-09-03.md.
+# infra/configs/docs/ghostty-vs-wezterm-2026-09-03.md.
 #
 # It is read by the shell at startup, through GHOSTTY_SHELL_FEATURES, so a
 # config reload alone changes nothing already on screen — the next *shell* gets

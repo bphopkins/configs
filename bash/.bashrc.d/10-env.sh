@@ -30,7 +30,7 @@ export NPM_CONFIG_PREFIX="$HOME/.local/npm-global"
 # under the GNOME session (see Scope below). Not `ssh host cmd`: that runs no
 # profile, so BASH_ENV is unset there (measured 2026-09-21). Measured cost:
 # ~10 ms per spawn (1.07 s vs 0.11 s over 100), which is ~7% on a real workload
-# like tests/gsync/run-all.sh (5.4 s -> 5.0 s). The feature it buys is `module
+# like infra/configs/tests/gsync/run-all.sh (5.4 s -> 5.0 s). The feature it buys is `module
 # load` inside scripts, which is not used here.
 #
 # modules.sh sets it only `if [ -z "${BASH_ENV:-}" ]`, and .bashrc sources

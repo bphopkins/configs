@@ -16,7 +16,7 @@
 -- it, and its lifetime matches the server's exactly (the server runs in-process
 -- on vim.uv and dies with Neovim).
 --
--- Regression suite: tests/live-server/run.sh — run it after any edit here or
+-- Regression suite: infra/configs/tests/live-server/run.sh — run it after any edit here or
 -- any plugin update (the v0.1.7 → v0.3.0 rewrite broke this file silently).
 
 -- No build step: since v0.2.0 the server runs entirely in Lua on vim.uv, so the

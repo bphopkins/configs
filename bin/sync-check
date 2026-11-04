@@ -106,7 +106,7 @@ SYNC_CHECK_SNAPSHOT_TTL seconds (default 300): a later call reads the folder
 from there, so a batch reads the cluster once, before its first commit makes
 the folder busy, while each repository's own checks still run live; the file
 holds statuses, completions, device names and need lists, never a key, and is
-written 0600. Suite: tests/sync-check/run.sh.
+written 0600. Suite: infra/configs/tests/sync-check/run.sh.
 
 The reading file (infra/machines/transport-2026-10/PLAN.md -> settled 76,
 2026-10-27): every live read of the sync line's folders -- the bare run, sync,

@@ -2,7 +2,7 @@
 -- hand-edited; snipgen.py regenerates them) call h.mathwrap and h.in_env, and the loader's
 -- parser for a document's own definitions lives here too.  Stage 3 of the LaTeX completion
 -- campaign, 2026-09-13; the contract is PLAN.md section 2 in
--- configs/docs/latex-completion-campaign-2026-09.
+-- infra/configs/docs/latex-completion-campaign-2026-09.
 local M = {}
 
 local function in_math()

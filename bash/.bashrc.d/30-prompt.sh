@@ -22,14 +22,14 @@
 # nothing, which the suite checks. The package still runs from /etc/bashrc
 # and still sets its template, which the assignment below overwrites -- its
 # switch, bash_color_prompt_disable, would have to be set before /etc/bashrc
-# is read, and nothing here runs that early (configs/TODO.md item 25). Before
+# is read, and nothing here runs that early (infra/configs/TODO.md item 25). Before
 # the change the bytes reaching the terminal were compared against the
 # package's in every shape a shell here takes: WezTerm's, Ghostty's launch
 # with both integrations' marks wrapped around the prompt, the VT console,
 # each machine's colour, an unregistered host, PROMPT_DIRTRIM -- identical in
 # all of them. A plain string expands in 7 microseconds against the template's
-# 34. Record: configs/DECISIONS.md, the entry of 2026-09-23.
-# Suite: tests/prompt/run.sh, after any edit here.
+# 34. Record: infra/configs/DECISIONS.md, the entry of 2026-09-23.
+# Suite: infra/configs/tests/prompt/run.sh, after any edit here.
 #
 # Left to right: a reset, so a command that left the terminal bold or coloured
 # does not bleed into the prompt; bold and the machine colour on user@host; a

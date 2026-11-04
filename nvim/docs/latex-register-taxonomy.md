@@ -4,7 +4,7 @@ Living contract for the colour scheme implemented in
 `lua/plugins/vimtex.lua` (registrations), `after/ftplugin/tex.lua`
 (colours), and `after/syntax/tex.lua` (environment-name families).
 Present-tense truth: edit in place when the scheme changes. The
-regression suite is `tests/nvim-syntax/`; the registration/`.sty`
+regression suite is `infra/configs/tests/nvim-syntax/`; the registration/`.sty`
 coverage check is
 `snipgen.py --sty latex/french-logic/french-logic.sty --coverage`.
 

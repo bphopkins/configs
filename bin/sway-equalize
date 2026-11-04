@@ -38,7 +38,7 @@
 # crowded row or column can cause: a target under the floor, or near it a
 # window under the floor with no side left to grow from. Called by path from
 # sway/config, since a sway session's PATH lacks ~/bin. Suite:
-# tests/sway-equalize/run.sh.
+# infra/configs/tests/sway-equalize/run.sh.
 set -u -o pipefail
 
 # Single-quoted: no apostrophe anywhere in the program, its comments

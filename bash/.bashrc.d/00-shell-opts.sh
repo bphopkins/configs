@@ -4,7 +4,7 @@
 # Sourced first, so an option that changes how the later modules are read
 # lands here before they parse. A reserved empty slot from the start of the
 # modular layout until 2026-09-23, when it took the content below
-# (configs/DECISIONS.md, the entry of that date). Interactive shells only:
+# (infra/configs/DECISIONS.md, the entry of that date). Interactive shells only:
 # ~/.bashrc returns before this directory for any other kind, and
 # ~/.bash_profile sources 10-env.sh and 20-path.sh alone.
 #
@@ -16,7 +16,7 @@
 # received by inheritance and nothing else: `ssh host bash -i` showed both
 # unset (measured 2026-09-23). So everything about history is stated here,
 # and nothing about it is inherited any more. checkwinsize stays the
-# system's. Suite: tests/shell-opts/run.sh, after any edit here.
+# system's. Suite: infra/configs/tests/shell-opts/run.sh, after any edit here.
 
 # --- History ----------------------------------------------------------------
 #

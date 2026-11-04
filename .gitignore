@@ -66,9 +66,9 @@ authorized_keys
 *_token*
 
 # --- Build and tool artifacts -----------------------------------------------
-# latex/ is a live stow package, and tests/nvim-syntax/run.sh is the one test
-# that cd's into the repo (it opens tests/nvim-syntax/test.tex), so a LaTeX or
-# Python run can drop artifacts here.
+# latex/ is a live stow package, so a LaTeX run there can drop artifacts here.
+# The suites live in infra/configs/tests/ since 2026-11-03 (sitting C of the
+# private-layer runbook) with an artifact guard of their own in infra/.gitignore.
 *.aux
 *.fdb_latexmk
 *.fls
@@ -79,11 +79,3 @@ authorized_keys
 ls-R
 __pycache__/
 *.pyc
-
-# tests/french-logic builds under ~/.cache/configs-tests/french-logic/ since
-# 2026-10-26 (infra/machines/transport-2026-10, rules.md ws-9), so nothing of
-# it should appear here any more; the line stays as a guard, since a stale
-# in-tree build from before that day would otherwise ride a `git add -A`
-# into this public repository (fedxps held one, 5.2 MB, when the line was
-# briefly removed that morning).
-tests/french-logic/build/

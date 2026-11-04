@@ -92,7 +92,7 @@ set $right l
 
 # Two terminals, deliberately: $term is Ghostty, the daily one since the
 # comparison of 2026-09-03 closed on 2026-09-05
-# (docs/ghostty-vs-wezterm-2026-09-03.md), and $term2 WezTerm, one keystroke
+# (infra/configs/docs/ghostty-vs-wezterm-2026-09-03.md), and $term2 WezTerm, one keystroke
 # away for what Ghostty cannot do. Since 2026-09-28 sway runs on bigfed too,
 # so the choice binds both machines.
 # --gtk-single-instance=false so each press spawns its own process and so
@@ -541,7 +541,7 @@ input type:keyboard {
     # it already has, so no marker shows (2026-09-29; the single key of
     # 2026-09-28 was $mod+v). Called by path, because a sway session's PATH
     # lacks ~/bin: GDM starts sway without a login shell (measured
-    # 2026-09-28). Suite: tests/sway-split/run.sh.
+    # 2026-09-28). Suite: infra/configs/tests/sway-split/run.sh.
     bindsym --no-repeat $mod+Shift+v exec ~/bin/sway-split below
     bindsym --no-repeat $mod+Shift+b exec ~/bin/sway-split beside
     bindsym --no-repeat $mod+Shift+s layout toggle tabbed split

@@ -361,7 +361,7 @@ But honestly, why not just reboot?
   They hold constants only (the editor, one SDL hint). PATH for the session comes
   from `bash/.bash_profile`, which runs `10-env.sh` and `20-path.sh` in the login
   shell GDM starts — check with `systemctl --user show-environment` after a
-  login. `tests/env/run.sh` verifies both halves without one.
+  login. `infra/configs/tests/env/run.sh` verifies both halves without one.
 
 - **Homegrown scripts go in `bin/`, not `~/.local/bin`.** `~/.local/bin` is where pip
   and npm drop their console scripts, and they rewrite that directory on upgrade.

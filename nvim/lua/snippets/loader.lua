@@ -5,7 +5,7 @@
 -- wins (the request-time dedupe in completions.lua keeps the first): the hand file, the
 -- document, the core three, the class, then the closure.  Also :SnippetsReport and
 -- :SnippetsReload.  Stage 3 of the LaTeX completion campaign, 2026-09-13; the contract is
--- PLAN.md section 2 in configs/docs/latex-completion-campaign-2026-09.
+-- PLAN.md section 2 in infra/configs/docs/latex-completion-campaign-2026-09.
 --
 -- Files are read with dofile by path (names carry dots: tikzlibraryshapes.geometric), first
 -- pkg/<name>.lua (TeXstudio's word lists) then sty/<name>.lua (this repository's packages); a

@@ -50,7 +50,7 @@ config.color_scheme = "tokyonight_night" -- alts: tokyonight, tokyonight_night, 
 -- bright palette. Only affects the 8 base ANSI colours, not 256/truecolour.
 config.bold_brightens_ansi_colors = false
 config.check_for_updates = false -- RPM-managed; the built-in updater is noise
-config.scrollback_lines = 20000 -- default is 3500; the tests/ suites overrun it
+config.scrollback_lines = 20000 -- default is 3500; the suites in infra/configs/tests/ overrun it
 
 -- WezTerm delays escape-sequence processing to batch a TUI's redraw into one
 -- frame, so that a program which never says where its frame ends does not tear.
@@ -58,7 +58,7 @@ config.scrollback_lines = 20000 -- default is 3500; the tests/ suites overrun it
 -- costs 3588us with it and 137us without, measured 2026-09-03. That single
 -- default was the whole of the 37x latency gap against Ghostty; the throughput
 -- gap is separate and is real work. Full chain of evidence in
--- configs/docs/ghostty-vs-wezterm-2026-09-03.md.
+-- infra/configs/docs/ghostty-vs-wezterm-2026-09-03.md.
 --
 -- Zero is safe here because the batching is a fallback for programs that do
 -- not negotiate synchronized output (DEC mode 2026), and the ones that matter

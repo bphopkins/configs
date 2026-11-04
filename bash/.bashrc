@@ -35,7 +35,7 @@ unset rc
 # change. ctime, since Syncthing keeps the sender's mtime; -L, since the files
 # are links. PS0 calls the check by a function substitution (bash 5.3), which
 # runs in this shell, so the new record persists; one stat a command, about
-# 1.5 ms. Suite: tests/bashrc/run.sh.
+# 1.5 ms. Suite: infra/configs/tests/bashrc/run.sh.
 if ((BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] >= 503)); then
   _bashrc_stamp() { # into _BASHRC_NOW: ~/.bashrc, ~/.bash_profile, each module the loops source
     local f files=(~/.bashrc ~/.bash_profile)

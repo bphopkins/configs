@@ -372,7 +372,7 @@ alias reload='source ~/.bashrc; echo "~/.bashrc reloaded"'
 # is the immediate verb. No sudo -- polkit authorizes power-off and suspend
 # for an active local session. Block inhibitors are honoured, so this refuses
 # while a dnf transaction is mid-flight and names the culprit; override with
-# -i. Tests: tests/leave/run.sh.
+# -i. Tests: infra/configs/tests/leave/run.sh.
 _leave() {
   local verb="$1" cmd=bye force=0 ignore="" a out rc=0 reading="" note dir n line lock proc
   local args=()

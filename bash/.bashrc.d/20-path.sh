@@ -8,7 +8,7 @@
 # desktop-launched app get this PATH, in this order -- and from ~/.bashrc for
 # interactive ones, where the guards make it a no-op over the inherited result.
 # This file is PATH's one author: no environment.d drop-in sets PATH
-# (configs/DECISIONS.md, 2026-09-23), and tests/env/run.sh pins the outcome.
+# (infra/configs/DECISIONS.md, 2026-09-23), and infra/configs/tests/env/run.sh pins the outcome.
 
 # Personal binaries
 if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then

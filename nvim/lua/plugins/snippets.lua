@@ -6,7 +6,7 @@ return {
       -- TeXstudio's completion word lists and sty/<name>.lua from this repository's
       -- french-logic package, one file per package, registered per buffer by the loader
       -- (lua/snippets/loader.lua) from VimTeX's package table.  Stage 3 of the LaTeX
-      -- completion campaign, 2026-09-13 (configs/docs/latex-completion-campaign-2026-09).
+      -- completion campaign, 2026-09-13 (infra/configs/docs/latex-completion-campaign-2026-09).
 
       -- Keep the french-logic files current.  Each sty/<unit>.lua carries the sha256 of the
       -- .sty it was generated from (`-- sty-sha256:`); the hub and every unit its

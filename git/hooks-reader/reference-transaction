@@ -48,7 +48,7 @@
 # Desktop, 15.5 ms in a Desktop repository fedxps then still wrote: three shell
 # starts a transaction, and in each of the two states that ask, one git call
 # outside the Desktop and two inside it.
-# Suite: configs/tests/git-hosts/run.sh.
+# Suite: infra/configs/tests/git-hosts/run.sh.
 case "$1" in
   preparing | prepared) ;;
   *) exit 0 ;;

@@ -25,7 +25,7 @@
 -- case-insensitive, `#` and `;` comments, quoted values, and `[include]` paths,
 -- as git honours them -- so a start costs no process.
 --
--- Suite: configs/tests/lazy-lock/run.sh, which checks this parse against
+-- Suite: infra/configs/tests/lazy-lock/run.sh, which checks this parse against
 -- git's own on every fixture.
 local M = {}
 
