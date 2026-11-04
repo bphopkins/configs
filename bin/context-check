@@ -91,7 +91,10 @@ if [ $BINARY = 0 ]; then
 
 # 1 ── links into the config that no longer resolve ------------------------
 # A dangling link still fails every write through it, in silence. claude-link's
-# sweep repairs these; this says whether any are outstanding right now.
+# sweep repairs these; this says whether any are outstanding right now. The walk
+# prunes what claude-link's does: a readings/ tree's subdirectories, not the
+# directory itself, whose charter is a link into the store since sitting E of
+# infra/machines/home-layout-2026-10/runbook-plain-file-charters.md (2026-11-03).
 dang=()
 while IFS= read -r -d '' f; do
   [ -e "$f" ] && continue
@@ -100,7 +103,7 @@ done < <( { find "$CC" -maxdepth 3 -type l -print0 2>/dev/null
             for x in "${ROOTS[@]}"; do
               [ -d "$HOME/$x" ] || continue
               find "$HOME/$x" -maxdepth 7 \
-                \( -path "$CFG" -o -name .git -o -name node_modules -o -name readings \) -prune -o \
+                \( -path "$CFG" -o -name .git -o -name node_modules -o \( -path "$HOME/*/readings/*" -type d \) \) -prune -o \
                 \( -name settings.local.json -o -name CLAUDE.local.md -o -name CLAUDE.md \) -type l -print0 2>/dev/null
             done ; } )
 if [ ${#dang[@]} -eq 0 ]; then ok "links into the config: all resolve"

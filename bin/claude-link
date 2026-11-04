@@ -36,9 +36,10 @@
 # It never deletes unique data. Adoption moves a file into infra/claude-config or
 # backs it up; anything ambiguous is reported and skipped.
 #
-# It also reports orphan charters (the pass of that name, below), which --adopt
-# moves into the store and links back, and keeps the list in
-# ~/.claude/claude-link-orphans for the SessionStart hook to count.
+# It also reports orphan charters (the pass of that name, below) -- a plain
+# CLAUDE.md or CLAUDE.local.md git ignores in a work tree, or lying in no work
+# tree at all -- which --adopt moves into the store and links back, and keeps
+# the list in ~/.claude/claude-link-orphans for the SessionStart hook to count.
 
 set -uo pipefail
 
@@ -56,13 +57,18 @@ if [ -d "$CFG/home" ]; then
   done
 fi
 # Every walk of a root prunes the same names, at any depth: git's own
-# directories, and the large trees this script has no business in -- and the
-# store itself, which lies under a root (~/Desktop/infra/claude-config) and
-# holds, at the same .claude/ paths, the very lists the harvest looks for: on
-# 2026-11-03 the first dry run after the store's move offered to harvest 11 of
-# the store's own lists into the store (sitting A of the private-layer runbook).
+# directories; node_modules; the subdirectories of a readings/ tree, the
+# library this script has no business in -- its own charter, the one file
+# there a session loads, is a link into the store since sitting E of
+# infra/machines/home-layout-2026-10/runbook-plain-file-charters.md
+# (2026-11-03), so the directory itself is walked and its files pass the name
+# tests; and the store itself, which lies under a root
+# (~/Desktop/infra/claude-config) and holds, at the same .claude/ paths, the
+# very lists the harvest looks for: on 2026-11-03 the first dry run after the
+# store's move offered to harvest 11 of the store's own lists into the store
+# (sitting A of the private-layer runbook).
 CFG_P=$(cd "$CFG" 2>/dev/null && pwd -P) || CFG_P=$CFG
-ROOT_PRUNE=( \( -path "$CFG" -o -path "$CFG_P" -o -name .git -o -name node_modules -o -name readings \) -prune -o )
+ROOT_PRUNE=( \( -path "$CFG" -o -path "$CFG_P" -o -name .git -o -name node_modules -o \( -path "$HOME/*/readings/*" -type d \) \) -prune -o )
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$CC/link-backups/$STAMP"
 
@@ -720,32 +726,44 @@ done
 echo
 
 # ---------------------------------------------------------------- orphans --
-# An orphan is a charter git ignores: a CLAUDE.md or CLAUDE.local.md sitting in
-# a work tree as a plain file that is ignored and untracked. The global exclude
-# that keeps agent context out of every repository hides one written straight
-# into a tree as well, so git never carries it (`git add -A` skips it), `git status`
-# never lists it, and a merge or checkout that brings its path replaces it
-# without a word -- the state of the read-only clones' charters until
-# 2026-10-06. A charter written into a tree is private until he says otherwise,
-# per repository, so --adopt moves an orphan into the store at home/<rel> and
+# An orphan is a plain charter no repository tracks: a CLAUDE.md or
+# CLAUDE.local.md sitting in a work tree as a regular file that git ignores,
+# or sitting in a tree that is no work tree at all. The global exclude that
+# keeps agent context out of every repository hides one written straight into
+# a tree, so git never carries it (`git add -A` skips it), `git status` never
+# lists it, and a merge or checkout that brings its path replaces it without a
+# word -- the state of the read-only clones' charters until 2026-10-06. One in
+# a tree that is no repository is carried by its Syncthing folder alone, with
+# no history and no ledger behind it -- the state of the twenty-one charters
+# of the trees that are no repository until 2026-11-03. Every charter outside a
+# repository lives in the store and is linked in, and a charter written into a
+# tree is private until he says otherwise, per repository (decisions 36, 39
+# and 41 of infra/machines/home-layout-2026-10, 2026-11-02; the second kind
+# admitted at sitting E of its runbook-plain-file-charters.md, 2026-11-03), so
+# --adopt moves an orphan of either kind into the store at home/<rel> and
 # links it back, keeping its name; a charter meant to be public is tracked
-# with `git add -f` instead, by hand (decisions 36 and 41 of
-# infra/machines/home-layout-2026-10, 2026-11-02). The dry run, --apply and
-# --auto only report, --auto because two machines' session ends would both
-# move a file the folder carries to both. One git call per plain charter:
-# `check-ignore` exits 0 only for a path that is ignored and untracked, and
-# 128 outside any work tree, where Syncthing carries the charter. Every run
-# that may write keeps the list in $CC/claude-link-orphans for the
-# SessionStart hook; the dry run writes nothing.
+# with `git add -f` instead, by hand. The dry run, --apply and --auto only
+# report, --auto because two machines' session ends would both move a file the
+# folder carries to both. One git call per plain charter: `check-ignore` exits
+# 0 only for a path that is ignored and untracked, 1 for one git tracks or
+# would list, and 128 outside any work tree; 0 and 128 are the two kinds, and
+# the warning says which. Every run that may write keeps the list in
+# $CC/claude-link-orphans for the SessionStart hook; the dry run writes
+# nothing.
 echo "== orphans =="
 orphans=()
 while IFS= read -r -d '' f; do
-  git -C "$(dirname "$f")" check-ignore -q -- "$(basename "$f")" 2>/dev/null || continue
+  git -C "$(dirname "$f")" check-ignore -q -- "$(basename "$f")" 2>/dev/null
+  case $? in
+    0)   kind="ignored and untracked"; alt="; a charter meant to be public: git add -f" ;;
+    128) kind="in no repository";      alt="" ;;
+    *)   continue ;;
+  esac
   rel=${f/#$HOME/\~}
   if [ $ADOPT = 1 ]; then
     there="$CFG/home/${f#"$HOME"/}"
     if [ -e "$there" ] || [ -L "$there" ]; then
-      wrn "orphan charter, ignored and untracked: $rel  (the store already holds ${there/#$HOME/\~}; left for the home pass)"
+      wrn "orphan charter, $kind: $rel  (the store already holds ${there/#$HOME/\~}; left for the home pass)"
       orphans+=("$rel"); continue
     fi
     if mkdir -p "$(dirname "$there")" && mv -T "$f" "$there" && ln -sT "$there" "$f"; then
@@ -755,7 +773,7 @@ while IFS= read -r -d '' f; do
     fi
     continue
   fi
-  wrn "orphan charter, ignored and untracked: $rel  (claude-link --adopt moves it into the store and links it back; a charter meant to be public: git add -f)"
+  wrn "orphan charter, $kind: $rel  (claude-link --adopt moves it into the store and links it back$alt)"
   orphans+=("$rel")
 done < <(for x in "${ROOTS[@]}"; do
            [ -d "$HOME/$x" ] || continue
