@@ -26,7 +26,7 @@
 # is not checked, and adding M to that filter would not help -- a modified
 # file's name has not changed, so re-globbing it buys nothing and would prompt
 # on ordinary edits. .gitignore is the standing second layer; a content scan of
-# the staged diff is the real remedy, deferred as TODO.md item 7.
+# the staged diff is the real remedy, deferred as infra/configs/TODO.md item 7.
 #
 # The machine's role (2026-10-10; infra/machines/transport-2026-10, rules.md
 # fedxps-2 and ws-5): Syncthing carries each repository, .git included,

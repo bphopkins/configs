@@ -15,10 +15,9 @@ certain kind."
 This file is the map of the package: what it is for, how it is organised,
 what its conventions are, and what is open. It is a living contract — edit it
 in place; staleness is a bug. The member-by-member inventory is `AUDIT.md`,
-generated. The stow-package charter is `../CLAUDE.md`. The API summary the
-dissertation reads is in the dissertation's charter. Written 2026-09-07 at the
-start of the reorganisation; the *Status* line under each heading says how
-far that heading is from the truth on the ground.
+generated. Written 2026-09-07 at the start of the reorganisation; the *Status*
+line under each heading says how far that heading is from the truth on the
+ground.
 
 ## Principles
 

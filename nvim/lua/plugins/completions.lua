@@ -1,7 +1,7 @@
 return {
   -- Completion stack for LaTeX (rebuilt on TeXstudio's model 2026-09-13, stage 3 of the
   -- campaign in infra/configs/docs/latex-completion-campaign-2026-09; PLAN.md carries the
-  -- decisions, DECISIONS.md the record):
+  -- decisions, infra/configs/DECISIONS.md the record):
   --   - blink.cmp draws the menu; in TeX buffers it runs three sources, LuaSnip snippets,
   --     VimTeX's completers through blink's built-in omni provider, and paths
   --   - the snippets are one generated file per package (lua/snippets/pkg, from TeXstudio's

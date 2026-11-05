@@ -86,7 +86,7 @@
 #   --list` still names exactly one swayidle, the session's lock-before-sleep.
 #
 #   A persistent second swayidle fired by SIGUSR1 was the first draft
-#   (DECISIONS.md, 2026-09-30) and was measured the same day: SIGUSR1
+#   (infra/configs/DECISIONS.md, 2026-09-30) and was measured the same day: SIGUSR1
 #   re-registers its timer at 0 ms, so the displays go off at once — and the
 #   chord's release, arriving next, brings them straight back; and its
 #   ten-year timeout overflows swayidle's millisecond counter to 21 days. A

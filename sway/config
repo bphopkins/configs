@@ -2,7 +2,7 @@
 # Edit it here, not at ~/.config/sway/config (that is a symlink into this repo).
 # Apply changes with `swaymsg reload` or $mod+Ctrl+c.
 #
-# Binding grammar (adopted 2026-08-22, DECISIONS.md item 6; widened 2026-09-28
+# Binding grammar (adopted 2026-08-22, infra/configs/DECISIONS.md item 6; widened 2026-09-28
 # for the tree tier and the monitor axis, and 2026-09-29 for the shaping verbs
 # on Shift and the third clause). The modifier names what the action
 # acts on -- to place or recall a binding, ask what it acts on:
@@ -813,7 +813,7 @@ include hosts/$(uname -n).conf
 # service instead -- a DBusActivatable app opened from rofi (Nautilus, Loupe,
 # Ghostty's entry) and the user units -- as gnome-session does under GNOME.
 # Without the session file sway's PATH is the system's, and this changes
-# nothing (TODO.md item 29).
+# nothing (infra/configs/TODO.md item 29).
 exec dbus-update-activation-environment --systemd PATH
 
 # Lock the screen before the machine suspends, and when logind is asked to

@@ -1,7 +1,7 @@
 -- lua/plugins/live-server.lua
 -- Root-aware start/stop for live-server.nvim.
 --
--- Design (settled 2026-08-22, DECISIONS.md item 9): pass the directory explicitly
+-- Design (settled 2026-08-22, infra/configs/DECISIONS.md item 9): pass the directory explicitly
 -- at BOTH ends. The plugin normalizes an explicit argument through the same
 -- resolver at start and stop, so identical strings yield identical instance
 -- keys and stop reliably finds the server. Bare start/stop resolve from the

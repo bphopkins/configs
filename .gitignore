@@ -38,7 +38,7 @@ okular/docdata/
 # The vet (GSYNC_SECRET_GLOBS in bash/.bashrc.d/50-git-sync.sh) prompts y/N;
 # these refuse outright. Kept deliberately in sync with that list, plus the
 # names it does not carry. Note the vet fires only on paths NEW to the repo,
-# so it cannot see a secret pasted into an already-tracked file — see TODO.md
+# so it cannot see a secret pasted into an already-tracked file — see infra/configs/TODO.md
 # item 7. Anything here can still be committed on purpose with `git add -f`.
 .env
 .env.*
